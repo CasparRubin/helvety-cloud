@@ -1,0 +1,16 @@
+---
+description: Helvety Cloud legal/marketing copy — no false E2EE or recovery claims
+globs: "**/app/**/*.tsx,**/app/**/*.ts,docs/**/*.md"
+alwaysApply: false
+---
+
+# Legal & product copy
+
+Follow `docs/architecture/LEGAL_REQUIREMENTS.md`.
+
+- Never claim Helvety can read, decrypt, or recover vault content.
+- Always state that lost passkeys/recovery keys mean permanent data loss when discussing unlock.
+- Do not invent certifications, compliance badges, or “military-grade” fluff.
+- Distinguish account data (email, billing metadata) from vault ciphertext.
+- Final ToS/Privacy/AUP text requires Swiss counsel — mark drafts as needing review.
+- No public signup/billing UI without acceptance gates for ToS, Privacy, AUP, E2EE ack.

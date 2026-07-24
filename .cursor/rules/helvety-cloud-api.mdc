@@ -1,0 +1,18 @@
+---
+description: Helvety Cloud /api/v1 — ciphertext-opaque, workspace-scoped, multi-client
+globs: "**/api/**/*.ts,**/api/**/*.tsx,packages/api-contract/**"
+alwaysApply: false
+---
+
+# API rules
+
+Follow `docs/architecture/API.md`.
+
+- Versioned `/api/v1`; breaking changes → `/api/v2`.
+- Validate with Zod from `packages/api-contract`.
+- Ciphertext-opaque: never accept or return plaintext vault titles/bodies.
+- Client UUIDs + idempotent upserts; workspace-scoped authorization.
+- Authenticate via Supabase JWT; use user-scoped DB client for vault rows.
+- Service role only for justified server jobs (e.g. webhooks later), never to decrypt.
+- Do not make Server Actions the sole mutation API.
+- Do not expose PostgREST as the product API for vault tables.

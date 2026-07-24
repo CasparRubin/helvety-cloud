@@ -1,0 +1,16 @@
+---
+description: Helvety Cloud client crypto — PRF, key hierarchy, no server secrets
+globs: packages/crypto/**/*
+alwaysApply: false
+---
+
+# Crypto package rules
+
+Follow `docs/architecture/KEY_HIERARCHY.md` and `THREAT_MODEL.md`.
+
+- PRF → HKDF unlock → wrap user_symmetric_key → wrap X25519 private key.
+- AES-256-GCM for content; unique nonce; AAD bind table/record/field.
+- Wrapped keys use AAD (`wrapKey`/`unwrapKey`). key_check AAD uses real userId, not `"self"`.
+- Never send PRF output, recovery plaintext, or raw user/workspace keys to the server. UI: recovery export is one-shot offline — never log/POST (P5).
+- Tests must prove wrong-key failure and round-trip success.
+- No MLS in foundation.

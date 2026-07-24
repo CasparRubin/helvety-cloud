@@ -1,0 +1,51 @@
+# Helvety Cloud — local Supabase CLI config
+# Remote project ref: qnoeiurmyyyuawkcifmw (Zurich). Forbidden: bkdzeihxzvrkndjvyzye.
+
+project_id = "helvety-cloud"
+
+[api]
+enabled = true
+port = 54321
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54322
+shadow_port = 54320
+major_version = 17
+
+[db.migrations]
+enabled = true
+schema_paths = ["./schemas/*.sql"]
+
+[db.seed]
+enabled = false
+
+[studio]
+enabled = true
+port = 54323
+
+[auth]
+enabled = true
+site_url = "http://localhost:3000"
+additional_redirect_urls = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  "https://127.0.0.1:3000",
+]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+enable_confirmations = false
+
+# Passkeys (WebAuthn). Local RP for CLI / P2 localhost testing.
+# Production hosted Auth must switch to helvety.cloud — see docs/architecture/AUTH.md.
+[auth.passkey]
+enabled = true
+
+[auth.webauthn]
+rp_display_name = "Helvety Cloud"
+rp_id = "localhost"
+rp_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]

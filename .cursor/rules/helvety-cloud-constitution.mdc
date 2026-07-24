@@ -1,0 +1,25 @@
+---
+description: Helvety Cloud constitution — ZK, greenfield, free-tier, stack, API boundaries
+alwaysApply: true
+---
+
+# Helvety Cloud constitution
+
+Before any feature work, read `AGENTS.md` and `docs/architecture/ROADMAP.md`. Implement **one phase (P\*) at a time**.
+
+## Must
+
+- Zero knowledge: Helvety cannot decrypt vault content. No master key, escrow, or support content recovery.
+- No account passwords. Supabase Auth: email OTP + passkeys. Vault unlock: WebAuthn PRF (session ≠ decrypt).
+- Greenfield only in `helvety-cloud`. Never copy from `helvety` or `helvety-browser-extension-chromium`.
+- Free-tier only in foundation: Supabase Free, Vercel Hobby. Omit Redis, Sentry, paid CI, analytics, etc.
+- Vault I/O via `/api/v1` + Bearer JWT. Browser may use Supabase Auth SDK; must not use PostgREST for vault tables.
+- Supabase project `qnoeiurmyyyuawkcifmw` (helvety-cloud, Zurich) only — never `bkdzeihxzvrkndjvyzye`.
+- Prefer Supabase/Vercel MCP and schema-as-code (`docs/architecture/SCHEMA_WORKFLOW.md`).
+- No misleading E2EE/recovery claims in UI or docs (`docs/architecture/LEGAL_REQUIREMENTS.md`).
+
+## Must not
+
+- Implement multiple roadmap phases in one go unless the user explicitly expands scope.
+- Add paid SaaS “for best practice.”
+- Public signup/billing without counsel-reviewed legal pack.

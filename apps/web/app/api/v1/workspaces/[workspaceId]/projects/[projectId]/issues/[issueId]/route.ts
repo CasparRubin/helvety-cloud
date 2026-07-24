@@ -1,0 +1,139 @@
+import {
+  ciphertextEnvelopeSchema,
+  issueResponseSchema,
+  putIssueRequestSchema,
+} from "@helvety-cloud/api-contract";
+
+import { apiError, jsonOk } from "@/lib/api/errors";
+import { isAuthedApi, requireUser } from "@/lib/supabase/api";
+
+type RouteContext = {
+  params: Promise<{
+    workspaceId: string;
+    projectId: string;
+    issueId: string;
+  }>;
+};
+
+export async function GET(_request: Request, context: RouteContext) {
+  const auth = await requireUser(_request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase } = auth;
+  const { workspaceId, projectId, issueId } = await context.params;
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (projectError) {
+    return apiError("internal", projectError.message, 500);
+  }
+  if (!project) {
+    return apiError("not_found", "Project not found", 404);
+  }
+
+  const { data, error } = await supabase
+    .from("issues")
+    .select(
+      "id, project_id, encrypted_blob, sort_order, updated_at, deleted_at",
+    )
+    .eq("id", issueId)
+    .eq("project_id", projectId)
+    .maybeSingle();
+
+  if (error) {
+    return apiError("internal", error.message, 500);
+  }
+  if (!data) {
+    return apiError("not_found", "Issue not found", 404);
+  }
+
+  return jsonOk(
+    issueResponseSchema.parse({
+      id: data.id,
+      projectId: data.project_id,
+      workspaceId,
+      encryptedBlob: ciphertextEnvelopeSchema.parse(data.encrypted_blob),
+      sortOrder: data.sort_order,
+      updatedAt: data.updated_at,
+      deletedAt: data.deleted_at,
+    }),
+  );
+}
+
+export async function PUT(request: Request, context: RouteContext) {
+  const auth = await requireUser(request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase } = auth;
+  const { workspaceId, projectId, issueId } = await context.params;
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return apiError("invalid_body", "Request body must be JSON", 400);
+  }
+
+  const parsed = putIssueRequestSchema.safeParse(body);
+  if (!parsed.success) {
+    return apiError("invalid_body", parsed.error.message, 400);
+  }
+  const data = parsed.data;
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (projectError) {
+    return apiError("internal", projectError.message, 500);
+  }
+  if (!project) {
+    return apiError("not_found", "Project not found", 404);
+  }
+
+  const { data: row, error } = await supabase
+    .from("issues")
+    .upsert(
+      {
+        id: issueId,
+        project_id: projectId,
+        encrypted_blob: data.encryptedBlob,
+        sort_order: data.sortOrder ?? 0,
+        deleted_at: data.deletedAt ?? null,
+      },
+      { onConflict: "id" },
+    )
+    .select(
+      "id, project_id, encrypted_blob, sort_order, updated_at, deleted_at",
+    )
+    .single();
+
+  if (error) {
+    if (error.code === "42501") {
+      return apiError("forbidden", "Not a workspace member", 403);
+    }
+    return apiError("invalid_ciphertext", error.message, 400);
+  }
+
+  return jsonOk(
+    issueResponseSchema.parse({
+      id: row.id,
+      projectId: row.project_id,
+      workspaceId,
+      encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
+      sortOrder: row.sort_order,
+      updatedAt: row.updated_at,
+      deletedAt: row.deleted_at,
+    }),
+  );
+}

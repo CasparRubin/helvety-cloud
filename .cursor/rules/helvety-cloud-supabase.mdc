@@ -1,0 +1,16 @@
+---
+description: Helvety Cloud Supabase — schema-as-code, MCP, correct project ref
+globs: supabase/**/*
+alwaysApply: false
+---
+
+# Supabase rules
+
+Follow `docs/architecture/SCHEMA_WORKFLOW.md` and `DATA_MODEL.md`.
+
+- Source of truth: `supabase/schemas/*.sql` → migrations → commit.
+- Apply only to project ref `qnoeiurmyyyuawkcifmw`. Never `bkdzeihxzvrkndjvyzye`.
+- After schema changes: generate and commit TS types; run security advisors (MCP).
+- RLS on all user tables; explicit GRANTs (auto-expose is off).
+- Do not edit production schema only in the Dashboard.
+- Store only ciphertext + allowed metadata for vault entities.
