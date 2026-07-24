@@ -98,7 +98,7 @@ export type Database = {
         Row: {
           created_at: string
           deleted_at: string | null
-          encrypted_blob: Json | null
+          encrypted_blob: Json
           id: string
           sort_order: number
           updated_at: string
@@ -107,7 +107,7 @@ export type Database = {
         Insert: {
           created_at?: string
           deleted_at?: string | null
-          encrypted_blob?: Json | null
+          encrypted_blob: Json
           id: string
           sort_order?: number
           updated_at?: string
@@ -116,7 +116,7 @@ export type Database = {
         Update: {
           created_at?: string
           deleted_at?: string | null
-          encrypted_blob?: Json | null
+          encrypted_blob?: Json
           id?: string
           sort_order?: number
           updated_at?: string
@@ -217,18 +217,24 @@ export type Database = {
           created_at: string
           created_by: string
           id: string
+          kind: string
+          name: string
           updated_at: string
         }
         Insert: {
           created_at?: string
           created_by: string
           id: string
+          kind?: string
+          name: string
           updated_at?: string
         }
         Update: {
           created_at?: string
           created_by?: string
           id?: string
+          kind?: string
+          name?: string
           updated_at?: string
         }
         Relationships: [

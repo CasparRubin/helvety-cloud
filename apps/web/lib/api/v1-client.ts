@@ -6,6 +6,11 @@ import {
   getMePolicyAcceptancesResponseSchema,
   getWorkspaceResponseSchema,
   issueResponseSchema,
+  listIssuesResponseSchema,
+  listProjectsResponseSchema,
+  listWorkspacesResponseSchema,
+  patchWorkspaceRequestSchema,
+  patchWorkspaceResponseSchema,
   projectResponseSchema,
   putIssueRequestSchema,
   putMeCryptoRequestSchema,
@@ -19,6 +24,11 @@ import {
   type GetMePolicyAcceptancesResponse,
   type GetWorkspaceResponse,
   type IssueResponse,
+  type ListIssuesResponse,
+  type ListProjectsResponse,
+  type ListWorkspacesResponse,
+  type PatchWorkspaceRequest,
+  type PatchWorkspaceResponse,
   type ProjectResponse,
   type PutIssueRequest,
   type PutMeCryptoRequest,
@@ -124,6 +134,10 @@ export async function putMeCrypto(
   });
 }
 
+export async function listWorkspaces(): Promise<ListWorkspacesResponse> {
+  return apiFetch("/api/v1/workspaces", listWorkspacesResponseSchema);
+}
+
 export async function createWorkspace(
   body: CreateWorkspaceRequest,
 ): Promise<CreateWorkspaceResponse> {
@@ -142,6 +156,55 @@ export async function getWorkspace(
   );
 }
 
+export async function patchWorkspace(
+  workspaceId: string,
+  body: PatchWorkspaceRequest,
+): Promise<PatchWorkspaceResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}`,
+    patchWorkspaceResponseSchema,
+    {
+      method: "PATCH",
+      body: JSON.stringify(patchWorkspaceRequestSchema.parse(body)),
+    },
+  );
+}
+
+export type ListParams = {
+  limit?: number;
+  cursor?: string | null;
+  includeDeleted?: boolean;
+};
+
+function listQuery(params?: ListParams): string {
+  const q = new URLSearchParams();
+  if (params?.limit !== undefined) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  if (params?.includeDeleted) q.set("includeDeleted", "true");
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+export async function listProjects(
+  workspaceId: string,
+  params?: ListParams,
+): Promise<ListProjectsResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/projects${listQuery(params)}`,
+    listProjectsResponseSchema,
+  );
+}
+
+export async function getProject(
+  workspaceId: string,
+  projectId: string,
+): Promise<ProjectResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}`,
+    projectResponseSchema,
+  );
+}
+
 export async function putProject(
   workspaceId: string,
   projectId: string,
@@ -154,6 +217,17 @@ export async function putProject(
       method: "PUT",
       body: JSON.stringify(putProjectRequestSchema.parse(body)),
     },
+  );
+}
+
+export async function listIssues(
+  workspaceId: string,
+  projectId: string,
+  params?: ListParams,
+): Promise<ListIssuesResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues${listQuery(params)}`,
+    listIssuesResponseSchema,
   );
 }
 

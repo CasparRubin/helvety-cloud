@@ -92,8 +92,18 @@ export const getMeCryptoResponseSchema = z.object({
 });
 export type GetMeCryptoResponse = z.infer<typeof getMeCryptoResponseSchema>;
 
+export const workspaceKindSchema = z.enum(["personal", "standard"]);
+export type WorkspaceKind = z.infer<typeof workspaceKindSchema>;
+
+export const workspaceRoleSchema = z.enum(["owner", "admin", "member"]);
+export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
+
+export const workspaceNameSchema = z.string().trim().min(1).max(120);
+
 export const createWorkspaceRequestSchema = z.object({
   id: uuidSchema,
+  name: workspaceNameSchema,
+  kind: workspaceKindSchema.default("standard"),
   wrappedKey: sealedKeyEnvelopeSchema,
 });
 export type CreateWorkspaceRequest = z.infer<
@@ -102,19 +112,54 @@ export type CreateWorkspaceRequest = z.infer<
 
 export const createWorkspaceResponseSchema = z.object({
   id: uuidSchema,
+  name: workspaceNameSchema,
+  kind: workspaceKindSchema,
 });
 export type CreateWorkspaceResponse = z.infer<
   typeof createWorkspaceResponseSchema
 >;
 
+export const workspaceListItemSchema = z.object({
+  id: uuidSchema,
+  name: workspaceNameSchema,
+  kind: workspaceKindSchema,
+  role: workspaceRoleSchema,
+  wrappedKey: sealedKeyEnvelopeSchema,
+  updatedAt: z.string(),
+});
+export type WorkspaceListItem = z.infer<typeof workspaceListItemSchema>;
+
+export const listWorkspacesResponseSchema = z.object({
+  workspaces: z.array(workspaceListItemSchema),
+});
+export type ListWorkspacesResponse = z.infer<
+  typeof listWorkspacesResponseSchema
+>;
+
 export const getWorkspaceResponseSchema = z.object({
   id: uuidSchema,
+  name: workspaceNameSchema,
+  kind: workspaceKindSchema,
   wrappedKey: sealedKeyEnvelopeSchema,
 });
 export type GetWorkspaceResponse = z.infer<typeof getWorkspaceResponseSchema>;
 
+export const patchWorkspaceRequestSchema = z.object({
+  name: workspaceNameSchema,
+});
+export type PatchWorkspaceRequest = z.infer<typeof patchWorkspaceRequestSchema>;
+
+export const patchWorkspaceResponseSchema = z.object({
+  id: uuidSchema,
+  name: workspaceNameSchema,
+  kind: workspaceKindSchema,
+});
+export type PatchWorkspaceResponse = z.infer<
+  typeof patchWorkspaceResponseSchema
+>;
+
 export const putProjectRequestSchema = z.object({
-  encryptedBlob: ciphertextEnvelopeSchema.nullable().optional(),
+  encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
 });
@@ -123,7 +168,7 @@ export type PutProjectRequest = z.infer<typeof putProjectRequestSchema>;
 export const projectResponseSchema = z.object({
   id: uuidSchema,
   workspaceId: uuidSchema,
-  encryptedBlob: ciphertextEnvelopeSchema.nullable(),
+  encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
@@ -147,6 +192,41 @@ export const issueResponseSchema = z.object({
   deletedAt: z.string().nullable(),
 });
 export type IssueResponse = z.infer<typeof issueResponseSchema>;
+
+/** Shared list query: keyset cursor on (sort_order ASC, id ASC). */
+export const listQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+  cursor: z.string().min(1).optional(),
+  /** Query string `"true"` / `"false"`; omit = false. */
+  includeDeleted: z
+    .enum(["true", "false"])
+    .optional()
+    .transform((v) => v === "true"),
+});
+export type ListQuery = {
+  limit: number;
+  cursor?: string;
+  includeDeleted: boolean;
+};
+
+/** Opaque keyset cursor payload (encoded as base64url JSON on the wire). */
+export const sortOrderCursorSchema = z.object({
+  sortOrder: z.number().int(),
+  id: uuidSchema,
+});
+export type SortOrderCursor = z.infer<typeof sortOrderCursorSchema>;
+
+export const listProjectsResponseSchema = z.object({
+  projects: z.array(projectResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListProjectsResponse = z.infer<typeof listProjectsResponseSchema>;
+
+export const listIssuesResponseSchema = z.object({
+  issues: z.array(issueResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListIssuesResponse = z.infer<typeof listIssuesResponseSchema>;
 
 /** Signup-gated policy IDs (ToS, Privacy, AUP, E2EE acknowledgment). */
 export const signupPolicyIds = ["tos", "privacy", "aup", "e2ee"] as const;

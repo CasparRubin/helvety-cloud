@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 are done** (production legal pack + acceptance). Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. **Next = P6+** as separate product plans. Stripe charges still require an explicit billing phase.
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. **Next = P6d** (then P6e→P6f, one phase per chat). Stripe charges only in **P6f**.
 
 ---
 
@@ -19,13 +19,13 @@
 
 ## 1. Product (what we are building)
 
-**helvety.cloud** — greenfield E2EE workspace app (projects / issues / later notes, contacts, sharing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
+**helvety.cloud** — greenfield E2EE workspace app (projects / issues / notes / contacts / sharing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
 
 **Priorities (in order):**
 
 1. **Privacy** — Helvety cannot decrypt user vault content (no master key, no escrow, no support recovery of content).  
 2. **Performance / UX** — later Linear-like speed; not required until after E2EE proof.  
-3. **Free base stack** — Supabase Free + Vercel Hobby + Stripe when charging; no paid Redis/Sentry/etc. in foundation.
+3. **Free base stack** — Supabase Free + Vercel Hobby + Stripe when charging (P6f); no paid Redis/Sentry/etc. in foundation.
 
 **Foundation proof (end of P5):**
 
@@ -34,7 +34,9 @@ email OTP → session → PRF passkey unlock → user keys
   → create workspace via /api/v1 → write encrypted issue → reload → decrypt on device
 ```
 
-**Not now (P6+):** Linear invisible editor, milestone diagrams, notes/contacts, email invites/sharing, Stripe paywalls, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps.
+**Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/issues CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
+
+**Out of this wave:** milestone diagrams, custom labels, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps.
 
 ---
 
@@ -51,14 +53,16 @@ email OTP → session → PRF passkey unlock → user keys
 | Auth | **Supabase Auth** — email **OTP** + passkeys; **disable passwords** |
 | Vault unlock | WebAuthn **PRF** → HKDF unlock key (auth session ≠ vault decrypt) |
 | Crypto | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field |
-| Sharing model (later) | Bitwarden/Proton-style **wrapped workspace/project keys** per member — table `wrapped_keys` from P4 |
+| Access model | **Everything workspace-scoped** — projects/issues/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
+| Personal workspace | On first vault setup, ensure one **Personal** workspace (home for “general” notes/contacts) |
+| Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** vault entities in that workspace (P6e) |
 | Public API | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>` |
 | Browser Supabase | **Auth SDK OK**; **`from('…')` for vault tables NOT OK** — go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |
 | Types | Generated TS committed under `packages/db` (or equiv.) so agents always see the model |
-| Billing | **Stripe** workspace subscriptions — **explicit billing phase** after P-legal2; no Clerk in foundation |
+| Billing | **Stripe** workspace subscriptions — **P6f only**; no Clerk in foundation |
 | UI foundation | Minimal new **dense shadcn/ui on Base UI** (current shadcn default; **not** Radix). Not helvety.com look |
-| Cost | **Free-tier only** in P0–P5 — see §2.1 |
+| Cost | **Free-tier only** in P0–P5 and product phases until P6f Stripe — see §2.1 |
 | Legal | **P-legal2 production pack** live + acceptance gates; optional counsel for risk; see §7 |
 
 ### 2.1 Free-tier only (no exceptions in foundation)
@@ -117,7 +121,7 @@ helvety-cloud/
 | `docs/architecture/SCHEMA_WORKFLOW.md` | schemas → diff → migrate → types → MCP advisors |
 | `docs/architecture/BILLING.md` | Stripe later; meter metadata only |
 | `docs/architecture/LEGAL_REQUIREMENTS.md` | Checklist §7; not final ToS text |
-| `docs/architecture/prompts/P1.md` … `P5.md` | Copy-paste prompts (same as below) |
+| `docs/architecture/prompts/P1.md` … `P5.md`, `P-legal*.md`, `P6a.md` … `P6f.md` | Copy-paste prompts (same as below) |
 | `.cursor/rules/helvety-cloud-constitution.mdc` | `alwaysApply: true` |
 | `.cursor/rules/helvety-cloud-crypto.mdc` | globs crypto |
 | `.cursor/rules/helvety-cloud-api.mdc` | globs api |
@@ -291,9 +295,144 @@ helvety-cloud/
 
 ---
 
-### P6+ — Product (separate plans later)
+### Access model (locked) — product wave
 
-Sharing (wrap keys to invitees), Stripe entitlements, Linear-like TipTap UX, milestones/viz, notes/contacts/custom labels, extension, Tauri, calendar send-to, deprecate old apps. Each feature = its own plan after P5 + P-legal2.
+All vault data is **workspace-scoped**. Invite = seal `workspace_key` → members decrypt everything in that workspace.
+
+```text
+Workspace  (members + per-member wrapped_keys)
+  ├── projects → issues
+  ├── notes     (required workspace_id; optional project/issue links; dynamic encrypted JSON)
+  └── contacts  (workspace address book; no global dedupe)
+```
+
+- **Personal workspace** created on first vault setup — home for “general” notes/contacts.  
+- Same person in two workspaces ⇒ two contact rows. Later: copy-to-workspace (re-encrypt). No user-global contacts.  
+- No `workspace_id = null` notes. No project-level key ACLs for contacts.
+
+**Sequence:** P6a → P6b → P6c → P6d → P6e → P6f (one chat each).  
+**Out of this wave:** milestones, labels, sync batch API, extension, Tauri, calendar send-to, deprecate old apps.
+
+---
+
+### P6a — App shell + vault session + workspaces
+
+**Goal:** Replace proof card with a real signed-in app chrome; unlock once; manage workspaces.
+
+**Do:**
+
+- Layout: sidebar/nav, workspace switcher, unlock gate (reuse PRF + policy acceptance).  
+- Routes e.g. `/app`, `/app/w/[workspaceId]`.  
+- List/create/rename workspaces via existing `/api/v1/workspaces*` (extend list endpoint if missing).  
+- **Personal workspace:** on first vault setup, create (or ensure) one Personal workspace so notes/contacts always have a home.  
+- Client cache of unlocked keys in memory only (idle lock later OK).  
+- Dense shadcn/Base UI; no helvety.com port.
+
+**Don’t:** Issue list polish, TipTap, sharing, Stripe, notes/contacts tables.
+
+**Done when:** User signs in → accepts policies → unlocks → has Personal (and can create more) → navigates without the P5 proof card as primary UX.
+
+**Status:** **Done** (app shell + Personal workspace + list/create/rename).
+
+**Paste prompt:** [`docs/architecture/prompts/P6a.md`](./prompts/P6a.md)
+
+---
+
+### P6b — Projects + issues (minimal E2EE product)
+
+**Goal:** Usable project/issue CRUD, all ciphertext-opaque.
+
+**Do:**
+
+- Project list under workspace; create/reorder.  
+- Issue list + detail: title/body as encrypted JSON (same envelope as P5); status/sort as plaintext metadata if already in schema (else keep minimal).  
+- API: list endpoints (paginate) for projects/issues; keep PUT/GET by id.  
+- Decrypt only on device with workspace key from `wrapped_keys` + AAD.  
+- Soft-delete/tombstone if schema supports it.
+
+**Don’t:** Rich editor, mentions, labels UI, sharing, attachments, notes/contacts, Stripe.
+
+**Done when:** Create/edit/list/reload issues across sessions; DB still only envelopes.
+
+**Status:** **Done** (post-review: `projects.encrypted_blob` NOT NULL; PUT requires envelope — no omit→null wipe).
+
+**Paste prompt:** [`docs/architecture/prompts/P6b.md`](./prompts/P6b.md)
+
+---
+
+### P6c — Editor (TipTap-style)
+
+**Goal:** Linear-like body editing without breaking E2EE.
+
+**Do:**
+
+- TipTap (or similar) in issue detail; serialize to encrypted blob (version field in plaintext JSON inside ciphertext).  
+- Autosave via existing PUT; conflict = last-write or generation if present.  
+- Keep free-tier: no paid collaboration SaaS.
+
+**Don’t:** Realtime CRDT/Yjs paid stack; sharing; notes tables; Stripe.
+
+**Done when:** Rich body round-trips encrypt → API → decrypt.
+
+**Paste prompt:** [`docs/architecture/prompts/P6c.md`](./prompts/P6c.md)
+
+---
+
+### P6d — Notes + contacts (workspace-scoped)
+
+**Goal:** New entity types under the locked access model (everything in a workspace).
+
+**Do:**
+
+- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` / `issue_id` on notes for filters.  
+- Notes: flexible encrypted JSON (dynamic links/tags/body); can link to project, issue, both, or neither.  
+- Contacts: encrypted identity fields under **workspace_key**; same person in two workspaces = two rows (no global dedupe). Optional later: copy-to-workspace.  
+- `/api/v1` list/detail + UI in app shell (Personal + team workspaces).  
+- AAD `table:recordId:field`; migrate `qnoeiurmyyyuawkcifmw` only.
+
+**Don’t:** User-global contacts; null-workspace notes; custom labels/milestones; sharing UI (P6e); Stripe.
+
+**Done when:** Notes and contacts CRUD under a workspace via `/api/v1`; ciphertext-opaque; Personal + team UIs work.
+
+**Paste prompt:** [`docs/architecture/prompts/P6d.md`](./prompts/P6d.md)
+
+---
+
+### P6e — Sharing workspaces
+
+**Goal:** Multi-member via sealed keys (Bitwarden-style).
+
+**Do:**
+
+- Invite by email (OTP account must exist or signup); role on `workspace_members`.  
+- Seal `workspace_key` to invitee `user_public_key` → `wrapped_keys` row with AAD.  
+- Accept invite UI; member decrypts **all** workspace ciphertext (issues, notes, contacts) after unlock — no separate contact share path.  
+- AUP/ToS already cover abuse; no server-side content scan.
+
+**Don’t:** Project-level ACL complexity; MLS; cross-workspace contact sync; Stripe.
+
+**Done when:** Owner invites second user; both decrypt same issue (and contact/note) ciphertext in that workspace.
+
+**Paste prompt:** [`docs/architecture/prompts/P6e.md`](./prompts/P6e.md)
+
+---
+
+### P6f — Billing setup
+
+**Goal:** Stripe workspace subscriptions per [`BILLING.md`](./BILLING.md) — after a usable product (P6a–P6b at least; preferably after P6e if seats matter).
+
+**Do:**
+
+- Stripe Checkout + Customer Portal + webhooks → `subscriptions` (plaintext entitlements only).  
+- Gate create-project / member limits in `/api/v1` from entitlements.  
+- Free plan in code; no vault keys/content in Stripe.  
+- Service role only for webhook billing rows.
+
+**Don’t:** Paid Redis/Sentry; Clerk; redesign crypto/sharing UX beyond entitlement gates.
+
+**Done when:** Checkout/Portal/webhooks land entitlements; API enforces free/paid limits; meters are plaintext counts only.
+
+**Paste prompt:** [`docs/architecture/prompts/P6f.md`](./prompts/P6f.md)
 
 ---
 
@@ -335,7 +474,7 @@ workspace_key / project_key (random)
 
 **Honesty:** Never claim Helvety can read/recover vault content; never fake certifications; state free limits clearly.
 
-**Risk note:** Text is product-authored (AI-assisted), not Swiss-attorney certification. Optional counsel review can still reduce Einzelfirma risk; GmbH may be advisable later. Stripe charges need an explicit billing phase.
+**Risk note:** Text is product-authored (AI-assisted), not Swiss-attorney certification. Optional counsel review can still reduce Einzelfirma risk; GmbH may be advisable later. Stripe charges land in **P6f**.
 
 ---
 
@@ -348,7 +487,7 @@ workspace_key / project_key (random)
 5. `supabase/schemas` + migrations + committed types match remote (MCP verifiable).  
 6. Crypto tests reject wrong keys.  
 7. Recovery warning shown.  
-8. Legal pack live (P-legal2) with acceptance gates; Stripe charges still off until billing phase.
+8. Legal pack live (P-legal2) with acceptance gates; Stripe charges still off until **P6f**.
 
 ---
 
@@ -369,12 +508,13 @@ workspace_key / project_key (random)
 - Copying old Helvety apps  
 - Studio-only schema without git  
 - Browser PostgREST for vault  
-- Paid SaaS in foundation  
+- Paid SaaS in foundation (or before P6f Stripe)  
 - Misleading E2EE/recovery copy  
 - Public launch without legal pack  
+- User-global contacts/notes store; notes with `workspace_id = null`
 
 ---
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 done.** Next = **P6+** as separate plans. Stripe = explicit billing phase. Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c done.** Next = **P6d** (then P6e→P6f). Stripe = **P6f** only. Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

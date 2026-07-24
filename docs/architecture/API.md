@@ -28,11 +28,18 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/me/policy-acceptances` | Record ToS/Privacy/AUP/E2EE version acceptances |
 | GET | `/api/v1/me/crypto` | Load public key + wrapped user key material |
 | PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material (requires current policy acceptances) |
-| POST | `/api/v1/workspaces` | Create workspace + owner wrapped key |
-| GET | `/api/v1/workspaces/:workspaceId` | Workspace id + caller’s wrapped key |
-| PUT/GET | workspace/project/issue paths | Ciphertext upsert/fetch |
+| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, name, kind, role, wrapped key) |
+| POST | `/api/v1/workspaces` | Create workspace + owner wrapped key (`name`, `kind`, sealed key) |
+| GET | `/api/v1/workspaces/:workspaceId` | Workspace id/name/kind + caller’s wrapped key |
+| PATCH | `/api/v1/workspaces/:workspaceId` | Rename workspace (`name` only; `kind` immutable) |
+| GET | `/api/v1/workspaces/:workspaceId/projects` | List projects (paginated; ciphertext-opaque) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch |
+| GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/issues` | List issues (paginated; ciphertext-opaque) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/issues/:issueId` | Issue upsert / fetch |
 
-Exact paths may nest under `/api/v1/workspaces/:workspaceId/...` — keep stable once shipped; breaking changes → `/api/v2`.
+**List query params:** `limit` (1–100, default 50), opaque `cursor` (keyset on `sort_order ASC, id ASC`), `includeDeleted=true` to include soft-deleted rows. Soft-delete = PUT with `deletedAt` ISO timestamp (schema `deleted_at`). Default lists omit tombstones.
+
+Exact paths nest under `/api/v1/workspaces/:workspaceId/...` — keep stable once shipped; breaking changes → `/api/v2`.
 
 ## Errors
 

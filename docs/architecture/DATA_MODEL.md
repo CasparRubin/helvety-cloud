@@ -2,26 +2,47 @@
 
 Blind Postgres on Supabase project `qnoeiurmyyyuawkcifmw`. Schema source of truth: `supabase/schemas/` (from P1/P4). See [`SCHEMA_WORKFLOW.md`](SCHEMA_WORKFLOW.md).
 
+## Access model (locked)
+
+All vault entities are **workspace-scoped**. There is no user-global contacts/notes store.
+
+```text
+Workspace  (members + per-member wrapped_keys)
+  ├── projects → issues
+  ├── notes     (required workspace_id; optional project/issue FKs; dynamic encrypted JSON)
+  └── contacts  (workspace address book; no global dedupe)
+```
+
+- **Personal workspace** — created/ensured on first vault setup (P6a); home for “general” notes/contacts.  
+- Invite (P6e) = seal `workspace_key` → members decrypt **all** ciphertext in that workspace.  
+- Same person in two workspaces ⇒ **two contact rows**. Later softener: copy-to-workspace (client re-encrypts).  
+- **Reject:** user-global contact graph; notes with `workspace_id = null`; project-level key ACLs for contacts.
+
+See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
+
 ## Plaintext (server-visible metadata)
 
 | Table | Role |
 |-------|------|
 | `profiles` | `id` = `auth.users.id`; non-secret profile fields if any |
 | `user_crypto` | `public_key`, wrapped user/private key blobs, `prf_salt`, `key_check`, versions |
-| `workspaces` | Workspace ids, owner/timestamps |
+| `workspaces` | Workspace ids, plaintext `name`, `kind` (`personal` \| `standard`), owner/timestamps; at most one Personal per owner |
 | `workspace_members` | `workspace_id`, `user_id`, `role` |
-| `projects` | `id`, `workspace_id`, sort, timestamps |
+| `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
-| Later billing | `subscriptions`, `billing_events` (P6+) |
+| Billing (P6f) | `subscriptions`, `billing_events` — plaintext entitlements/meters only |
 | `policy_acceptances` | Plaintext signup gates: `user_id`, `policy` (`tos`/`privacy`/`aup`/`e2ee`), `version`, `accepted_at`; unique `(user_id, policy, version)`; append-only for clients |
 
 ## Ciphertext (never readable by server)
 
 | Table | Content |
 |-------|---------|
-| `issues` | `encrypted_blob` holds title/description (and similar); plaintext FKs: `id`, `project_id`, optional status id, sort, `updated_at`, tombstone |
-| Later | `notes`, `contacts`, `milestones`, label **names** encrypted; color/id metadata may stay plaintext |
+| `projects` | `encrypted_blob` holds `{ name }`; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
+| `issues` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`); legacy unversioned `{ title, body: string }` is normalized on decrypt; plaintext FKs: `id`, `project_id`, optional status id, sort, `updated_at`, tombstone |
+| `notes` (P6d) | Required `workspace_id`; `encrypted_blob` = dynamic JSON (body, tags, links, etc.); optional nullable `project_id` / `issue_id` for filtered lists without decrypting all notes |
+| `contacts` (P6d) | Required `workspace_id`; identity fields in `encrypted_blob` under **workspace_key**; duplicates across workspaces OK |
+| Later | `milestones`, label **names** encrypted; color/id metadata may stay plaintext |
 
 ## RLS
 
@@ -32,6 +53,6 @@ Blind Postgres on Supabase project `qnoeiurmyyyuawkcifmw`. Schema source of trut
 
 ## Extensibility
 
-New entity = new table + encrypt under existing workspace/project key + membership RLS. No crypto redesign.
+New entity = new table + encrypt under existing **workspace_key** (or project key when needed) + membership RLS. No crypto redesign. No orphan entities outside a workspace.
 
-See [`KEY_HIERARCHY.md`](KEY_HIERARCHY.md) and [`ROADMAP.md`](ROADMAP.md) P4.
+See [`KEY_HIERARCHY.md`](KEY_HIERARCHY.md) and [`ROADMAP.md`](ROADMAP.md) P4 / P6a–P6f.

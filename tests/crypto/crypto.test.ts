@@ -302,3 +302,91 @@ describe("@helvety-cloud/crypto", () => {
     });
   });
 });
+
+describe("P6b project/issue vault content", () => {
+  const decoder = new TextDecoder();
+
+  it("encrypts project name with AAD; PUT schema requires encryptedBlob", async () => {
+    const { putProjectRequestSchema } = await import(
+      "@helvety-cloud/api-contract"
+    );
+    const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
+    const projectId = crypto.randomUUID();
+    const aad = {
+      table: "projects" as const,
+      recordId: projectId,
+      field: "encrypted_blob" as const,
+    };
+    const encryptedBlob = await encrypt({
+      key: workspaceKey,
+      plaintext: encodeUtf8(JSON.stringify({ name: "Roundtrip Project" })),
+      aad,
+    });
+
+    expect(putProjectRequestSchema.safeParse({ sortOrder: 0 }).success).toBe(
+      false,
+    );
+    const putBody = putProjectRequestSchema.parse({
+      encryptedBlob,
+      sortOrder: 0,
+    });
+    expect(putBody.encryptedBlob).toEqual(encryptedBlob);
+    expect(JSON.stringify(putBody)).not.toContain("Roundtrip Project");
+
+    const plain = JSON.parse(
+      decoder.decode(
+        await decrypt({ key: workspaceKey, envelope: encryptedBlob, aad }),
+      ),
+    ) as { name: string };
+    expect(plain.name).toBe("Roundtrip Project");
+  });
+
+  it("encrypts versioned TipTap issue body with AAD; PUT schema requires encryptedBlob", async () => {
+    const { putIssueRequestSchema } = await import(
+      "@helvety-cloud/api-contract"
+    );
+    const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
+    const issueId = crypto.randomUUID();
+    const aad = {
+      table: "issues" as const,
+      recordId: issueId,
+      field: "encrypted_blob" as const,
+    };
+    const plaintext = {
+      version: 1 as const,
+      title: "Secret title",
+      body: {
+        type: "doc" as const,
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Secret body" }],
+          },
+        ],
+      },
+    };
+    const encryptedBlob = await encrypt({
+      key: workspaceKey,
+      plaintext: encodeUtf8(JSON.stringify(plaintext)),
+      aad,
+    });
+
+    expect(putIssueRequestSchema.safeParse({ sortOrder: 0 }).success).toBe(
+      false,
+    );
+    const putBody = putIssueRequestSchema.parse({
+      encryptedBlob,
+      sortOrder: 1,
+    });
+    expect(JSON.stringify(putBody)).not.toContain("Secret title");
+    expect(JSON.stringify(putBody)).not.toContain("Secret body");
+
+    const plain = JSON.parse(
+      decoder.decode(
+        await decrypt({ key: workspaceKey, envelope: encryptedBlob, aad }),
+      ),
+    );
+    expect(plain).toEqual(plaintext);
+  });
+});
+

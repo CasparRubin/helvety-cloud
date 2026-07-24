@@ -3,7 +3,7 @@
 create table public.projects (
   id uuid primary key,
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
-  encrypted_blob jsonb,
+  encrypted_blob jsonb not null,
   sort_order bigint not null default 0,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
