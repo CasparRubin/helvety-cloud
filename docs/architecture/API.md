@@ -14,8 +14,8 @@
 
 | Plane | Examples |
 |-------|----------|
-| Control | `PUT /api/v1/me/crypto`, `POST /api/v1/workspaces`, invites (later), Checkout (later) |
-| Data | Issue/project upserts with `encrypted_blob`; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=` |
+| Control | `PUT /api/v1/me/crypto`, `POST /api/v1/workspaces`, workspace invitations (P6e), billing/Checkout (P6f) |
+| Data | Issue/project/note/contact upserts with `encrypted_blob`; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=` |
 
 Realtime (optional later) = wake-up only, not a second write API.
 
@@ -36,8 +36,27 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch |
 | GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/issues` | List issues (paginated; ciphertext-opaque) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/issues/:issueId` | Issue upsert / fetch |
+| GET | `/api/v1/workspaces/:workspaceId/notes` | List notes (paginated; optional `projectId` / `issueId` filters) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/notes/:noteId` | Note upsert / fetch (`projectId` / `issueId` optional plaintext FKs) |
+| GET | `/api/v1/workspaces/:workspaceId/contacts` | List contacts (paginated; ciphertext-opaque) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/contacts/:contactId` | Contact upsert / fetch |
+| GET | `/api/v1/workspaces/:workspaceId/members` | List members (`userId`, `role`) |
+| GET/POST | `/api/v1/workspaces/:workspaceId/invitations` | List / create email invitations (owner/admin) |
+| POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/seal` | Owner/admin stores client-sealed workspace key for claimed invitee |
+| POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/cancel` | Cancel active invitation (owner/admin; clears any stored seal) |
+| GET | `/api/v1/me/invitations` | Invitations addressed to the caller’s verified email |
+| POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches vault `public_key` (must match their `user_crypto` row) |
+| POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (seat-gated) |
+| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, limits, plaintext usage counts (any member) |
+| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout session for the Pro plan → `{ url }` |
+| POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Owner-only: Stripe Customer Portal session → `{ url }` |
+| POST | `/api/webhooks/stripe` | Stripe webhook (signature-verified; outside `/api/v1` Bearer auth); service-role upserts of billing rows only |
 
-**List query params:** `limit` (1–100, default 50), opaque `cursor` (keyset on `sort_order ASC, id ASC`), `includeDeleted=true` to include soft-deleted rows. Soft-delete = PUT with `deletedAt` ISO timestamp (schema `deleted_at`). Default lists omit tombstones.
+**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up vault, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own vault key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
+
+**List query params:** `limit` (1–100, default 50), opaque `cursor` (keyset on `sort_order ASC, id ASC`), `includeDeleted=true` to include soft-deleted rows. Soft-delete = PUT with `deletedAt` ISO timestamp (schema `deleted_at`). Default lists omit tombstones. Notes list also accepts optional `projectId` / `issueId` (UUID) to filter without decrypting.
+
+**Entitlement gates (P6f):** create mutations (new workspace/project/issue/note/contact, invite create, invite accept) are gated by the workspace plan (`BILLING.md`) and return `limit_exceeded` (403) at the cap. Updates, soft-deletes, reads, seal/cancel are never gated. Meters are plaintext row counts only.
 
 Exact paths nest under `/api/v1/workspaces/:workspaceId/...` — keep stable once shipped; breaking changes → `/api/v2`.
 
@@ -47,6 +66,8 @@ Stable codes via `packages/api-contract`: `unauthorized`, `forbidden`, `limit_ex
 
 ## Server DB access
 
-Route handlers use Supabase client with the **user JWT**. Service role only for justified server jobs (e.g. Stripe webhooks later) — never to “helpfully” decrypt.
+Route handlers use Supabase client with the **user JWT**. Service role is used only by `/api/webhooks/stripe` (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events` — never to “helpfully” decrypt or touch vault tables.
+
+**PostgREST / grants:** `authenticated` retains table GRANTs so API routes can query with the user JWT under RLS. The **browser must still never** call the Data API for vault tables — entitlement gates (P6f) live only on `/api/v1`. Closing Data API entirely would require a larger “service-role-only API” redesign; not done in this wave.
 
 See [`ROADMAP.md`](ROADMAP.md) §6 and P4/P5 playbooks.

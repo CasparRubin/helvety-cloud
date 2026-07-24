@@ -36,6 +36,10 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
     : null;
   const activeProjectId =
     pathParts[4] === "p" && pathParts[5] ? pathParts[5] : null;
+  const projectsHomeActive =
+    Boolean(activeWorkspaceId) &&
+    (pathname === `/app/w/${activeWorkspaceId}` ||
+      pathname === `/app/w/${activeWorkspaceId}/`);
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
   const shouldRedirectToWorkspace =
@@ -90,10 +94,38 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
         </div>
         <nav className="flex flex-1 flex-col gap-1 overflow-y-auto px-2 py-2 text-sm">
           {activeWorkspaceId ? (
-            <SidebarProjects
-              workspaceId={activeWorkspaceId}
-              activeProjectId={activeProjectId}
-            />
+            <>
+              <div className="mb-2 flex flex-col gap-0.5">
+                <Link
+                  href={`/app/w/${activeWorkspaceId}/notes`}
+                  className={
+                    pathname.includes("/notes")
+                      ? "rounded-md bg-sidebar-accent px-2 py-1 text-sm text-sidebar-accent-foreground"
+                      : "rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }
+                >
+                  Notes
+                </Link>
+                <Link
+                  href={`/app/w/${activeWorkspaceId}/contacts`}
+                  className={
+                    pathname.includes("/contacts")
+                      ? "rounded-md bg-sidebar-accent px-2 py-1 text-sm text-sidebar-accent-foreground"
+                      : "rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  }
+                >
+                  Contacts
+                </Link>
+              </div>
+              <p className="px-2 pb-1 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Projects
+              </p>
+              <SidebarProjects
+                workspaceId={activeWorkspaceId}
+                activeProjectId={activeProjectId}
+                projectsHomeActive={projectsHomeActive}
+              />
+            </>
           ) : (
             <p className="px-2 py-1 text-xs text-muted-foreground">
               Select a workspace
@@ -102,6 +134,16 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
         </nav>
         <div className="mt-auto flex flex-col gap-1 border-t border-sidebar-border px-2 py-2">
           <p className="truncate px-2 text-xs text-muted-foreground">{email}</p>
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="justify-start"
+            render={<Link href="/app/invitations" />}
+            nativeButton={false}
+          >
+            Invitations
+          </Button>
           <Button
             type="button"
             variant="ghost"

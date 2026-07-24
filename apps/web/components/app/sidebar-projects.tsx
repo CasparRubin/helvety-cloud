@@ -13,11 +13,13 @@ import { cn } from "@/lib/utils";
 type SidebarProjectsProps = {
   workspaceId: string;
   activeProjectId: string | null;
+  projectsHomeActive?: boolean;
 };
 
 export function SidebarProjects({
   workspaceId,
   activeProjectId,
+  projectsHomeActive = false,
 }: SidebarProjectsProps) {
   const { vault, getWorkspaceKey } = useVaultSession();
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
@@ -79,7 +81,9 @@ export function SidebarProjects({
         href={`/app/w/${workspaceId}`}
         className={cn(
           "rounded-md px-2 py-1 text-xs font-medium text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-          !activeProjectId && "bg-sidebar-accent text-sidebar-accent-foreground",
+          !activeProjectId &&
+            projectsHomeActive &&
+            "bg-sidebar-accent text-sidebar-accent-foreground",
         )}
       >
         All projects

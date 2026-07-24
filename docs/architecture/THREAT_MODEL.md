@@ -14,7 +14,7 @@
 |--------|-------------------------|
 | **Honest-but-curious server** (Helvety staff, compromised admin, stolen DB dump) | All vault content encrypted client-side. Server stores ciphertext + public keys + wrapped key blobs only. Service role cannot decrypt. |
 | **Network attacker** | TLS in transit; ciphertext still opaque if intercepted at rest on disk. |
-| **Malicious invitee** (later sharing) | Only receives keys sealed to them; AUP + ToS; cannot escalate to other workspaces without membership. |
+| **Malicious invitee** | Only receives keys sealed to their public key after claim; AUP + ToS; cannot escalate to other workspaces without membership. Invitation claim requires verified JWT email match. |
 | **Lost / stolen device** | Vault idle lock; passkey/OS unlock; user can revoke sessions; recovery key offline. |
 | **Phishing** | Passkeys (WebAuthn) for auth; RP ID bound to helvety.cloud. |
 | **Compelled disclosure** | Helvety can produce account metadata and ciphertext it holds; **cannot** produce plaintext vault content without user keys. Document this honestly in legal/E2EE notices. |

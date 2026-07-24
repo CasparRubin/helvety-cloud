@@ -39,7 +39,8 @@ Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod sh
 | P3 | Library + tests only (`packages/crypto`) |
 | P4 | `user_crypto`, `wrapped_keys` tables + wrap/key_check AAD |
 | P5 | Wire unlock → API → encrypt issue round-trip (**done**) |
-| P6+ | Seal workspace/project keys to invitees |
+| P6e | Seal `workspace_key` to invitees via claim → owner seal → accept (**done**) |
+| P6+ | Project keys / richer sharing if needed |
 
 ## Forbidden
 

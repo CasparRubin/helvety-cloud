@@ -36,7 +36,7 @@ export function textToIssueBody(text: string): IssueBodyDoc {
   };
 }
 
-function isIssueBodyDoc(value: unknown): value is IssueBodyDoc {
+export function isIssueBodyDoc(value: unknown): value is IssueBodyDoc {
   if (typeof value !== "object" || value === null) return false;
   const doc = value as { type?: unknown; content?: unknown };
   if (doc.type !== "doc") return false;

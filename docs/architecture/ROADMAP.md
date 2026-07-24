@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. **Next = P6d** (then P6e→P6f, one phase per chat). Stripe charges only in **P6f**.
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. **Product wave complete.** Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -362,6 +362,8 @@ Workspace  (members + per-member wrapped_keys)
 
 ### P6c — Editor (TipTap-style)
 
+**Status:** **Done**
+
 **Goal:** Linear-like body editing without breaking E2EE.
 
 **Do:**
@@ -394,6 +396,8 @@ Workspace  (members + per-member wrapped_keys)
 
 **Done when:** Notes and contacts CRUD under a workspace via `/api/v1`; ciphertext-opaque; Personal + team UIs work.
 
+**Status:** **Done**
+
 **Paste prompt:** [`docs/architecture/prompts/P6d.md`](./prompts/P6d.md)
 
 ---
@@ -413,11 +417,15 @@ Workspace  (members + per-member wrapped_keys)
 
 **Done when:** Owner invites second user; both decrypt same issue (and contact/note) ciphertext in that workspace.
 
+**Status:** **Done** (email invite → claim → owner seal with AAD → accept; members decrypt all workspace ciphertext).
+
 **Paste prompt:** [`docs/architecture/prompts/P6e.md`](./prompts/P6e.md)
 
 ---
 
 ### P6f — Billing setup
+
+**Status:** **Done**
 
 **Goal:** Stripe workspace subscriptions per [`BILLING.md`](./BILLING.md) — after a usable product (P6a–P6b at least; preferably after P6e if seats matter).
 
@@ -487,7 +495,7 @@ workspace_key / project_key (random)
 5. `supabase/schemas` + migrations + committed types match remote (MCP verifiable).  
 6. Crypto tests reject wrong keys.  
 7. Recovery warning shown.  
-8. Legal pack live (P-legal2) with acceptance gates; Stripe charges still off until **P6f**.
+8. Legal pack live (P-legal2) with acceptance gates; Stripe entitlements live (**P6f**).
 
 ---
 
@@ -517,4 +525,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c done.** Next = **P6d** (then P6e→P6f). Stripe = **P6f** only. Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f done — product wave complete.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

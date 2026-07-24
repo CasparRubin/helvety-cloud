@@ -7,6 +7,7 @@ import {
   workspaceRoleSchema,
 } from "@helvety-cloud/api-contract";
 
+import { assertOwnedWorkspaceAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
@@ -99,6 +100,11 @@ export async function POST(request: Request) {
     return apiError("invalid_body", parsed.error.message, 400);
   }
   const { id, name, kind, wrappedKey } = parsed.data;
+
+  const limitResponse = await assertOwnedWorkspaceAllowed(supabase, user.id);
+  if (limitResponse) {
+    return limitResponse;
+  }
 
   const { error: profileError } = await supabase.from("profiles").upsert(
     { id: user.id },

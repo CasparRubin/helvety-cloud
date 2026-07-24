@@ -14,6 +14,79 @@ export type Database = {
   }
   public: {
     Tables: {
+      billing_events: {
+        Row: {
+          id: string
+          payload: Json
+          received_at: string
+          stripe_event_id: string
+          type: string
+          workspace_id: string | null
+        }
+        Insert: {
+          id?: string
+          payload: Json
+          received_at?: string
+          stripe_event_id: string
+          type: string
+          workspace_id?: string | null
+        }
+        Update: {
+          id?: string
+          payload?: Json
+          received_at?: string
+          stripe_event_id?: string
+          type?: string
+          workspace_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "billing_events_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      contacts: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          encrypted_blob: Json
+          id: string
+          sort_order: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob: Json
+          id: string
+          sort_order?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob?: Json
+          id?: string
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "contacts_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       issues: {
         Row: {
           created_at: string
@@ -48,6 +121,64 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notes: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          encrypted_blob: Json
+          id: string
+          issue_id: string | null
+          project_id: string | null
+          sort_order: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob: Json
+          id: string
+          issue_id?: string | null
+          project_id?: string | null
+          sort_order?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob?: Json
+          id?: string
+          issue_id?: string | null
+          project_id?: string | null
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notes_issue_id_fkey"
+            columns: ["issue_id"]
+            isOneToOne: false
+            referencedRelation: "issues"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notes_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -132,6 +263,53 @@ export type Database = {
           },
         ]
       }
+      subscriptions: {
+        Row: {
+          cancel_at_period_end: boolean
+          created_at: string
+          current_period_end: string | null
+          plan: string
+          status: string
+          stripe_customer_id: string | null
+          stripe_price_id: string | null
+          stripe_subscription_id: string | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          plan?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          cancel_at_period_end?: boolean
+          created_at?: string
+          current_period_end?: string | null
+          plan?: string
+          status?: string
+          stripe_customer_id?: string | null
+          stripe_price_id?: string | null
+          stripe_subscription_id?: string | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "subscriptions_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: true
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_crypto: {
         Row: {
           created_at: string
@@ -172,6 +350,89 @@ export type Database = {
             columns: ["user_id"]
             isOneToOne: true
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      workspace_invitations: {
+        Row: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          claimed_public_key: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          sealed_at: string | null
+          sealed_by: string | null
+          sealed_workspace_key: Json | null
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          claimed_public_key?: string | null
+          created_at?: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          sealed_at?: string | null
+          sealed_by?: string | null
+          sealed_workspace_key?: Json | null
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          accepted_at?: string | null
+          cancelled_at?: string | null
+          claimed_at?: string | null
+          claimed_by?: string | null
+          claimed_public_key?: string | null
+          created_at?: string
+          email?: string
+          id?: string
+          invited_by?: string
+          role?: string
+          sealed_at?: string | null
+          sealed_by?: string | null
+          sealed_workspace_key?: Json | null
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "workspace_invitations_claimed_by_fkey"
+            columns: ["claimed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_invited_by_fkey"
+            columns: ["invited_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_sealed_by_fkey"
+            columns: ["sealed_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "workspace_invitations_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
             referencedColumns: ["id"]
           },
         ]
@@ -287,7 +548,121 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_workspace_invitation: {
+        Args: { invitation_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          claimed_public_key: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          sealed_at: string | null
+          sealed_by: string | null
+          sealed_workspace_key: Json | null
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      cancel_workspace_invitation: {
+        Args: { invitation_id: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          claimed_public_key: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          sealed_at: string | null
+          sealed_by: string | null
+          sealed_workspace_key: Json | null
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      claim_workspace_invitation: {
+        Args: { invitation_id: string; public_key: string }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          claimed_public_key: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          sealed_at: string | null
+          sealed_by: string | null
+          sealed_workspace_key: Json | null
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      is_workspace_admin: { Args: { ws_id: string }; Returns: boolean }
       is_workspace_member: { Args: { ws_id: string }; Returns: boolean }
+      normalized_auth_email: { Args: never; Returns: string }
+      seal_workspace_invitation: {
+        Args: { invitation_id: string; sealed_key: Json }
+        Returns: {
+          accepted_at: string | null
+          cancelled_at: string | null
+          claimed_at: string | null
+          claimed_by: string | null
+          claimed_public_key: string | null
+          created_at: string
+          email: string
+          id: string
+          invited_by: string
+          role: string
+          sealed_at: string | null
+          sealed_by: string | null
+          sealed_workspace_key: Json | null
+          updated_at: string
+          workspace_id: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "workspace_invitations"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      workspace_seat_usage: {
+        Args: { ws_id: string }
+        Returns: {
+          member_count: number
+          plan: string
+          status: string
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

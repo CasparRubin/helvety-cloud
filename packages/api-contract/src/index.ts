@@ -228,6 +228,56 @@ export const listIssuesResponseSchema = z.object({
 });
 export type ListIssuesResponse = z.infer<typeof listIssuesResponseSchema>;
 
+export const putNoteRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int().optional(),
+  deletedAt: z.string().nullable().optional(),
+  projectId: uuidSchema.nullable().optional(),
+  issueId: uuidSchema.nullable().optional(),
+});
+export type PutNoteRequest = z.infer<typeof putNoteRequestSchema>;
+
+export const noteResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  projectId: uuidSchema.nullable(),
+  issueId: uuidSchema.nullable(),
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type NoteResponse = z.infer<typeof noteResponseSchema>;
+
+export const listNotesResponseSchema = z.object({
+  notes: z.array(noteResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListNotesResponse = z.infer<typeof listNotesResponseSchema>;
+
+export const putContactRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int().optional(),
+  deletedAt: z.string().nullable().optional(),
+});
+export type PutContactRequest = z.infer<typeof putContactRequestSchema>;
+
+export const contactResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type ContactResponse = z.infer<typeof contactResponseSchema>;
+
+export const listContactsResponseSchema = z.object({
+  contacts: z.array(contactResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListContactsResponse = z.infer<typeof listContactsResponseSchema>;
+
 /** Signup-gated policy IDs (ToS, Privacy, AUP, E2EE acknowledgment). */
 export const signupPolicyIds = ["tos", "privacy", "aup", "e2ee"] as const;
 export const signupPolicyIdSchema = z.enum(signupPolicyIds);
@@ -275,4 +325,144 @@ export const putMePolicyAcceptancesResponseSchema = z.object({
 });
 export type PutMePolicyAcceptancesResponse = z.infer<
   typeof putMePolicyAcceptancesResponseSchema
+>;
+
+/** Invitee roles (cannot invite as owner). */
+export const workspaceInviteRoleSchema = z.enum(["admin", "member"]);
+export type WorkspaceInviteRole = z.infer<typeof workspaceInviteRoleSchema>;
+
+export const invitationStatusSchema = z.enum([
+  "waiting_for_recipient",
+  "waiting_for_owner_seal",
+  "ready_to_accept",
+  "accepted",
+  "cancelled",
+]);
+export type InvitationStatus = z.infer<typeof invitationStatusSchema>;
+
+export const invitationEmailSchema = z
+  .string()
+  .trim()
+  .min(3)
+  .max(320)
+  .email()
+  .transform((value) => value.toLowerCase());
+
+export const workspaceInvitationSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  workspaceName: workspaceNameSchema.optional(),
+  email: z.string().min(1),
+  role: workspaceInviteRoleSchema,
+  status: invitationStatusSchema,
+  invitedBy: uuidSchema,
+  claimedBy: uuidSchema.nullable(),
+  claimedPublicKey: base64UrlSchema.nullable(),
+  claimedAt: z.string().nullable(),
+  sealedAt: z.string().nullable(),
+  acceptedAt: z.string().nullable(),
+  cancelledAt: z.string().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type WorkspaceInvitation = z.infer<typeof workspaceInvitationSchema>;
+
+export const createWorkspaceInvitationRequestSchema = z.object({
+  id: uuidSchema,
+  email: invitationEmailSchema,
+  role: workspaceInviteRoleSchema.default("member"),
+});
+export type CreateWorkspaceInvitationRequest = z.infer<
+  typeof createWorkspaceInvitationRequestSchema
+>;
+
+export const listWorkspaceInvitationsResponseSchema = z.object({
+  invitations: z.array(workspaceInvitationSchema),
+});
+export type ListWorkspaceInvitationsResponse = z.infer<
+  typeof listWorkspaceInvitationsResponseSchema
+>;
+
+export const sealWorkspaceInvitationRequestSchema = z.object({
+  sealedKey: sealedKeyEnvelopeSchema,
+});
+export type SealWorkspaceInvitationRequest = z.infer<
+  typeof sealWorkspaceInvitationRequestSchema
+>;
+
+export const listMyInvitationsResponseSchema = z.object({
+  invitations: z.array(workspaceInvitationSchema),
+});
+export type ListMyInvitationsResponse = z.infer<
+  typeof listMyInvitationsResponseSchema
+>;
+
+export const workspaceMemberSchema = z.object({
+  userId: uuidSchema,
+  role: workspaceRoleSchema,
+  createdAt: z.string(),
+});
+export type WorkspaceMember = z.infer<typeof workspaceMemberSchema>;
+
+export const listWorkspaceMembersResponseSchema = z.object({
+  members: z.array(workspaceMemberSchema),
+});
+export type ListWorkspaceMembersResponse = z.infer<
+  typeof listWorkspaceMembersResponseSchema
+>;
+
+/** P6f billing — plaintext entitlements only; never vault keys or content. */
+export const planIdSchema = z.enum(["free", "pro"]);
+export type PlanId = z.infer<typeof planIdSchema>;
+
+export const subscriptionStatusSchema = z.enum([
+  "active",
+  "trialing",
+  "past_due",
+  "canceled",
+  "incomplete",
+  "incomplete_expired",
+  "unpaid",
+  "paused",
+]);
+export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
+
+export const workspaceLimitsSchema = z.object({
+  projects: z.number().int().positive(),
+  members: z.number().int().positive(),
+  issues: z.number().int().positive(),
+  notes: z.number().int().positive(),
+  contacts: z.number().int().positive(),
+});
+export type WorkspaceLimits = z.infer<typeof workspaceLimitsSchema>;
+
+export const workspaceUsageSchema = z.object({
+  projects: z.number().int().nonnegative(),
+  members: z.number().int().nonnegative(),
+  pendingInvitations: z.number().int().nonnegative(),
+  issues: z.number().int().nonnegative(),
+  notes: z.number().int().nonnegative(),
+  contacts: z.number().int().nonnegative(),
+});
+export type WorkspaceUsage = z.infer<typeof workspaceUsageSchema>;
+
+export const getWorkspaceBillingResponseSchema = z.object({
+  workspaceId: uuidSchema,
+  plan: planIdSchema,
+  status: subscriptionStatusSchema,
+  cancelAtPeriodEnd: z.boolean(),
+  currentPeriodEnd: z.string().nullable(),
+  hasStripeCustomer: z.boolean(),
+  limits: workspaceLimitsSchema,
+  usage: workspaceUsageSchema,
+});
+export type GetWorkspaceBillingResponse = z.infer<
+  typeof getWorkspaceBillingResponseSchema
+>;
+
+export const billingRedirectResponseSchema = z.object({
+  url: z.string().url(),
+});
+export type BillingRedirectResponse = z.infer<
+  typeof billingRedirectResponseSchema
 >;

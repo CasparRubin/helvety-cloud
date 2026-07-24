@@ -5,22 +5,22 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 ## Priorities
 
 1. Privacy / zero-knowledge vault content  
-2. Performance & UX (Linear-like later)  
-3. Free base stack (Supabase Free, Vercel Hobby)
+2. Performance & UX (Linear-like polish continues)  
+3. Free base stack (Supabase Free, Vercel Hobby) + Stripe when charging
 
 ## Want / don’t / later
 
-| Want now (foundation P0–P5) | Don’t | Later (P6+ / P-legal) |
-|-----------------------------|--------|------------------------|
-| Passwordless auth (OTP + passkey) | Passwords; company master key / escrow | Stripe paywalls |
-| Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Invite/share (key wrap) |
-| Extensible workspace/project schema | Browser PostgREST for vault data | Notes, contacts, custom labels |
-| `/api/v1` multi-client ready | Paid Redis/Sentry/analytics in foundation | Linear TipTap UX, milestone diagrams |
-| Recovery key / 2nd passkey (user-held) | “Email reset restores vault” | Extension, Tauri, calendar send-to |
-| Plain-language legal pack + acceptance | Misleading E2EE marketing | Optional Swiss counsel; GmbH if desired |
-| Dense clean UI (shadcn + Base UI) as needed for proof | Overengineering / unused SaaS; Radix shadcn | Full product surface |
+| Shipped (P0–P6f) | Don’t | Later |
+|------------------|--------|--------|
+| Passwordless auth (OTP + passkey) | Passwords; company master key / escrow | Milestone diagrams, custom labels |
+| Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Sync push/pull batch API |
+| Workspace-scoped projects/issues/notes/contacts | Browser PostgREST for vault data | Extension, Tauri, calendar send-to |
+| `/api/v1` + TipTap + workspace sharing | Paid Redis/Sentry/analytics | Deprecate old helvety.com apps |
+| Recovery key (user-held) + Personal workspace | “Email reset restores vault” | Copy-contact-across-workspaces UX |
+| Legal pack + acceptance; Stripe entitlements | Misleading E2EE marketing | Optional Swiss counsel; GmbH if desired |
+| Dense shadcn + Base UI | Radix shadcn; unused SaaS | Further Linear-like polish |
 
-## Foundation proof (P5)
+## Foundation proof (P5) — still the ZK bar
 
 ```text
 email OTP → session → PRF passkey → user keys

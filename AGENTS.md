@@ -7,7 +7,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 1. **Zero knowledge.** Helvety (staff, DB admins, service role) must not be able to decrypt vault content. No master key, escrow, or support recovery of content.
 2. **No passwords.** Supabase Auth: email OTP + passkeys. Vault unlock via WebAuthn **PRF** (session ≠ decrypt).
 3. **Greenfield.** Never copy UI/crypto/catalogs from `helvety` or `helvety-browser-extension-chromium`.
-4. **Free-tier only** in foundation (P0–P5) and until **P6f** Stripe. Omit Redis, Sentry, paid CI, analytics, etc. Prefer omit over subscribe.
+4. **Free-tier infra** — Prefer omit paid SaaS (Redis, Sentry, analytics, etc.). Stripe is allowed for customer billing (**P6f**).
 5. **Public API** = `/api/v1` + Bearer JWT. Browser may use Supabase **Auth** SDK; must **not** use PostgREST `from('…')` for vault tables.
 6. **Honesty.** Never claim Helvety can read or recover vault data. Live legal pack + acceptance gates (P-legal2); optional counsel is a business choice.
 7. **Workspace-scoped vault.** All vault entities (projects, issues, notes, contacts) live in a workspace. **Personal workspace** on first vault setup. No user-global contacts/notes store; no `workspace_id = null`.
@@ -39,9 +39,9 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P6a | App shell + Personal workspace | **Done** |
 | P6b | Projects + issues (E2EE CRUD) | **Done** |
 | P6c | TipTap editor | **Done** |
-| P6d | Notes + contacts (workspace-scoped) | **Next** |
-| P6e | Workspace sharing / invites | Pending |
-| P6f | Stripe billing + entitlements | Pending |
+| P6d | Notes + contacts (workspace-scoped) | **Done** |
+| P6e | Workspace sharing / invites | **Done** |
+| P6f | Stripe billing + entitlements | **Done** |
 
 Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md` for product).
 

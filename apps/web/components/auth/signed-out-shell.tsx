@@ -29,7 +29,11 @@ export function SignedOutShell() {
             Legal
           </a>
           {" · "}
-          Public signup and billing are not enabled.
+          Free plan limits are listed in the{" "}
+          <a href="/legal/billing" className="underline underline-offset-4">
+            Billing terms
+          </a>
+          .
         </p>
       </CardContent>
     </Card>

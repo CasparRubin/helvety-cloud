@@ -4,6 +4,7 @@ import {
   putProjectRequestSchema,
 } from "@helvety-cloud/api-contract";
 
+import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
@@ -67,6 +68,26 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("invalid_body", parsed.error.message, 400);
   }
   const data = parsed.data;
+
+  const { data: existing, error: existingError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+  if (existingError) {
+    return apiError("internal", existingError.message, 500);
+  }
+  if (!existing) {
+    const limitResponse = await assertWorkspaceCreateAllowed(
+      supabase,
+      workspaceId,
+      "projects",
+    );
+    if (limitResponse) {
+      return limitResponse;
+    }
+  }
 
   const { data: row, error } = await supabase
     .from("projects")

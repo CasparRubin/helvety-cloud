@@ -3,29 +3,29 @@ import type { LegalDocument } from "./types";
 export const billingDoc: LegalDocument = {
   slug: "billing",
   title: "Billing terms",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-24-v2",
   sections: [
     {
       heading: "Status",
       paragraphs: [
-        "Helvety Cloud currently operates without paid Stripe charges. These Billing terms describe how free use works now and how paid plans will work when enabled.",
-        "These terms do not themselves create an obligation to purchase. Paid plans, if offered, will be activated in the product with clear prices before any charge.",
+        "Helvety Cloud offers a free plan and a paid Pro plan per workspace, processed through Stripe. Nothing is charged unless a workspace owner explicitly starts a Pro subscription at checkout, where the price is shown before any charge.",
+        "These terms do not themselves create an obligation to purchase. The free plan remains usable within its stated limits without a payment method.",
       ],
     },
     {
-      heading: "Free use",
+      heading: "Free plan",
       paragraphs: [
-        "While no paid plan is required, Helvety may apply fair-use and technical limits (for example rate limits, storage, or workspace counts) to protect the Service. Limits will be stated in the product when applied.",
+        "The free plan applies fair-use limits per workspace (for example counts of projects, members, issues, notes, and contacts). Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
         "Helvety may change free limits with notice in the product. Continued use after a change means you accept the updated limits.",
       ],
     },
     {
-      heading: "Paid plans (when enabled)",
+      heading: "Paid plans",
       paragraphs: [
-        "Subscriptions are expected to be workspace-scoped: the workspace owner (or designated billing party) pays for that workspace’s plan.",
-        "Prices, billing intervals, renewals, and taxes will be shown at checkout. Unless stated otherwise, subscriptions renew automatically until cancelled.",
-        "You may cancel renewal in the billing portal or account settings when available; access continues through the paid period already purchased unless stated otherwise.",
-        "Invoices and payment processing will use Stripe (or a successor listed under Subprocessors). Helvety never needs vault plaintext or raw vault keys for billing. Meters use plaintext operational counts only (for example workspace or project counts).",
+        "Subscriptions are workspace-scoped: the workspace owner pays for that workspace’s Pro plan.",
+        "Prices, billing intervals, renewals, and taxes are shown at Stripe Checkout. Unless stated otherwise, subscriptions renew automatically until cancelled.",
+        "You may cancel renewal at any time in the Stripe billing portal (available from the workspace sharing dialog); access to Pro limits continues through the paid period already purchased unless stated otherwise. No cancellation fees, no retention tricks.",
+        "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs vault plaintext or raw vault keys for billing. Meters use plaintext operational counts only (for example workspace or project counts).",
       ],
     },
     {

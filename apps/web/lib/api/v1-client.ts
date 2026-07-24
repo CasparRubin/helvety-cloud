@@ -1,41 +1,69 @@
 import {
   apiErrorSchema,
+  billingRedirectResponseSchema,
+  contactResponseSchema,
+  createWorkspaceInvitationRequestSchema,
   createWorkspaceRequestSchema,
   createWorkspaceResponseSchema,
   getMeCryptoResponseSchema,
   getMePolicyAcceptancesResponseSchema,
+  getWorkspaceBillingResponseSchema,
   getWorkspaceResponseSchema,
   issueResponseSchema,
+  listContactsResponseSchema,
   listIssuesResponseSchema,
+  listMyInvitationsResponseSchema,
+  listNotesResponseSchema,
   listProjectsResponseSchema,
+  listWorkspaceInvitationsResponseSchema,
+  listWorkspaceMembersResponseSchema,
   listWorkspacesResponseSchema,
+  noteResponseSchema,
   patchWorkspaceRequestSchema,
   patchWorkspaceResponseSchema,
   projectResponseSchema,
+  putContactRequestSchema,
   putIssueRequestSchema,
   putMeCryptoRequestSchema,
   putMeCryptoResponseSchema,
   putMePolicyAcceptancesRequestSchema,
   putMePolicyAcceptancesResponseSchema,
+  putNoteRequestSchema,
   putProjectRequestSchema,
+  sealWorkspaceInvitationRequestSchema,
+  workspaceInvitationSchema,
+  type BillingRedirectResponse,
+  type ContactResponse,
+  type CreateWorkspaceInvitationRequest,
   type CreateWorkspaceRequest,
   type CreateWorkspaceResponse,
   type GetMeCryptoResponse,
   type GetMePolicyAcceptancesResponse,
+  type GetWorkspaceBillingResponse,
   type GetWorkspaceResponse,
   type IssueResponse,
+  type ListContactsResponse,
   type ListIssuesResponse,
+  type ListMyInvitationsResponse,
+  type ListNotesResponse,
   type ListProjectsResponse,
+  type ListWorkspaceInvitationsResponse,
+  type ListWorkspaceMembersResponse,
   type ListWorkspacesResponse,
+  type NoteResponse,
   type PatchWorkspaceRequest,
   type PatchWorkspaceResponse,
   type ProjectResponse,
+  type PutContactRequest,
   type PutIssueRequest,
   type PutMeCryptoRequest,
   type PutMeCryptoResponse,
   type PutMePolicyAcceptancesRequest,
   type PutMePolicyAcceptancesResponse,
+  type PutNoteRequest,
   type PutProjectRequest,
+  type SealWorkspaceInvitationRequest,
+  type WorkspaceInvitation,
 } from "@helvety-cloud/api-contract";
 
 import { createClient } from "@/lib/supabase/client";
@@ -255,5 +283,202 @@ export async function getIssue(
   return apiFetch(
     `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues/${issueId}`,
     issueResponseSchema,
+  );
+}
+
+export type ListNotesParams = ListParams & {
+  projectId?: string | null;
+  issueId?: string | null;
+};
+
+function notesListQuery(params?: ListNotesParams): string {
+  const q = new URLSearchParams();
+  if (params?.limit !== undefined) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  if (params?.includeDeleted) q.set("includeDeleted", "true");
+  if (params?.projectId) q.set("projectId", params.projectId);
+  if (params?.issueId) q.set("issueId", params.issueId);
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+export async function listNotes(
+  workspaceId: string,
+  params?: ListNotesParams,
+): Promise<ListNotesResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/notes${notesListQuery(params)}`,
+    listNotesResponseSchema,
+  );
+}
+
+export async function getNote(
+  workspaceId: string,
+  noteId: string,
+): Promise<NoteResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/notes/${noteId}`,
+    noteResponseSchema,
+  );
+}
+
+export async function putNote(
+  workspaceId: string,
+  noteId: string,
+  body: PutNoteRequest,
+): Promise<NoteResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/notes/${noteId}`,
+    noteResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putNoteRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function listContacts(
+  workspaceId: string,
+  params?: ListParams,
+): Promise<ListContactsResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/contacts${listQuery(params)}`,
+    listContactsResponseSchema,
+  );
+}
+
+export async function getContact(
+  workspaceId: string,
+  contactId: string,
+): Promise<ContactResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/contacts/${contactId}`,
+    contactResponseSchema,
+  );
+}
+
+export async function putContact(
+  workspaceId: string,
+  contactId: string,
+  body: PutContactRequest,
+): Promise<ContactResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/contacts/${contactId}`,
+    contactResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putContactRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function listWorkspaceInvitations(
+  workspaceId: string,
+): Promise<ListWorkspaceInvitationsResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/invitations`,
+    listWorkspaceInvitationsResponseSchema,
+  );
+}
+
+export async function createWorkspaceInvitation(
+  workspaceId: string,
+  body: CreateWorkspaceInvitationRequest,
+): Promise<WorkspaceInvitation> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/invitations`,
+    workspaceInvitationSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(createWorkspaceInvitationRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function sealWorkspaceInvitation(
+  workspaceId: string,
+  invitationId: string,
+  body: SealWorkspaceInvitationRequest,
+): Promise<WorkspaceInvitation> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/invitations/${invitationId}/seal`,
+    workspaceInvitationSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(sealWorkspaceInvitationRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function cancelWorkspaceInvitation(
+  workspaceId: string,
+  invitationId: string,
+): Promise<WorkspaceInvitation> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/invitations/${invitationId}/cancel`,
+    workspaceInvitationSchema,
+    { method: "POST" },
+  );
+}
+
+export async function listWorkspaceMembers(
+  workspaceId: string,
+): Promise<ListWorkspaceMembersResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/members`,
+    listWorkspaceMembersResponseSchema,
+  );
+}
+
+export async function getWorkspaceBilling(
+  workspaceId: string,
+): Promise<GetWorkspaceBillingResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/billing`,
+    getWorkspaceBillingResponseSchema,
+  );
+}
+
+export async function createBillingCheckout(
+  workspaceId: string,
+): Promise<BillingRedirectResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/billing/checkout`,
+    billingRedirectResponseSchema,
+    { method: "POST" },
+  );
+}
+
+export async function createBillingPortal(
+  workspaceId: string,
+): Promise<BillingRedirectResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/billing/portal`,
+    billingRedirectResponseSchema,
+    { method: "POST" },
+  );
+}
+
+export async function listMyInvitations(): Promise<ListMyInvitationsResponse> {
+  return apiFetch("/api/v1/me/invitations", listMyInvitationsResponseSchema);
+}
+
+export async function claimInvitation(
+  invitationId: string,
+): Promise<WorkspaceInvitation> {
+  return apiFetch(
+    `/api/v1/me/invitations/${invitationId}/claim`,
+    workspaceInvitationSchema,
+    { method: "POST" },
+  );
+}
+
+export async function acceptInvitation(
+  invitationId: string,
+): Promise<WorkspaceInvitation> {
+  return apiFetch(
+    `/api/v1/me/invitations/${invitationId}/accept`,
+    workspaceInvitationSchema,
+    { method: "POST" },
   );
 }
