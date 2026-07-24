@@ -1,4 +1,5 @@
-import { SignedInShell } from "@/components/auth/signed-in-shell";
+import { redirect } from "next/navigation";
+
 import { SignedOutShell } from "@/components/auth/signed-out-shell";
 import { createClient } from "@/lib/supabase/server";
 
@@ -8,13 +9,13 @@ export default async function Home() {
     data: { user },
   } = await supabase.auth.getUser();
 
+  if (user) {
+    redirect("/app");
+  }
+
   return (
     <main className="flex min-h-svh flex-col items-center justify-center p-6">
-      {user?.email ? (
-        <SignedInShell email={user.email} userId={user.id} />
-      ) : (
-        <SignedOutShell />
-      )}
+      <SignedOutShell />
     </main>
   );
 }

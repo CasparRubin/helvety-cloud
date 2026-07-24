@@ -26,7 +26,7 @@ export function SignedOutShell() {
         </Button>
         <p className="text-center text-xs text-muted-foreground">
           <a href="/legal" className="underline underline-offset-4">
-            Legal drafts
+            Legal
           </a>
           {" · "}
           Public signup and billing are not enabled.

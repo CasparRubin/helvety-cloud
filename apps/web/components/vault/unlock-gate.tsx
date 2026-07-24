@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AlertCircleIcon } from "lucide-react";
 
@@ -13,47 +12,23 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
 import { PolicyAcceptanceGate } from "@/components/legal/policy-acceptance-gate";
 import {
-  ApiClientError,
-  getMeCrypto,
-  getMePolicyAcceptances,
-} from "@/lib/api/v1-client";
-import { createClient } from "@/lib/supabase/client";
-import { createPrfUnlock, assertPrfUnlock } from "@/lib/vault/prf";
-import {
-  createRecoveryExport,
-  type RecoveryExport,
-} from "@/lib/vault/recovery";
-import {
   hasUserCrypto,
-  setupUserKeys,
-  unlockUserKeys,
-  type UnlockedVault,
-} from "@/lib/vault/user-keys";
-import {
-  loadProofIds,
-  reloadAndDecryptIssue,
-  runEncryptedIssueProof,
-  storeProofIds,
-  type ProofRoundTripResult,
-} from "@/lib/vault/workspace-issue";
+  useVaultSession,
+} from "@/components/vault/vault-session-provider";
+import { ApiClientError, getMePolicyAcceptances } from "@/lib/api/v1-client";
+import { createClient } from "@/lib/supabase/client";
+import type { RecoveryExport } from "@/lib/vault/recovery";
 
-type SignedInShellProps = {
+type UnlockGateProps = {
   email: string;
   userId: string;
+  onUnlocked: () => void;
 };
 
-type Step =
-  | "loading"
-  | "needs_acceptance"
-  | "locked"
-  | "needs_setup"
-  | "show_recovery"
-  | "unlocked"
-  | "done";
+type Step = "loading" | "needs_acceptance" | "locked" | "needs_setup";
 
 function downloadRecoveryFile(recovery: RecoveryExport): void {
   const payload = {
@@ -71,8 +46,9 @@ function downloadRecoveryFile(recovery: RecoveryExport): void {
   URL.revokeObjectURL(url);
 }
 
-export function SignedInShell({ email, userId }: SignedInShellProps) {
-  const router = useRouter();
+export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
+  const { recovery, setupVault, unlockVault, clearRecovery, lock } =
+    useVaultSession();
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -80,9 +56,6 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
   const [vaultReadyStep, setVaultReadyStep] = useState<"locked" | "needs_setup">(
     "needs_setup",
   );
-  const [vault, setVault] = useState<UnlockedVault | null>(null);
-  const [recovery, setRecovery] = useState<RecoveryExport | null>(null);
-  const [proof, setProof] = useState<ProofRoundTripResult | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -117,56 +90,36 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
     setError(null);
     setMessage(null);
     setPending(true);
-
     const supabase = createClient();
     const { error: registerError } = await supabase.auth.registerPasskey();
-
     setPending(false);
-
     if (registerError) {
       setError(registerError.message);
       return;
     }
-
     setMessage("Auth passkey registered. You can use it to sign in next time.");
   }
 
   async function signOut() {
     setError(null);
     setPending(true);
-    setVault(null);
-    setRecovery(null);
-
+    lock();
     const supabase = createClient();
     const { error: signOutError } = await supabase.auth.signOut();
-
     setPending(false);
-
     if (signOutError) {
       setError(signOutError.message);
       return;
     }
-
-    router.replace("/");
-    router.refresh();
+    window.location.href = "/";
   }
 
-  async function setupVault() {
+  async function onSetup() {
     setError(null);
     setMessage(null);
     setPending(true);
-
     try {
-      const prf = await createPrfUnlock(userId, email);
-      const unlocked = await setupUserKeys(userId, prf.unlockKey, prf.prfSalt);
-      const recoveryExport = await createRecoveryExport(
-        userId,
-        unlocked.userSymmetricKey,
-        unlocked.keyVersion,
-      );
-      setVault(unlocked);
-      setRecovery(recoveryExport);
-      setStep("show_recovery");
+      await setupVault(userId, email);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Vault setup failed");
     } finally {
@@ -174,25 +127,13 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
     }
   }
 
-  async function unlockVault() {
+  async function onUnlock() {
     setError(null);
     setMessage(null);
     setPending(true);
-
     try {
-      const row = await getMeCrypto();
-      const prf = await assertPrfUnlock(userId, row.prfSalt);
-      const unlocked = await unlockUserKeys(userId, prf.unlockKey, row);
-      setVault(unlocked);
-      setStep("unlocked");
-
-      const ids = loadProofIds(userId);
-      if (ids) {
-        const result = await reloadAndDecryptIssue(unlocked, ids);
-        setProof(result);
-        setStep("done");
-        setMessage("Reloaded and decrypted existing proof issue from ciphertext.");
-      }
+      await unlockVault(userId);
+      onUnlocked();
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 404) {
         setVaultReadyStep("needs_setup");
@@ -207,38 +148,19 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
   }
 
   function acknowledgeRecovery() {
-    setRecovery(null);
-    setStep("unlocked");
+    clearRecovery();
+    onUnlocked();
   }
 
-  async function runProof() {
-    if (!vault) return;
-    setError(null);
-    setMessage(null);
-    setPending(true);
-
-    try {
-      const result = await runEncryptedIssueProof(vault, {
-        title: "P5 E2EE proof",
-        body: "Helvety only stores ciphertext. This plaintext never leaves the device unencrypted.",
-      });
-      storeProofIds(userId, result.ids);
-      setProof(result);
-      setStep("done");
-      setMessage("Round-trip OK: encrypt → PUT /api/v1 → GET → decrypt.");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Proof failed");
-    } finally {
-      setPending(false);
-    }
-  }
+  const showRecovery = Boolean(recovery);
 
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
-        <CardTitle>Helvety Cloud</CardTitle>
+        <CardTitle>Unlock Helvety</CardTitle>
         <CardDescription>
-          Signed in as <span className="text-foreground">{email}</span>
+          Signed in as <span className="text-foreground">{email}</span>. Auth
+          session does not decrypt your vault.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -247,7 +169,7 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
           <AlertDescription>
             Helvety cannot decrypt or restore vault content. If you lose your
             unlock methods (PRF passkey and offline recovery key + wrap), your
-            data is gone permanently. Auth session ≠ vault unlock.
+            data is gone permanently.
           </AlertDescription>
         </Alert>
 
@@ -266,7 +188,7 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
           </Alert>
         ) : null}
 
-        {step === "needs_acceptance" ? (
+        {!showRecovery && step === "needs_acceptance" ? (
           <PolicyAcceptanceGate
             pending={pending}
             onPendingChange={setPending}
@@ -278,16 +200,13 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
           />
         ) : null}
 
-        {step === "show_recovery" && recovery ? (
+        {showRecovery && recovery ? (
           <div className="flex flex-col gap-3 rounded-md border border-border p-3">
-            <p className="text-sm font-medium">
-              Recovery material (shown once)
-            </p>
+            <p className="text-sm font-medium">Recovery material (shown once)</p>
             <p className="text-sm text-muted-foreground">
               Store both the recovery key and the recovery wrap offline. Neither
-              is logged or sent to Helvety. The key alone is not enough — you
-              need the wrap too. Losing these with your PRF passkey means
-              permanent data loss.
+              is logged or sent to Helvety. Losing these with your PRF passkey
+              means permanent data loss.
             </p>
             <p className="text-xs font-medium text-muted-foreground">
               Recovery key
@@ -337,92 +256,61 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
           </div>
         ) : null}
 
-        {proof ? (
-          <div className="flex flex-col gap-2 rounded-md border border-border p-3 text-sm">
-            <p className="font-medium">Decrypted on device</p>
-            <p>
-              <span className="text-muted-foreground">Title:</span>{" "}
-              {proof.decrypted.title}
-            </p>
-            <p>
-              <span className="text-muted-foreground">Body:</span>{" "}
-              {proof.decrypted.body}
-            </p>
-            <Separator />
-            <p className="font-medium">Ciphertext from GET /api/v1 (server view)</p>
-            <code className="break-all rounded bg-muted p-2 text-xs">
-              {JSON.stringify(proof.ciphertextFromApi)}
-            </code>
-            <p className="text-xs text-muted-foreground">
-              IDs: {proof.ids.workspaceId} / {proof.ids.issueId}
-            </p>
-          </div>
-        ) : null}
-
-        <Separator />
-
         <div className="flex flex-col gap-2">
-          {step === "loading" ? (
+          {!showRecovery && step === "loading" ? (
             <p className="text-sm text-muted-foreground">
               Checking policies and vault…
             </p>
           ) : null}
 
-          {step === "needs_setup" ? (
+          {!showRecovery && step === "needs_setup" ? (
             <Button
               type="button"
               disabled={pending}
-              onClick={() => void setupVault()}
+              onClick={() => void onSetup()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
               Set up vault (PRF)
             </Button>
           ) : null}
 
-          {step === "locked" ? (
+          {!showRecovery && step === "locked" ? (
             <Button
               type="button"
               disabled={pending}
-              onClick={() => void unlockVault()}
+              onClick={() => void onUnlock()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
               Unlock vault (PRF)
             </Button>
           ) : null}
 
-          {step === "unlocked" || step === "done" ? (
-            <Button
-              type="button"
-              disabled={pending || !vault}
-              onClick={() => void runProof()}
-            >
-              {pending ? <Spinner data-icon="inline-start" /> : null}
-              {step === "done" ? "Run proof again" : "Encrypt issue → API → decrypt"}
-            </Button>
+          {!showRecovery ? (
+            <>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => void registerPasskey()}
+              >
+                {pending ? <Spinner data-icon="inline-start" /> : null}
+                Register auth passkey
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending}
+                onClick={() => void signOut()}
+              >
+                Sign out
+              </Button>
+              <p className="text-center text-xs text-muted-foreground">
+                <a href="/legal" className="underline underline-offset-4">
+                  Legal
+                </a>
+              </p>
+            </>
           ) : null}
-
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => void registerPasskey()}
-          >
-            {pending ? <Spinner data-icon="inline-start" /> : null}
-            Register auth passkey
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={pending}
-            onClick={() => void signOut()}
-          >
-            Sign out
-          </Button>
-          <p className="text-center text-xs text-muted-foreground">
-            <a href="/legal" className="underline underline-offset-4">
-              Legal drafts
-            </a>
-          </p>
         </div>
       </CardContent>
     </Card>
