@@ -7,6 +7,8 @@ create table public.workspaces (
   updated_at timestamptz not null default now()
 );
 
+create index workspaces_created_by_idx on public.workspaces (created_by);
+
 create trigger workspaces_set_updated_at
   before update on public.workspaces
   for each row execute function public.set_updated_at();

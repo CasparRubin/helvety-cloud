@@ -81,6 +81,17 @@ export const putMeCryptoResponseSchema = z.object({
 });
 export type PutMeCryptoResponse = z.infer<typeof putMeCryptoResponseSchema>;
 
+export const getMeCryptoResponseSchema = z.object({
+  userId: uuidSchema,
+  publicKey: base64UrlSchema,
+  wrappedUserKey: wrappedKeyEnvelopeSchema,
+  wrappedPrivateKey: wrappedKeyEnvelopeSchema,
+  prfSalt: base64UrlSchema,
+  keyCheck: ciphertextEnvelopeSchema,
+  keyVersion: z.number().int().positive(),
+});
+export type GetMeCryptoResponse = z.infer<typeof getMeCryptoResponseSchema>;
+
 export const createWorkspaceRequestSchema = z.object({
   id: uuidSchema,
   wrappedKey: sealedKeyEnvelopeSchema,
@@ -95,6 +106,12 @@ export const createWorkspaceResponseSchema = z.object({
 export type CreateWorkspaceResponse = z.infer<
   typeof createWorkspaceResponseSchema
 >;
+
+export const getWorkspaceResponseSchema = z.object({
+  id: uuidSchema,
+  wrappedKey: sealedKeyEnvelopeSchema,
+});
+export type GetWorkspaceResponse = z.infer<typeof getWorkspaceResponseSchema>;
 
 export const putProjectRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema.nullable().optional(),

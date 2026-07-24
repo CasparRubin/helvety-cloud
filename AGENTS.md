@@ -32,8 +32,8 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P2 | Auth | **Done** |
 | P3 | Crypto library | **Done** |
 | P4 | Schema + API | **Done** |
-| P5 | E2EE proof | **Next** |
-| P-legal | Legal pack | Before public/billing |
+| P5 | E2EE proof | **Done** |
+| P-legal | Legal pack | **Next** (before public/billing) |
 | P6+ | Product | After P5 + P-legal |
 
 Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/).

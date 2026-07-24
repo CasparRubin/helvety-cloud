@@ -1,46 +1,19 @@
--- RLS policies. Membership via inlined EXISTS on workspace_members (own-row SELECT).
+-- Inline membership EXISTS; own-row workspace_members SELECT; drop SECURITY DEFINER helper.
 
--- profiles
-create policy profiles_select_own
-  on public.profiles
-  for select
-  to authenticated
-  using (id = (select auth.uid()));
+drop policy if exists workspaces_select_member on public.workspaces;
+drop policy if exists workspaces_update_member on public.workspaces;
+drop policy if exists workspace_members_select_member on public.workspace_members;
+drop policy if exists workspace_members_select_own on public.workspace_members;
+drop policy if exists projects_select_member on public.projects;
+drop policy if exists projects_insert_member on public.projects;
+drop policy if exists projects_update_member on public.projects;
+drop policy if exists projects_delete_member on public.projects;
+drop policy if exists wrapped_keys_insert_own on public.wrapped_keys;
+drop policy if exists issues_select_member on public.issues;
+drop policy if exists issues_insert_member on public.issues;
+drop policy if exists issues_update_member on public.issues;
+drop policy if exists issues_delete_member on public.issues;
 
-create policy profiles_insert_own
-  on public.profiles
-  for insert
-  to authenticated
-  with check (id = (select auth.uid()));
-
-create policy profiles_update_own
-  on public.profiles
-  for update
-  to authenticated
-  using (id = (select auth.uid()))
-  with check (id = (select auth.uid()));
-
--- user_crypto
-create policy user_crypto_select_own
-  on public.user_crypto
-  for select
-  to authenticated
-  using (user_id = (select auth.uid()));
-
-create policy user_crypto_insert_own
-  on public.user_crypto
-  for insert
-  to authenticated
-  with check (user_id = (select auth.uid()));
-
-create policy user_crypto_update_own
-  on public.user_crypto
-  for update
-  to authenticated
-  using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()));
-
--- workspaces
 create policy workspaces_select_member
   on public.workspaces
   for select
@@ -54,12 +27,6 @@ create policy workspaces_select_member
         and m.user_id = (select auth.uid())
     )
   );
-
-create policy workspaces_insert_self
-  on public.workspaces
-  for insert
-  to authenticated
-  with check (created_by = (select auth.uid()));
 
 create policy workspaces_update_member
   on public.workspaces
@@ -82,35 +49,12 @@ create policy workspaces_update_member
     )
   );
 
--- workspace_members (own row only — avoids RLS recursion with inlined EXISTS)
 create policy workspace_members_select_own
   on public.workspace_members
   for select
   to authenticated
   using (user_id = (select auth.uid()));
 
-create policy workspace_members_insert_self_owner
-  on public.workspace_members
-  for insert
-  to authenticated
-  with check (
-    user_id = (select auth.uid())
-    and role = 'owner'
-    and exists (
-      select 1
-      from public.workspaces w
-      where w.id = workspace_id
-        and w.created_by = (select auth.uid())
-    )
-  );
-
-create policy workspace_members_delete_self
-  on public.workspace_members
-  for delete
-  to authenticated
-  using (user_id = (select auth.uid()));
-
--- projects
 create policy projects_select_member
   on public.projects
   for select
@@ -171,13 +115,6 @@ create policy projects_delete_member
     )
   );
 
--- wrapped_keys
-create policy wrapped_keys_select_own
-  on public.wrapped_keys
-  for select
-  to authenticated
-  using (user_id = (select auth.uid()));
-
 create policy wrapped_keys_insert_own
   on public.wrapped_keys
   for insert
@@ -208,20 +145,6 @@ create policy wrapped_keys_insert_own
     )
   );
 
-create policy wrapped_keys_update_own
-  on public.wrapped_keys
-  for update
-  to authenticated
-  using (user_id = (select auth.uid()))
-  with check (user_id = (select auth.uid()));
-
-create policy wrapped_keys_delete_own
-  on public.wrapped_keys
-  for delete
-  to authenticated
-  using (user_id = (select auth.uid()));
-
--- issues
 create policy issues_select_member
   on public.issues
   for select
@@ -291,3 +214,5 @@ create policy issues_delete_member
       where p.id = project_id
     )
   );
+
+drop function if exists public.is_workspace_member(uuid);

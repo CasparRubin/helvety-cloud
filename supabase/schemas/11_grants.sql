@@ -15,3 +15,15 @@ grant select, insert, delete on table public.workspace_members to authenticated;
 grant select, insert, update, delete on table public.projects to authenticated;
 grant select, insert, update, delete on table public.wrapped_keys to authenticated;
 grant select, insert, update, delete on table public.issues to authenticated;
+
+-- Match intended privileges: no TRUNCATE / REFERENCES / TRIGGER for clients.
+revoke truncate, references, trigger on table public.profiles from authenticated;
+revoke truncate, references, trigger on table public.user_crypto from authenticated;
+revoke truncate, references, trigger on table public.workspaces from authenticated;
+revoke truncate, references, trigger on table public.workspace_members from authenticated;
+revoke truncate, references, trigger on table public.projects from authenticated;
+revoke truncate, references, trigger on table public.wrapped_keys from authenticated;
+revoke truncate, references, trigger on table public.issues from authenticated;
+
+-- Platform helper (not defined here); clients must not call it via RPC.
+revoke execute on function public.rls_auto_enable() from public, anon, authenticated;

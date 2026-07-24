@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P4 are done** in-repo. Do not re-implement them unless docs/scaffold need fixes. Do not implement multiple P\* phases in the same chat. **Next = P5 E2EE proof.**
+> **P0–P4 are done.** **P5 E2EE proof needs a fix pass** (seal AAD, recovery export completeness, migration/git sync) before treating foundation as §8-green. Do not start P6. After P5 fix → **P-legal** before public signup/billing.
 
 ---
 
@@ -372,4 +372,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P4 (constitution, scaffold, auth, crypto, schema+API) are done.** Next chat = **P5 E2EE proof** only (start with P4 fix-before-P5 grants/RPC if not already applied). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md).
+**P0–P4 done. P5 needs fix pass** (seal AAD, recovery export, migration/git sync) before §8-green → then **P-legal** → then P6+ as separate plans. Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md).

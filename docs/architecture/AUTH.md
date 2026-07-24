@@ -1,6 +1,6 @@
 # Auth (P2)
 
-Passwordless Supabase Auth for **helvety.cloud**. Session ≠ vault unlock (PRF / crypto is P3+).
+Passwordless Supabase Auth for **helvety.cloud**. Session ≠ vault unlock (WebAuthn **PRF** — see P5 wiring in `apps/web/lib/vault/`).
 
 ## Policy
 
@@ -76,4 +76,4 @@ Management API alternative: `PATCH /v1/projects/{ref}/config/auth` with `passkey
 
 ## Session vs vault
 
-Auth session cookies prove identity to Supabase / future `/api/v1`. They do **not** decrypt vault content. Unlock is WebAuthn **PRF** → HKDF (see [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md)) — implemented in P3+.
+Auth session cookies prove identity to Supabase / `/api/v1`. They do **not** decrypt vault content. Unlock is a **dedicated WebAuthn PRF** credential (Supabase Auth passkeys do not expose PRF) → HKDF → unwrap `user_crypto` (see [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md)). Recovery export is one-shot offline — never logged or POSTed.

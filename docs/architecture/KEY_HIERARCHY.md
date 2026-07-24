@@ -26,7 +26,7 @@ Optional: recovery_key (high entropy, shown once)
 | Content | AES-256-GCM, unique IV/nonce per encrypt |
 | KDF | HKDF from PRF material |
 | Key wrap (asymmetric) | X25519 (or RSA-OAEP if forced by platform constraints — prefer X25519) |
-| Binding | AAD includes `table:recordId:field` for **content and wrapped-key blobs** so ciphertext cannot be moved across rows/columns. `wrapKey`/`unwrapKey` bind AAD; `key_check` uses real `userId` (not `"self"`). |
+| Binding | AAD includes `table:recordId:field` for **content, symmetric wraps, and X25519 seals** so ciphertext cannot be moved across rows/columns. `wrapKey`/`unwrapKey` and `sealToPublicKey`/`openSealedKey` bind AAD; `key_check` uses real `userId` (not `"self"`). |
 
 ## Envelope
 
@@ -38,7 +38,7 @@ Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod sh
 |-------|------------|
 | P3 | Library + tests only (`packages/crypto`) |
 | P4 | `user_crypto`, `wrapped_keys` tables + wrap/key_check AAD |
-| P5 | Wire unlock → API → encrypt issue round-trip |
+| P5 | Wire unlock → API → encrypt issue round-trip (**done**) |
 | P6+ | Seal workspace/project keys to invitees |
 
 ## Forbidden

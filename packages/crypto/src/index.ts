@@ -16,7 +16,7 @@ export {
   PRF_SALT_BYTES,
 } from "./constants";
 
-export { bytesEqual, encodeUtf8, fromBase64Url, toBase64Url } from "./bytes";
+export { bytesEqual, encodeUtf8, fromBase64Url, randomKeyBytes, toBase64Url } from "./bytes";
 
 export { deriveUnlockKey } from "./hkdf";
 

@@ -1,10 +1,50 @@
 import {
+  ciphertextEnvelopeSchema,
+  getMeCryptoResponseSchema,
   putMeCryptoRequestSchema,
   putMeCryptoResponseSchema,
+  wrappedKeyEnvelopeSchema,
 } from "@helvety-cloud/api-contract";
 
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
+
+export async function GET(request: Request) {
+  const auth = await requireUser(request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase, user } = auth;
+
+  const { data, error } = await supabase
+    .from("user_crypto")
+    .select(
+      "user_id, public_key, wrapped_user_key, wrapped_private_key, prf_salt, key_check, key_version",
+    )
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (error) {
+    return apiError("internal", error.message, 500);
+  }
+  if (!data) {
+    return apiError("not_found", "User crypto not set up", 404);
+  }
+
+  return jsonOk(
+    getMeCryptoResponseSchema.parse({
+      userId: data.user_id,
+      publicKey: data.public_key,
+      wrappedUserKey: wrappedKeyEnvelopeSchema.parse(data.wrapped_user_key),
+      wrappedPrivateKey: wrappedKeyEnvelopeSchema.parse(
+        data.wrapped_private_key,
+      ),
+      prfSalt: data.prf_salt,
+      keyCheck: ciphertextEnvelopeSchema.parse(data.key_check),
+      keyVersion: data.key_version,
+    }),
+  );
+}
 
 export async function PUT(request: Request) {
   const auth = await requireUser(request);

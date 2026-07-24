@@ -253,11 +253,22 @@ describe("@helvety-cloud/crypto", () => {
   });
 
   describe("X25519 seal", () => {
+    const workspaceId = "00000000-0000-4000-8000-0000000000bb";
+    const sealAad = {
+      table: "wrapped_keys",
+      recordId: workspaceId,
+      field: "wrapped_key",
+    } as const;
+
     it("round-trips a workspace-style key", async () => {
       const recipient = await generateUserKeyMaterial();
       const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
-      const sealed = await sealToPublicKey(recipient.publicKey, workspaceKey);
-      const opened = await openSealedKey(recipient.privateKey, sealed);
+      const sealed = await sealToPublicKey(
+        recipient.publicKey,
+        workspaceKey,
+        sealAad,
+      );
+      const opened = await openSealedKey(recipient.privateKey, sealed, sealAad);
       expect(bytesEqual(opened, workspaceKey)).toBe(true);
     });
 
@@ -267,9 +278,26 @@ describe("@helvety-cloud/crypto", () => {
       const sealed = await sealToPublicKey(
         recipient.publicKey,
         crypto.getRandomValues(new Uint8Array(32)),
+        sealAad,
       );
       await expect(
-        openSealedKey(other.privateKey, sealed),
+        openSealedKey(other.privateKey, sealed, sealAad),
+      ).rejects.toThrow();
+    });
+
+    it("fails when AAD binding changes (not row-swappable)", async () => {
+      const recipient = await generateUserKeyMaterial();
+      const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
+      const sealed = await sealToPublicKey(
+        recipient.publicKey,
+        workspaceKey,
+        sealAad,
+      );
+      await expect(
+        openSealedKey(recipient.privateKey, sealed, {
+          ...sealAad,
+          recordId: "other-workspace-id",
+        }),
       ).rejects.toThrow();
     });
   });

@@ -1,5 +1,6 @@
 import {
   asBufferSource,
+  encodeUtf8,
   fromBase64Url,
   getSubtle,
   randomNonce,
@@ -10,7 +11,8 @@ import {
   KEY_BYTES,
   SEAL_HKDF_INFO,
 } from "./constants";
-import type { SealedKeyEnvelope } from "./envelope";
+import type { ContentAad, SealedKeyEnvelope } from "./envelope";
+import { formatAad } from "./envelope";
 
 async function importRecipientPublicKey(
   publicKeyBytes: Uint8Array,
@@ -71,11 +73,13 @@ async function deriveSealAesKey(
 
 /**
  * Seal raw key bytes to a recipient's X25519 public key
- * (ephemeral ECDH → HKDF → AES-256-GCM). Used later for wrapped_keys.
+ * (ephemeral ECDH → HKDF → AES-256-GCM). Used for wrapped_keys.
+ * AAD binds `table:recordId:field` so sealed blobs cannot be row-swapped.
  */
 export async function sealToPublicKey(
   recipientPublicKey: Uint8Array,
   keyBytes: Uint8Array,
+  aad: ContentAad,
   keyVersion = 1,
 ): Promise<SealedKeyEnvelope> {
   const recipient = await importRecipientPublicKey(recipientPublicKey);
@@ -91,9 +95,14 @@ export async function sealToPublicKey(
     ["encrypt"],
   );
   const nonce = randomNonce();
+  const additionalData = encodeUtf8(formatAad(aad));
   const ciphertext = new Uint8Array(
     await getSubtle().encrypt(
-      { name: "AES-GCM", iv: asBufferSource(nonce) },
+      {
+        name: "AES-GCM",
+        iv: asBufferSource(nonce),
+        additionalData: asBufferSource(additionalData),
+      },
       aesKey,
       asBufferSource(keyBytes),
     ),
@@ -114,6 +123,7 @@ export async function sealToPublicKey(
 export async function openSealedKey(
   privateKeyPkcs8: Uint8Array,
   envelope: SealedKeyEnvelope,
+  aad: ContentAad,
 ): Promise<Uint8Array> {
   if (envelope.v !== ENVELOPE_VERSION) {
     throw new Error(`Unsupported sealed-key envelope version: ${envelope.v}`);
@@ -126,8 +136,13 @@ export async function openSealedKey(
   const aesKey = await deriveSealAesKey(privateKey, ephemeralPublic, [
     "decrypt",
   ]);
+  const additionalData = encodeUtf8(formatAad(aad));
   const plaintext = await getSubtle().decrypt(
-    { name: "AES-GCM", iv: asBufferSource(fromBase64Url(envelope.nonce)) },
+    {
+      name: "AES-GCM",
+      iv: asBufferSource(fromBase64Url(envelope.nonce)),
+      additionalData: asBufferSource(additionalData),
+    },
     aesKey,
     asBufferSource(fromBase64Url(envelope.ciphertext)),
   );

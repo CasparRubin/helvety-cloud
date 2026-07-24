@@ -10,3 +10,6 @@ begin
   return new;
 end;
 $$;
+
+-- Triggers keep working as table owner; clients must not call this via RPC.
+revoke execute on function public.set_updated_at() from public, anon, authenticated;
