@@ -16,7 +16,7 @@ export function SignedOutShell() {
           Passwordless E2EE workspace. Sign in to create a session.
         </CardDescription>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex flex-col gap-4">
         <Button
           render={<a href="/login" />}
           nativeButton={false}
@@ -24,6 +24,13 @@ export function SignedOutShell() {
         >
           Sign in
         </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          <a href="/legal" className="underline underline-offset-4">
+            Legal drafts
+          </a>
+          {" · "}
+          Public signup and billing are not enabled.
+        </p>
       </CardContent>
     </Card>
   );

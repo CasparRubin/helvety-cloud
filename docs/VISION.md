@@ -17,7 +17,7 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 | Extensible workspace/project schema | Browser PostgREST for vault data | Notes, contacts, custom labels |
 | `/api/v1` multi-client ready | Paid Redis/Sentry/analytics in foundation | Linear TipTap UX, milestone diagrams |
 | Recovery key / 2nd passkey (user-held) | “Email reset restores vault” | Extension, Tauri, calendar send-to |
-| Plain-language legal checklist | Misleading E2EE marketing | Counsel-reviewed ToS/Privacy before public |
+| Plain-language legal pack + acceptance | Misleading E2EE marketing | Optional Swiss counsel; GmbH if desired |
 | Dense clean UI (shadcn + Base UI) as needed for proof | Overengineering / unused SaaS; Radix shadcn | Full product surface |
 
 ## Foundation proof (P5)

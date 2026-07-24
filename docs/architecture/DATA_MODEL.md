@@ -14,7 +14,7 @@ Blind Postgres on Supabase project `qnoeiurmyyyuawkcifmw`. Schema source of trut
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
 | Later billing | `subscriptions`, `billing_events` (P6+) |
-| Later legal | policy acceptance versions per user (timestamps + doc version strings) |
+| `policy_acceptances` | Plaintext signup gates: `user_id`, `policy` (`tos`/`privacy`/`aup`/`e2ee`), `version`, `accepted_at`; unique `(user_id, policy, version)`; append-only for clients |
 
 ## Ciphertext (never readable by server)
 

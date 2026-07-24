@@ -24,8 +24,10 @@ Realtime (optional later) = wake-up only, not a second write API.
 | Method | Path | Purpose |
 |--------|------|---------|
 | GET | `/api/v1/health` | Liveness |
+| GET | `/api/v1/me/policy-acceptances` | Current policy versions + whether accepted |
+| PUT | `/api/v1/me/policy-acceptances` | Record ToS/Privacy/AUP/E2EE version acceptances |
 | GET | `/api/v1/me/crypto` | Load public key + wrapped user key material |
-| PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material |
+| PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material (requires current policy acceptances) |
 | POST | `/api/v1/workspaces` | Create workspace + owner wrapped key |
 | GET | `/api/v1/workspaces/:workspaceId` | Workspace id + caller’s wrapped key |
 | PUT/GET | workspace/project/issue paths | Ciphertext upsert/fetch |

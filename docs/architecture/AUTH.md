@@ -20,7 +20,7 @@ Passkeys are experimental in `@supabase/supabase-js` ≥ 2.105. Create clients w
 auth: { experimental: { passkey: true } }
 ```
 
-See `apps/web/lib/supabase/{client,server,middleware}.ts`.
+Session refresh runs in Next.js [`apps/web/proxy.ts`](../../apps/web/proxy.ts) (Next.js 16 file convention; not the deprecated `middleware` name), which calls `updateSession` in `apps/web/lib/supabase/proxy.ts`. Browser / RSC clients: `apps/web/lib/supabase/{client,server}.ts`.
 
 ## Email OTP template
 

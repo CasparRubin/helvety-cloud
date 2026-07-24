@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P4 are done.** **P5 E2EE proof needs a fix pass** (seal AAD, recovery export completeness, migration/git sync) before treating foundation as §8-green. Do not start P6. After P5 fix → **P-legal** before public signup/billing.
+> **P0–P5 + P-legal + P-legal2 are done** (production legal pack + acceptance). Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. **Next = P6+** as separate product plans. Stripe charges still require an explicit billing phase.
 
 ---
 
@@ -56,10 +56,10 @@ email OTP → session → PRF passkey unlock → user keys
 | Browser Supabase | **Auth SDK OK**; **`from('…')` for vault tables NOT OK** — go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |
 | Types | Generated TS committed under `packages/db` (or equiv.) so agents always see the model |
-| Billing | **Stripe** workspace subscriptions — **after P5 + P-legal**; no Clerk in foundation |
+| Billing | **Stripe** workspace subscriptions — **explicit billing phase** after P-legal2; no Clerk in foundation |
 | UI foundation | Minimal new **dense shadcn/ui on Base UI** (current shadcn default; **not** Radix). Not helvety.com look |
 | Cost | **Free-tier only** in P0–P5 — see §2.1 |
-| Legal | Counsel-reviewed pack **before public signup/billing** — see §7 |
+| Legal | **P-legal2 production pack** live + acceptance gates; optional counsel for risk; see §7 |
 
 ### 2.1 Free-tier only (no exceptions in foundation)
 
@@ -245,50 +245,55 @@ helvety-cloud/
 
 ### P5 — E2EE proof
 
-**Goal:** Vertical slice proving zero-knowledge end-to-end.
+**Goal:** Vertical slice proving zero-knowledge end-to-end. **Landed** (incl. post-review fix: seal AAD, recovery key+wrap export, migration sync, inline RLS membership / drop `is_workspace_member` RPC).
 
-**Before E2EE wiring (P4 review fix-before-P5 — do first if not already landed):**
+**Done (historical brief):**
 
-- Ensure P4 artifacts are committed (`supabase/`, `packages/db`, `packages/api-contract`, API routes, crypto AAD).  
-- Revoke `EXECUTE` on `public.rls_auto_enable()` and `public.set_updated_at()` from `PUBLIC` / `anon` / `authenticated` (triggers keep working). Schema + new migration via `SCHEMA_WORKFLOW.md`; apply to **`qnoeiurmyyyuawkcifmw` only**.  
-- Tighten table grants: match `11_grants.sql` intent — drop `TRUNCATE` / `REFERENCES` / `TRIGGER` for `authenticated` on vault tables.  
-- Optional: index `workspaces(created_by)` (perf INFO — defer OK).  
-- Re-check MCP `get_advisors` after grant fixes.
+- P4 fix-before-P5 grants/RPC harden + commit.  
+- PRF unlock → user_crypto via API → workspace seal with AAD `wrapped_keys:{workspaceId}:wrapped_key` → encrypt issue → PUT/GET → decrypt.  
+- Recovery UI: key **and** wrap offline once; never log/POST.  
+- Honest lose-unlock = data-gone copy.
 
-**Do (E2EE proof):**
+**Don’t reopen** unless regressions. Next = P-legal.
 
-- After login: PRF unlock → load/create user_crypto via API.  
-- Create workspace + wrap workspace key for owner.  
-- Create/edit one issue: encrypt client-side → `PUT /api/v1/...` → `GET` → decrypt.  
-- Show clear “if you lose unlock methods, data is gone” copy (aligned with LEGAL_REQUIREMENTS).  
-- Recovery export (`exportRecoveryKey`): **one-shot offline secret** in UI — never log, never POST to Helvety; library cannot enforce this.  
-- Optional: second browser same user.
-
-**Don’t:** Sharing, billing, notes/contacts, sync batch protocol (row model already OK for later). Don’t reopen P4 schema design beyond the grant/RPC fixes above.
-
-**Done when:** Grant/RPC fixes applied (or already on remote); round-trip works; with service role you still only see ciphertext; checklist in §8.
-
-**Paste prompt:**  
-`@docs/architecture/ROADMAP.md — Implement P5 E2EE proof only. First: P4 fix-before-P5 (commit if needed; revoke EXECUTE on rls_auto_enable + set_updated_at; tighten grants). Then wire P2–P4 for one encrypted issue via /api/v1. Recovery export = one-shot offline — never log/POST.`
+**Paste prompt (only if re-doing):**  
+`@docs/architecture/ROADMAP.md — Implement P5 E2EE proof only. Wire P2–P4 for one encrypted issue via /api/v1. Seal/wrap AAD; recovery = key + wrap offline once — never log/POST.`
 
 ---
 
-### P-legal — Before public users / billing
+### P-legal — Draft pack + gates (historical)
 
-**Goal:** Legally sound, plain-language docs + signup gates (Swiss Einzelfirma + E2EE).
+**Goal:** Engineering legal pack + signup gates.
 
-**Do:** Documents in §7; counsel review; Impressum; signup checkboxes storing policy versions; no misleading claims.
+**Status:** **Done** (superseded by P-legal2 production pack). Drafts + `policy_acceptances` landed first; see P-legal2 for live text.
 
-**Don’t:** Ship Stripe or open marketing signup without this.
+---
+
+### P-legal2 — Production legal pack
+
+**Goal:** Replace drafts/placeholders with the live product legal pack and keep acceptance gates on current versions.
+
+**Do:**
+
+- Fill Impressum from public registry (Helvety by Rubin, Basel, UID CHE-356.266.592).  
+- Write production ToS, Privacy, AUP, E2EE notice, Billing terms, Subprocessors — no “NEED SWISS COUNSEL REVIEW” / draft banners on `/legal/*`.  
+- Bump `CURRENT_POLICY_VERSIONS` (users must re-accept).  
+- Keep vault gated on ToS/Privacy/AUP/E2EE acceptances.  
+- Honesty vs KEY_HIERARCHY (no decrypt/recovery claims).  
+- Optional attorney review remains a business choice, not a product gate.
+
+**Don’t:** Enable Stripe charges here; redesign crypto; start sharing/TipTap P6 work unless separately planned.
+
+**Done when:** `/legal/*` shows production versions; gate copy is non-draft; versions `2026-07-24-v1` (or later) accepted via API.
 
 **Paste prompt:**  
-`@docs/architecture/ROADMAP.md §7 — Draft legal pack stubs + signup acceptance wiring; flag all text for Swiss counsel review. Do not invent final legal wording as “approved.”`
+`@docs/architecture/prompts/P-legal2.md @docs/architecture/LEGAL_REQUIREMENTS.md — Implement P-legal2 only.`
 
 ---
 
 ### P6+ — Product (separate plans later)
 
-Sharing (wrap keys to invitees), Stripe entitlements, Linear-like TipTap UX, milestones/viz, notes/contacts/custom labels, extension, Tauri, calendar send-to, deprecate old apps. Each feature = its own plan after P5 + P-legal.
+Sharing (wrap keys to invitees), Stripe entitlements, Linear-like TipTap UX, milestones/viz, notes/contacts/custom labels, extension, Tauri, calendar send-to, deprecate old apps. Each feature = its own plan after P5 + P-legal2.
 
 ---
 
@@ -324,13 +329,13 @@ workspace_key / project_key (random)
 
 ## 7. Legal (reference — not legal advice)
 
-**Required before public/billing:** Impressum, ToS, Privacy Policy, AUP, E2EE/no-recovery notice, billing terms, subprocessors list; Swiss counsel review.
+**Live pack (P-legal2):** Impressum, ToS, Privacy, AUP, E2EE notice, billing terms, subprocessors under `/legal/*` (`apps/web/content/legal/`).
 
-**Signup must accept (log versions):** ToS, Privacy, AUP, E2EE acknowledgment (no recovery; user responsible for content + keys).
+**Signup must accept (log versions):** ToS, Privacy, AUP, E2EE acknowledgment.
 
 **Honesty:** Never claim Helvety can read/recover vault content; never fake certifications; state free limits clearly.
 
-**Regimes to track with counsel:** Swiss FADP, GDPR if EU users, EU consumer digital service withdrawal, DSA if applicable. Einzelfirma = personal liability risk — counsel may advise GmbH later.
+**Risk note:** Text is product-authored (AI-assisted), not Swiss-attorney certification. Optional counsel review can still reduce Einzelfirma risk; GmbH may be advisable later. Stripe charges need an explicit billing phase.
 
 ---
 
@@ -343,7 +348,7 @@ workspace_key / project_key (random)
 5. `supabase/schemas` + migrations + committed types match remote (MCP verifiable).  
 6. Crypto tests reject wrong keys.  
 7. Recovery warning shown.  
-8. Public/billing blocked until P-legal green.
+8. Legal pack live (P-legal2) with acceptance gates; Stripe charges still off until billing phase.
 
 ---
 
@@ -372,4 +377,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P4 done. P5 needs fix pass** (seal AAD, recovery export, migration/git sync) before §8-green → then **P-legal** → then P6+ as separate plans. Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md).
+**P0–P5 + P-legal + P-legal2 done.** Next = **P6+** as separate plans. Stripe = explicit billing phase. Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

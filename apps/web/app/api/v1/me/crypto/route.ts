@@ -7,6 +7,7 @@ import {
 } from "@helvety-cloud/api-contract";
 
 import { apiError, jsonOk } from "@/lib/api/errors";
+import { loadPolicyAcceptances } from "@/lib/legal/policy-acceptances";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
 export async function GET(request: Request) {
@@ -52,6 +53,23 @@ export async function PUT(request: Request) {
     return auth;
   }
   const { supabase, user } = auth;
+
+  try {
+    const status = await loadPolicyAcceptances(supabase, user.id);
+    if (!status.allCurrentAccepted) {
+      return apiError(
+        "forbidden",
+        `Accept current ToS, Privacy, AUP, and E2EE notice before vault setup (missing: ${status.missingPolicies.join(", ")})`,
+        403,
+      );
+    }
+  } catch (err) {
+    return apiError(
+      "internal",
+      err instanceof Error ? err.message : "Failed to verify policy acceptances",
+      500,
+    );
+  }
 
   let body: unknown;
   try {

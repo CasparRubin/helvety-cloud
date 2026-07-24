@@ -52,6 +52,30 @@ export type Database = {
           },
         ]
       }
+      policy_acceptances: {
+        Row: {
+          accepted_at: string
+          id: string
+          policy: string
+          user_id: string
+          version: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          policy: string
+          user_id: string
+          version: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          policy?: string
+          user_id?: string
+          version?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           created_at: string

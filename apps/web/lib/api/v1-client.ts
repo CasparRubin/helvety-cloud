@@ -3,22 +3,28 @@ import {
   createWorkspaceRequestSchema,
   createWorkspaceResponseSchema,
   getMeCryptoResponseSchema,
+  getMePolicyAcceptancesResponseSchema,
   getWorkspaceResponseSchema,
   issueResponseSchema,
   projectResponseSchema,
   putIssueRequestSchema,
   putMeCryptoRequestSchema,
   putMeCryptoResponseSchema,
+  putMePolicyAcceptancesRequestSchema,
+  putMePolicyAcceptancesResponseSchema,
   putProjectRequestSchema,
   type CreateWorkspaceRequest,
   type CreateWorkspaceResponse,
   type GetMeCryptoResponse,
+  type GetMePolicyAcceptancesResponse,
   type GetWorkspaceResponse,
   type IssueResponse,
   type ProjectResponse,
   type PutIssueRequest,
   type PutMeCryptoRequest,
   type PutMeCryptoResponse,
+  type PutMePolicyAcceptancesRequest,
+  type PutMePolicyAcceptancesResponse,
   type PutProjectRequest,
 } from "@helvety-cloud/api-contract";
 
@@ -87,6 +93,26 @@ async function apiFetch<T>(
 
 export async function getMeCrypto(): Promise<GetMeCryptoResponse> {
   return apiFetch("/api/v1/me/crypto", getMeCryptoResponseSchema);
+}
+
+export async function getMePolicyAcceptances(): Promise<GetMePolicyAcceptancesResponse> {
+  return apiFetch(
+    "/api/v1/me/policy-acceptances",
+    getMePolicyAcceptancesResponseSchema,
+  );
+}
+
+export async function putMePolicyAcceptances(
+  body: PutMePolicyAcceptancesRequest,
+): Promise<PutMePolicyAcceptancesResponse> {
+  return apiFetch(
+    "/api/v1/me/policy-acceptances",
+    putMePolicyAcceptancesResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putMePolicyAcceptancesRequestSchema.parse(body)),
+    },
+  );
 }
 
 export async function putMeCrypto(

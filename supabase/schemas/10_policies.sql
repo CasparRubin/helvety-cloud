@@ -1,4 +1,5 @@
--- RLS policies. Membership via inlined EXISTS on workspace_members (own-row SELECT).
+-- RLS policies. Membership via is_workspace_member (SECURITY DEFINER).
+-- workspace_members SELECT is own-row only.
 
 -- profiles
 create policy profiles_select_own
@@ -40,19 +41,14 @@ create policy user_crypto_update_own
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
--- workspaces
+-- workspaces (created_by allows owner read before membership row exists)
 create policy workspaces_select_member
   on public.workspaces
   for select
   to authenticated
   using (
     created_by = (select auth.uid())
-    or exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = id
-        and m.user_id = (select auth.uid())
-    )
+    or public.is_workspace_member(id)
   );
 
 create policy workspaces_insert_self
@@ -65,24 +61,10 @@ create policy workspaces_update_member
   on public.workspaces
   for update
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = id
-        and m.user_id = (select auth.uid())
-    )
-  )
-  with check (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = id
-        and m.user_id = (select auth.uid())
-    )
-  );
+  using (public.is_workspace_member(id))
+  with check (public.is_workspace_member(id));
 
--- workspace_members (own row only — avoids RLS recursion with inlined EXISTS)
+-- workspace_members (own row only — do not call is_workspace_member here)
 create policy workspace_members_select_own
   on public.workspace_members
   for select
@@ -115,61 +97,26 @@ create policy projects_select_member
   on public.projects
   for select
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = workspace_id
-        and m.user_id = (select auth.uid())
-    )
-  );
+  using (public.is_workspace_member(workspace_id));
 
 create policy projects_insert_member
   on public.projects
   for insert
   to authenticated
-  with check (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = workspace_id
-        and m.user_id = (select auth.uid())
-    )
-  );
+  with check (public.is_workspace_member(workspace_id));
 
 create policy projects_update_member
   on public.projects
   for update
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = workspace_id
-        and m.user_id = (select auth.uid())
-    )
-  )
-  with check (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = workspace_id
-        and m.user_id = (select auth.uid())
-    )
-  );
+  using (public.is_workspace_member(workspace_id))
+  with check (public.is_workspace_member(workspace_id));
 
 create policy projects_delete_member
   on public.projects
   for delete
   to authenticated
-  using (
-    exists (
-      select 1
-      from public.workspace_members m
-      where m.workspace_id = workspace_id
-        and m.user_id = (select auth.uid())
-    )
-  );
+  using (public.is_workspace_member(workspace_id));
 
 -- wrapped_keys
 create policy wrapped_keys_select_own
@@ -187,22 +134,15 @@ create policy wrapped_keys_insert_own
     and (
       (
         subject_type = 'workspace'
-        and exists (
-          select 1
-          from public.workspace_members m
-          where m.workspace_id = subject_id
-            and m.user_id = (select auth.uid())
-        )
+        and public.is_workspace_member(subject_id)
       )
       or (
         subject_type = 'project'
         and exists (
           select 1
           from public.projects p
-          join public.workspace_members m
-            on m.workspace_id = p.workspace_id
-           and m.user_id = (select auth.uid())
           where p.id = subject_id
+            and public.is_workspace_member(p.workspace_id)
         )
       )
     )
@@ -230,10 +170,8 @@ create policy issues_select_member
     exists (
       select 1
       from public.projects p
-      join public.workspace_members m
-        on m.workspace_id = p.workspace_id
-       and m.user_id = (select auth.uid())
       where p.id = project_id
+        and public.is_workspace_member(p.workspace_id)
     )
   );
 
@@ -245,10 +183,8 @@ create policy issues_insert_member
     exists (
       select 1
       from public.projects p
-      join public.workspace_members m
-        on m.workspace_id = p.workspace_id
-       and m.user_id = (select auth.uid())
       where p.id = project_id
+        and public.is_workspace_member(p.workspace_id)
     )
   );
 
@@ -260,20 +196,16 @@ create policy issues_update_member
     exists (
       select 1
       from public.projects p
-      join public.workspace_members m
-        on m.workspace_id = p.workspace_id
-       and m.user_id = (select auth.uid())
       where p.id = project_id
+        and public.is_workspace_member(p.workspace_id)
     )
   )
   with check (
     exists (
       select 1
       from public.projects p
-      join public.workspace_members m
-        on m.workspace_id = p.workspace_id
-       and m.user_id = (select auth.uid())
       where p.id = project_id
+        and public.is_workspace_member(p.workspace_id)
     )
   );
 
@@ -285,9 +217,20 @@ create policy issues_delete_member
     exists (
       select 1
       from public.projects p
-      join public.workspace_members m
-        on m.workspace_id = p.workspace_id
-       and m.user_id = (select auth.uid())
       where p.id = project_id
+        and public.is_workspace_member(p.workspace_id)
     )
   );
+
+-- policy_acceptances (own rows only; append-only)
+create policy policy_acceptances_select_own
+  on public.policy_acceptances
+  for select
+  to authenticated
+  using (user_id = (select auth.uid()));
+
+create policy policy_acceptances_insert_own
+  on public.policy_acceptances
+  for insert
+  to authenticated
+  with check (user_id = (select auth.uid()));

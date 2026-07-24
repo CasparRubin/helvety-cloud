@@ -147,3 +147,52 @@ export const issueResponseSchema = z.object({
   deletedAt: z.string().nullable(),
 });
 export type IssueResponse = z.infer<typeof issueResponseSchema>;
+
+/** Signup-gated policy IDs (ToS, Privacy, AUP, E2EE acknowledgment). */
+export const signupPolicyIds = ["tos", "privacy", "aup", "e2ee"] as const;
+export const signupPolicyIdSchema = z.enum(signupPolicyIds);
+export type SignupPolicyId = z.infer<typeof signupPolicyIdSchema>;
+
+export const policyAcceptanceSchema = z.object({
+  policy: signupPolicyIdSchema,
+  version: z.string().min(1),
+  acceptedAt: z.string(),
+});
+export type PolicyAcceptance = z.infer<typeof policyAcceptanceSchema>;
+
+export const getMePolicyAcceptancesResponseSchema = z.object({
+  currentVersions: z.object({
+    tos: z.string().min(1),
+    privacy: z.string().min(1),
+    aup: z.string().min(1),
+    e2ee: z.string().min(1),
+  }),
+  acceptances: z.array(policyAcceptanceSchema),
+  missingPolicies: z.array(signupPolicyIdSchema),
+  allCurrentAccepted: z.boolean(),
+});
+export type GetMePolicyAcceptancesResponse = z.infer<
+  typeof getMePolicyAcceptancesResponseSchema
+>;
+
+export const putMePolicyAcceptancesRequestSchema = z.object({
+  acceptances: z
+    .array(
+      z.object({
+        policy: signupPolicyIdSchema,
+        version: z.string().min(1),
+      }),
+    )
+    .length(4),
+});
+export type PutMePolicyAcceptancesRequest = z.infer<
+  typeof putMePolicyAcceptancesRequestSchema
+>;
+
+export const putMePolicyAcceptancesResponseSchema = z.object({
+  acceptances: z.array(policyAcceptanceSchema),
+  allCurrentAccepted: z.literal(true),
+});
+export type PutMePolicyAcceptancesResponse = z.infer<
+  typeof putMePolicyAcceptancesResponseSchema
+>;

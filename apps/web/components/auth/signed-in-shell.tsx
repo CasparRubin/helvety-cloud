@@ -15,7 +15,12 @@ import {
 } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Spinner } from "@/components/ui/spinner";
-import { ApiClientError, getMeCrypto } from "@/lib/api/v1-client";
+import { PolicyAcceptanceGate } from "@/components/legal/policy-acceptance-gate";
+import {
+  ApiClientError,
+  getMeCrypto,
+  getMePolicyAcceptances,
+} from "@/lib/api/v1-client";
 import { createClient } from "@/lib/supabase/client";
 import { createPrfUnlock, assertPrfUnlock } from "@/lib/vault/prf";
 import {
@@ -43,6 +48,7 @@ type SignedInShellProps = {
 
 type Step =
   | "loading"
+  | "needs_acceptance"
   | "locked"
   | "needs_setup"
   | "show_recovery"
@@ -71,6 +77,9 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState<Step>("loading");
+  const [vaultReadyStep, setVaultReadyStep] = useState<"locked" | "needs_setup">(
+    "needs_setup",
+  );
   const [vault, setVault] = useState<UnlockedVault | null>(null);
   const [recovery, setRecovery] = useState<RecoveryExport | null>(null);
   const [proof, setProof] = useState<ProofRoundTripResult | null>(null);
@@ -79,13 +88,24 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
     let cancelled = false;
     void (async () => {
       try {
-        const exists = await hasUserCrypto();
+        const [policyStatus, exists] = await Promise.all([
+          getMePolicyAcceptances(),
+          hasUserCrypto(),
+        ]);
         if (cancelled) return;
-        setStep(exists ? "locked" : "needs_setup");
+        const nextVaultStep = exists ? "locked" : "needs_setup";
+        setVaultReadyStep(nextVaultStep);
+        if (!policyStatus.allCurrentAccepted) {
+          setStep("needs_acceptance");
+          return;
+        }
+        setStep(nextVaultStep);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to check vault");
-        setStep("needs_setup");
+        setError(
+          err instanceof Error ? err.message : "Failed to check account state",
+        );
+        setStep("needs_acceptance");
       }
     })();
     return () => {
@@ -175,6 +195,7 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
       }
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 404) {
+        setVaultReadyStep("needs_setup");
         setStep("needs_setup");
         setError("No vault keys yet — set up the vault first.");
       } else {
@@ -243,6 +264,18 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
             <AlertTitle>Status</AlertTitle>
             <AlertDescription>{message}</AlertDescription>
           </Alert>
+        ) : null}
+
+        {step === "needs_acceptance" ? (
+          <PolicyAcceptanceGate
+            pending={pending}
+            onPendingChange={setPending}
+            onError={setError}
+            onAccepted={() => {
+              setMessage("Policy acceptance recorded.");
+              setStep(vaultReadyStep);
+            }}
+          />
         ) : null}
 
         {step === "show_recovery" && recovery ? (
@@ -330,7 +363,9 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
 
         <div className="flex flex-col gap-2">
           {step === "loading" ? (
-            <p className="text-sm text-muted-foreground">Checking vault…</p>
+            <p className="text-sm text-muted-foreground">
+              Checking policies and vault…
+            </p>
           ) : null}
 
           {step === "needs_setup" ? (
@@ -383,6 +418,11 @@ export function SignedInShell({ email, userId }: SignedInShellProps) {
           >
             Sign out
           </Button>
+          <p className="text-center text-xs text-muted-foreground">
+            <a href="/legal" className="underline underline-offset-4">
+              Legal drafts
+            </a>
+          </p>
         </div>
       </CardContent>
     </Card>
