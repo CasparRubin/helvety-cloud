@@ -58,6 +58,7 @@ export function TaskDetail({
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
   const cache = useVaultEntityCache();
+  const { upsertTask } = cache;
 
   const [task, setTask] = useState<DecryptedTask | null>(null);
   const [categorizations, setCategorizations] =
@@ -179,7 +180,7 @@ export function TaskDetail({
         setPriorityId(nextPriority);
         setMilestoneId(nextMilestone);
         setError(null);
-        cache.upsertTask(loaded);
+        upsertTask(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load task");
@@ -190,7 +191,7 @@ export function TaskDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, projectId, taskId, getWorkspaceKey, cache]);
+  }, [vault, workspaceId, projectId, taskId, getWorkspaceKey, upsertTask]);
 
   async function onDelete() {
     if (!task || deleting || status === "saving") return;

@@ -50,6 +50,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
   const cache = useVaultEntityCache();
+  const { upsertNote } = cache;
 
   const [note, setNote] = useState<DecryptedNote | null>(null);
   const [title, setTitle] = useState("");
@@ -137,7 +138,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         setProjectId(loaded.projectId ?? "");
         setColor(loaded.color);
         setError(null);
-        cache.upsertNote(loaded);
+        upsertNote(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load note");
@@ -148,7 +149,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, noteId, getWorkspaceKey, cache]);
+  }, [vault, workspaceId, noteId, getWorkspaceKey, upsertNote]);
 
   async function onDelete() {
     if (!note || deleting || status === "saving") return;

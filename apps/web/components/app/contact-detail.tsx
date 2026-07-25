@@ -53,6 +53,7 @@ export function ContactDetail({
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
   const cache = useVaultEntityCache();
+  const { upsertContact } = cache;
 
   const [contact, setContact] = useState<DecryptedContact | null>(null);
   const [displayName, setDisplayName] = useState("");
@@ -147,7 +148,7 @@ export function ContactDetail({
         setNotes(loaded.notes);
         setColor(loaded.color);
         setError(null);
-        cache.upsertContact(loaded);
+        upsertContact(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load contact");
@@ -158,7 +159,7 @@ export function ContactDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, contactId, getWorkspaceKey, cache]);
+  }, [vault, workspaceId, contactId, getWorkspaceKey, upsertContact]);
 
   async function onDelete() {
     if (!contact || deleting || status === "saving") return;
