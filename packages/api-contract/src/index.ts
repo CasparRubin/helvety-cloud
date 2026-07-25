@@ -516,3 +516,32 @@ export const billingRedirectResponseSchema = z.object({
 export type BillingRedirectResponse = z.infer<
   typeof billingRedirectResponseSchema
 >;
+
+export const getMeAccountResponseSchema = z.object({
+  email: z.string().email(),
+  userId: uuidSchema,
+  /** Owned workspaces that still have other members — these block deletion. */
+  blockingWorkspaces: z.array(
+    z.object({
+      id: uuidSchema,
+      name: workspaceNameSchema,
+    }),
+  ),
+  /** Owned workspaces with no other members — deleted with the account. */
+  soloOwnedWorkspaces: z.array(
+    z.object({
+      id: uuidSchema,
+      name: workspaceNameSchema,
+      kind: workspaceKindSchema,
+    }),
+  ),
+  /** Workspaces the account is only removed from. */
+  leavingWorkspaces: z.array(
+    z.object({
+      id: uuidSchema,
+      name: workspaceNameSchema,
+      role: workspaceRoleSchema,
+    }),
+  ),
+});
+export type GetMeAccountResponse = z.infer<typeof getMeAccountResponseSchema>;

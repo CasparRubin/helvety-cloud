@@ -62,6 +62,15 @@ function storeCredentialId(userId: string, credentialId: string): void {
   }
 }
 
+/** Clear the locally cached PRF credential id after account deletion / sign-out. */
+export function clearStoredPrfCredentialId(userId: string): void {
+  try {
+    localStorage.removeItem(`${CREDENTIAL_STORAGE_PREFIX}${userId}`);
+  } catch {
+    // ignore
+  }
+}
+
 function extractPrfOutput(credential: PublicKeyCredential): Uint8Array {
   const ext = credential.getClientExtensionResults() as PrfExtensionResults;
   const first = ext.prf?.results?.first;

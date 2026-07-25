@@ -3,7 +3,11 @@ import { redirect } from "next/navigation";
 import { SignedOutShell } from "@/components/auth/signed-out-shell";
 import { createClient } from "@/lib/supabase/server";
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ "account-deleted"?: string }>;
+}) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -13,9 +17,11 @@ export default async function Home() {
     redirect("/app");
   }
 
+  const { "account-deleted": accountDeleted } = await searchParams;
+
   return (
     <main className="flex min-h-svh flex-col items-center justify-center p-6">
-      <SignedOutShell />
+      <SignedOutShell accountDeleted={accountDeleted === "1"} />
     </main>
   );
 }

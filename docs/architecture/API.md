@@ -14,7 +14,7 @@
 
 | Plane | Examples |
 |-------|----------|
-| Control | `PUT /api/v1/me/crypto`, `POST /api/v1/workspaces`, workspace invitations (P6e), billing/Checkout (P6f) |
+| Control | `PUT /api/v1/me/crypto`, `DELETE /api/v1/me`, `POST /api/v1/workspaces`, workspace invitations (P6e), billing/Checkout (P6f) |
 | Data | Task/project/note/contact upserts with `encrypted_blob`; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=` |
 
 Realtime (optional later) = wake-up only, not a second write API.
@@ -28,6 +28,8 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/me/policy-acceptances` | Record ToS/Privacy/AUP/E2EE version acceptances |
 | GET | `/api/v1/me/crypto` | Load public key + wrapped user key material |
 | PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material (requires current policy acceptances) |
+| GET | `/api/v1/me` | Account deletion preview (solo / leaving / blocking workspaces) |
+| DELETE | `/api/v1/me` | Hard-delete account (cancels solo-owned Stripe subs; blocks if owns shared workspaces; then `auth.admin.deleteUser`) |
 | GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, name, kind, role, wrapped key) |
 | POST | `/api/v1/workspaces` | Create workspace + owner wrapped key (`name`, `kind`, sealed key) |
 | GET | `/api/v1/workspaces/:workspaceId` | Workspace id/name/kind + caller’s wrapped key |
@@ -71,7 +73,7 @@ Stable codes via `packages/api-contract`: `unauthorized`, `forbidden`, `limit_ex
 
 ## Server DB access
 
-Route handlers use Supabase client with the **user JWT**. Service role is used only by `/api/webhooks/stripe` (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events` — never to “helpfully” decrypt or touch vault tables.
+Route handlers use Supabase client with the **user JWT**. Service role is used only by `/api/webhooks/stripe` (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events`, and by `DELETE /api/v1/me` for `auth.admin.deleteUser` — never to “helpfully” decrypt or touch vault tables.
 
 **PostgREST / grants:** `authenticated` retains table GRANTs so API routes can query with the user JWT under RLS. The **browser must still never** call the Data API for vault tables — entitlement gates (P6f) live only on `/api/v1`. Closing Data API entirely would require a larger “service-role-only API” redesign; not done in this wave.
 

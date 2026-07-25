@@ -637,6 +637,7 @@ export type Database = {
           isSetofReturn: false
         }
       }
+      delete_account: { Args: never; Returns: undefined }
       delete_workspace: { Args: { ws_id: string }; Returns: undefined }
       claim_workspace_invitation: {
         Args: { invitation_id: string; public_key: string }

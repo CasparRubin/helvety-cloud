@@ -5,6 +5,7 @@ import {
   createWorkspaceInvitationRequestSchema,
   createWorkspaceRequestSchema,
   createWorkspaceResponseSchema,
+  getMeAccountResponseSchema,
   getMeCryptoResponseSchema,
   getMePolicyAcceptancesResponseSchema,
   getWorkspaceBillingResponseSchema,
@@ -37,6 +38,7 @@ import {
   type CreateWorkspaceInvitationRequest,
   type CreateWorkspaceRequest,
   type CreateWorkspaceResponse,
+  type GetMeAccountResponse,
   type GetMeCryptoResponse,
   type GetMePolicyAcceptancesResponse,
   type GetWorkspaceBillingResponse,
@@ -166,6 +168,16 @@ async function apiFetchNoContent(
 
 export async function getMeCrypto(): Promise<GetMeCryptoResponse> {
   return apiFetch("/api/v1/me/crypto", getMeCryptoResponseSchema);
+}
+
+export async function getMeAccount(): Promise<GetMeAccountResponse> {
+  return apiFetch("/api/v1/me", getMeAccountResponseSchema);
+}
+
+export async function deleteAccount(): Promise<void> {
+  await apiFetchNoContent("/api/v1/me", {
+    method: "DELETE",
+  });
 }
 
 export async function getMePolicyAcceptances(): Promise<GetMePolicyAcceptancesResponse> {

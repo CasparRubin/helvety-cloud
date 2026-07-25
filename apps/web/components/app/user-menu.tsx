@@ -7,6 +7,7 @@ import {
   LogOutIcon,
   MailIcon,
   ScaleIcon,
+  UserRoundIcon,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -56,6 +57,10 @@ export function UserMenu({ email }: UserMenuProps) {
           {email}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem onClick={() => router.push("/app/account")}>
+          <UserRoundIcon className="size-4 shrink-0 opacity-60" />
+          Account
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={() => router.push("/app/invitations")}>
           <MailIcon className="size-4 shrink-0 opacity-60" />
           Invitations

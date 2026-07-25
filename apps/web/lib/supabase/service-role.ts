@@ -1,7 +1,10 @@
 /**
- * Service-role Supabase client — Stripe webhook billing rows ONLY
- * (subscriptions / billing_events per BILLING.md). Never import this from
- * vault routes and never use it to read or "helpfully" decrypt vault tables.
+ * Service-role Supabase client — justified server jobs only:
+ * - Stripe webhook billing rows (subscriptions / billing_events per BILLING.md)
+ * - Account deletion (`auth.admin.deleteUser` from DELETE /api/v1/me)
+ *
+ * Never import this from vault routes and never use it to read or
+ * "helpfully" decrypt vault tables.
  */
 import type { Database } from "@helvety-cloud/db";
 import { createClient, type SupabaseClient } from "@supabase/supabase-js";
