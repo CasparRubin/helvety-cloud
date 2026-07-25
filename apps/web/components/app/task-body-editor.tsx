@@ -5,22 +5,22 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import StarterKit from "@tiptap/starter-kit";
 
 import { Button } from "@/components/ui/button";
-import type { IssueBodyDoc } from "@/lib/vault/issue-plaintext";
+import type { TaskBodyDoc } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
 
-type IssueBodyEditorProps = {
-  content: IssueBodyDoc;
-  onChange: (doc: IssueBodyDoc) => void;
+type TaskBodyEditorProps = {
+  content: TaskBodyDoc;
+  onChange: (doc: TaskBodyDoc) => void;
   disabled?: boolean;
   className?: string;
 };
 
-export function IssueBodyEditor({
+export function TaskBodyEditor({
   content,
   onChange,
   disabled = false,
   className,
-}: IssueBodyEditorProps) {
+}: TaskBodyEditorProps) {
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -45,7 +45,7 @@ export function IssueBodyEditor({
       },
     },
     onUpdate: ({ editor: ed }) => {
-      onChange(ed.getJSON() as IssueBodyDoc);
+      onChange(ed.getJSON() as TaskBodyDoc);
     },
   });
 

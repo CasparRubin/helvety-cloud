@@ -17,11 +17,11 @@ import {
   EMPTY_NOTE_BODY,
   parseNotePlaintext,
   toNotePlaintext,
-  type IssueBodyDoc,
+  type TaskBodyDoc,
   type NotePlaintext,
 } from "@/lib/vault/note-plaintext";
 
-export type { IssueBodyDoc, NotePlaintext };
+export type { TaskBodyDoc, NotePlaintext };
 export { EMPTY_NOTE_BODY, parseNotePlaintext, toNotePlaintext };
 
 const textDecoder = new TextDecoder();
@@ -30,9 +30,9 @@ export type DecryptedNote = {
   id: string;
   workspaceId: string;
   projectId: string | null;
-  issueId: string | null;
+  taskId: string | null;
   title: string;
-  body: IssueBodyDoc;
+  body: TaskBodyDoc;
   tags: string[];
   sortOrder: number;
   updatedAt: string;
@@ -80,7 +80,7 @@ async function toDecrypted(
   row: NoteResponse,
 ): Promise<DecryptedNote> {
   let title = "Untitled";
-  let body: IssueBodyDoc = EMPTY_NOTE_BODY;
+  let body: TaskBodyDoc = EMPTY_NOTE_BODY;
   let tags: string[] = [];
   try {
     const content = await decryptNoteContent(
@@ -98,7 +98,7 @@ async function toDecrypted(
     id: row.id,
     workspaceId: row.workspaceId,
     projectId: row.projectId,
-    issueId: row.issueId,
+    taskId: row.taskId,
     title,
     body,
     tags,
@@ -134,10 +134,10 @@ export async function createNote(
   workspaceKey: Uint8Array,
   content: {
     title: string;
-    body?: IssueBodyDoc;
+    body?: TaskBodyDoc;
     tags?: string[];
     projectId?: string | null;
-    issueId?: string | null;
+    taskId?: string | null;
   },
   sortOrder = 0,
 ): Promise<DecryptedNote> {
@@ -155,7 +155,7 @@ export async function createNote(
     encryptedBlob,
     sortOrder,
     projectId: content.projectId ?? null,
-    issueId: content.issueId ?? null,
+    taskId: content.taskId ?? null,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -165,7 +165,7 @@ export async function saveNote(
   workspaceKey: Uint8Array,
   note: DecryptedNote,
   content: NotePlaintext,
-  links?: { projectId?: string | null; issueId?: string | null },
+  links?: { projectId?: string | null; taskId?: string | null },
 ): Promise<DecryptedNote> {
   const encryptedBlob = await encryptNoteContent(
     workspaceKey,
@@ -177,7 +177,7 @@ export async function saveNote(
     sortOrder: note.sortOrder,
     deletedAt: note.deletedAt,
     projectId: links?.projectId !== undefined ? links.projectId : note.projectId,
-    issueId: links?.issueId !== undefined ? links.issueId : note.issueId,
+    taskId: links?.taskId !== undefined ? links.taskId : note.taskId,
   });
   return toDecrypted(workspaceKey, row);
 }

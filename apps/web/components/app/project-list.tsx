@@ -159,7 +159,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
         <p className="text-sm text-muted-foreground">Loading projects…</p>
       ) : projects.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-          No projects yet. Create one to add encrypted issues.
+          No projects yet. Create one to add encrypted tasks.
         </div>
       ) : (
         <ul className="flex flex-col gap-1">
@@ -199,7 +199,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                   disabled={busy}
                   busy={busy}
                   dialogTitle={`Delete project “${project.name}”?`}
-                  dialogDescription="This permanently deletes the project and all of its issues. This cannot be undone."
+                  dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
                   onConfirm={() => onDelete(project)}
                 />
               </div>

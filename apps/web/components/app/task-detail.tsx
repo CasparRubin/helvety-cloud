@@ -1,47 +1,46 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { IssueBodyEditor } from "@/components/app/issue-body-editor";
+import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
-  EMPTY_ISSUE_BODY,
-  toIssuePlaintext,
-  type IssueBodyDoc,
-} from "@/lib/vault/issue-plaintext";
+  EMPTY_TASK_BODY,
+  toTaskPlaintext,
+  type TaskBodyDoc,
+} from "@/lib/vault/task-plaintext";
 import {
-  deleteIssue,
-  loadDecryptedIssue,
-  saveIssue,
-  type DecryptedIssue,
-} from "@/lib/vault/issues";
+  deleteTask,
+  loadDecryptedTask,
+  saveTask,
+  type DecryptedTask,
+} from "@/lib/vault/tasks";
 
 const AUTOSAVE_MS = 600;
 
-type IssueDetailProps = {
+type TaskDetailProps = {
   workspaceId: string;
   projectId: string;
-  issueId: string;
+  taskId: string;
 };
 
 type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 
-export function IssueDetail({
+export function TaskDetail({
   workspaceId,
   projectId,
-  issueId,
-}: IssueDetailProps) {
+  taskId,
+}: TaskDetailProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
 
-  const [issue, setIssue] = useState<DecryptedIssue | null>(null);
+  const [task, setTask] = useState<DecryptedTask | null>(null);
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState<IssueBodyDoc>(EMPTY_ISSUE_BODY);
+  const [body, setBody] = useState<TaskBodyDoc>(EMPTY_TASK_BODY);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -50,7 +49,7 @@ export function IssueDetail({
 
   const titleRef = useRef(title);
   const bodyRef = useRef(body);
-  const issueRef = useRef(issue);
+  const taskRef = useRef(task);
   const deletingRef = useRef(deleting);
   const savingRef = useRef(false);
   const pendingSaveRef = useRef(false);
@@ -62,7 +61,7 @@ export function IssueDetail({
   useEffect(() => {
     titleRef.current = title;
     bodyRef.current = body;
-    issueRef.current = issue;
+    taskRef.current = task;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
   });
@@ -81,14 +80,14 @@ export function IssueDetail({
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const loaded = await loadDecryptedIssue(
+        const loaded = await loadDecryptedTask(
           workspaceId,
           projectId,
-          issueId,
+          taskId,
           key,
         );
         if (cancelled) return;
-        setIssue(loaded);
+        setTask(loaded);
         setTitle(loaded.title);
         setBody(loaded.body);
         loadedSnapshotRef.current = snapshot(loaded.title, loaded.body);
@@ -96,7 +95,7 @@ export function IssueDetail({
         setError(null);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load issue");
+        setError(e instanceof Error ? e.message : "Failed to load task");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -104,10 +103,10 @@ export function IssueDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, projectId, issueId, getWorkspaceKey]);
+  }, [vault, workspaceId, projectId, taskId, getWorkspaceKey]);
 
   async function persist() {
-    const current = issueRef.current;
+    const current = taskRef.current;
     if (!current || deletingRef.current) return;
 
     const nextTitle = titleRef.current;
@@ -132,16 +131,16 @@ export function IssueDetail({
     }
     try {
       const key = await getWorkspaceKeyRef.current(workspaceId);
-      const saved = await saveIssue(
+      const saved = await saveTask(
         workspaceId,
         projectId,
         key,
         current,
-        toIssuePlaintext(nextTitle, nextBody),
+        toTaskPlaintext(nextTitle, nextBody),
       );
       loadedSnapshotRef.current = snapshot(saved.title, saved.body);
       if (!mountedRef.current) return;
-      setIssue(saved);
+      setTask(saved);
       if (snapshot(titleRef.current, bodyRef.current) === snap) {
         setTitle(saved.title);
         setBody(saved.body);
@@ -166,7 +165,7 @@ export function IssueDetail({
   });
 
   useEffect(() => {
-    if (!issue || loading) return;
+    if (!task || loading) return;
     const snap = snapshot(title, body);
     if (snap === loadedSnapshotRef.current) return;
 
@@ -175,12 +174,12 @@ export function IssueDetail({
       void persistRef.current();
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [title, body, issue, loading, workspaceId, projectId]);
+  }, [title, body, task, loading, workspaceId, projectId]);
 
   // Flush dirty edits on SPA leave / hard navigation (best-effort for pagehide).
   useEffect(() => {
     function flushIfDirty() {
-      const current = issueRef.current;
+      const current = taskRef.current;
       if (!current || deletingRef.current) return;
       const snap = snapshot(titleRef.current, bodyRef.current);
       if (snap === loadedSnapshotRef.current) return;
@@ -193,14 +192,15 @@ export function IssueDetail({
       window.removeEventListener("pagehide", onPageHide);
       flushIfDirty();
     };
-  }, [workspaceId, projectId, issueId]);
+  }, [workspaceId, projectId, taskId]);
 
   async function onDelete() {
-    if (!issue || deleting || savingRef.current) return;
+    if (!task || deleting || savingRef.current) return;
     setDeleting(true);
     setError(null);
     try {
-      await deleteIssue(workspaceId, projectId, issue);
+      await deleteTask(workspaceId, projectId, task);
+      window.dispatchEvent(new Event("helvety:tasks-changed"));
       router.push(`/app/w/${workspaceId}/p/${projectId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -213,13 +213,7 @@ export function IssueDetail({
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div>
-        <Link
-          href={`/app/w/${workspaceId}/p/${projectId}`}
-          className="text-xs text-muted-foreground hover:underline"
-        >
-          ← Issues
-        </Link>
-        <h1 className="mt-1 text-lg font-semibold tracking-tight">Issue</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Task</h1>
         <p className="text-sm text-muted-foreground">
           Edits are encrypted on your device before upload.
         </p>
@@ -237,7 +231,7 @@ export function IssueDetail({
             maxLength={500}
             aria-label="Title"
           />
-          <IssueBodyEditor
+          <TaskBodyEditor
             content={body}
             onChange={setBody}
             disabled={deleting}
@@ -255,8 +249,8 @@ export function IssueDetail({
             <DeleteButton
               disabled={deleting}
               busy={deleting}
-              dialogTitle="Delete this issue?"
-              dialogDescription="This permanently deletes the issue. This cannot be undone."
+              dialogTitle="Delete this task?"
+              dialogDescription="This permanently deletes the task. This cannot be undone."
               onConfirm={onDelete}
             />
             <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
@@ -273,7 +267,7 @@ export function IssueDetail({
   );
 }
 
-function snapshot(title: string, body: IssueBodyDoc): string {
+function snapshot(title: string, body: TaskBodyDoc): string {
   return JSON.stringify({ title, body });
 }
 

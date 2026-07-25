@@ -39,7 +39,7 @@ P6f; charges only happen when a workspace owner completes Stripe Checkout.
 | Owned workspaces (per user) | 2 | 10 |
 | Projects | 5 | 100 |
 | Members (incl. pending invites) | 2 | 25 |
-| Issues | 100 | 10,000 |
+| Tasks | 100 | 10,000 |
 | Notes | 50 | 5,000 |
 | Contacts | 50 | 5,000 |
 

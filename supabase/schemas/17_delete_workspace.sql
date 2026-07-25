@@ -1,5 +1,5 @@
 -- Owner-only hard delete for a non-personal workspace.
--- Cascades via FKs wipe members, projects, issues, notes, contacts,
+-- Cascades via FKs wipe members, projects, tasks, notes, contacts,
 -- invitations, and subscriptions. wrapped_keys has no FK on subject_id,
 -- so those rows are deleted explicitly here.
 

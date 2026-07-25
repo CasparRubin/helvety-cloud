@@ -13,13 +13,13 @@ type RouteContext = {
 };
 
 const NOTE_SELECT =
-  "id, workspace_id, project_id, issue_id, encrypted_blob, sort_order, updated_at, deleted_at";
+  "id, workspace_id, project_id, task_id, encrypted_blob, sort_order, updated_at, deleted_at";
 
 function toNoteResponse(row: {
   id: string;
   workspace_id: string;
   project_id: string | null;
-  issue_id: string | null;
+  task_id: string | null;
   encrypted_blob: unknown;
   sort_order: number;
   updated_at: string;
@@ -29,7 +29,7 @@ function toNoteResponse(row: {
     id: row.id,
     workspaceId: row.workspace_id,
     projectId: row.project_id,
-    issueId: row.issue_id,
+    taskId: row.task_id,
     encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
     sortOrder: row.sort_order,
     updatedAt: row.updated_at,
@@ -108,7 +108,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const projectId =
     data.projectId === undefined ? undefined : data.projectId;
-  const issueId = data.issueId === undefined ? undefined : data.issueId;
+  const taskId = data.taskId === undefined ? undefined : data.taskId;
 
   if (projectId) {
     const { data: project, error: projectError } = await supabase
@@ -125,29 +125,29 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
-  if (issueId) {
-    const { data: issue, error: issueError } = await supabase
-      .from("issues")
+  if (taskId) {
+    const { data: task, error: taskError } = await supabase
+      .from("tasks")
       .select("id, project_id")
-      .eq("id", issueId)
+      .eq("id", taskId)
       .maybeSingle();
-    if (issueError) {
-      return apiError("internal", issueError.message, 500);
+    if (taskError) {
+      return apiError("internal", taskError.message, 500);
     }
-    if (!issue) {
-      return apiError("invalid_body", "issueId not in workspace", 400);
+    if (!task) {
+      return apiError("invalid_body", "taskId not in workspace", 400);
     }
-    const { data: issueProject, error: issueProjectError } = await supabase
+    const { data: taskProject, error: taskProjectError } = await supabase
       .from("projects")
       .select("id")
-      .eq("id", issue.project_id)
+      .eq("id", task.project_id)
       .eq("workspace_id", workspaceId)
       .maybeSingle();
-    if (issueProjectError) {
-      return apiError("internal", issueProjectError.message, 500);
+    if (taskProjectError) {
+      return apiError("internal", taskProjectError.message, 500);
     }
-    if (!issueProject) {
-      return apiError("invalid_body", "issueId not in workspace", 400);
+    if (!taskProject) {
+      return apiError("invalid_body", "taskId not in workspace", 400);
     }
   }
 
@@ -158,7 +158,7 @@ export async function PUT(request: Request, context: RouteContext) {
     sort_order: number;
     deleted_at: string | null;
     project_id?: string | null;
-    issue_id?: string | null;
+    task_id?: string | null;
   } = {
     id: noteId,
     workspace_id: workspaceId,
@@ -170,14 +170,14 @@ export async function PUT(request: Request, context: RouteContext) {
   if (projectId !== undefined) {
     upsertRow.project_id = projectId;
   }
-  if (issueId !== undefined) {
-    upsertRow.issue_id = issueId;
+  if (taskId !== undefined) {
+    upsertRow.task_id = taskId;
   }
 
-  // On first insert without projectId/issueId in body, default to null.
+  // On first insert without projectId/taskId in body, default to null.
   if (!existing) {
     if (projectId === undefined) upsertRow.project_id = null;
-    if (issueId === undefined) upsertRow.issue_id = null;
+    if (taskId === undefined) upsertRow.task_id = null;
   }
 
   const { data: row, error } = await supabase

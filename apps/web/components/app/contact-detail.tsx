@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -242,13 +241,7 @@ export function ContactDetail({
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div>
-        <Link
-          href={`/app/w/${workspaceId}/contacts`}
-          className="text-xs text-muted-foreground hover:underline"
-        >
-          ← Contacts
-        </Link>
-        <h1 className="mt-1 text-lg font-semibold tracking-tight">Contact</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Contact</h1>
         <p className="text-sm text-muted-foreground">
           Edits are encrypted on your device before upload.
         </p>

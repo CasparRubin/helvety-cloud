@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useMemo } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
@@ -12,9 +12,16 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { TaskJumpSwitcher } from "@/components/app/task-jump-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { UserMenu } from "@/components/app/user-menu";
 import { WorkspaceJumpSwitcher } from "@/components/app/workspace-jump-switcher";
+import {
+  NavBackButton,
+  NavSeparator,
+  parentHrefFor,
+  parseAppNavPath,
+} from "@/components/app/workspace-nav";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import { UnlockGate } from "@/components/vault/unlock-gate";
 import {
@@ -64,29 +71,15 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const pathname = usePathname();
   const { vault, recovery, workspaces } = useVaultSession();
 
-  const pathParts = pathname.split("/");
-  const activeWorkspaceId = pathname.startsWith("/app/w/")
-    ? (pathParts[3] ?? null)
-    : null;
+  const location = useMemo(() => parseAppNavPath(pathname), [pathname]);
 
-  const workspaceBase = activeWorkspaceId
-    ? `/app/w/${activeWorkspaceId}`
-    : null;
-  const projectsActive = Boolean(
-    workspaceBase &&
-      (pathname === workspaceBase ||
-        pathname === `${workspaceBase}/` ||
-        pathname.startsWith(`${workspaceBase}/p/`)),
-  );
-  const notesActive = Boolean(
-    workspaceBase && pathname.startsWith(`${workspaceBase}/notes`),
-  );
-  const contactsActive = Boolean(
-    workspaceBase && pathname.startsWith(`${workspaceBase}/contacts`),
-  );
-  const settingsActive = Boolean(
-    workspaceBase && pathname.startsWith(`${workspaceBase}/settings`),
-  );
+  const activeWorkspaceId = location?.workspaceId ?? null;
+  const workspaceBase = location?.workspaceBase ?? null;
+  const backHref = location ? parentHrefFor(location) : null;
+  const projectsActive = location?.section === "projects";
+  const notesActive = location?.section === "notes";
+  const contactsActive = location?.section === "contacts";
+  const settingsActive = location?.section === "settings";
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
   const shouldRedirectToWorkspace =
@@ -134,13 +127,35 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             priority
           />
         </Link>
-        <WorkspaceSwitcher
-          userId={userId}
-          activeWorkspaceId={activeWorkspaceId}
-        />
-        {activeWorkspaceId ? (
-          <WorkspaceJumpSwitcher workspaceId={activeWorkspaceId} />
-        ) : null}
+        {backHref ? <NavBackButton href={backHref} /> : null}
+        <nav
+          aria-label="Breadcrumb"
+          className="flex min-w-0 items-center gap-1.5"
+        >
+          <WorkspaceSwitcher
+            userId={userId}
+            activeWorkspaceId={activeWorkspaceId}
+          />
+          {location?.entity ? (
+            <>
+              <NavSeparator />
+              <WorkspaceJumpSwitcher
+                workspaceId={location.workspaceId}
+                active={location.entity}
+              />
+            </>
+          ) : null}
+          {location?.entity?.kind === "project" && location.taskId ? (
+            <>
+              <NavSeparator />
+              <TaskJumpSwitcher
+                workspaceId={location.workspaceId}
+                projectId={location.entity.id}
+                taskId={location.taskId}
+              />
+            </>
+          ) : null}
+        </nav>
         <div className="ml-auto flex items-center gap-1">
           <ThemeToggle />
           <UserMenu email={email} />

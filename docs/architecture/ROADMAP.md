@@ -19,7 +19,7 @@
 
 ## 1. Product (what we are building)
 
-**helvety.cloud** — greenfield E2EE workspace app (projects / issues / notes / contacts / sharing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
+**helvety.cloud** — greenfield E2EE workspace app (projects / tasks / notes / contacts / sharing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
 
 **Priorities (in order):**
 
@@ -31,10 +31,10 @@
 
 ```text
 email OTP → session → PRF passkey unlock → user keys
-  → create workspace via /api/v1 → write encrypted issue → reload → decrypt on device
+  → create workspace via /api/v1 → write encrypted task → reload → decrypt on device
 ```
 
-**Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/issues CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
+**Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/tasks CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
 
 **Out of this wave:** milestone diagrams, custom labels, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps.
 
@@ -53,7 +53,7 @@ email OTP → session → PRF passkey unlock → user keys
 | Auth | **Supabase Auth** — email **OTP** + passkeys; **disable passwords** |
 | Vault unlock | WebAuthn **PRF** → HKDF unlock key (auth session ≠ vault decrypt) |
 | Crypto | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field |
-| Access model | **Everything workspace-scoped** — projects/issues/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
+| Access model | **Everything workspace-scoped** — projects/tasks/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
 | Personal workspace | On first vault setup, ensure one **Personal** workspace (home for “general” notes/contacts) |
 | Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** vault entities in that workspace (P6e) |
 | Public API | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>` |
@@ -176,7 +176,7 @@ helvety-cloud/
 - Gate app shell: signed-in vs signed-out.  
 - RP ID / origins for **helvety.cloud** (+ localhost for dev) documented.
 
-**Don’t:** PRF vault crypto persistence, encrypting issues, PostgREST vault CRUD from client, **Radix-based shadcn**.
+**Don’t:** PRF vault crypto persistence, encrypting tasks, PostgREST vault CRUD from client, **Radix-based shadcn**.
 
 **Done when:** User can create session via OTP (+ passkey sign-in); shadcn is Base UI; no content decryption yet.
 
@@ -222,7 +222,7 @@ helvety-cloud/
 - `workspaces`, `workspace_members` (role)  
 - `projects`  
 - `wrapped_keys` (subject_type/id, user_id, wrapped_key)  
-- `issues` (ids, project_id, encrypted_blob, updated_at, soft-delete/tombstone fields as needed)  
+- `tasks` (ids, project_id, encrypted_blob, updated_at, soft-delete/tombstone fields as needed)  
 - RLS: membership-based; **explicit GRANTs** (auto-expose is OFF)  
 - Apply via CLI and/or MCP `apply_migration` to **`qnoeiurmyyyuawkcifmw` only**  
 - MCP `generate_typescript_types` → commit `packages/db`  
@@ -235,10 +235,10 @@ helvety-cloud/
   - `GET /api/v1/health`  
   - `PUT /api/v1/me/crypto`  
   - `POST /api/v1/workspaces`  
-  - `PUT/GET` project + issue with **ciphertext only**  
+  - `PUT/GET` project + task with **ciphertext only**  
 - Server uses user JWT Supabase client; service role only where justified later (webhooks)
 
-**Don’t:** Full Linear UI, Stripe, browser `from('issues')`, sharing invites UI.
+**Don’t:** Full Linear UI, Stripe, browser `from('tasks')`, sharing invites UI.
 
 **Done when:** Migrations on remote; types committed; wrap/key_check AAD bound; health + crypto/workspace stubs work with auth.
 
@@ -254,14 +254,14 @@ helvety-cloud/
 **Done (historical brief):**
 
 - P4 fix-before-P5 grants/RPC harden + commit.  
-- PRF unlock → user_crypto via API → workspace seal with AAD `wrapped_keys:{workspaceId}:wrapped_key` → encrypt issue → PUT/GET → decrypt.  
+- PRF unlock → user_crypto via API → workspace seal with AAD `wrapped_keys:{workspaceId}:wrapped_key` → encrypt task → PUT/GET → decrypt.  
 - Recovery UI: key **and** wrap offline once; never log/POST.  
 - Honest lose-unlock = data-gone copy.
 
 **Don’t reopen** unless regressions. Next = P-legal.
 
 **Paste prompt (only if re-doing):**  
-`@docs/architecture/ROADMAP.md — Implement P5 E2EE proof only. Wire P2–P4 for one encrypted issue via /api/v1. Seal/wrap AAD; recovery = key + wrap offline once — never log/POST.`
+`@docs/architecture/ROADMAP.md — Implement P5 E2EE proof only. Wire P2–P4 for one encrypted task via /api/v1. Seal/wrap AAD; recovery = key + wrap offline once — never log/POST.`
 
 ---
 
@@ -301,8 +301,8 @@ All vault data is **workspace-scoped**. Invite = seal `workspace_key` → member
 
 ```text
 Workspace  (members + per-member wrapped_keys)
-  ├── projects → issues
-  ├── notes     (required workspace_id; optional project/issue links; dynamic encrypted JSON)
+  ├── projects → tasks
+  ├── notes     (required workspace_id; optional project/task links; dynamic encrypted JSON)
   └── contacts  (workspace address book; no global dedupe)
 ```
 
@@ -328,7 +328,7 @@ Workspace  (members + per-member wrapped_keys)
 - Client cache of unlocked keys in memory only (idle lock later OK).  
 - Dense shadcn/Base UI; no helvety.com port.
 
-**Don’t:** Issue list polish, TipTap, sharing, Stripe, notes/contacts tables.
+**Don’t:** Task list polish, TipTap, sharing, Stripe, notes/contacts tables.
 
 **Done when:** User signs in → accepts policies → unlocks → has Personal (and can create more) → navigates without the P5 proof card as primary UX.
 
@@ -338,21 +338,21 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6b — Projects + issues (minimal E2EE product)
+### P6b — Projects + tasks (minimal E2EE product)
 
-**Goal:** Usable project/issue CRUD, all ciphertext-opaque.
+**Goal:** Usable project/task CRUD, all ciphertext-opaque.
 
 **Do:**
 
 - Project list under workspace; create/reorder.  
-- Issue list + detail: title/body as encrypted JSON (same envelope as P5); status/sort as plaintext metadata if already in schema (else keep minimal).  
-- API: list endpoints (paginate) for projects/issues; keep PUT/GET by id.  
+- Task list + detail: title/body as encrypted JSON (same envelope as P5); status/sort as plaintext metadata if already in schema (else keep minimal).  
+- API: list endpoints (paginate) for projects/tasks; keep PUT/GET by id.  
 - Decrypt only on device with workspace key from `wrapped_keys` + AAD.  
 - Soft-delete/tombstone if schema supports it.
 
 **Don’t:** Rich editor, mentions, labels UI, sharing, attachments, notes/contacts, Stripe.
 
-**Done when:** Create/edit/list/reload issues across sessions; DB still only envelopes.
+**Done when:** Create/edit/list/reload tasks across sessions; DB still only envelopes.
 
 **Status:** **Done** (post-review: `projects.encrypted_blob` NOT NULL; PUT requires envelope — no omit→null wipe).
 
@@ -368,7 +368,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- TipTap (or similar) in issue detail; serialize to encrypted blob (version field in plaintext JSON inside ciphertext).  
+- TipTap (or similar) in task detail; serialize to encrypted blob (version field in plaintext JSON inside ciphertext).  
 - Autosave via existing PUT; conflict = last-write or generation if present.  
 - Keep free-tier: no paid collaboration SaaS.
 
@@ -386,8 +386,8 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` / `issue_id` on notes for filters.  
-- Notes: flexible encrypted JSON (dynamic links/tags/body); can link to project, issue, both, or neither.  
+- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` / `task_id` on notes for filters.  
+- Notes: flexible encrypted JSON (dynamic links/tags/body); can link to project, task, both, or neither.  
 - Contacts: encrypted identity fields under **workspace_key**; same person in two workspaces = two rows (no global dedupe). Optional later: copy-to-workspace.  
 - `/api/v1` list/detail + UI in app shell (Personal + team workspaces).  
 - AAD `table:recordId:field`; migrate `qnoeiurmyyyuawkcifmw` only.
@@ -410,12 +410,12 @@ Workspace  (members + per-member wrapped_keys)
 
 - Invite by email (OTP account must exist or signup); role on `workspace_members`.  
 - Seal `workspace_key` to invitee `user_public_key` → `wrapped_keys` row with AAD.  
-- Accept invite UI; member decrypts **all** workspace ciphertext (issues, notes, contacts) after unlock — no separate contact share path.  
+- Accept invite UI; member decrypts **all** workspace ciphertext (tasks, notes, contacts) after unlock — no separate contact share path.  
 - AUP/ToS already cover abuse; no server-side content scan.
 
 **Don’t:** Project-level ACL complexity; MLS; cross-workspace contact sync; Stripe.
 
-**Done when:** Owner invites second user; both decrypt same issue (and contact/note) ciphertext in that workspace.
+**Done when:** Owner invites second user; both decrypt same task (and contact/note) ciphertext in that workspace.
 
 **Status:** **Done** (email invite → claim → owner seal with AAD → accept; members decrypt all workspace ciphertext).
 

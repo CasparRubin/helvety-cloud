@@ -61,7 +61,7 @@ export async function GET(request: Request, context: RouteContext) {
       limits: {
         projects: limits.projectsPerWorkspace,
         members: limits.membersPerWorkspace,
-        issues: limits.issuesPerWorkspace,
+        tasks: limits.tasksPerWorkspace,
         notes: limits.notesPerWorkspace,
         contacts: limits.contactsPerWorkspace,
       },

@@ -10,7 +10,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 4. **Free-tier infra** — Prefer omit paid SaaS (Redis, Sentry, analytics, etc.). Stripe is allowed for customer billing (**P6f**).
 5. **Public API** = `/api/v1` + Bearer JWT. Browser may use Supabase **Auth** SDK; must **not** use PostgREST `from('…')` for vault tables.
 6. **Honesty.** Never claim Helvety can read or recover vault data. Live legal pack + acceptance gates (P-legal2); optional counsel is a business choice.
-7. **Workspace-scoped vault.** All vault entities (projects, issues, notes, contacts) live in a workspace. **Personal workspace** on first vault setup. No user-global contacts/notes store; no `workspace_id = null`.
+7. **Workspace-scoped vault.** All vault entities (projects, tasks, notes, contacts) live in a workspace. **Personal workspace** on first vault setup. No user-global contacts/notes store; no `workspace_id = null`.
 
 ## Stack (locked)
 
@@ -37,7 +37,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P-legal | Legal pack (draft) | **Done** (superseded by P-legal2) |
 | P-legal2 | Production legal + acceptance | **Done** |
 | P6a | App shell + Personal workspace | **Done** |
-| P6b | Projects + issues (E2EE CRUD) | **Done** |
+| P6b | Projects + tasks (E2EE CRUD) | **Done** |
 | P6c | TipTap editor | **Done** |
 | P6d | Notes + contacts (workspace-scoped) | **Done** |
 | P6e | Workspace sharing / invites | **Done** |

@@ -10,23 +10,23 @@ import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { getProject } from "@/lib/api/v1-client";
 import {
-  createIssue,
-  loadDecryptedIssues,
-  type DecryptedIssue,
-} from "@/lib/vault/issues";
+  createTask,
+  loadDecryptedTasks,
+  type DecryptedTask,
+} from "@/lib/vault/tasks";
 import { decryptProjectName, deleteProject } from "@/lib/vault/projects";
 
-type IssueListProps = {
+type TaskListProps = {
   workspaceId: string;
   projectId: string;
 };
 
-export function IssueList({ workspaceId, projectId }: IssueListProps) {
+export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
 
   const [projectName, setProjectName] = useState<string>("Project");
-  const [issues, setIssues] = useState<DecryptedIssue[]>([]);
+  const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -39,9 +39,9 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const [projectRow, issuesPage] = await Promise.all([
+        const [projectRow, tasksPage] = await Promise.all([
           getProject(workspaceId, projectId),
-          loadDecryptedIssues(workspaceId, projectId, key),
+          loadDecryptedTasks(workspaceId, projectId, key),
         ]);
         if (cancelled) return;
         let name = "Untitled project";
@@ -55,11 +55,11 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
           name = "Unable to decrypt";
         }
         setProjectName(name);
-        setIssues(issuesPage.issues);
+        setTasks(tasksPage.tasks);
         setError(null);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load issues");
+        setError(e instanceof Error ? e.message : "Failed to load tasks");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -78,8 +78,8 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
     try {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
-        issues.reduce((max, i) => Math.max(max, i.sortOrder), -1) + 1;
-      const created = await createIssue(
+        tasks.reduce((max, t) => Math.max(max, t.sortOrder), -1) + 1;
+      const created = await createTask(
         workspaceId,
         projectId,
         key,
@@ -87,7 +87,8 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
         nextOrder,
       );
       setTitle("");
-      router.push(`/app/w/${workspaceId}/p/${projectId}/i/${created.id}`);
+      window.dispatchEvent(new Event("helvety:tasks-changed"));
+      router.push(`/app/w/${workspaceId}/p/${projectId}/t/${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
       setBusy(false);
@@ -121,24 +122,18 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <Link
-            href={`/app/w/${workspaceId}`}
-            className="text-xs text-muted-foreground hover:underline"
-          >
-            ← Projects
-          </Link>
-          <h1 className="mt-1 text-lg font-semibold tracking-tight">
+          <h1 className="text-lg font-semibold tracking-tight">
             {projectName}
           </h1>
           <p className="text-sm text-muted-foreground">
-            Issue titles and bodies are encrypted end-to-end.
+            Task titles and bodies are encrypted end-to-end.
           </p>
         </div>
         <DeleteButton
           disabled={busy || loading}
           busy={busy}
           dialogTitle={`Delete project “${projectName}”?`}
-          dialogDescription="This permanently deletes the project and all of its issues. This cannot be undone."
+          dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
           onConfirm={onDeleteProject}
         />
       </div>
@@ -147,10 +142,10 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
         <Input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="New issue title"
+          placeholder="New task title"
           disabled={busy}
           maxLength={500}
-          aria-label="Issue title"
+          aria-label="Task title"
         />
         <Button type="submit" disabled={busy || !title.trim()} size="sm">
           Create
@@ -164,20 +159,20 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
       ) : null}
 
       {loading ? (
-        <p className="text-sm text-muted-foreground">Loading issues…</p>
-      ) : issues.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Loading tasks…</p>
+      ) : tasks.length === 0 ? (
         <div className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-          No issues yet.
+          No tasks yet.
         </div>
       ) : (
         <ul className="flex flex-col gap-1">
-          {issues.map((issue) => (
-            <li key={issue.id}>
+          {tasks.map((task) => (
+            <li key={task.id}>
               <Link
-                href={`/app/w/${workspaceId}/p/${projectId}/i/${issue.id}`}
+                href={`/app/w/${workspaceId}/p/${projectId}/t/${task.id}`}
                 className="block rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted/40"
               >
-                {issue.title || "Untitled"}
+                {task.title || "Untitled"}
               </Link>
             </li>
           ))}

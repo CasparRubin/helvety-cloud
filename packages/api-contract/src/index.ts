@@ -175,14 +175,14 @@ export const projectResponseSchema = z.object({
 });
 export type ProjectResponse = z.infer<typeof projectResponseSchema>;
 
-export const putIssueRequestSchema = z.object({
+export const putTaskRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
 });
-export type PutIssueRequest = z.infer<typeof putIssueRequestSchema>;
+export type PutTaskRequest = z.infer<typeof putTaskRequestSchema>;
 
-export const issueResponseSchema = z.object({
+export const taskResponseSchema = z.object({
   id: uuidSchema,
   projectId: uuidSchema,
   workspaceId: uuidSchema,
@@ -191,7 +191,7 @@ export const issueResponseSchema = z.object({
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
 });
-export type IssueResponse = z.infer<typeof issueResponseSchema>;
+export type TaskResponse = z.infer<typeof taskResponseSchema>;
 
 /** Shared list query: keyset cursor on (sort_order ASC, id ASC). */
 export const listQuerySchema = z.object({
@@ -222,18 +222,18 @@ export const listProjectsResponseSchema = z.object({
 });
 export type ListProjectsResponse = z.infer<typeof listProjectsResponseSchema>;
 
-export const listIssuesResponseSchema = z.object({
-  issues: z.array(issueResponseSchema),
+export const listTasksResponseSchema = z.object({
+  tasks: z.array(taskResponseSchema),
   nextCursor: z.string().nullable(),
 });
-export type ListIssuesResponse = z.infer<typeof listIssuesResponseSchema>;
+export type ListTasksResponse = z.infer<typeof listTasksResponseSchema>;
 
 export const putNoteRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
   projectId: uuidSchema.nullable().optional(),
-  issueId: uuidSchema.nullable().optional(),
+  taskId: uuidSchema.nullable().optional(),
 });
 export type PutNoteRequest = z.infer<typeof putNoteRequestSchema>;
 
@@ -241,7 +241,7 @@ export const noteResponseSchema = z.object({
   id: uuidSchema,
   workspaceId: uuidSchema,
   projectId: uuidSchema.nullable(),
-  issueId: uuidSchema.nullable(),
+  taskId: uuidSchema.nullable(),
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
   updatedAt: z.string(),
@@ -430,7 +430,7 @@ export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 export const workspaceLimitsSchema = z.object({
   projects: z.number().int().positive(),
   members: z.number().int().positive(),
-  issues: z.number().int().positive(),
+  tasks: z.number().int().positive(),
   notes: z.number().int().positive(),
   contacts: z.number().int().positive(),
 });
@@ -440,7 +440,7 @@ export const workspaceUsageSchema = z.object({
   projects: z.number().int().nonnegative(),
   members: z.number().int().nonnegative(),
   pendingInvitations: z.number().int().nonnegative(),
-  issues: z.number().int().nonnegative(),
+  tasks: z.number().int().nonnegative(),
   notes: z.number().int().nonnegative(),
   contacts: z.number().int().nonnegative(),
 });

@@ -204,7 +204,7 @@ describe("@helvety-cloud/crypto", () => {
 
   describe("content AES-256-GCM + AAD", () => {
     const aad = {
-      table: "issues",
+      table: "tasks",
       recordId: "00000000-0000-4000-8000-000000000001",
       field: "encrypted_blob",
     };
@@ -303,7 +303,7 @@ describe("@helvety-cloud/crypto", () => {
   });
 });
 
-describe("P6b project/issue vault content", () => {
+describe("P6b project/task vault content", () => {
   const decoder = new TextDecoder();
 
   it("encrypts project name with AAD; PUT schema requires encryptedBlob", async () => {
@@ -341,15 +341,15 @@ describe("P6b project/issue vault content", () => {
     expect(plain.name).toBe("Roundtrip Project");
   });
 
-  it("encrypts versioned TipTap issue body with AAD; PUT schema requires encryptedBlob", async () => {
-    const { putIssueRequestSchema } = await import(
+  it("encrypts versioned TipTap task body with AAD; PUT schema requires encryptedBlob", async () => {
+    const { putTaskRequestSchema } = await import(
       "@helvety-cloud/api-contract"
     );
     const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
-    const issueId = crypto.randomUUID();
+    const taskId = crypto.randomUUID();
     const aad = {
-      table: "issues" as const,
-      recordId: issueId,
+      table: "tasks" as const,
+      recordId: taskId,
       field: "encrypted_blob" as const,
     };
     const plaintext = {
@@ -371,10 +371,10 @@ describe("P6b project/issue vault content", () => {
       aad,
     });
 
-    expect(putIssueRequestSchema.safeParse({ sortOrder: 0 }).success).toBe(
+    expect(putTaskRequestSchema.safeParse({ sortOrder: 0 }).success).toBe(
       false,
     );
-    const putBody = putIssueRequestSchema.parse({
+    const putBody = putTaskRequestSchema.parse({
       encryptedBlob,
       sortOrder: 1,
     });

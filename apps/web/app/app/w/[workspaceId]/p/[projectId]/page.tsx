@@ -2,12 +2,12 @@
 
 import { useParams } from "next/navigation";
 
-import { IssueList } from "@/components/app/issue-list";
+import { TaskList } from "@/components/app/task-list";
 
 export default function ProjectPage() {
   const params = useParams<{ workspaceId: string; projectId: string }>();
   return (
-    <IssueList
+    <TaskList
       workspaceId={params.workspaceId}
       projectId={params.projectId}
     />

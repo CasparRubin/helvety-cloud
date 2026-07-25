@@ -5,7 +5,7 @@
 ```text
 @AGENTS.md @docs/architecture/ROADMAP.md @docs/architecture/prompts/P6c.md
 
-Implement P6c only. TipTap (or equivalent) for issue body; serialize into encrypted blob (versioned plaintext JSON inside ciphertext); autosave via existing PUT. No paid CRDT/Yjs SaaS. No sharing, notes tables, Stripe.
+Implement P6c only. TipTap (or equivalent) for task body; serialize into encrypted blob (versioned plaintext JSON inside ciphertext); autosave via existing PUT. No paid CRDT/Yjs SaaS. No sharing, notes tables, Stripe.
 ```
 
 **Done when:** Rich body round-trips encrypt → API → decrypt; no plaintext body on server.

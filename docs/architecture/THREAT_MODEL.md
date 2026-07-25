@@ -2,7 +2,7 @@
 
 ## Assets
 
-- User vault content (issue titles/bodies, later notes/contacts, etc.)
+- User vault content (task titles/bodies, later notes/contacts, etc.)
 - User encryption keys (symmetric + private asymmetric)
 - Unlock material (WebAuthn PRF output, recovery key)
 - Account identity (email, session JWT)

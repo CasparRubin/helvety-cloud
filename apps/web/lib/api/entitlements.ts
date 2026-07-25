@@ -24,7 +24,7 @@ export type WorkspaceUsageCounts = {
   projects: number;
   members: number;
   pendingInvitations: number;
-  issues: number;
+  tasks: number;
   notes: number;
   contacts: number;
 };
@@ -44,13 +44,13 @@ export async function getWorkspaceUsage(
       .eq("workspace_id", workspaceId)
       .is("deleted_at", null);
 
-  const [projects, notes, contacts, issues, members, pendingInvitations] =
+  const [projects, notes, contacts, tasks, members, pendingInvitations] =
     await Promise.all([
       countRows("projects"),
       countRows("notes"),
       countRows("contacts"),
       supabase
-        .from("issues")
+        .from("tasks")
         .select("id, projects!inner(workspace_id)", {
           count: "exact",
           head: true,
@@ -73,7 +73,7 @@ export async function getWorkspaceUsage(
     projects: projects.count ?? 0,
     notes: notes.count ?? 0,
     contacts: contacts.count ?? 0,
-    issues: issues.count ?? 0,
+    tasks: tasks.count ?? 0,
     members: members.count ?? 0,
     pendingInvitations: pendingInvitations.count ?? 0,
   };
@@ -111,9 +111,9 @@ async function countMeter(
   workspaceId: string,
   meter: WorkspaceMeter,
 ): Promise<number | null> {
-  if (meter === "issues") {
+  if (meter === "tasks") {
     const { count, error } = await supabase
-      .from("issues")
+      .from("tasks")
       .select("id, projects!inner(workspace_id)", {
         count: "exact",
         head: true,

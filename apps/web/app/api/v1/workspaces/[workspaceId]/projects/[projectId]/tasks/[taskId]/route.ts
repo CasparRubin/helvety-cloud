@@ -1,7 +1,7 @@
 import {
   ciphertextEnvelopeSchema,
-  issueResponseSchema,
-  putIssueRequestSchema,
+  putTaskRequestSchema,
+  taskResponseSchema,
 } from "@helvety-cloud/api-contract";
 
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
@@ -12,7 +12,7 @@ type RouteContext = {
   params: Promise<{
     workspaceId: string;
     projectId: string;
-    issueId: string;
+    taskId: string;
   }>;
 };
 
@@ -22,7 +22,7 @@ export async function GET(_request: Request, context: RouteContext) {
     return auth;
   }
   const { supabase } = auth;
-  const { workspaceId, projectId, issueId } = await context.params;
+  const { workspaceId, projectId, taskId } = await context.params;
 
   const { data: project, error: projectError } = await supabase
     .from("projects")
@@ -39,11 +39,11 @@ export async function GET(_request: Request, context: RouteContext) {
   }
 
   const { data, error } = await supabase
-    .from("issues")
+    .from("tasks")
     .select(
       "id, project_id, encrypted_blob, sort_order, updated_at, deleted_at",
     )
-    .eq("id", issueId)
+    .eq("id", taskId)
     .eq("project_id", projectId)
     .maybeSingle();
 
@@ -51,11 +51,11 @@ export async function GET(_request: Request, context: RouteContext) {
     return apiError("internal", error.message, 500);
   }
   if (!data) {
-    return apiError("not_found", "Issue not found", 404);
+    return apiError("not_found", "Task not found", 404);
   }
 
   return jsonOk(
-    issueResponseSchema.parse({
+    taskResponseSchema.parse({
       id: data.id,
       projectId: data.project_id,
       workspaceId,
@@ -73,7 +73,7 @@ export async function PUT(request: Request, context: RouteContext) {
     return auth;
   }
   const { supabase } = auth;
-  const { workspaceId, projectId, issueId } = await context.params;
+  const { workspaceId, projectId, taskId } = await context.params;
 
   let body: unknown;
   try {
@@ -82,7 +82,7 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("invalid_body", "Request body must be JSON", 400);
   }
 
-  const parsed = putIssueRequestSchema.safeParse(body);
+  const parsed = putTaskRequestSchema.safeParse(body);
   if (!parsed.success) {
     return apiError("invalid_body", parsed.error.message, 400);
   }
@@ -103,9 +103,9 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const { data: existing, error: existingError } = await supabase
-    .from("issues")
+    .from("tasks")
     .select("id")
-    .eq("id", issueId)
+    .eq("id", taskId)
     .eq("project_id", projectId)
     .maybeSingle();
   if (existingError) {
@@ -115,7 +115,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const limitResponse = await assertWorkspaceCreateAllowed(
       supabase,
       workspaceId,
-      "issues",
+      "tasks",
     );
     if (limitResponse) {
       return limitResponse;
@@ -123,10 +123,10 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const { data: row, error } = await supabase
-    .from("issues")
+    .from("tasks")
     .upsert(
       {
-        id: issueId,
+        id: taskId,
         project_id: projectId,
         encrypted_blob: data.encryptedBlob,
         sort_order: data.sortOrder ?? 0,
@@ -147,7 +147,7 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   return jsonOk(
-    issueResponseSchema.parse({
+    taskResponseSchema.parse({
       id: row.id,
       projectId: row.project_id,
       workspaceId,
@@ -165,7 +165,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     return auth;
   }
   const { supabase } = auth;
-  const { workspaceId, projectId, issueId } = await context.params;
+  const { workspaceId, projectId, taskId } = await context.params;
 
   const { data: project, error: projectError } = await supabase
     .from("projects")
@@ -182,9 +182,9 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
 
   const { data, error } = await supabase
-    .from("issues")
+    .from("tasks")
     .delete()
-    .eq("id", issueId)
+    .eq("id", taskId)
     .eq("project_id", projectId)
     .select("id")
     .maybeSingle();
@@ -196,7 +196,7 @@ export async function DELETE(request: Request, context: RouteContext) {
     return apiError("internal", error.message, 500);
   }
   if (!data) {
-    return apiError("not_found", "Issue not found", 404);
+    return apiError("not_found", "Task not found", 404);
   }
 
   return new Response(null, { status: 204 });

@@ -1,19 +1,19 @@
 import {
-  EMPTY_ISSUE_BODY,
-  isIssueBodyDoc,
-  type IssueBodyDoc,
-} from "@/lib/vault/issue-plaintext";
+  EMPTY_TASK_BODY,
+  isTaskBodyDoc,
+  type TaskBodyDoc,
+} from "@/lib/vault/task-plaintext";
 
-export type { IssueBodyDoc };
+export type { TaskBodyDoc };
 
 export type NotePlaintext = {
   version: 1;
   title: string;
-  body: IssueBodyDoc;
+  body: TaskBodyDoc;
   tags: string[];
 };
 
-export const EMPTY_NOTE_BODY: IssueBodyDoc = EMPTY_ISSUE_BODY;
+export const EMPTY_NOTE_BODY: TaskBodyDoc = EMPTY_TASK_BODY;
 
 function isStringArray(value: unknown): value is string[] {
   return Array.isArray(value) && value.every((t) => typeof t === "string");
@@ -30,7 +30,7 @@ export function parseNotePlaintext(raw: unknown): NotePlaintext {
   if (typeof obj.title !== "string") {
     throw new Error("Invalid note plaintext");
   }
-  if (!isIssueBodyDoc(obj.body)) {
+  if (!isTaskBodyDoc(obj.body)) {
     throw new Error("Invalid note plaintext");
   }
   const tags = obj.tags === undefined ? [] : obj.tags;
@@ -50,13 +50,13 @@ export function parseNotePlaintext(raw: unknown): NotePlaintext {
 
 export function toNotePlaintext(
   title: string,
-  body: IssueBodyDoc,
+  body: TaskBodyDoc,
   tags: string[] = [],
 ): NotePlaintext {
   return {
     version: 1,
     title: title.trim(),
-    body: isIssueBodyDoc(body) ? body : EMPTY_NOTE_BODY,
+    body: isTaskBodyDoc(body) ? body : EMPTY_NOTE_BODY,
     tags: tags.map((t) => t.trim()).filter(Boolean),
   };
 }

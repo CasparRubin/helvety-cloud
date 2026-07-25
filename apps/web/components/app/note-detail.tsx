@@ -1,10 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-import { IssueBodyEditor } from "@/components/app/issue-body-editor";
+import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -12,7 +11,7 @@ import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   EMPTY_NOTE_BODY,
   toNotePlaintext,
-  type IssueBodyDoc,
+  type TaskBodyDoc,
 } from "@/lib/vault/note-plaintext";
 import {
   deleteNote,
@@ -25,9 +24,9 @@ import {
   type DecryptedProject,
 } from "@/lib/vault/projects";
 import {
-  loadDecryptedIssues,
-  type DecryptedIssue,
-} from "@/lib/vault/issues";
+  loadDecryptedTasks,
+  type DecryptedTask,
+} from "@/lib/vault/tasks";
 
 const AUTOSAVE_MS = 600;
 
@@ -44,12 +43,12 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
   const [note, setNote] = useState<DecryptedNote | null>(null);
   const [title, setTitle] = useState("");
-  const [body, setBody] = useState<IssueBodyDoc>(EMPTY_NOTE_BODY);
+  const [body, setBody] = useState<TaskBodyDoc>(EMPTY_NOTE_BODY);
   const [tagsText, setTagsText] = useState("");
   const [projectId, setProjectId] = useState<string>("");
-  const [issueId, setIssueId] = useState<string>("");
+  const [taskId, setTaskId] = useState<string>("");
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
-  const [issues, setIssues] = useState<DecryptedIssue[]>([]);
+  const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -60,7 +59,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const bodyRef = useRef(body);
   const tagsTextRef = useRef(tagsText);
   const projectIdRef = useRef(projectId);
-  const issueIdRef = useRef(issueId);
+  const taskIdRef = useRef(taskId);
   const noteRef = useRef(note);
   const deletingRef = useRef(deleting);
   const savingRef = useRef(false);
@@ -75,7 +74,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     bodyRef.current = body;
     tagsTextRef.current = tagsText;
     projectIdRef.current = projectId;
-    issueIdRef.current = issueId;
+    taskIdRef.current = taskId;
     noteRef.current = note;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
@@ -105,14 +104,14 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         setBody(loaded.body);
         setTagsText(loaded.tags.join(", "));
         setProjectId(loaded.projectId ?? "");
-        setIssueId(loaded.issueId ?? "");
+        setTaskId(loaded.taskId ?? "");
         setProjects(projectsPage.projects);
         loadedSnapshotRef.current = snapshot(
           loaded.title,
           loaded.body,
           loaded.tags.join(", "),
           loaded.projectId ?? "",
-          loaded.issueId ?? "",
+          loaded.taskId ?? "",
         );
         setSaveStatus("idle");
         setError(null);
@@ -137,13 +136,13 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const page = await loadDecryptedIssues(workspaceId, projectId, key, {
+        const page = await loadDecryptedTasks(workspaceId, projectId, key, {
           limit: 100,
         });
         if (cancelled) return;
-        setIssues(page.issues);
+        setTasks(page.tasks);
       } catch {
-        if (!cancelled) setIssues([]);
+        if (!cancelled) setTasks([]);
       }
     })();
     return () => {
@@ -159,13 +158,13 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     const nextBody = bodyRef.current;
     const nextTagsText = tagsTextRef.current;
     const nextProjectId = projectIdRef.current;
-    const nextIssueId = issueIdRef.current;
+    const nextTaskId = taskIdRef.current;
     const snap = snapshot(
       nextTitle,
       nextBody,
       nextTagsText,
       nextProjectId,
-      nextIssueId,
+      nextTaskId,
     );
     if (snap === loadedSnapshotRef.current) {
       if (mountedRef.current) {
@@ -197,7 +196,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         toNotePlaintext(nextTitle, nextBody, tags),
         {
           projectId: nextProjectId || null,
-          issueId: nextIssueId || null,
+          taskId: nextTaskId || null,
         },
       );
       loadedSnapshotRef.current = snapshot(
@@ -205,7 +204,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         saved.body,
         saved.tags.join(", "),
         saved.projectId ?? "",
-        saved.issueId ?? "",
+        saved.taskId ?? "",
       );
       if (!mountedRef.current) return;
       setNote(saved);
@@ -215,14 +214,14 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
           bodyRef.current,
           tagsTextRef.current,
           projectIdRef.current,
-          issueIdRef.current,
+          taskIdRef.current,
         ) === snap
       ) {
         setTitle(saved.title);
         setBody(saved.body);
         setTagsText(saved.tags.join(", "));
         setProjectId(saved.projectId ?? "");
-        setIssueId(saved.issueId ?? "");
+        setTaskId(saved.taskId ?? "");
       }
       setSavedAt(new Date().toLocaleTimeString());
       setSaveStatus("saved");
@@ -245,7 +244,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
   useEffect(() => {
     if (!note || loading) return;
-    const snap = snapshot(title, body, tagsText, projectId, issueId);
+    const snap = snapshot(title, body, tagsText, projectId, taskId);
     if (snap === loadedSnapshotRef.current) return;
 
     setSaveStatus("dirty");
@@ -253,7 +252,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       void persistRef.current();
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [title, body, tagsText, projectId, issueId, note, loading, workspaceId]);
+  }, [title, body, tagsText, projectId, taskId, note, loading, workspaceId]);
 
   useEffect(() => {
     function flushIfDirty() {
@@ -264,7 +263,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         bodyRef.current,
         tagsTextRef.current,
         projectIdRef.current,
-        issueIdRef.current,
+        taskIdRef.current,
       );
       if (snap === loadedSnapshotRef.current) return;
       void persistRef.current();
@@ -296,13 +295,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div>
-        <Link
-          href={`/app/w/${workspaceId}/notes`}
-          className="text-xs text-muted-foreground hover:underline"
-        >
-          ← Notes
-        </Link>
-        <h1 className="mt-1 text-lg font-semibold tracking-tight">Note</h1>
+        <h1 className="text-lg font-semibold tracking-tight">Note</h1>
         <p className="text-sm text-muted-foreground">
           Edits are encrypted on your device before upload.
         </p>
@@ -336,7 +329,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
                 disabled={deleting}
                 onChange={(e) => {
                   setProjectId(e.target.value);
-                  setIssueId("");
+                  setTaskId("");
                 }}
                 aria-label="Linked project"
               >
@@ -349,24 +342,24 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
               </select>
             </label>
             <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              Issue link
+              Task link
               <select
                 className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-                value={issueId}
+                value={taskId}
                 disabled={deleting || !projectId}
-                onChange={(e) => setIssueId(e.target.value)}
-                aria-label="Linked issue"
+                onChange={(e) => setTaskId(e.target.value)}
+                aria-label="Linked task"
               >
                 <option value="">None</option>
-                {(!projectId ? [] : issues).map((i) => (
-                  <option key={i.id} value={i.id}>
-                    {i.title}
+                {(!projectId ? [] : tasks).map((t) => (
+                  <option key={t.id} value={t.id}>
+                    {t.title}
                   </option>
                 ))}
               </select>
             </label>
           </div>
-          <IssueBodyEditor
+          <TaskBodyEditor
             content={body}
             onChange={setBody}
             disabled={deleting}
@@ -404,12 +397,12 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
 function snapshot(
   title: string,
-  body: IssueBodyDoc,
+  body: TaskBodyDoc,
   tagsText: string,
   projectId: string,
-  issueId: string,
+  taskId: string,
 ): string {
-  return JSON.stringify({ title, body, tagsText, projectId, issueId });
+  return JSON.stringify({ title, body, tagsText, projectId, taskId });
 }
 
 function SaveStatusLabel({

@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const billingDoc: LegalDocument = {
   slug: "billing",
   title: "Billing terms",
-  versionLabel: "2026-07-24-v2",
+  versionLabel: "2026-07-25-v1",
   sections: [
     {
       heading: "Status",
@@ -15,7 +15,7 @@ export const billingDoc: LegalDocument = {
     {
       heading: "Free plan",
       paragraphs: [
-        "The free plan applies fair-use limits per workspace (for example counts of projects, members, issues, notes, and contacts). Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
+        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks, notes, and contacts). Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
         "Helvety may change free limits with notice in the product. Continued use after a change means you accept the updated limits.",
       ],
     },

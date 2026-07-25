@@ -1,6 +1,6 @@
 /**
  * P6e workspace sharing: seal to invitee public key with wrapped_keys AAD;
- * both members decrypt the same issue/note/contact ciphertext.
+ * both members decrypt the same task/note/contact ciphertext.
  */
 import { describe, expect, it } from "vitest";
 import {
@@ -24,9 +24,9 @@ import {
   encryptContactContent,
 } from "../../apps/web/lib/vault/contacts";
 import {
-  decryptIssueContent,
-  encryptIssueContent,
-} from "../../apps/web/lib/vault/issues";
+  decryptTaskContent,
+  encryptTaskContent,
+} from "../../apps/web/lib/vault/tasks";
 import {
   decryptNoteContent,
   encryptNoteContent,
@@ -93,7 +93,7 @@ describe("P6e invitee seal / open", () => {
     ).rejects.toThrow();
   });
 
-  it("both members decrypt the same issue, note, and contact ciphertext", async () => {
+  it("both members decrypt the same task, note, and contact ciphertext", async () => {
     const invitee = await generateUserKeyMaterial();
     const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
     const sealed = await sealToPublicKey(
@@ -107,13 +107,13 @@ describe("P6e invitee seal / open", () => {
       sealAad,
     );
 
-    const issueId = crypto.randomUUID();
+    const taskId = crypto.randomUUID();
     const noteId = crypto.randomUUID();
     const contactId = crypto.randomUUID();
 
-    const issueBlob = await encryptIssueContent(workspaceKey, issueId, {
+    const taskBlob = await encryptTaskContent(workspaceKey, taskId, {
       version: 1,
-      title: "Shared issue",
+      title: "Shared task",
       body: {
         type: "doc",
         content: [
@@ -150,22 +150,22 @@ describe("P6e invitee seal / open", () => {
       },
     );
 
-    expect(JSON.stringify(issueBlob)).not.toContain("Shared issue");
+    expect(JSON.stringify(taskBlob)).not.toContain("Shared task");
     expect(JSON.stringify(noteBlob)).not.toContain("Shared note");
     expect(JSON.stringify(contactBlob)).not.toContain("Ada");
 
-    const issueOwner = await decryptIssueContent(
+    const taskOwner = await decryptTaskContent(
       workspaceKey,
-      issueId,
-      issueBlob,
+      taskId,
+      taskBlob,
     );
-    const issueInvitee = await decryptIssueContent(
+    const taskInvitee = await decryptTaskContent(
       inviteeKey,
-      issueId,
-      issueBlob,
+      taskId,
+      taskBlob,
     );
-    expect(issueOwner.title).toBe("Shared issue");
-    expect(issueInvitee.title).toBe(issueOwner.title);
+    expect(taskOwner.title).toBe("Shared task");
+    expect(taskInvitee.title).toBe(taskOwner.title);
 
     const noteOwner = await decryptNoteContent(workspaceKey, noteId, noteBlob);
     const noteInvitee = await decryptNoteContent(
@@ -197,9 +197,9 @@ describe("P6e invitee seal / open", () => {
     await expect(
       decrypt({
         key: workspaceKey,
-        envelope: issueBlob,
+        envelope: taskBlob,
         aad: {
-          table: "issues",
+          table: "tasks",
           recordId: "wrong-id",
           field: "encrypted_blob",
         },

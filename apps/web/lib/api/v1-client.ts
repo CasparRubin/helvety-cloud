@@ -9,9 +9,9 @@ import {
   getMePolicyAcceptancesResponseSchema,
   getWorkspaceBillingResponseSchema,
   getWorkspaceResponseSchema,
-  issueResponseSchema,
+  taskResponseSchema,
   listContactsResponseSchema,
-  listIssuesResponseSchema,
+  listTasksResponseSchema,
   listMyInvitationsResponseSchema,
   listNotesResponseSchema,
   listProjectsResponseSchema,
@@ -23,7 +23,7 @@ import {
   patchWorkspaceResponseSchema,
   projectResponseSchema,
   putContactRequestSchema,
-  putIssueRequestSchema,
+  putTaskRequestSchema,
   putMeCryptoRequestSchema,
   putMeCryptoResponseSchema,
   putMePolicyAcceptancesRequestSchema,
@@ -41,9 +41,9 @@ import {
   type GetMePolicyAcceptancesResponse,
   type GetWorkspaceBillingResponse,
   type GetWorkspaceResponse,
-  type IssueResponse,
+  type TaskResponse,
   type ListContactsResponse,
-  type ListIssuesResponse,
+  type ListTasksResponse,
   type ListMyInvitationsResponse,
   type ListNotesResponse,
   type ListProjectsResponse,
@@ -55,7 +55,7 @@ import {
   type PatchWorkspaceResponse,
   type ProjectResponse,
   type PutContactRequest,
-  type PutIssueRequest,
+  type PutTaskRequest,
   type PutMeCryptoRequest,
   type PutMeCryptoResponse,
   type PutMePolicyAcceptancesRequest,
@@ -299,58 +299,58 @@ export async function deleteProject(
   );
 }
 
-export async function listIssues(
+export async function listTasks(
   workspaceId: string,
   projectId: string,
   params?: ListParams,
-): Promise<ListIssuesResponse> {
+): Promise<ListTasksResponse> {
   return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues${listQuery(params)}`,
-    listIssuesResponseSchema,
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks${listQuery(params)}`,
+    listTasksResponseSchema,
   );
 }
 
-export async function putIssue(
+export async function putTask(
   workspaceId: string,
   projectId: string,
-  issueId: string,
-  body: PutIssueRequest,
-): Promise<IssueResponse> {
+  taskId: string,
+  body: PutTaskRequest,
+): Promise<TaskResponse> {
   return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues/${issueId}`,
-    issueResponseSchema,
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`,
+    taskResponseSchema,
     {
       method: "PUT",
-      body: JSON.stringify(putIssueRequestSchema.parse(body)),
+      body: JSON.stringify(putTaskRequestSchema.parse(body)),
     },
   );
 }
 
-export async function getIssue(
+export async function getTask(
   workspaceId: string,
   projectId: string,
-  issueId: string,
-): Promise<IssueResponse> {
+  taskId: string,
+): Promise<TaskResponse> {
   return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues/${issueId}`,
-    issueResponseSchema,
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`,
+    taskResponseSchema,
   );
 }
 
-export async function deleteIssue(
+export async function deleteTask(
   workspaceId: string,
   projectId: string,
-  issueId: string,
+  taskId: string,
 ): Promise<void> {
   await apiFetchNoContent(
-    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues/${issueId}`,
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`,
     { method: "DELETE" },
   );
 }
 
 export type ListNotesParams = ListParams & {
   projectId?: string | null;
-  issueId?: string | null;
+  taskId?: string | null;
 };
 
 function notesListQuery(params?: ListNotesParams): string {
@@ -359,7 +359,7 @@ function notesListQuery(params?: ListNotesParams): string {
   if (params?.cursor) q.set("cursor", params.cursor);
   if (params?.includeDeleted) q.set("includeDeleted", "true");
   if (params?.projectId) q.set("projectId", params.projectId);
-  if (params?.issueId) q.set("issueId", params.issueId);
+  if (params?.taskId) q.set("taskId", params.taskId);
   const s = q.toString();
   return s ? `?${s}` : "";
 }

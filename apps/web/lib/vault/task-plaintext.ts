@@ -1,30 +1,30 @@
 /** TipTap-compatible JSON document (kept free of TipTap imports for vault/tests). */
-export type IssueBodyDoc = {
+export type TaskBodyDoc = {
   type: "doc";
-  content?: IssueBodyNode[];
+  content?: TaskBodyNode[];
 };
 
-export type IssueBodyNode = {
+export type TaskBodyNode = {
   type: string;
   attrs?: Record<string, unknown>;
-  content?: IssueBodyNode[];
+  content?: TaskBodyNode[];
   marks?: { type: string; attrs?: Record<string, unknown> }[];
   text?: string;
 };
 
-export type IssuePlaintext = {
+export type TaskPlaintext = {
   version: 1;
   title: string;
-  body: IssueBodyDoc;
+  body: TaskBodyDoc;
 };
 
-export const EMPTY_ISSUE_BODY: IssueBodyDoc = {
+export const EMPTY_TASK_BODY: TaskBodyDoc = {
   type: "doc",
   content: [{ type: "paragraph" }],
 };
 
-export function textToIssueBody(text: string): IssueBodyDoc {
-  if (!text) return EMPTY_ISSUE_BODY;
+export function textToTaskBody(text: string): TaskBodyDoc {
+  if (!text) return EMPTY_TASK_BODY;
   return {
     type: "doc",
     content: [
@@ -36,7 +36,7 @@ export function textToIssueBody(text: string): IssueBodyDoc {
   };
 }
 
-export function isIssueBodyDoc(value: unknown): value is IssueBodyDoc {
+export function isTaskBodyDoc(value: unknown): value is TaskBodyDoc {
   if (typeof value !== "object" || value === null) return false;
   const doc = value as { type?: unknown; content?: unknown };
   if (doc.type !== "doc") return false;
@@ -45,21 +45,21 @@ export function isIssueBodyDoc(value: unknown): value is IssueBodyDoc {
 }
 
 /**
- * Normalize decrypted JSON into IssuePlaintext v1.
+ * Normalize decrypted JSON into TaskPlaintext v1.
  * Legacy P6b blobs: `{ title, body: string }` (no version).
  */
-export function parseIssuePlaintext(raw: unknown): IssuePlaintext {
+export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
   if (typeof raw !== "object" || raw === null) {
-    throw new Error("Invalid issue plaintext");
+    throw new Error("Invalid task plaintext");
   }
   const obj = raw as Record<string, unknown>;
   if (typeof obj.title !== "string") {
-    throw new Error("Invalid issue plaintext");
+    throw new Error("Invalid task plaintext");
   }
 
   if (obj.version === 1) {
-    if (!isIssueBodyDoc(obj.body)) {
-      throw new Error("Invalid issue plaintext");
+    if (!isTaskBodyDoc(obj.body)) {
+      throw new Error("Invalid task plaintext");
     }
     return {
       version: 1,
@@ -76,20 +76,20 @@ export function parseIssuePlaintext(raw: unknown): IssuePlaintext {
     return {
       version: 1,
       title: obj.title,
-      body: textToIssueBody(obj.body),
+      body: textToTaskBody(obj.body),
     };
   }
 
-  throw new Error("Invalid issue plaintext");
+  throw new Error("Invalid task plaintext");
 }
 
-export function toIssuePlaintext(
+export function toTaskPlaintext(
   title: string,
-  body: IssueBodyDoc,
-): IssuePlaintext {
+  body: TaskBodyDoc,
+): TaskPlaintext {
   return {
     version: 1,
     title: title.trim(),
-    body: isIssueBodyDoc(body) ? body : EMPTY_ISSUE_BODY,
+    body: isTaskBodyDoc(body) ? body : EMPTY_TASK_BODY,
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ChevronsUpDownIcon,
@@ -25,6 +25,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import type { AppNavEntity } from "@/components/app/workspace-nav";
 import {
   loadDecryptedContacts,
   type DecryptedContact,
@@ -39,14 +40,10 @@ const LOAD_LIMIT = 100;
 
 type WorkspaceJumpSwitcherProps = {
   workspaceId: string;
+  active: AppNavEntity;
 };
 
-type JumpEntryKind = "project" | "note" | "contact";
-
-type ActiveChild = {
-  kind: JumpEntryKind;
-  id: string;
-};
+type JumpEntryKind = AppNavEntity["kind"];
 
 type JumpEntry = {
   kind: JumpEntryKind;
@@ -61,37 +58,17 @@ const entryIcons: Record<JumpEntryKind, LucideIcon> = {
   contact: ContactIcon,
 };
 
-function activeChildFromPath(
-  pathname: string,
-  workspaceId: string,
-): ActiveChild | null {
-  const prefix = `/app/w/${workspaceId}/`;
-  if (!pathname.startsWith(prefix)) return null;
-  const rest = pathname.slice(prefix.length).split("/");
-  const [section, id] = rest;
-  if (!id) return null;
-  if (section === "p") return { kind: "project", id };
-  if (section === "notes") return { kind: "note", id };
-  if (section === "contacts") return { kind: "contact", id };
-  return null;
-}
-
 export function WorkspaceJumpSwitcher({
   workspaceId,
+  active,
 }: WorkspaceJumpSwitcherProps) {
   const router = useRouter();
-  const pathname = usePathname();
   const { vault, getWorkspaceKey } = useVaultSession();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
-
-  const active = useMemo(
-    () => activeChildFromPath(pathname, workspaceId),
-    [pathname, workspaceId],
-  );
 
   const refresh = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
@@ -106,7 +83,7 @@ export function WorkspaceJumpSwitcher({
   }, [getWorkspaceKey, workspaceId]);
 
   useEffect(() => {
-    if (!vault || !active) return;
+    if (!vault) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -131,10 +108,10 @@ export function WorkspaceJumpSwitcher({
     return () => {
       cancelled = true;
     };
-  }, [vault, active, workspaceId, getWorkspaceKey]);
+  }, [vault, workspaceId, getWorkspaceKey]);
 
   useEffect(() => {
-    if (!vault || !active) return;
+    if (!vault) return;
     const onChange = () => {
       void refresh().catch(() => undefined);
     };
@@ -148,7 +125,7 @@ export function WorkspaceJumpSwitcher({
       window.removeEventListener("helvety:contacts-changed", onChange);
       window.removeEventListener("focus", onChange);
     };
-  }, [vault, active, refresh]);
+  }, [vault, refresh]);
 
   const entries = useMemo<Record<JumpEntryKind, JumpEntry[]>>(() => {
     const base = `/app/w/${workspaceId}`;
@@ -174,10 +151,10 @@ export function WorkspaceJumpSwitcher({
     };
   }, [workspaceId, projects, notes, contacts]);
 
-  const activeEntry = useMemo(() => {
-    if (!active) return null;
-    return entries[active.kind].find((e) => e.id === active.id) ?? null;
-  }, [active, entries]);
+  const activeEntry = useMemo(
+    () => entries[active.kind].find((e) => e.id === active.id) ?? null,
+    [active.kind, active.id, entries],
+  );
 
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = useMemo(() => {
@@ -200,8 +177,6 @@ export function WorkspaceJumpSwitcher({
     filtered.note.length === 0 &&
     filtered.contact.length === 0;
 
-  if (!active) return null;
-
   const groups: { heading: string; items: JumpEntry[] }[] = [
     { heading: "Projects", items: filtered.project },
     { heading: "Notes", items: filtered.note },
@@ -209,71 +184,68 @@ export function WorkspaceJumpSwitcher({
   ];
 
   return (
-    <>
-      <span className="text-sm text-muted-foreground/60">/</span>
-      <Popover
-        open={open}
-        onOpenChange={(next) => {
-          setOpen(next);
-          if (next) {
-            setQuery("");
-            void refresh().catch(() => undefined);
-          }
-        }}
+    <Popover
+      open={open}
+      onOpenChange={(next) => {
+        setOpen(next);
+        if (next) {
+          setQuery("");
+          void refresh().catch(() => undefined);
+        }
+      }}
+    >
+      <PopoverTrigger
+        render={
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 max-w-[14rem] justify-between gap-2 px-2 font-normal"
+          />
+        }
       >
-        <PopoverTrigger
-          render={
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 max-w-[14rem] justify-between gap-2 px-2 font-normal"
-            />
-          }
-        >
-          <span className="truncate text-left text-sm">
-            {activeEntry?.name ?? "…"}
-          </span>
-          <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-60" />
-        </PopoverTrigger>
-        <PopoverContent className="w-72 p-0" align="start">
-          <Command shouldFilter={false}>
-            <CommandInput
-              placeholder="Search projects, notes, contacts…"
-              value={query}
-              onValueChange={setQuery}
-            />
-            <CommandList>
-              {nothingFound ? <CommandEmpty>No matches.</CommandEmpty> : null}
-              {groups.map((group) =>
-                group.items.length > 0 ? (
-                  <CommandGroup key={group.heading} heading={group.heading}>
-                    {group.items.map((entry) => {
-                      const EntryIcon = entryIcons[entry.kind];
-                      return (
-                        <CommandItem
-                          key={`${entry.kind}:${entry.id}`}
-                          value={`${entry.kind}:${entry.id}`}
-                          data-checked={
-                            entry.kind === active.kind && entry.id === active.id
-                          }
-                          onSelect={() => {
-                            setOpen(false);
-                            setQuery("");
-                            router.push(entry.href);
-                          }}
-                        >
-                          <EntryIcon className="size-4 shrink-0 opacity-60" />
-                          <span className="truncate">{entry.name}</span>
-                        </CommandItem>
-                      );
-                    })}
-                  </CommandGroup>
-                ) : null,
-              )}
-            </CommandList>
-          </Command>
-        </PopoverContent>
-      </Popover>
-    </>
+        <span className="truncate text-left text-sm">
+          {activeEntry?.name ?? "…"}
+        </span>
+        <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-60" />
+      </PopoverTrigger>
+      <PopoverContent className="w-72 p-0" align="start">
+        <Command shouldFilter={false}>
+          <CommandInput
+            placeholder="Search projects, notes, contacts…"
+            value={query}
+            onValueChange={setQuery}
+          />
+          <CommandList>
+            {nothingFound ? <CommandEmpty>No matches.</CommandEmpty> : null}
+            {groups.map((group) =>
+              group.items.length > 0 ? (
+                <CommandGroup key={group.heading} heading={group.heading}>
+                  {group.items.map((entry) => {
+                    const EntryIcon = entryIcons[entry.kind];
+                    return (
+                      <CommandItem
+                        key={`${entry.kind}:${entry.id}`}
+                        value={`${entry.kind}:${entry.id}`}
+                        data-checked={
+                          entry.kind === active.kind && entry.id === active.id
+                        }
+                        onSelect={() => {
+                          setOpen(false);
+                          setQuery("");
+                          router.push(entry.href);
+                        }}
+                      >
+                        <EntryIcon className="size-4 shrink-0 opacity-60" />
+                        <span className="truncate">{entry.name}</span>
+                      </CommandItem>
+                    );
+                  })}
+                </CommandGroup>
+              ) : null,
+            )}
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   );
 }

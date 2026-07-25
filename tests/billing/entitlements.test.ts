@@ -54,7 +54,7 @@ describe("plan limits", () => {
     expect(pro.ownedWorkspaces).toBeGreaterThan(free.ownedWorkspaces);
     expect(pro.projectsPerWorkspace).toBeGreaterThan(free.projectsPerWorkspace);
     expect(pro.membersPerWorkspace).toBeGreaterThan(free.membersPerWorkspace);
-    expect(pro.issuesPerWorkspace).toBeGreaterThan(free.issuesPerWorkspace);
+    expect(pro.tasksPerWorkspace).toBeGreaterThan(free.tasksPerWorkspace);
     expect(pro.notesPerWorkspace).toBeGreaterThan(free.notesPerWorkspace);
     expect(pro.contactsPerWorkspace).toBeGreaterThan(free.contactsPerWorkspace);
   });
@@ -65,7 +65,7 @@ describe("plan limits", () => {
   });
 
   it("maps every workspace meter to its plan cap", () => {
-    const meters: WorkspaceMeter[] = ["projects", "issues", "notes", "contacts"];
+    const meters: WorkspaceMeter[] = ["projects", "tasks", "notes", "contacts"];
     for (const meter of meters) {
       expect(workspaceMeterLimit("free", meter)).toBeGreaterThan(0);
       expect(workspaceMeterLimit("pro", meter)).toBeGreaterThan(

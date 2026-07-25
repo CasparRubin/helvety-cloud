@@ -5,10 +5,10 @@
 ```text
 @AGENTS.md @docs/architecture/ROADMAP.md @docs/architecture/prompts/P6e.md @docs/architecture/KEY_HIERARCHY.md @docs/architecture/THREAT_MODEL.md
 
-Implement P6e only. Invite member by email; workspace_members role; seal workspace_key to invitee user_public_key → wrapped_keys with AAD; accept-invite UX. Member decrypts all workspace ciphertext (issues/notes/contacts). No project-level ACL, MLS, or Stripe.
+Implement P6e only. Invite member by email; workspace_members role; seal workspace_key to invitee user_public_key → wrapped_keys with AAD; accept-invite UX. Member decrypts all workspace ciphertext (tasks/notes/contacts). No project-level ACL, MLS, or Stripe.
 ```
 
-**Done when:** Owner invites second user; both decrypt same issue/note/contact ciphertext in that workspace.
+**Done when:** Owner invites second user; both decrypt same task/note/contact ciphertext in that workspace.
 
 **Don’t:** Project-level ACL; MLS; cross-workspace contact sync; Stripe.
 

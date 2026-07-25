@@ -5,7 +5,7 @@
 ```text
 @AGENTS.md @docs/architecture/ROADMAP.md @docs/architecture/prompts/P6d.md @docs/architecture/DATA_MODEL.md @docs/architecture/SCHEMA_WORKFLOW.md @docs/architecture/KEY_HIERARCHY.md
 
-Implement P6d only. Workspace-scoped notes + contacts: declarative schema (required workspace_id, encrypted_blob; notes may have nullable project_id/issue_id); RLS + grants; migrate qnoeiurmyyyuawkcifmw only; /api/v1 + UI. Notes = dynamic encrypted JSON. Contacts under workspace_key (duplicates across workspaces OK). AAD bound. Free-tier/greenfield.
+Implement P6d only. Workspace-scoped notes + contacts: declarative schema (required workspace_id, encrypted_blob; notes may have nullable project_id/task_id); RLS + grants; migrate qnoeiurmyyyuawkcifmw only; /api/v1 + UI. Notes = dynamic encrypted JSON. Contacts under workspace_key (duplicates across workspaces OK). AAD bound. Free-tier/greenfield.
 
 No user-global contacts; no null workspace; no sharing UI; no Stripe.
 ```

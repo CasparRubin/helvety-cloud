@@ -1,7 +1,7 @@
 import {
   ciphertextEnvelopeSchema,
-  issueResponseSchema,
-  listIssuesResponseSchema,
+  listTasksResponseSchema,
+  taskResponseSchema,
 } from "@helvety-cloud/api-contract";
 
 import { apiError, jsonOk } from "@/lib/api/errors";
@@ -45,7 +45,7 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   let query = supabase
-    .from("issues")
+    .from("tasks")
     .select(
       "id, project_id, encrypted_blob, sort_order, updated_at, deleted_at",
     )
@@ -82,8 +82,8 @@ export async function GET(request: Request, context: RouteContext) {
       ? encodeSortOrderCursor({ sortOrder: last.sort_order, id: last.id })
       : null;
 
-  const issues = page.map((row) =>
-    issueResponseSchema.parse({
+  const tasks = page.map((row) =>
+    taskResponseSchema.parse({
       id: row.id,
       projectId: row.project_id,
       workspaceId,
@@ -95,8 +95,8 @@ export async function GET(request: Request, context: RouteContext) {
   );
 
   return jsonOk(
-    listIssuesResponseSchema.parse({
-      issues,
+    listTasksResponseSchema.parse({
+      tasks,
       nextCursor,
     }),
   );

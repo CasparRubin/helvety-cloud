@@ -7,12 +7,12 @@
 
 Implement P6a only. Replace the P5 proof card with an app shell: policy gate → PRF unlock → /app chrome with workspace switcher. List/create workspaces via /api/v1 (add list endpoint if missing). On first vault setup, ensure a Personal workspace. Keys in memory only. Dense shadcn Base UI. Free-tier/greenfield.
 
-Do not implement issue lists, TipTap, notes/contacts tables, sharing, or Stripe.
+Do not implement task lists, TipTap, notes/contacts tables, sharing, or Stripe.
 ```
 
 **Done when:** Signed-in user accepts policies → unlocks → has Personal workspace (and can create more) → navigates `/app` without the P5 proof card as primary UX.
 
-**Don’t:** Issue lists, TipTap, notes/contacts schema, sharing, Stripe.
+**Don’t:** Task lists, TipTap, notes/contacts schema, sharing, Stripe.
 
 ## Review
 

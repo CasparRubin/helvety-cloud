@@ -87,7 +87,7 @@ export type Database = {
           },
         ]
       }
-      issues: {
+      tasks: {
         Row: {
           created_at: string
           deleted_at: string | null
@@ -117,7 +117,7 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "issues_project_id_fkey"
+            foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
@@ -131,7 +131,7 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
-          issue_id: string | null
+          task_id: string | null
           project_id: string | null
           sort_order: number
           updated_at: string
@@ -142,7 +142,7 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
-          issue_id?: string | null
+          task_id?: string | null
           project_id?: string | null
           sort_order?: number
           updated_at?: string
@@ -153,7 +153,7 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
-          issue_id?: string | null
+          task_id?: string | null
           project_id?: string | null
           sort_order?: number
           updated_at?: string
@@ -161,10 +161,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "notes_issue_id_fkey"
-            columns: ["issue_id"]
+            foreignKeyName: "notes_task_id_fkey"
+            columns: ["task_id"]
             isOneToOne: false
-            referencedRelation: "issues"
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
           {

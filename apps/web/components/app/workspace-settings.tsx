@@ -566,7 +566,7 @@ export function WorkspaceSettings({ workspaceId }: WorkspaceSettingsProps) {
           ) : (
             <>
               <p className="text-xs text-muted-foreground">
-                Permanently delete this workspace and all projects, issues,
+                Permanently delete this workspace and all projects, tasks,
                 notes, contacts, and invitations. This cannot be undone. Helvety
                 cannot recover deleted vault data.
               </p>

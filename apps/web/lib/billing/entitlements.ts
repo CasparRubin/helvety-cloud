@@ -13,7 +13,7 @@ export type PlanLimits = {
   projectsPerWorkspace: number;
   /** Seats: accepted members + pending invitations count toward this. */
   membersPerWorkspace: number;
-  issuesPerWorkspace: number;
+  tasksPerWorkspace: number;
   notesPerWorkspace: number;
   contactsPerWorkspace: number;
 };
@@ -23,7 +23,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     ownedWorkspaces: 2,
     projectsPerWorkspace: 5,
     membersPerWorkspace: 2,
-    issuesPerWorkspace: 100,
+    tasksPerWorkspace: 100,
     notesPerWorkspace: 50,
     contactsPerWorkspace: 50,
   },
@@ -31,7 +31,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     ownedWorkspaces: 10,
     projectsPerWorkspace: 100,
     membersPerWorkspace: 25,
-    issuesPerWorkspace: 10_000,
+    tasksPerWorkspace: 10_000,
     notesPerWorkspace: 5_000,
     contactsPerWorkspace: 5_000,
   },
@@ -66,7 +66,7 @@ export function limitsForPlan(plan: Plan): PlanLimits {
   return PLAN_LIMITS[plan];
 }
 
-export type WorkspaceMeter = "projects" | "issues" | "notes" | "contacts";
+export type WorkspaceMeter = "projects" | "tasks" | "notes" | "contacts";
 
 export function workspaceMeterLimit(
   plan: Plan,
@@ -76,8 +76,8 @@ export function workspaceMeterLimit(
   switch (meter) {
     case "projects":
       return limits.projectsPerWorkspace;
-    case "issues":
-      return limits.issuesPerWorkspace;
+    case "tasks":
+      return limits.tasksPerWorkspace;
     case "notes":
       return limits.notesPerWorkspace;
     case "contacts":
@@ -91,7 +91,7 @@ export function workspaceMeterLimit(
 
 const METER_LABEL: Record<WorkspaceMeter, string> = {
   projects: "projects",
-  issues: "issues",
+  tasks: "tasks",
   notes: "notes",
   contacts: "contacts",
 };

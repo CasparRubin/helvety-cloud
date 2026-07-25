@@ -14,7 +14,7 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 |------------------|--------|--------|
 | Passwordless auth (OTP + passkey) | Passwords; company master key / escrow | Milestone diagrams, custom labels |
 | Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Sync push/pull batch API |
-| Workspace-scoped projects/issues/notes/contacts | Browser PostgREST for vault data | Extension, Tauri, calendar send-to |
+| Workspace-scoped projects/tasks/notes/contacts | Browser PostgREST for vault data | Extension, Tauri, calendar send-to |
 | `/api/v1` + TipTap + workspace sharing | Paid Redis/Sentry/analytics | Deprecate old helvety.com apps |
 | Recovery key (user-held) + Personal workspace | “Email reset restores vault” | Copy-contact-across-workspaces UX |
 | Legal pack + acceptance; Stripe entitlements | Misleading E2EE marketing | Optional Swiss counsel; GmbH if desired |
@@ -24,7 +24,7 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 
 ```text
 email OTP → session → PRF passkey → user keys
-  → create workspace via /api/v1 → encrypted issue → reload → decrypt on device
+  → create workspace via /api/v1 → encrypted task → reload → decrypt on device
 ```
 
 See [`architecture/ROADMAP.md`](architecture/ROADMAP.md) for phase playbooks.

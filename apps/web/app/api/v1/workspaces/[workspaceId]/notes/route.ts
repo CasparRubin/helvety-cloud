@@ -32,9 +32,9 @@ export async function GET(request: Request, context: RouteContext) {
   const { limit, cursor, includeDeleted } = parsed;
 
   const projectIdRaw = url.searchParams.get("projectId");
-  const issueIdRaw = url.searchParams.get("issueId");
+  const taskIdRaw = url.searchParams.get("taskId");
   let projectId: string | null = null;
-  let issueId: string | null = null;
+  let taskId: string | null = null;
   if (projectIdRaw !== null) {
     const p = uuidSchema.safeParse(projectIdRaw);
     if (!p.success) {
@@ -42,18 +42,18 @@ export async function GET(request: Request, context: RouteContext) {
     }
     projectId = p.data;
   }
-  if (issueIdRaw !== null) {
-    const i = uuidSchema.safeParse(issueIdRaw);
+  if (taskIdRaw !== null) {
+    const i = uuidSchema.safeParse(taskIdRaw);
     if (!i.success) {
-      return apiError("invalid_body", "invalid issueId", 400);
+      return apiError("invalid_body", "invalid taskId", 400);
     }
-    issueId = i.data;
+    taskId = i.data;
   }
 
   let query = supabase
     .from("notes")
     .select(
-      "id, workspace_id, project_id, issue_id, encrypted_blob, sort_order, updated_at, deleted_at",
+      "id, workspace_id, project_id, task_id, encrypted_blob, sort_order, updated_at, deleted_at",
     )
     .eq("workspace_id", workspaceId)
     .order("sort_order", { ascending: true })
@@ -66,8 +66,8 @@ export async function GET(request: Request, context: RouteContext) {
   if (projectId !== null) {
     query = query.eq("project_id", projectId);
   }
-  if (issueId !== null) {
-    query = query.eq("issue_id", issueId);
+  if (taskId !== null) {
+    query = query.eq("task_id", taskId);
   }
 
   if (cursor) {
@@ -99,7 +99,7 @@ export async function GET(request: Request, context: RouteContext) {
       id: row.id,
       workspaceId: row.workspace_id,
       projectId: row.project_id,
-      issueId: row.issue_id,
+      taskId: row.task_id,
       encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
       sortOrder: row.sort_order,
       updatedAt: row.updated_at,

@@ -161,9 +161,9 @@ create policy wrapped_keys_delete_own
   to authenticated
   using (user_id = (select auth.uid()));
 
--- issues
-create policy issues_select_member
-  on public.issues
+-- tasks
+create policy tasks_select_member
+  on public.tasks
   for select
   to authenticated
   using (
@@ -175,8 +175,8 @@ create policy issues_select_member
     )
   );
 
-create policy issues_insert_member
-  on public.issues
+create policy tasks_insert_member
+  on public.tasks
   for insert
   to authenticated
   with check (
@@ -188,8 +188,8 @@ create policy issues_insert_member
     )
   );
 
-create policy issues_update_member
-  on public.issues
+create policy tasks_update_member
+  on public.tasks
   for update
   to authenticated
   using (
@@ -209,8 +209,8 @@ create policy issues_update_member
     )
   );
 
-create policy issues_delete_member
-  on public.issues
+create policy tasks_delete_member
+  on public.tasks
   for delete
   to authenticated
   using (

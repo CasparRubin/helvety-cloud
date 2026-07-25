@@ -8,8 +8,8 @@ All vault entities are **workspace-scoped**. There is no user-global contacts/no
 
 ```text
 Workspace  (members + per-member wrapped_keys)
-  ├── projects → issues
-  ├── notes     (required workspace_id; optional project/issue FKs; dynamic encrypted JSON)
+  ├── projects → tasks
+  ├── notes     (required workspace_id; optional project/task FKs; dynamic encrypted JSON)
   └── contacts  (workspace address book; no global dedupe)
 ```
 
@@ -30,7 +30,7 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `workspace_members` | `workspace_id`, `user_id`, `role` |
 | `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key` — always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
 | `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
-| `notes` | `id`, `workspace_id`, optional `project_id` / `issue_id`, sort, timestamps, tombstone |
+| `notes` | `id`, `workspace_id`, optional `project_id` / `task_id`, sort, timestamps, tombstone |
 | `contacts` | `id`, `workspace_id`, sort, timestamps, tombstone |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
@@ -43,8 +43,8 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | Table | Content |
 |-------|---------|
 | `projects` | `encrypted_blob` holds `{ name }`; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
-| `issues` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`); legacy unversioned `{ title, body: string }` is normalized on decrypt; plaintext FKs: `id`, `project_id`, optional status id, sort, `updated_at`, tombstone |
-| `notes` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`) and `tags` is `string[]`; optional nullable plaintext `project_id` / `issue_id` for filtered lists without decrypting all notes |
+| `tasks` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`); legacy unversioned `{ title, body: string }` is normalized on decrypt; plaintext FKs: `id`, `project_id`, optional status id, sort, `updated_at`, tombstone |
+| `notes` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`) and `tags` is `string[]`; optional nullable plaintext `project_id` / `task_id` for filtered lists without decrypting all notes |
 | `contacts` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes }` under **workspace_key**; duplicates across workspaces OK |
 | Later | `milestones`, label **names** encrypted; color/id metadata may stay plaintext |
 
