@@ -18,8 +18,8 @@ describe("task-board grouping", () => {
 
   it("orders columns by stage sortOrder", () => {
     const cats = defaultCategorizations();
-    const backlog = cats.stages.find((s) => s.name === "backlog")!;
-    const completed = cats.stages.find((s) => s.name === "completed")!;
+    const backlog = cats.stages.find((s) => s.name === "Backlog")!;
+    const completed = cats.stages.find((s) => s.name === "Completed")!;
     const columns = groupTasksByStage(
       [
         {
@@ -37,18 +37,18 @@ describe("task-board grouping", () => {
       ],
       cats,
     );
-    expect(columns[0]!.stage.name).toBe("backlog");
+    expect(columns[0]!.stage.name).toBe("Backlog");
     expect(columns[0]!.tasks.map((t) => t.id)).toEqual(["t2"]);
-    expect(columns.at(-2)!.stage.name).toBe("completed");
+    expect(columns.at(-2)!.stage.name).toBe("Completed");
     expect(columns.at(-2)!.tasks.map((t) => t.id)).toEqual(["t1"]);
   });
 
   it("sorts highest priority first within a stage", () => {
     const cats = defaultCategorizations();
-    const stage = cats.stages.find((s) => s.name === "backlog")!;
-    const low = cats.priorities.find((p) => p.name === "low")!;
-    const normal = cats.priorities.find((p) => p.name === "normal")!;
-    const urgent = cats.priorities.find((p) => p.name === "urgent")!;
+    const stage = cats.stages.find((s) => s.name === "Backlog")!;
+    const low = cats.priorities.find((p) => p.name === "Low")!;
+    const normal = cats.priorities.find((p) => p.name === "Normal")!;
+    const urgent = cats.priorities.find((p) => p.name === "Urgent")!;
     const columns = groupTasksByStage(
       [
         { id: "a", stageId: stage.id, priorityId: low.id, sortOrder: 0 },
@@ -63,7 +63,7 @@ describe("task-board grouping", () => {
   it("breaks priority ties by sortOrder then id", () => {
     const cats = defaultCategorizations();
     const stage = cats.stages[0]!;
-    const high = cats.priorities.find((p) => p.name === "high")!;
+    const high = cats.priorities.find((p) => p.name === "High")!;
     const columns = groupTasksByStage(
       [
         { id: "z", stageId: stage.id, priorityId: high.id, sortOrder: 2 },
@@ -102,7 +102,7 @@ describe("task-board grouping", () => {
   it("ranks unknown priorities below known ones", () => {
     const cats = defaultCategorizations();
     const stage = cats.stages[0]!;
-    const low = cats.priorities.find((p) => p.name === "low")!;
+    const low = cats.priorities.find((p) => p.name === "Low")!;
     const columns = groupTasksByStage(
       [
         { id: "known", stageId: stage.id, priorityId: low.id, sortOrder: 0 },

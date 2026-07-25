@@ -11,15 +11,15 @@ describe("stage colors", () => {
     const byName = Object.fromEntries(
       cats.stages.map((s) => [s.name, s.color]),
     );
-    expect(byName.backlog).toBe("slate");
-    expect(byName["in progress"]).toBe("amber");
-    expect(byName.completed).toBe("green");
-    expect(byName.cancelled).toBe("red");
+    expect(byName.Backlog).toBe("slate");
+    expect(byName["In Progress"]).toBe("amber");
+    expect(byName.Completed).toBe("green");
+    expect(byName.Cancelled).toBe("red");
   });
 
   it("resolveStageColor prefers stored color then name map", () => {
     expect(resolveStageColor({ name: "custom", color: "pink" })).toBe("pink");
-    expect(resolveStageColor({ name: "in progress" })).toBe("amber");
+    expect(resolveStageColor({ name: "In Progress" })).toBe("amber");
     expect(resolveStageColor({ name: "unknown-stage" })).toBeUndefined();
   });
 });

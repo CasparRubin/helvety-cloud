@@ -452,8 +452,8 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- Seed defaults on project create (labels: bug / new feature / change request; stages: backlog → cancelled; priorities: low → urgent).  
-- Label optional; stage + priority required (defaults backlog / normal).  
+- Seed defaults on project create, Title Case (labels: Bug / New Feature / Change Request; stages: Backlog → Cancelled; priorities: Low / Normal / High / Urgent).  
+- Label optional; stage + priority required (defaults Backlog / Normal).  
 - Project settings: edit lists, set defaults, copy categorizations from another project (remap tasks by name).  
 - Task detail pickers + list meta / stage filter.  
 - Delete in-use stage/priority remaps to default; delete label clears `label_id`.

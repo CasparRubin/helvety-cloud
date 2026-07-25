@@ -22,7 +22,6 @@ import {
   setCategorizationOptionIcon,
 } from "@/lib/vault/categorization-ops";
 import {
-  resolveStageCollapsedByDefault,
   type CategorizationIcon,
   type CategorizationKind,
   type CategorizationOption,
@@ -648,7 +647,7 @@ function OptionList({
             {onSetCollapsedByDefault ? (
               <label className="flex items-center gap-2 text-xs text-muted-foreground">
                 <Checkbox
-                  checked={resolveStageCollapsedByDefault(opt)}
+                  checked={opt.collapsedByDefault === true}
                   disabled={busy}
                   aria-label={`Collapsed by default for ${opt.name}`}
                   onCheckedChange={(checked) =>

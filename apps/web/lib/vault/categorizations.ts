@@ -33,32 +33,32 @@ export type ProjectCategorizations = {
 
 export type CategorizationKind = keyof ProjectCategorizations;
 
-const LABEL_NAMES = ["bug", "new feature", "change request"] as const;
+const LABEL_NAMES = ["Bug", "New Feature", "Change Request"] as const;
 const STAGE_NAMES = [
-  "backlog",
-  "discovery",
-  "ready",
-  "in progress",
-  "testing",
-  "acceptance",
-  "completed",
-  "cancelled",
+  "Backlog",
+  "Discovery",
+  "Ready",
+  "In Progress",
+  "Testing",
+  "Acceptance",
+  "Completed",
+  "Cancelled",
 ] as const;
-const PRIORITY_NAMES = ["low", "normal", "high", "urgent"] as const;
+const PRIORITY_NAMES = ["Low", "Normal", "High", "Urgent"] as const;
 
 /** Default colors for seeded stage names (also used when stage.color is missing). */
 const DEFAULT_STAGE_COLORS: Record<
   (typeof STAGE_NAMES)[number],
   EntityColor
 > = {
-  backlog: "slate",
-  discovery: "violet",
-  ready: "blue",
-  "in progress": "amber",
-  testing: "teal",
-  acceptance: "orange",
-  completed: "green",
-  cancelled: "red",
+  Backlog: "slate",
+  Discovery: "violet",
+  Ready: "blue",
+  "In Progress": "amber",
+  Testing: "teal",
+  Acceptance: "orange",
+  Completed: "green",
+  Cancelled: "red",
 };
 
 /** Resolve a stage chip color: stored token, else name map, else undefined. */
@@ -68,23 +68,8 @@ export function resolveStageColor(
   if (!stage) return undefined;
   if (stage.color) return stage.color;
   return DEFAULT_STAGE_COLORS[
-    stage.name.toLowerCase() as keyof typeof DEFAULT_STAGE_COLORS
+    stage.name as keyof typeof DEFAULT_STAGE_COLORS
   ];
-}
-
-/** Seeded stage names that start collapsed (also used when the flag is unset). */
-const DEFAULT_COLLAPSED_STAGE_NAMES = new Set(["backlog", "cancelled"]);
-
-/** Resolve board collapse: stored flag, else name map, else expanded. */
-export function resolveStageCollapsedByDefault(
-  stage:
-    | Pick<CategorizationOption, "name" | "collapsedByDefault">
-    | null
-    | undefined,
-): boolean {
-  if (!stage) return false;
-  if (stage.collapsedByDefault !== undefined) return stage.collapsedByDefault;
-  return DEFAULT_COLLAPSED_STAGE_NAMES.has(stage.name.toLowerCase());
 }
 
 function option(
@@ -117,15 +102,15 @@ export function defaultCategorizations(): ProjectCategorizations {
     ),
     stages: STAGE_NAMES.map((name, i) =>
       option(name, i, {
-        isDefault: name === "backlog",
+        isDefault: name === "Backlog",
         color: DEFAULT_STAGE_COLORS[name],
         icon: DEFAULT_OPTION_ICONS[name],
-        collapsedByDefault: name === "backlog" || name === "cancelled",
+        collapsedByDefault: name === "Backlog" || name === "Cancelled",
       }),
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
       option(name, i, {
-        isDefault: name === "normal",
+        isDefault: name === "Normal",
         icon: DEFAULT_OPTION_ICONS[name],
       }),
     ),

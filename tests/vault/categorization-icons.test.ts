@@ -15,19 +15,19 @@ describe("categorization icons", () => {
       cats.priorities.map((o) => [o.name, o.icon]),
     );
 
-    expect(labels.bug).toBe("bug");
-    expect(labels["new feature"]).toBe("sparkles");
-    expect(labels["change request"]).toBe("git-pull-request");
+    expect(labels.Bug).toBe("bug");
+    expect(labels["New Feature"]).toBe("sparkles");
+    expect(labels["Change Request"]).toBe("git-pull-request");
 
-    expect(stages.backlog).toBe("inbox");
-    expect(stages["in progress"]).toBe("loader");
-    expect(stages.completed).toBe("check-circle");
-    expect(stages.cancelled).toBe("x-circle");
+    expect(stages.Backlog).toBe("inbox");
+    expect(stages["In Progress"]).toBe("loader");
+    expect(stages.Completed).toBe("check-circle");
+    expect(stages.Cancelled).toBe("x-circle");
 
-    expect(priorities.low).toBe("arrow-down");
-    expect(priorities.normal).toBe("minus");
-    expect(priorities.high).toBe("arrow-up");
-    expect(priorities.urgent).toBe("flame");
+    expect(priorities.Low).toBe("arrow-down");
+    expect(priorities.Normal).toBe("minus");
+    expect(priorities.High).toBe("arrow-up");
+    expect(priorities.Urgent).toBe("flame");
   });
 
   it("isCategorizationIcon rejects unknown tokens", () => {

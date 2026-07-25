@@ -39,7 +39,6 @@ import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
-  resolveStageCollapsedByDefault,
   resolveStageColor,
   type CategorizationOption,
   type ProjectCategorizations,
@@ -372,9 +371,7 @@ function StageRow({
     id: stage.id,
     data: { type: "stage", stageId: stage.id },
   });
-  const [expanded, setExpanded] = useState(
-    !resolveStageCollapsedByDefault(stage),
-  );
+  const [expanded, setExpanded] = useState(stage.collapsedByDefault !== true);
   const tintColor = resolveStageColor(stage);
   const tint = tintColor ? ENTITY_COLOR_CLASSES[tintColor] : null;
   const Icon = stage.icon
@@ -593,7 +590,6 @@ function TaskCardContent({
       >
         {task.title || "Untitled"}
       </Link>
-      {moveActions}
       {onUpdateIds ? (
         <>
           <CategorizationPicker
@@ -630,6 +626,7 @@ function TaskCardContent({
           />
         </>
       ) : null}
+      {moveActions}
     </article>
   );
 }
