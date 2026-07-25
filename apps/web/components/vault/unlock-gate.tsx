@@ -139,7 +139,6 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       await unlockVault(userId);
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 404) {
-        setVaultReadyStep("needs_setup");
         setStep("needs_setup");
         setError("No vault keys yet — set up the vault first.");
       } else {
@@ -148,10 +147,6 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
     } finally {
       setPending(false);
     }
-  }
-
-  function acknowledgeRecovery() {
-    clearRecovery();
   }
 
   return (
@@ -245,74 +240,72 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             >
               Download helvety-recovery.json
             </Button>
-            <Button
-              type="button"
-              disabled={pending}
-              onClick={() => acknowledgeRecovery()}
-            >
+            <Button type="button" disabled={pending} onClick={clearRecovery}>
               I saved both offline — continue
             </Button>
           </div>
         ) : null}
 
-        <div className="flex flex-col gap-2">
-          {!recovery && step === "loading" ? (
-            <p className="text-sm text-muted-foreground">
-              Checking policies and vault…
-            </p>
-          ) : null}
+        {!recovery ? (
+          <div className="flex flex-col gap-2">
+            {step === "loading" ? (
+              <p className="text-sm text-muted-foreground">
+                Checking policies and vault…
+              </p>
+            ) : null}
 
-          {!recovery && step === "needs_setup" ? (
-            <Button
-              type="button"
-              disabled={pending}
-              onClick={() => void onSetup()}
-            >
-              {pending ? <Spinner data-icon="inline-start" /> : null}
-              Set up vault via passkey
-            </Button>
-          ) : null}
+            {step === "needs_setup" ? (
+              <Button
+                type="button"
+                disabled={pending}
+                onClick={() => void onSetup()}
+              >
+                {pending ? <Spinner data-icon="inline-start" /> : null}
+                Set up vault via passkey
+              </Button>
+            ) : null}
 
-          {!recovery && step === "locked" ? (
-            <Button
-              type="button"
-              disabled={pending}
-              onClick={() => void onUnlock()}
-            >
-              {pending ? <Spinner data-icon="inline-start" /> : null}
-              Unlock via passkey
-            </Button>
-          ) : null}
+            {step === "locked" ? (
+              <Button
+                type="button"
+                disabled={pending}
+                onClick={() => void onUnlock()}
+              >
+                {pending ? <Spinner data-icon="inline-start" /> : null}
+                Unlock via passkey
+              </Button>
+            ) : null}
 
-          {!recovery ? (
-            <>
-              {!hasAuthPasskey ? (
+            {step !== "loading" ? (
+              <>
+                {!hasAuthPasskey ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void registerPasskey()}
+                  >
+                    {pending ? <Spinner data-icon="inline-start" /> : null}
+                    Register auth passkey
+                  </Button>
+                ) : null}
                 <Button
                   type="button"
                   variant="outline"
                   disabled={pending}
-                  onClick={() => void registerPasskey()}
+                  onClick={() => void signOut()}
                 >
-                  {pending ? <Spinner data-icon="inline-start" /> : null}
-                  Register auth passkey
+                  Sign out
                 </Button>
-              ) : null}
-              <Button
-                type="button"
-                variant="outline"
-                disabled={pending}
-                onClick={() => void signOut()}
-              >
-                Sign out
-              </Button>
-              <p className="text-center text-xs text-muted-foreground">
-                <a href="/legal" className="underline underline-offset-4">
-                  Legal
-                </a>
-              </p>
-            </>
-          ) : null}
-        </div>
+                <p className="text-center text-xs text-muted-foreground">
+                  <a href="/legal" className="underline underline-offset-4">
+                    Legal
+                  </a>
+                </p>
+              </>
+            ) : null}
+          </div>
+        ) : null}
       </CardContent>
     </Card>
   );
