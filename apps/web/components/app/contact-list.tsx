@@ -84,7 +84,6 @@ export function ContactList({ workspaceId }: ContactListProps) {
   return (
     <EntityListShell
       title="Contacts"
-      subtitle="Contact details are encrypted end-to-end in this workspace."
       createForm={
         <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
           <Input

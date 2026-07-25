@@ -84,7 +84,6 @@ export function NoteList({ workspaceId }: NoteListProps) {
   return (
     <EntityListShell
       title="Notes"
-      subtitle="Note titles and bodies are encrypted end-to-end in this workspace."
       createForm={
         <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
           <Input

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useEffect, useState } from "react";
 import { AlertCircleIcon } from "lucide-react";
 
@@ -151,8 +152,16 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
 
   return (
     <Card className="w-full max-w-lg">
-      <CardHeader>
-        <CardTitle>Unlock Helvety</CardTitle>
+      <CardHeader className="justify-items-center text-center">
+        <Image
+          src="/icon.svg"
+          width={48}
+          height={48}
+          alt=""
+          className="size-12 rounded-md"
+          priority
+        />
+        <CardTitle>Helvety Cloud</CardTitle>
         <CardDescription>
           Signed in as <span className="text-foreground">{email}</span>.
         </CardDescription>

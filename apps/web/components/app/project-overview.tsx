@@ -277,9 +277,7 @@ export function ProjectMilestonesPanel({
       </div>
 
       {milestones.length === 0 ? (
-        <p className="text-sm text-muted-foreground">
-          No milestones yet. Add a timeboxed goal for this project.
-        </p>
+        <p className="text-sm text-muted-foreground">No milestones yet.</p>
       ) : (
         <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2">
           {milestones.map((m) => (

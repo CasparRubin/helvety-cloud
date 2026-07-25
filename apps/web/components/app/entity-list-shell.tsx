@@ -6,8 +6,7 @@ import { cn } from "@/lib/utils";
 
 type EntityListShellProps = {
   title: ReactNode;
-  subtitle?: ReactNode;
-  /** Rendered immediately under the title/subtitle block. */
+  /** Rendered immediately under the title block. */
   belowTitle?: ReactNode;
   actions?: ReactNode;
   createForm?: ReactNode;
@@ -23,7 +22,6 @@ type EntityListShellProps = {
 
 export function EntityListShell({
   title,
-  subtitle,
   belowTitle,
   actions,
   createForm,
@@ -44,9 +42,6 @@ export function EntityListShell({
           ) : (
             title
           )}
-          {subtitle ? (
-            <p className="text-sm text-muted-foreground">{subtitle}</p>
-          ) : null}
         </div>
         {actions ? (
           <div className="flex shrink-0 items-center gap-2">{actions}</div>

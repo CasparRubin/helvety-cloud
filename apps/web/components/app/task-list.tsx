@@ -278,7 +278,6 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           (project?.name ?? "Project")
         )
       }
-      subtitle="Task titles and bodies are encrypted end-to-end."
       belowTitle={
         !loading && project ? (
           <ProjectDescriptionEditor

@@ -117,7 +117,6 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   return (
     <EntityListShell
       title={workspace?.name ?? "Workspace"}
-      subtitle="Projects are encrypted on your device. Helvety only stores ciphertext."
       createForm={
         <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
           <Input
@@ -137,7 +136,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       loading={loading}
       loadingLabel="Loading projects…"
       empty={!loading && projects.length === 0}
-      emptyLabel="No projects yet. Create one to add encrypted tasks."
+      emptyLabel="No projects yet."
     >
       {projects.map((project, index) => (
         <EntityListRow

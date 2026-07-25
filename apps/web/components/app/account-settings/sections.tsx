@@ -229,7 +229,7 @@ export function AccountDangerSettings() {
         <ConfirmDeleteDialog
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
-          title="Delete your Helvety account?"
+          title="Delete your Helvety Cloud account?"
           description="This permanently deletes your account and solo-owned workspaces. Shared workspaces you leave stay for other members. Helvety cannot recover vault data. This cannot be undone."
           confirmLabel="Delete account permanently"
           busy={pending}
