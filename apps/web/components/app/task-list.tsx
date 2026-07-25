@@ -35,6 +35,7 @@ import {
 import {
   ProjectDescriptionEditor,
   ProjectMilestonesPanel,
+  ProjectTitleEditor,
   type MilestoneFilter,
 } from "@/components/app/project-overview";
 import { Button } from "@/components/ui/button";
@@ -264,12 +265,24 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   return (
     <EntityListShell
-      title={project?.name ?? "Project"}
+      title={
+        !loading && project ? (
+          <ProjectTitleEditor
+            key={project.id}
+            workspaceId={workspaceId}
+            project={project}
+            onProjectChange={setProject}
+            onError={setError}
+          />
+        ) : (
+          (project?.name ?? "Project")
+        )
+      }
       subtitle="Task titles and bodies are encrypted end-to-end."
       belowTitle={
         !loading && project ? (
           <ProjectDescriptionEditor
-            key={`${project.id}:${project.updatedAt}`}
+            key={project.id}
             workspaceId={workspaceId}
             project={project}
             onProjectChange={setProject}

@@ -12,6 +12,7 @@ export default function TaskPage() {
   }>();
   return (
     <TaskDetail
+      key={params.taskId}
       workspaceId={params.workspaceId}
       projectId={params.projectId}
       taskId={params.taskId}

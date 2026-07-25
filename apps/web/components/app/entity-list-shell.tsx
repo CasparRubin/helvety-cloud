@@ -39,7 +39,11 @@ export function EntityListShell({
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+          {typeof title === "string" || typeof title === "number" ? (
+            <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+          ) : (
+            title
+          )}
           {subtitle ? (
             <p className="text-sm text-muted-foreground">{subtitle}</p>
           ) : null}

@@ -9,11 +9,13 @@ import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-bod
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { CategorizationPicker } from "@/components/app/categorization-picker";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { InlineTitle } from "@/components/app/inline-title";
 import { MilestonePicker } from "@/components/app/milestone-picker";
+import { SaveStatus } from "@/components/app/save-status";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   defaultPriority,
   defaultStage,
@@ -35,15 +37,20 @@ import {
   type DecryptedTask,
 } from "@/lib/vault/tasks";
 
-const AUTOSAVE_MS = 600;
-
 type TaskDetailProps = {
   workspaceId: string;
   projectId: string;
   taskId: string;
 };
 
-type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+type TaskDraft = {
+  title: string;
+  body: TaskBodyDoc;
+  labelId: string | null;
+  stageId: string;
+  priorityId: string;
+  milestoneId: string | null;
+};
 
 export function TaskDetail({
   workspaceId,
@@ -72,44 +79,58 @@ export function TaskDetail({
     null,
   );
   const [deleting, setDeleting] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [savedAt, setSavedAt] = useState<string | null>(null);
-
-  const titleRef = useRef(title);
-  const bodyRef = useRef(body);
-  const labelIdRef = useRef(labelId);
-  const stageIdRef = useRef(stageId);
-  const priorityIdRef = useRef(priorityId);
-  const milestoneIdRef = useRef(milestoneId);
   const taskRef = useRef(task);
-  const deletingRef = useRef(deleting);
-  const savingRef = useRef(false);
-  const pendingSaveRef = useRef(false);
-  const loadedSnapshotRef = useRef<string | null>(null);
-  const getWorkspaceKeyRef = useRef(getWorkspaceKey);
-  const upsertTaskRef = useRef(cache.upsertTask);
-  const mountedRef = useRef(true);
-  const persistRef = useRef<() => Promise<void>>(async () => {});
-
   useEffect(() => {
-    titleRef.current = title;
-    bodyRef.current = body;
-    labelIdRef.current = labelId;
-    stageIdRef.current = stageId;
-    priorityIdRef.current = priorityId;
-    milestoneIdRef.current = milestoneId;
     taskRef.current = task;
-    deletingRef.current = deleting;
-    getWorkspaceKeyRef.current = getWorkspaceKey;
-    upsertTaskRef.current = cache.upsertTask;
   });
 
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  const draft = useMemo<TaskDraft>(
+    () => ({ title, body, labelId, stageId, priorityId, milestoneId }),
+    [title, body, labelId, stageId, priorityId, milestoneId],
+  );
+
+  const { status, savedAt, flush } = useAutosave({
+    draft,
+    enabled: Boolean(task) && !loading && !deleting,
+    save: async (next) => {
+      const current = taskRef.current;
+      if (!current) throw new Error("Task not loaded");
+      const key = await getWorkspaceKey(workspaceId);
+      const saved = await saveTask(
+        workspaceId,
+        projectId,
+        key,
+        current,
+        toTaskPlaintext(next.title, next.body),
+        {
+          labelId: next.labelId,
+          stageId: next.stageId,
+          priorityId: next.priorityId,
+          milestoneId: next.milestoneId,
+        },
+      );
+      setTask(saved);
+      cache.upsertTask(saved);
+      return {
+        title: saved.title,
+        body: saved.body,
+        labelId: saved.labelId,
+        stageId: saved.stageId ?? next.stageId,
+        priorityId: saved.priorityId ?? next.priorityId,
+        milestoneId: saved.milestoneId,
+      };
+    },
+    onError: (message) => setError(message),
+    onSaved: (canonical) => {
+      setTitle(canonical.title);
+      setBody(canonical.body);
+      setLabelId(canonical.labelId);
+      setStageId(canonical.stageId);
+      setPriorityId(canonical.priorityId);
+      setMilestoneId(canonical.milestoneId);
+      setError(null);
+    },
+  });
 
   useEffect(() => {
     if (!vault) return;
@@ -159,17 +180,8 @@ export function TaskDetail({
         setStageId(nextStage);
         setPriorityId(nextPriority);
         setMilestoneId(nextMilestone);
-        loadedSnapshotRef.current = snapshot(
-          loaded.title,
-          loaded.body,
-          nextLabel,
-          nextStage,
-          nextPriority,
-          nextMilestone,
-        );
-        setSaveStatus("idle");
         setError(null);
-        upsertTaskRef.current(loaded);
+        cache.upsertTask(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load task");
@@ -180,154 +192,10 @@ export function TaskDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, projectId, taskId, getWorkspaceKey]);
-
-  async function persist() {
-    const current = taskRef.current;
-    if (!current || deletingRef.current) return;
-
-    const nextTitle = titleRef.current;
-    const nextBody = bodyRef.current;
-    const nextLabel = labelIdRef.current;
-    const nextStage = stageIdRef.current;
-    const nextPriority = priorityIdRef.current;
-    const nextMilestone = milestoneIdRef.current;
-    const snap = snapshot(
-      nextTitle,
-      nextBody,
-      nextLabel,
-      nextStage,
-      nextPriority,
-      nextMilestone,
-    );
-    if (snap === loadedSnapshotRef.current) {
-      if (mountedRef.current) {
-        setSaveStatus((s) => (s === "dirty" ? "idle" : s));
-      }
-      return;
-    }
-
-    if (savingRef.current) {
-      pendingSaveRef.current = true;
-      return;
-    }
-
-    savingRef.current = true;
-    if (mountedRef.current) {
-      setSaveStatus("saving");
-      setError(null);
-    }
-    try {
-      const key = await getWorkspaceKeyRef.current(workspaceId);
-      const saved = await saveTask(
-        workspaceId,
-        projectId,
-        key,
-        current,
-        toTaskPlaintext(nextTitle, nextBody),
-        {
-          labelId: nextLabel,
-          stageId: nextStage,
-          priorityId: nextPriority,
-          milestoneId: nextMilestone,
-        },
-      );
-      loadedSnapshotRef.current = snapshot(
-        saved.title,
-        saved.body,
-        saved.labelId,
-        saved.stageId ?? nextStage,
-        saved.priorityId ?? nextPriority,
-        saved.milestoneId,
-      );
-      if (!mountedRef.current) return;
-      setTask(saved);
-      upsertTaskRef.current(saved);
-      if (
-        snapshot(
-          titleRef.current,
-          bodyRef.current,
-          labelIdRef.current,
-          stageIdRef.current,
-          priorityIdRef.current,
-          milestoneIdRef.current,
-        ) === snap
-      ) {
-        setTitle(saved.title);
-        setBody(saved.body);
-        setLabelId(saved.labelId);
-        if (saved.stageId) setStageId(saved.stageId);
-        if (saved.priorityId) setPriorityId(saved.priorityId);
-        setMilestoneId(saved.milestoneId);
-      }
-      setSavedAt(new Date().toLocaleTimeString());
-      setSaveStatus("saved");
-    } catch (err) {
-      if (!mountedRef.current) return;
-      setError(err instanceof Error ? err.message : "Save failed");
-      setSaveStatus("error");
-    } finally {
-      savingRef.current = false;
-      if (pendingSaveRef.current) {
-        pendingSaveRef.current = false;
-        await persist();
-      }
-    }
-  }
-
-  useEffect(() => {
-    persistRef.current = persist;
-  });
-
-  useEffect(() => {
-    if (!task || loading) return;
-    const snap = snapshot(title, body, labelId, stageId, priorityId, milestoneId);
-    if (snap === loadedSnapshotRef.current) return;
-
-    setSaveStatus("dirty");
-    const timer = window.setTimeout(() => {
-      void persistRef.current();
-    }, AUTOSAVE_MS);
-    return () => window.clearTimeout(timer);
-  }, [
-    title,
-    body,
-    labelId,
-    stageId,
-    priorityId,
-    milestoneId,
-    task,
-    loading,
-    workspaceId,
-    projectId,
-  ]);
-
-  useEffect(() => {
-    function flushIfDirty() {
-      const current = taskRef.current;
-      if (!current || deletingRef.current) return;
-      const snap = snapshot(
-        titleRef.current,
-        bodyRef.current,
-        labelIdRef.current,
-        stageIdRef.current,
-        priorityIdRef.current,
-        milestoneIdRef.current,
-      );
-      if (snap === loadedSnapshotRef.current) return;
-      void persistRef.current();
-    }
-
-    const onPageHide = () => flushIfDirty();
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      window.removeEventListener("pagehide", onPageHide);
-      flushIfDirty();
-    };
-  }, [workspaceId, projectId, taskId]);
+  }, [vault, workspaceId, projectId, taskId, getWorkspaceKey, cache]);
 
   async function onDelete() {
-    if (!task || deleting || savingRef.current) return;
+    if (!task || deleting || status === "saving") return;
     setDeleting(true);
     setError(null);
     try {
@@ -397,36 +265,39 @@ export function TaskDetail({
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">Task</h1>
-          <p className="text-sm text-muted-foreground">
-            Select text to create linked tasks or contacts. Edits are encrypted
-            on your device before upload.
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          size="sm"
-          render={<Link href={`/app/w/${workspaceId}/p/${projectId}`} />}
-          nativeButton={false}
-        >
-          Back
-        </Button>
-      </div>
-
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
         <div className="flex flex-col gap-3">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            disabled={deleting}
-            maxLength={500}
-            aria-label="Title"
-          />
+          <div className="flex items-start justify-between gap-3">
+            <InlineTitle
+              value={title}
+              onChange={setTitle}
+              onBlur={flush}
+              placeholder="Untitled task"
+              disabled={deleting}
+              maxLength={500}
+              aria-label="Title"
+              className="min-w-0 flex-1"
+            />
+            <div className="flex shrink-0 items-center gap-2">
+              <DeleteButton
+                disabled={deleting}
+                busy={deleting}
+                dialogTitle="Delete this task?"
+                dialogDescription="This permanently deletes the task. This cannot be undone."
+                onConfirm={onDelete}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                render={<Link href={`/app/w/${workspaceId}/p/${projectId}`} />}
+                nativeButton={false}
+              >
+                Back
+              </Button>
+            </div>
+          </div>
 
           {categorizations ? (
             <div className="flex flex-wrap items-end gap-3">
@@ -502,25 +373,11 @@ export function TaskDetail({
             kind="task"
             id={taskId}
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={deleting || saveStatus === "saving"}
-              onClick={() => void persist()}
-            >
-              Save now
-            </Button>
-            <DeleteButton
-              disabled={deleting}
-              busy={deleting}
-              dialogTitle="Delete this task?"
-              dialogDescription="This permanently deletes the task. This cannot be undone."
-              onConfirm={onDelete}
-            />
-            <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
-          </div>
+          <SaveStatus
+            status={status}
+            savedAt={savedAt}
+            onRetry={flush}
+          />
         </div>
       )}
 
@@ -531,53 +388,4 @@ export function TaskDetail({
       ) : null}
     </div>
   );
-}
-
-function snapshot(
-  title: string,
-  body: TaskBodyDoc,
-  labelId: string | null,
-  stageId: string,
-  priorityId: string,
-  milestoneId: string | null,
-): string {
-  return JSON.stringify({
-    title,
-    body,
-    labelId,
-    stageId,
-    priorityId,
-    milestoneId,
-  });
-}
-
-function SaveStatusLabel({
-  status,
-  savedAt,
-}: {
-  status: SaveStatus;
-  savedAt: string | null;
-}) {
-  switch (status) {
-    case "idle":
-      return null;
-    case "dirty":
-      return (
-        <span className="text-xs text-muted-foreground">Unsaved changes</span>
-      );
-    case "saving":
-      return <span className="text-xs text-muted-foreground">Saving…</span>;
-    case "saved":
-      return (
-        <span className="text-xs text-muted-foreground">
-          {savedAt ? `Saved ${savedAt}` : "Saved"}
-        </span>
-      );
-    case "error":
-      return <span className="text-xs text-destructive">Save failed</span>;
-    default: {
-      const _exhaustive: never = status;
-      return _exhaustive;
-    }
-  }
 }

@@ -1,12 +1,22 @@
 "use client";
 
-import { useState, type FormEvent, type ReactNode } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type FormEvent,
+  type ReactNode,
+} from "react";
 
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { InlineTitle } from "@/components/app/inline-title";
+import { SaveStatus } from "@/components/app/save-status";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   createMilestone,
   deleteMilestone,
@@ -16,6 +26,7 @@ import {
 } from "@/lib/vault/milestones";
 import {
   projectPlaintextFrom,
+  renameProject,
   saveProjectContent,
   type DecryptedProject,
 } from "@/lib/vault/projects";
@@ -27,6 +38,63 @@ import {
 import { cn } from "@/lib/utils";
 
 export type MilestoneFilter = "all" | "none" | string;
+
+export function ProjectTitleEditor({
+  workspaceId,
+  project,
+  onProjectChange,
+  onError,
+}: {
+  workspaceId: string;
+  project: DecryptedProject;
+  onProjectChange: (project: DecryptedProject) => void;
+  onError?: (error: string | null) => void;
+}) {
+  const { getWorkspaceKey } = useVaultSession();
+  const [name, setName] = useState(project.name);
+  const projectRef = useRef(project);
+  useEffect(() => {
+    projectRef.current = project;
+  });
+
+  const { flush } = useAutosave({
+    draft: name,
+    enabled: true,
+    save: async (next) => {
+      const trimmed = next.trim();
+      if (!trimmed) {
+        throw new Error("Project name cannot be empty");
+      }
+      const key = await getWorkspaceKey(workspaceId);
+      const saved = await renameProject(
+        workspaceId,
+        key,
+        projectRef.current,
+        trimmed,
+      );
+      onProjectChange(saved);
+      window.dispatchEvent(new Event("helvety:projects-changed"));
+      return saved.name;
+    },
+    onError: (message) => onError?.(message),
+    onSaved: (canonical) => {
+      setName(canonical);
+      onError?.(null);
+    },
+  });
+
+  return (
+    <InlineTitle
+      value={name}
+      onChange={setName}
+      onBlur={flush}
+      placeholder="Untitled project"
+      maxLength={200}
+      aria-label="Project name"
+      className="text-lg"
+    />
+  );
+}
 
 export function ProjectDescriptionEditor({
   workspaceId,
@@ -41,57 +109,44 @@ export function ProjectDescriptionEditor({
 }) {
   const { getWorkspaceKey } = useVaultSession();
   const [description, setDescription] = useState(project.description);
-  const [dirty, setDirty] = useState(false);
-  const [busy, setBusy] = useState(false);
+  const projectRef = useRef(project);
+  useEffect(() => {
+    projectRef.current = project;
+  });
 
-  async function saveDescription() {
-    if (busy) return;
-    setBusy(true);
-    onError?.(null);
-    try {
+  const draft = useMemo(() => ({ description }), [description]);
+
+  const { status, savedAt, flush } = useAutosave({
+    draft,
+    enabled: true,
+    save: async (next) => {
       const key = await getWorkspaceKey(workspaceId);
+      const current = projectRef.current;
       const saved = await saveProjectContent(
         workspaceId,
         key,
-        project,
-        projectPlaintextFrom(project, { description }),
+        current,
+        projectPlaintextFrom(current, { description: next.description }),
       );
       onProjectChange(saved);
-      setDirty(false);
-    } catch (e) {
-      onError?.(e instanceof Error ? e.message : "Failed to save description");
-    } finally {
-      setBusy(false);
-    }
-  }
+      return { description: saved.description };
+    },
+    onError: (message) => onError?.(message),
+    onSaved: (canonical) => {
+      setDescription(canonical.description);
+      onError?.(null);
+    },
+  });
 
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-xs font-medium text-muted-foreground">
-          Description
-        </h2>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={busy || !dirty}
-          onClick={() => void saveDescription()}
-        >
-          Save description
-        </Button>
-      </div>
-      <div className="rounded-md border border-border/60 bg-background">
-        <TaskBodyEditor
-          content={description}
-          compact
-          disabled={busy}
-          onChange={(doc) => {
-            setDescription(doc);
-            setDirty(true);
-          }}
-        />
-      </div>
+    <div className="flex flex-col gap-1">
+      <TaskBodyEditor
+        content={description}
+        compact
+        placeholder="Add a project description…"
+        onChange={setDescription}
+      />
+      <SaveStatus status={status} savedAt={savedAt} onRetry={flush} />
     </div>
   );
 }
@@ -146,37 +201,6 @@ export function ProjectMilestonesPanel({
       setEditingId(created.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  async function onSaveMilestone(
-    milestone: DecryptedMilestone,
-    next: {
-      title: string;
-      description: TaskBodyDoc;
-      targetDate: string | null;
-    },
-  ) {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const key = await getWorkspaceKey(workspaceId);
-      const saved = await saveMilestone(
-        workspaceId,
-        projectId,
-        key,
-        milestone,
-        next,
-      );
-      onMilestonesChange(
-        sortMilestones(milestones.map((m) => (m.id === saved.id ? saved : m))),
-      );
-      setEditingId(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Save failed");
     } finally {
       setBusy(false);
     }
@@ -262,11 +286,21 @@ export function ProjectMilestonesPanel({
             <li key={m.id}>
               {editingId === m.id ? (
                 <MilestoneEditor
+                  workspaceId={workspaceId}
+                  projectId={projectId}
                   milestone={m}
-                  busy={busy}
-                  onCancel={() => setEditingId(null)}
-                  onSave={(next) => void onSaveMilestone(m, next)}
+                  onUpdated={(saved) => {
+                    onMilestonesChange(
+                      sortMilestones(
+                        milestones.map((item) =>
+                          item.id === saved.id ? saved : item,
+                        ),
+                      ),
+                    );
+                  }}
+                  onDone={() => setEditingId(null)}
                   onDelete={() => void onDeleteMilestone(m)}
+                  onError={setError}
                 />
               ) : (
                 <MilestoneListItem
@@ -373,84 +407,116 @@ function MilestoneListItem({
   );
 }
 
+type MilestoneDraft = {
+  title: string;
+  description: TaskBodyDoc;
+  targetDate: string;
+};
+
 function MilestoneEditor({
+  workspaceId,
+  projectId,
   milestone,
-  busy,
-  onCancel,
-  onSave,
+  onUpdated,
+  onDone,
   onDelete,
+  onError,
 }: {
+  workspaceId: string;
+  projectId: string;
   milestone: DecryptedMilestone;
-  busy: boolean;
-  onCancel: () => void;
-  onSave: (next: {
-    title: string;
-    description: TaskBodyDoc;
-    targetDate: string | null;
-  }) => void;
+  onUpdated: (milestone: DecryptedMilestone) => void;
+  onDone: () => void;
   onDelete: () => void;
+  onError?: (error: string | null) => void;
 }) {
+  const { getWorkspaceKey } = useVaultSession();
   const [title, setTitle] = useState(milestone.title);
   const [targetDate, setTargetDate] = useState(milestone.targetDate ?? "");
   const [description, setDescription] = useState(
     milestone.description ?? EMPTY_TASK_BODY,
   );
+  const milestoneRef = useRef(milestone);
+  useEffect(() => {
+    milestoneRef.current = milestone;
+  });
+
+  const draft = useMemo<MilestoneDraft>(
+    () => ({ title, description, targetDate }),
+    [title, description, targetDate],
+  );
+
+  const { status, savedAt, flush } = useAutosave({
+    draft,
+    enabled: true,
+    save: async (next) => {
+      const trimmed = next.title.trim();
+      if (!trimmed) {
+        throw new Error("Milestone title cannot be empty");
+      }
+      const key = await getWorkspaceKey(workspaceId);
+      const saved = await saveMilestone(
+        workspaceId,
+        projectId,
+        key,
+        milestoneRef.current,
+        {
+          title: trimmed,
+          description: next.description,
+          targetDate: next.targetDate.trim() || null,
+        },
+      );
+      onUpdated(saved);
+      return {
+        title: saved.title,
+        description: saved.description ?? EMPTY_TASK_BODY,
+        targetDate: saved.targetDate ?? "",
+      };
+    },
+    onError: (message) => onError?.(message),
+    onSaved: (canonical) => {
+      setTitle(canonical.title);
+      setDescription(canonical.description);
+      setTargetDate(canonical.targetDate);
+      onError?.(null);
+    },
+  });
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border bg-background p-3">
+    <div className="flex flex-col gap-2 rounded-md border border-border/60 bg-background p-3">
       <Input
+        variant="seamless"
         value={title}
         onChange={(e) => setTitle(e.target.value)}
-        disabled={busy}
+        onBlur={flush}
         maxLength={200}
         aria-label="Milestone title"
+        placeholder="Milestone title"
       />
       <Input
+        variant="seamless"
         type="date"
         value={targetDate}
         onChange={(e) => setTargetDate(e.target.value)}
-        disabled={busy}
+        onBlur={flush}
         aria-label="Target date"
       />
-      <div className="rounded-md border border-border/60">
-        <TaskBodyEditor
-          content={description}
-          compact
-          disabled={busy}
-          onChange={setDescription}
-        />
-      </div>
+      <TaskBodyEditor
+        content={description}
+        compact
+        placeholder="Add a description…"
+        onChange={setDescription}
+      />
       <div className="flex flex-wrap items-center gap-2">
-        <Button
-          type="button"
-          size="sm"
-          disabled={busy || !title.trim()}
-          onClick={() =>
-            onSave({
-              title: title.trim(),
-              description,
-              targetDate: targetDate.trim() || null,
-            })
-          }
-        >
-          Save
-        </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="outline"
-          disabled={busy}
-          onClick={onCancel}
-        >
-          Cancel
+        <Button type="button" size="sm" variant="outline" onClick={onDone}>
+          Done
         </Button>
         <DeleteButton
-          disabled={busy}
-          busy={busy}
           dialogTitle="Delete this milestone?"
           dialogDescription="Tasks assigned to it will become unassigned. This cannot be undone."
           onConfirm={onDelete}
         />
+        <SaveStatus status={status} savedAt={savedAt} onRetry={flush} />
       </div>
     </div>
   );

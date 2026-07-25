@@ -9,12 +9,15 @@ import { Input } from "@/components/ui/input";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
+import { InlineTitle } from "@/components/app/inline-title";
+import { SaveStatus } from "@/components/app/save-status";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
 } from "@/components/app/task-body-editor";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   createContact,
   deleteContact,
@@ -30,14 +33,18 @@ import {
   type TaskBodyDoc,
 } from "@/lib/vault/task-plaintext";
 
-const AUTOSAVE_MS = 600;
-
 type ContactDetailProps = {
   workspaceId: string;
   contactId: string;
 };
 
-type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+type ContactDraft = {
+  displayName: string;
+  emailsText: string;
+  phonesText: string;
+  notes: TaskBodyDoc;
+  color: EntityColor | undefined;
+};
 
 export function ContactDetail({
   workspaceId,
@@ -59,46 +66,66 @@ export function ContactDetail({
     null,
   );
   const [deleting, setDeleting] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pendingProjectPick, setPendingProjectPick] = useState<{
     title: string;
     resolve: (id: string | null) => void;
   } | null>(null);
 
-  const displayNameRef = useRef(displayName);
-  const emailsTextRef = useRef(emailsText);
-  const phonesTextRef = useRef(phonesText);
-  const notesRef = useRef(notes);
-  const colorRef = useRef(color);
   const contactRef = useRef(contact);
-  const deletingRef = useRef(deleting);
-  const savingRef = useRef(false);
-  const pendingSaveRef = useRef(false);
-  const loadedSnapshotRef = useRef<string | null>(null);
-  const getWorkspaceKeyRef = useRef(getWorkspaceKey);
-  const upsertContactRef = useRef(cache.upsertContact);
-  const mountedRef = useRef(true);
-  const persistRef = useRef<() => Promise<void>>(async () => {});
-
   useEffect(() => {
-    displayNameRef.current = displayName;
-    emailsTextRef.current = emailsText;
-    phonesTextRef.current = phonesText;
-    notesRef.current = notes;
-    colorRef.current = color;
     contactRef.current = contact;
-    deletingRef.current = deleting;
-    getWorkspaceKeyRef.current = getWorkspaceKey;
-    upsertContactRef.current = cache.upsertContact;
   });
 
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  const draft = useMemo<ContactDraft>(
+    () => ({ displayName, emailsText, phonesText, notes, color }),
+    [displayName, emailsText, phonesText, notes, color],
+  );
+
+  const { status, savedAt, flush } = useAutosave({
+    draft,
+    enabled: Boolean(contact) && !loading && !deleting,
+    save: async (next) => {
+      const current = contactRef.current;
+      if (!current) throw new Error("Contact not loaded");
+      const key = await getWorkspaceKey(workspaceId);
+      const saved = await saveContact(
+        workspaceId,
+        key,
+        current,
+        toContactPlaintext({
+          displayName: next.displayName,
+          emails: next.emailsText
+            .split(",")
+            .map((e) => e.trim())
+            .filter(Boolean),
+          phones: next.phonesText
+            .split(",")
+            .map((p) => p.trim())
+            .filter(Boolean),
+          notes: next.notes,
+          color: next.color,
+        }),
+      );
+      setContact(saved);
+      cache.upsertContact(saved);
+      return {
+        displayName: saved.displayName,
+        emailsText: saved.emails.join(", "),
+        phonesText: saved.phones.join(", "),
+        notes: saved.notes,
+        color: saved.color,
+      };
+    },
+    onError: (message) => setError(message),
+    onSaved: (canonical) => {
+      setDisplayName(canonical.displayName);
+      setEmailsText(canonical.emailsText);
+      setPhonesText(canonical.phonesText);
+      setNotes(canonical.notes);
+      setColor(canonical.color);
+      setError(null);
+    },
+  });
 
   useEffect(() => {
     if (!vault) return;
@@ -119,16 +146,8 @@ export function ContactDetail({
         setPhonesText(loaded.phones.join(", "));
         setNotes(loaded.notes);
         setColor(loaded.color);
-        loadedSnapshotRef.current = snapshot(
-          loaded.displayName,
-          loaded.emails.join(", "),
-          loaded.phones.join(", "),
-          loaded.notes,
-          loaded.color,
-        );
-        setSaveStatus("idle");
         setError(null);
-        upsertContactRef.current(loaded);
+        cache.upsertContact(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load contact");
@@ -139,145 +158,10 @@ export function ContactDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, contactId, getWorkspaceKey]);
-
-  async function persist() {
-    const current = contactRef.current;
-    if (!current || deletingRef.current) return;
-
-    const nextName = displayNameRef.current;
-    const nextEmails = emailsTextRef.current;
-    const nextPhones = phonesTextRef.current;
-    const nextNotes = notesRef.current;
-    const nextColor = colorRef.current;
-    const snap = snapshot(
-      nextName,
-      nextEmails,
-      nextPhones,
-      nextNotes,
-      nextColor,
-    );
-    if (snap === loadedSnapshotRef.current) {
-      if (mountedRef.current) {
-        setSaveStatus((s) => (s === "dirty" ? "idle" : s));
-      }
-      return;
-    }
-
-    if (savingRef.current) {
-      pendingSaveRef.current = true;
-      return;
-    }
-
-    savingRef.current = true;
-    if (mountedRef.current) {
-      setSaveStatus("saving");
-      setError(null);
-    }
-    try {
-      const key = await getWorkspaceKeyRef.current(workspaceId);
-      const saved = await saveContact(
-        workspaceId,
-        key,
-        current,
-        toContactPlaintext({
-          displayName: nextName,
-          emails: nextEmails.split(",").map((e) => e.trim()).filter(Boolean),
-          phones: nextPhones.split(",").map((p) => p.trim()).filter(Boolean),
-          notes: nextNotes,
-          color: nextColor,
-        }),
-      );
-      loadedSnapshotRef.current = snapshot(
-        saved.displayName,
-        saved.emails.join(", "),
-        saved.phones.join(", "),
-        saved.notes,
-        saved.color,
-      );
-      if (!mountedRef.current) return;
-      setContact(saved);
-      upsertContactRef.current(saved);
-      if (
-        snapshot(
-          displayNameRef.current,
-          emailsTextRef.current,
-          phonesTextRef.current,
-          notesRef.current,
-          colorRef.current,
-        ) === snap
-      ) {
-        setDisplayName(saved.displayName);
-        setEmailsText(saved.emails.join(", "));
-        setPhonesText(saved.phones.join(", "));
-        setNotes(saved.notes);
-        setColor(saved.color);
-      }
-      setSavedAt(new Date().toLocaleTimeString());
-      setSaveStatus("saved");
-    } catch (err) {
-      if (!mountedRef.current) return;
-      setError(err instanceof Error ? err.message : "Save failed");
-      setSaveStatus("error");
-    } finally {
-      savingRef.current = false;
-      if (pendingSaveRef.current) {
-        pendingSaveRef.current = false;
-        await persist();
-      }
-    }
-  }
-
-  useEffect(() => {
-    persistRef.current = persist;
-  });
-
-  useEffect(() => {
-    if (!contact || loading) return;
-    const snap = snapshot(displayName, emailsText, phonesText, notes, color);
-    if (snap === loadedSnapshotRef.current) return;
-
-    setSaveStatus("dirty");
-    const timer = window.setTimeout(() => {
-      void persistRef.current();
-    }, AUTOSAVE_MS);
-    return () => window.clearTimeout(timer);
-  }, [
-    displayName,
-    emailsText,
-    phonesText,
-    notes,
-    color,
-    contact,
-    loading,
-    workspaceId,
-  ]);
-
-  useEffect(() => {
-    function flushIfDirty() {
-      const current = contactRef.current;
-      if (!current || deletingRef.current) return;
-      const snap = snapshot(
-        displayNameRef.current,
-        emailsTextRef.current,
-        phonesTextRef.current,
-        notesRef.current,
-        colorRef.current,
-      );
-      if (snap === loadedSnapshotRef.current) return;
-      void persistRef.current();
-    }
-
-    const onPageHide = () => flushIfDirty();
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      window.removeEventListener("pagehide", onPageHide);
-      flushIfDirty();
-    };
-  }, [workspaceId, contactId]);
+  }, [vault, workspaceId, contactId, getWorkspaceKey, cache]);
 
   async function onDelete() {
-    if (!contact || deleting || savingRef.current) return;
+    if (!contact || deleting || status === "saving") return;
     setDeleting(true);
     setError(null);
     try {
@@ -361,40 +245,58 @@ export function ContactDetail({
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Contact</h1>
-        <p className="text-sm text-muted-foreground">
-          Select text to create linked tasks or contacts. Edits are encrypted on
-          your device before upload.
-        </p>
-      </div>
-
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
         <div className="flex flex-col gap-3">
-          <Input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="Display name"
-            disabled={deleting}
-            maxLength={500}
-            aria-label="Display name"
-          />
-          <Input
-            value={emailsText}
-            onChange={(e) => setEmailsText(e.target.value)}
-            placeholder="Emails (comma-separated)"
-            disabled={deleting}
-            aria-label="Emails"
-          />
-          <Input
-            value={phonesText}
-            onChange={(e) => setPhonesText(e.target.value)}
-            placeholder="Phones (comma-separated)"
-            disabled={deleting}
-            aria-label="Phones"
-          />
+          <div className="flex items-start justify-between gap-3">
+            <InlineTitle
+              value={displayName}
+              onChange={setDisplayName}
+              onBlur={flush}
+              placeholder="Display name"
+              disabled={deleting}
+              maxLength={500}
+              aria-label="Display name"
+              className="min-w-0 flex-1"
+            />
+            <DeleteButton
+              disabled={deleting}
+              busy={deleting}
+              dialogTitle="Delete this contact?"
+              dialogDescription="This permanently deletes the contact. This cannot be undone."
+              onConfirm={onDelete}
+            />
+          </div>
+
+          <label className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-xs text-muted-foreground">
+              Emails
+            </span>
+            <Input
+              variant="seamless"
+              value={emailsText}
+              onChange={(e) => setEmailsText(e.target.value)}
+              onBlur={flush}
+              placeholder="comma-separated"
+              disabled={deleting}
+              aria-label="Emails"
+            />
+          </label>
+          <label className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-xs text-muted-foreground">
+              Phones
+            </span>
+            <Input
+              variant="seamless"
+              value={phonesText}
+              onChange={(e) => setPhonesText(e.target.value)}
+              onBlur={flush}
+              placeholder="comma-separated"
+              disabled={deleting}
+              aria-label="Phones"
+            />
+          </label>
           <EntityColorPicker
             value={color}
             disabled={deleting}
@@ -405,6 +307,7 @@ export function ContactDetail({
             content={notes}
             onChange={setNotes}
             disabled={deleting}
+            placeholder="Add notes…"
             enableEntityLinks
             linkCandidates={linkCandidates}
             onEntityLinkAction={onEntityLinkAction}
@@ -424,25 +327,11 @@ export function ContactDetail({
             kind="contact"
             id={contactId}
           />
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={deleting || saveStatus === "saving"}
-              onClick={() => void persist()}
-            >
-              Save now
-            </Button>
-            <DeleteButton
-              disabled={deleting}
-              busy={deleting}
-              dialogTitle="Delete this contact?"
-              dialogDescription="This permanently deletes the contact. This cannot be undone."
-              onConfirm={onDelete}
-            />
-            <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
-          </div>
+          <SaveStatus
+            status={status}
+            savedAt={savedAt}
+            onRetry={flush}
+          />
         </div>
       )}
 
@@ -484,51 +373,4 @@ export function ContactDetail({
       ) : null}
     </div>
   );
-}
-
-function snapshot(
-  displayName: string,
-  emailsText: string,
-  phonesText: string,
-  notes: TaskBodyDoc,
-  color: EntityColor | undefined,
-): string {
-  return JSON.stringify({
-    displayName,
-    emailsText,
-    phonesText,
-    notes,
-    color: color ?? null,
-  });
-}
-
-function SaveStatusLabel({
-  status,
-  savedAt,
-}: {
-  status: SaveStatus;
-  savedAt: string | null;
-}) {
-  switch (status) {
-    case "idle":
-      return null;
-    case "dirty":
-      return (
-        <span className="text-xs text-muted-foreground">Unsaved changes</span>
-      );
-    case "saving":
-      return <span className="text-xs text-muted-foreground">Saving…</span>;
-    case "saved":
-      return (
-        <span className="text-xs text-muted-foreground">
-          {savedAt ? `Saved ${savedAt}` : "Saved"}
-        </span>
-      );
-    case "error":
-      return <span className="text-xs text-destructive">Save failed</span>;
-    default: {
-      const _exhaustive: never = status;
-      return _exhaustive;
-    }
-  }
 }

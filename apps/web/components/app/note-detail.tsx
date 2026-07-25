@@ -11,10 +11,13 @@ import {
   type EntityLinkAction,
 } from "@/components/app/task-body-editor";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { InlineTitle } from "@/components/app/inline-title";
+import { SaveStatus } from "@/components/app/save-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useAutosave } from "@/lib/hooks/use-autosave";
 import type { EntityColor } from "@/lib/vault/entity-colors";
 import { createContact } from "@/lib/vault/contacts";
 import {
@@ -30,14 +33,18 @@ import {
 } from "@/lib/vault/notes";
 import { createTask } from "@/lib/vault/tasks";
 
-const AUTOSAVE_MS = 600;
-
 type NoteDetailProps = {
   workspaceId: string;
   noteId: string;
 };
 
-type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
+type NoteDraft = {
+  title: string;
+  body: TaskBodyDoc;
+  tagsText: string;
+  projectId: string;
+  color: EntityColor | undefined;
+};
 
 export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const router = useRouter();
@@ -53,8 +60,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
-  const [savedAt, setSavedAt] = useState<string | null>(null);
   const [pendingProjectPick, setPendingProjectPick] = useState<{
     title: string;
     resolve: (projectId: string | null) => void;
@@ -63,39 +68,58 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     null,
   );
 
-  const titleRef = useRef(title);
-  const bodyRef = useRef(body);
-  const tagsTextRef = useRef(tagsText);
-  const projectIdRef = useRef(projectId);
-  const colorRef = useRef(color);
   const noteRef = useRef(note);
-  const deletingRef = useRef(deleting);
-  const savingRef = useRef(false);
-  const pendingSaveRef = useRef(false);
-  const loadedSnapshotRef = useRef<string | null>(null);
-  const getWorkspaceKeyRef = useRef(getWorkspaceKey);
-  const upsertNoteRef = useRef(cache.upsertNote);
-  const mountedRef = useRef(true);
-  const persistRef = useRef<() => Promise<void>>(async () => {});
-
+  const projectIdRef = useRef(projectId);
   useEffect(() => {
-    titleRef.current = title;
-    bodyRef.current = body;
-    tagsTextRef.current = tagsText;
-    projectIdRef.current = projectId;
-    colorRef.current = color;
     noteRef.current = note;
-    deletingRef.current = deleting;
-    getWorkspaceKeyRef.current = getWorkspaceKey;
-    upsertNoteRef.current = cache.upsertNote;
+    projectIdRef.current = projectId;
   });
 
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  const draft = useMemo<NoteDraft>(
+    () => ({ title, body, tagsText, projectId, color }),
+    [title, body, tagsText, projectId, color],
+  );
+
+  const { status, savedAt, flush } = useAutosave({
+    draft,
+    enabled: Boolean(note) && !loading && !deleting,
+    save: async (next) => {
+      const current = noteRef.current;
+      if (!current) throw new Error("Note not loaded");
+      const key = await getWorkspaceKey(workspaceId);
+      const tags = next.tagsText
+        .split(",")
+        .map((t) => t.trim())
+        .filter(Boolean);
+      const saved = await saveNote(
+        workspaceId,
+        key,
+        current,
+        toNotePlaintext(next.title, next.body, tags, next.color),
+        {
+          projectId: next.projectId || null,
+        },
+      );
+      setNote(saved);
+      cache.upsertNote(saved);
+      return {
+        title: saved.title,
+        body: saved.body,
+        tagsText: saved.tags.join(", "),
+        projectId: saved.projectId ?? "",
+        color: saved.color,
+      };
+    },
+    onError: (message) => setError(message),
+    onSaved: (canonical) => {
+      setTitle(canonical.title);
+      setBody(canonical.body);
+      setTagsText(canonical.tagsText);
+      setProjectId(canonical.projectId);
+      setColor(canonical.color);
+      setError(null);
+    },
+  });
 
   useEffect(() => {
     if (!vault) return;
@@ -112,16 +136,8 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         setTagsText(loaded.tags.join(", "));
         setProjectId(loaded.projectId ?? "");
         setColor(loaded.color);
-        loadedSnapshotRef.current = snapshot(
-          loaded.title,
-          loaded.body,
-          loaded.tags.join(", "),
-          loaded.projectId ?? "",
-          loaded.color,
-        );
-        setSaveStatus("idle");
         setError(null);
-        upsertNoteRef.current(loaded);
+        cache.upsertNote(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load note");
@@ -132,137 +148,10 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, noteId, getWorkspaceKey]);
-
-  async function persist() {
-    const current = noteRef.current;
-    if (!current || deletingRef.current) return;
-
-    const nextTitle = titleRef.current;
-    const nextBody = bodyRef.current;
-    const nextTagsText = tagsTextRef.current;
-    const nextProjectId = projectIdRef.current;
-    const nextColor = colorRef.current;
-    const snap = snapshot(
-      nextTitle,
-      nextBody,
-      nextTagsText,
-      nextProjectId,
-      nextColor,
-    );
-    if (snap === loadedSnapshotRef.current) {
-      if (mountedRef.current) {
-        setSaveStatus((s) => (s === "dirty" ? "idle" : s));
-      }
-      return;
-    }
-
-    if (savingRef.current) {
-      pendingSaveRef.current = true;
-      return;
-    }
-
-    savingRef.current = true;
-    if (mountedRef.current) {
-      setSaveStatus("saving");
-      setError(null);
-    }
-    try {
-      const key = await getWorkspaceKeyRef.current(workspaceId);
-      const tags = nextTagsText
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
-      const saved = await saveNote(
-        workspaceId,
-        key,
-        current,
-        toNotePlaintext(nextTitle, nextBody, tags, nextColor),
-        {
-          projectId: nextProjectId || null,
-        },
-      );
-      loadedSnapshotRef.current = snapshot(
-        saved.title,
-        saved.body,
-        saved.tags.join(", "),
-        saved.projectId ?? "",
-        saved.color,
-      );
-      if (!mountedRef.current) return;
-      setNote(saved);
-      upsertNoteRef.current(saved);
-      if (
-        snapshot(
-          titleRef.current,
-          bodyRef.current,
-          tagsTextRef.current,
-          projectIdRef.current,
-          colorRef.current,
-        ) === snap
-      ) {
-        setTitle(saved.title);
-        setBody(saved.body);
-        setTagsText(saved.tags.join(", "));
-        setProjectId(saved.projectId ?? "");
-        setColor(saved.color);
-      }
-      setSavedAt(new Date().toLocaleTimeString());
-      setSaveStatus("saved");
-    } catch (err) {
-      if (!mountedRef.current) return;
-      setError(err instanceof Error ? err.message : "Save failed");
-      setSaveStatus("error");
-    } finally {
-      savingRef.current = false;
-      if (pendingSaveRef.current) {
-        pendingSaveRef.current = false;
-        await persist();
-      }
-    }
-  }
-
-  useEffect(() => {
-    persistRef.current = persist;
-  });
-
-  useEffect(() => {
-    if (!note || loading) return;
-    const snap = snapshot(title, body, tagsText, projectId, color);
-    if (snap === loadedSnapshotRef.current) return;
-
-    setSaveStatus("dirty");
-    const timer = window.setTimeout(() => {
-      void persistRef.current();
-    }, AUTOSAVE_MS);
-    return () => window.clearTimeout(timer);
-  }, [title, body, tagsText, projectId, color, note, loading, workspaceId]);
-
-  useEffect(() => {
-    function flushIfDirty() {
-      const current = noteRef.current;
-      if (!current || deletingRef.current) return;
-      const snap = snapshot(
-        titleRef.current,
-        bodyRef.current,
-        tagsTextRef.current,
-        projectIdRef.current,
-        colorRef.current,
-      );
-      if (snap === loadedSnapshotRef.current) return;
-      void persistRef.current();
-    }
-
-    const onPageHide = () => flushIfDirty();
-    window.addEventListener("pagehide", onPageHide);
-    return () => {
-      window.removeEventListener("pagehide", onPageHide);
-      flushIfDirty();
-    };
-  }, [workspaceId, noteId]);
+  }, [vault, workspaceId, noteId, getWorkspaceKey, cache]);
 
   async function onDelete() {
-    if (!note || deleting || savingRef.current) return;
+    if (!note || deleting || status === "saving") return;
     setDeleting(true);
     setError(null);
     try {
@@ -350,41 +239,54 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Note</h1>
-        <p className="text-sm text-muted-foreground">
-          Select text to create linked tasks or contacts. Edits are encrypted on
-          your device before upload.
-        </p>
-      </div>
-
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
         <div className="flex flex-col gap-3">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="Title"
-            disabled={deleting}
-            maxLength={500}
-            aria-label="Title"
-          />
-          <Input
-            value={tagsText}
-            onChange={(e) => setTagsText(e.target.value)}
-            placeholder="Tags (comma-separated)"
-            disabled={deleting}
-            aria-label="Tags"
-          />
+          <div className="flex items-start justify-between gap-3">
+            <InlineTitle
+              value={title}
+              onChange={setTitle}
+              onBlur={flush}
+              placeholder="Untitled note"
+              disabled={deleting}
+              maxLength={500}
+              aria-label="Title"
+              className="min-w-0 flex-1"
+            />
+            <DeleteButton
+              disabled={deleting}
+              busy={deleting}
+              dialogTitle="Delete this note?"
+              dialogDescription="This permanently deletes the note. This cannot be undone."
+              onConfirm={onDelete}
+            />
+          </div>
+
+          <label className="flex items-center gap-2">
+            <span className="w-14 shrink-0 text-xs text-muted-foreground">
+              Tags
+            </span>
+            <Input
+              variant="seamless"
+              value={tagsText}
+              onChange={(e) => setTagsText(e.target.value)}
+              onBlur={flush}
+              placeholder="comma-separated"
+              disabled={deleting}
+              aria-label="Tags"
+            />
+          </label>
+
           <div className="flex flex-wrap gap-3">
             <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
               Filed under project
               <select
-                className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm text-foreground"
+                className="h-8 rounded-lg border border-transparent bg-transparent px-2.5 text-sm text-foreground hover:bg-muted/40 focus:bg-muted/40 focus:outline-none"
                 value={projectId}
                 disabled={deleting}
                 onChange={(e) => setProjectId(e.target.value)}
+                onBlur={flush}
                 aria-label="Filed under project"
               >
                 <option value="">None</option>
@@ -422,25 +324,11 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
           ) : null}
           <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
 
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              type="button"
-              size="sm"
-              variant="outline"
-              disabled={deleting || saveStatus === "saving"}
-              onClick={() => void persist()}
-            >
-              Save now
-            </Button>
-            <DeleteButton
-              disabled={deleting}
-              busy={deleting}
-              dialogTitle="Delete this note?"
-              dialogDescription="This permanently deletes the note. This cannot be undone."
-              onConfirm={onDelete}
-            />
-            <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
-          </div>
+          <SaveStatus
+            status={status}
+            savedAt={savedAt}
+            onRetry={flush}
+          />
         </div>
       )}
 
@@ -486,45 +374,4 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       ) : null}
     </div>
   );
-}
-
-function snapshot(
-  title: string,
-  body: TaskBodyDoc,
-  tagsText: string,
-  projectId: string,
-  color: EntityColor | undefined,
-): string {
-  return JSON.stringify({ title, body, tagsText, projectId, color: color ?? null });
-}
-
-function SaveStatusLabel({
-  status,
-  savedAt,
-}: {
-  status: SaveStatus;
-  savedAt: string | null;
-}) {
-  switch (status) {
-    case "idle":
-      return null;
-    case "dirty":
-      return (
-        <span className="text-xs text-muted-foreground">Unsaved changes</span>
-      );
-    case "saving":
-      return <span className="text-xs text-muted-foreground">Saving…</span>;
-    case "saved":
-      return (
-        <span className="text-xs text-muted-foreground">
-          {savedAt ? `Saved ${savedAt}` : "Saved"}
-        </span>
-      );
-    case "error":
-      return <span className="text-xs text-destructive">Save failed</span>;
-    default: {
-      const _exhaustive: never = status;
-      return _exhaustive;
-    }
-  }
 }

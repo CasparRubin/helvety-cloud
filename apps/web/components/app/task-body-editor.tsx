@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
+import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
 import type { EntityLinkKind, EntityLinkTarget } from "@helvety-cloud/api-contract";
 import { Paperclip } from "lucide-react";
@@ -31,8 +32,8 @@ type TaskBodyEditorProps = {
   onChange: (doc: TaskBodyDoc) => void;
   disabled?: boolean;
   className?: string;
-  /** Shorter editor for project/milestone descriptions. */
   compact?: boolean;
+  placeholder?: string;
   enableEntityLinks?: boolean;
   linkCandidates?: {
     kind: EntityLinkKind;
@@ -42,7 +43,6 @@ type TaskBodyEditorProps = {
   onEntityLinkAction?: (
     action: EntityLinkAction,
   ) => Promise<EntityLinkTarget | void> | EntityLinkTarget | void;
-  /** When set, enables TipTap fileAttachment upload/paste/drop. */
   fileAttachments?: FileAttachmentsConfig;
 };
 
@@ -52,6 +52,7 @@ export function TaskBodyEditor({
   disabled = false,
   className,
   compact = false,
+  placeholder = "Write something…",
   enableEntityLinks = false,
   linkCandidates = [],
   onEntityLinkAction,
@@ -61,6 +62,8 @@ export function TaskBodyEditor({
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [focused, setFocused] = useState(false);
+  const [hovered, setHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileAttachmentsRef = useRef<FileAttachmentsConfig | undefined>(
     fileAttachments,
@@ -83,6 +86,10 @@ export function TaskBodyEditor({
       StarterKit.configure({
         heading: { levels: [2, 3] },
       }),
+      Placeholder.configure({
+        placeholder,
+        emptyEditorClass: "is-editor-empty",
+      }),
       ...(enableEntityLinks ? [EntityRef] : []),
       ...(fileAttachments
         ? [
@@ -101,13 +108,18 @@ export function TaskBodyEditor({
       attributes: {
         class: cn(
           compact ? "min-h-[96px]" : "min-h-[240px]",
-          "px-2.5 py-2 text-sm outline-none",
+          "px-0 py-1 text-sm outline-none",
           "prose prose-sm max-w-none dark:prose-invert",
           "[&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-base [&_h2]:font-semibold",
           "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold",
           "[&_ul]:my-1 [&_ul]:list-disc [&_ul]:pl-5",
           "[&_ol]:my-1 [&_ol]:list-decimal [&_ol]:pl-5",
           "[&_p]:my-1",
+          "[&_p.is-editor-empty:first-child::before]:pointer-events-none",
+          "[&_p.is-editor-empty:first-child::before]:float-left",
+          "[&_p.is-editor-empty:first-child::before]:h-0",
+          "[&_p.is-editor-empty:first-child::before]:text-muted-foreground/60",
+          "[&_p.is-editor-empty:first-child::before]:content-[attr(data-placeholder)]",
         ),
         "aria-label": "Body",
       },
@@ -139,6 +151,8 @@ export function TaskBodyEditor({
     onUpdate: ({ editor: ed }) => {
       onChange(ed.getJSON() as TaskBodyDoc);
     },
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
   });
 
   useEffect(() => {
@@ -213,7 +227,8 @@ export function TaskBodyEditor({
     return (
       <div
         className={cn(
-          "min-h-[280px] rounded-lg border border-input bg-transparent",
+          compact ? "min-h-[128px]" : "min-h-[280px]",
+          "bg-transparent",
           className,
         )}
       />
@@ -225,16 +240,26 @@ export function TaskBodyEditor({
     return c.label.toLowerCase().includes(linkQuery.trim().toLowerCase());
   });
 
+  const toolbarVisible = focused || hovered || uploading;
+
   return (
     <div
-      className={cn(
-        "overflow-hidden rounded-lg border border-input bg-transparent",
-        "focus-within:border-ring focus-within:ring-3 focus-within:ring-ring/50",
-        disabled && "opacity-50",
-        className,
-      )}
+      className={cn("overflow-hidden bg-transparent", disabled && "opacity-50", className)}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
     >
-      <div className="flex flex-wrap gap-0.5 border-b border-border px-1 py-1">
+      <div
+        className={cn(
+          "flex flex-wrap gap-0.5 py-1 transition-opacity",
+          toolbarVisible
+            ? "opacity-100"
+            : "pointer-events-none opacity-0",
+        )}
+        onMouseDown={(e) => {
+          // Keep document focus so toolbar clicks don't hide the row mid-press.
+          e.preventDefault();
+        }}
+      >
         <ToolbarButton
           label="Bold"
           active={editor.isActive("bold")}
