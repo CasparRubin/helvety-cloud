@@ -12,6 +12,11 @@ import {
 
 export type { CategorizationIcon };
 
+/** Stages only: how many tasks to show before “Show more”. */
+export const DEFAULT_MAX_VISIBLE_TASKS = 15;
+export const MIN_MAX_VISIBLE_TASKS = 1;
+export const MAX_MAX_VISIBLE_TASKS = 500;
+
 export type CategorizationOption = {
   id: string;
   name: string;
@@ -21,8 +26,8 @@ export type CategorizationOption = {
   sortOrder: number;
   /** Stages and priorities only; exactly one default per kind. */
   isDefault?: boolean;
-  /** Stages only: board starts collapsed when true. */
-  collapsedByDefault?: boolean;
+  /** Stages only: how many tasks to show before “Show more”. Default 15. */
+  maxVisibleTasks?: number;
 };
 
 export type ProjectCategorizations = {
@@ -72,6 +77,24 @@ export function resolveStageColor(
   ];
 }
 
+/** Resolve how many tasks a stage shows before “Show more”. */
+export function resolveMaxVisibleTasks(
+  stage: Pick<CategorizationOption, "maxVisibleTasks"> | null | undefined,
+): number {
+  return (
+    normalizeMaxVisibleTasks(stage?.maxVisibleTasks) ?? DEFAULT_MAX_VISIBLE_TASKS
+  );
+}
+
+/** Accept positive integers in range; null if invalid. */
+export function normalizeMaxVisibleTasks(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isInteger(value)) return null;
+  if (value < MIN_MAX_VISIBLE_TASKS || value > MAX_MAX_VISIBLE_TASKS) {
+    return null;
+  }
+  return value;
+}
+
 function option(
   name: string,
   sortOrder: number,
@@ -79,7 +102,7 @@ function option(
     isDefault?: boolean;
     color?: EntityColor;
     icon?: CategorizationIcon;
-    collapsedByDefault?: boolean;
+    maxVisibleTasks?: number;
   },
 ): CategorizationOption {
   const o: CategorizationOption = {
@@ -90,7 +113,9 @@ function option(
   if (opts?.isDefault) o.isDefault = true;
   if (opts?.color) o.color = opts.color;
   if (opts?.icon) o.icon = opts.icon;
-  if (opts?.collapsedByDefault) o.collapsedByDefault = true;
+  if (opts?.maxVisibleTasks !== undefined) {
+    o.maxVisibleTasks = opts.maxVisibleTasks;
+  }
   return o;
 }
 
@@ -105,7 +130,7 @@ export function defaultCategorizations(): ProjectCategorizations {
         isDefault: name === "Backlog",
         color: DEFAULT_STAGE_COLORS[name],
         icon: DEFAULT_OPTION_ICONS[name],
-        collapsedByDefault: name === "Backlog" || name === "Cancelled",
+        maxVisibleTasks: DEFAULT_MAX_VISIBLE_TASKS,
       }),
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
@@ -133,9 +158,8 @@ function normalizeOption(item: unknown): CategorizationOption | null {
     sortOrder: o.sortOrder,
   };
   if (o.isDefault === true) next.isDefault = true;
-  if (typeof o.collapsedByDefault === "boolean") {
-    next.collapsedByDefault = o.collapsedByDefault;
-  }
+  const maxVisible = normalizeMaxVisibleTasks(o.maxVisibleTasks);
+  if (maxVisible !== null) next.maxVisibleTasks = maxVisible;
   // Ignore invalid color/icon tokens rather than rejecting the whole option.
   if (o.color !== undefined && isEntityColor(o.color)) {
     next.color = o.color;
@@ -203,8 +227,8 @@ export function cloneCategorizations(
       if (o.color !== undefined) next.color = o.color;
       if (o.icon !== undefined) next.icon = o.icon;
       if (o.isDefault) next.isDefault = true;
-      if (o.collapsedByDefault !== undefined) {
-        next.collapsedByDefault = o.collapsedByDefault;
+      if (o.maxVisibleTasks !== undefined) {
+        next.maxVisibleTasks = o.maxVisibleTasks;
       }
       return next;
     });

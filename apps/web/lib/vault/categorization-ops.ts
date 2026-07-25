@@ -1,5 +1,7 @@
 import {
   cloneCategorizations,
+  DEFAULT_MAX_VISIBLE_TASKS,
+  normalizeMaxVisibleTasks,
   removeOption,
   remapTaskIdsByName,
   setDefaultOption,
@@ -46,6 +48,9 @@ export async function addCategorizationOption(
     name: trimmed,
     sortOrder: list.reduce((max, o) => Math.max(max, o.sortOrder), -1) + 1,
   };
+  if (kind === "stages") {
+    option.maxVisibleTasks = DEFAULT_MAX_VISIBLE_TASKS;
+  }
   const categorizations: ProjectCategorizations = {
     ...project.categorizations,
     [kind]: [...list, option],
@@ -155,17 +160,21 @@ export async function setCategorizationOptionIcon(
   );
 }
 
-export async function setCategorizationOptionCollapsedByDefault(
+export async function setCategorizationOptionMaxVisibleTasks(
   workspaceId: string,
   workspaceKey: Uint8Array,
   project: DecryptedProject,
   optionId: string,
-  collapsedByDefault: boolean,
+  maxVisibleTasks: number,
 ): Promise<DecryptedProject> {
+  const normalized = normalizeMaxVisibleTasks(maxVisibleTasks);
+  if (normalized === null) {
+    throw new Error("Show limit must be an integer from 1 to 500");
+  }
   const categorizations: ProjectCategorizations = {
     ...project.categorizations,
     stages: project.categorizations.stages.map((o) =>
-      o.id === optionId ? { ...o, collapsedByDefault } : o,
+      o.id === optionId ? { ...o, maxVisibleTasks: normalized } : o,
     ),
   };
   return updateProjectCategorizations(

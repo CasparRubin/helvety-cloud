@@ -8,9 +8,15 @@ import { CategorizationIconPicker } from "@/components/app/categorization-icon-p
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { Button } from "@/components/ui/button";
-import { Checkbox } from "@/components/ui/checkbox";
+import {
+  FieldDescription,
+  FieldGroup,
+  FieldLegend,
+  FieldSet,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Separator } from "@/components/ui/separator";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   addCategorizationOption,
@@ -19,11 +25,14 @@ import {
   renameCategorizationOption,
   reorderCategorizationOption,
   setCategorizationDefault,
-  setCategorizationOptionCollapsedByDefault,
   setCategorizationOptionColor,
   setCategorizationOptionIcon,
+  setCategorizationOptionMaxVisibleTasks,
 } from "@/lib/vault/categorization-ops";
 import {
+  MAX_MAX_VISIBLE_TASKS,
+  MIN_MAX_VISIBLE_TASKS,
+  resolveMaxVisibleTasks,
   type CategorizationIcon,
   type CategorizationKind,
   type CategorizationOption,
@@ -173,363 +182,377 @@ export function ProjectSettings({
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : project ? (
-        <>
-          <section className="flex max-w-lg flex-col gap-3">
-            <h2 className="text-sm font-medium">Name</h2>
-            <form onSubmit={(e) => void onRename(e)} className="flex gap-2">
-              <Input
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
+        <FieldGroup className="max-w-2xl gap-8">
+          <FieldSet>
+            <FieldLegend>General</FieldLegend>
+            <div className="flex flex-col gap-4 pt-2">
+              <form onSubmit={(e) => void onRename(e)} className="flex gap-2">
+                <Input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  disabled={busy}
+                  maxLength={200}
+                  aria-label="Project name"
+                />
+                <Button
+                  type="submit"
+                  disabled={
+                    busy ||
+                    !nameDraft.trim() ||
+                    nameDraft.trim() === project.name
+                  }
+                >
+                  Save
+                </Button>
+              </form>
+              <EntityColorPicker
+                value={project.color}
                 disabled={busy}
-                maxLength={200}
-                aria-label="Project name"
+                onChange={(next: EntityColor | undefined) => {
+                  void withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    const saved = await saveProjectContent(
+                      workspaceId,
+                      key,
+                      project,
+                      {
+                        name: project.name,
+                        categorizations: project.categorizations,
+                        ...(next ? { color: next } : {}),
+                      },
+                    );
+                    setProject(saved);
+                  });
+                }}
               />
-              <Button
-                type="submit"
-                disabled={
-                  busy ||
-                  !nameDraft.trim() ||
-                  nameDraft.trim() === project.name
+            </div>
+          </FieldSet>
+
+          <Separator />
+
+          <FieldSet>
+            <FieldLegend>Categorizations</FieldLegend>
+            <FieldDescription>
+              Labels, stages, and priorities for this project’s tasks.
+            </FieldDescription>
+            <div className="flex flex-col gap-8 pt-4">
+              <OptionList
+                title="Stages"
+                description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Show limits how many tasks appear in a stage before “Show more”."
+                kind="stages"
+                options={project.categorizations.stages}
+                showDefault
+                busy={busy}
+                onAdd={(name) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await addCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        name,
+                      ),
+                    );
+                  })
                 }
-              >
-                Save
-              </Button>
-            </form>
-          </section>
+                onRename={(id, name) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await renameCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        id,
+                        name,
+                      ),
+                    );
+                  })
+                }
+                onDelete={(id) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await deleteCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        id,
+                      ),
+                    );
+                  })
+                }
+                onReorder={(id, direction) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await reorderCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        id,
+                        direction,
+                      ),
+                    );
+                  })
+                }
+                onSetDefault={(id) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationDefault(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        id,
+                      ),
+                    );
+                  })
+                }
+                onSetColor={(id, color) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationOptionColor(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        id,
+                        color ?? null,
+                      ),
+                    );
+                  })
+                }
+                onSetIcon={(id, icon) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationOptionIcon(
+                        workspaceId,
+                        key,
+                        project,
+                        "stages",
+                        id,
+                        icon ?? null,
+                      ),
+                    );
+                  })
+                }
+                onSetMaxVisibleTasks={(id, maxVisibleTasks) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationOptionMaxVisibleTasks(
+                        workspaceId,
+                        key,
+                        project,
+                        id,
+                        maxVisibleTasks,
+                      ),
+                    );
+                  })
+                }
+              />
 
-          <section className="flex max-w-lg flex-col gap-3">
-            <EntityColorPicker
-              value={project.color}
-              disabled={busy}
-              onChange={(next: EntityColor | undefined) => {
-                void withBusy(async () => {
-                  const key = await getWorkspaceKey(workspaceId);
-                  const saved = await saveProjectContent(
-                    workspaceId,
-                    key,
-                    project,
-                    {
-                      name: project.name,
-                      categorizations: project.categorizations,
-                      ...(next ? { color: next } : {}),
-                    },
-                  );
-                  setProject(saved);
-                });
-              }}
-            />
-          </section>
+              <OptionList
+                title="Labels"
+                description="Optional on tasks. Delete clears the label on affected tasks."
+                kind="labels"
+                options={project.categorizations.labels}
+                showDefault={false}
+                busy={busy}
+                onAdd={(name) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await addCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "labels",
+                        name,
+                      ),
+                    );
+                  })
+                }
+                onRename={(id, name) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await renameCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "labels",
+                        id,
+                        name,
+                      ),
+                    );
+                  })
+                }
+                onDelete={(id) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await deleteCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "labels",
+                        id,
+                      ),
+                    );
+                  })
+                }
+                onReorder={(id, direction) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await reorderCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "labels",
+                        id,
+                        direction,
+                      ),
+                    );
+                  })
+                }
+                onSetIcon={(id, icon) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationOptionIcon(
+                        workspaceId,
+                        key,
+                        project,
+                        "labels",
+                        id,
+                        icon ?? null,
+                      ),
+                    );
+                  })
+                }
+              />
 
-          <OptionList
-            title="Labels"
-            description="Optional on tasks. Delete clears the label on affected tasks."
-            kind="labels"
-            options={project.categorizations.labels}
-            showDefault={false}
-            busy={busy}
-            onAdd={(name) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await addCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "labels",
-                    name,
-                  ),
-                );
-              })
-            }
-            onRename={(id, name) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await renameCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "labels",
-                    id,
-                    name,
-                  ),
-                );
-              })
-            }
-            onDelete={(id) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await deleteCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "labels",
-                    id,
-                  ),
-                );
-              })
-            }
-            onReorder={(id, direction) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await reorderCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "labels",
-                    id,
-                    direction,
-                  ),
-                );
-              })
-            }
-            onSetIcon={(id, icon) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationOptionIcon(
-                    workspaceId,
-                    key,
-                    project,
-                    "labels",
-                    id,
-                    icon ?? null,
-                  ),
-                );
-              })
-            }
-          />
+              <OptionList
+                title="Priorities"
+                description="Required on tasks. Default is used for new tasks and when deleting an in-use priority."
+                kind="priorities"
+                options={project.categorizations.priorities}
+                showDefault
+                busy={busy}
+                onAdd={(name) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await addCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "priorities",
+                        name,
+                      ),
+                    );
+                  })
+                }
+                onRename={(id, name) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await renameCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "priorities",
+                        id,
+                        name,
+                      ),
+                    );
+                  })
+                }
+                onDelete={(id) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await deleteCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "priorities",
+                        id,
+                      ),
+                    );
+                  })
+                }
+                onReorder={(id, direction) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await reorderCategorizationOption(
+                        workspaceId,
+                        key,
+                        project,
+                        "priorities",
+                        id,
+                        direction,
+                      ),
+                    );
+                  })
+                }
+                onSetDefault={(id) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationDefault(
+                        workspaceId,
+                        key,
+                        project,
+                        "priorities",
+                        id,
+                      ),
+                    );
+                  })
+                }
+                onSetIcon={(id, icon) =>
+                  withBusy(async () => {
+                    const key = await getWorkspaceKey(workspaceId);
+                    setProject(
+                      await setCategorizationOptionIcon(
+                        workspaceId,
+                        key,
+                        project,
+                        "priorities",
+                        id,
+                        icon ?? null,
+                      ),
+                    );
+                  })
+                }
+              />
+            </div>
+          </FieldSet>
 
-          <OptionList
-            title="Stages"
-            description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Collapsed by default sets the board’s initial state."
-            kind="stages"
-            options={project.categorizations.stages}
-            showDefault
-            busy={busy}
-            onAdd={(name) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await addCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    name,
-                  ),
-                );
-              })
-            }
-            onRename={(id, name) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await renameCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    id,
-                    name,
-                  ),
-                );
-              })
-            }
-            onDelete={(id) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await deleteCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    id,
-                  ),
-                );
-              })
-            }
-            onReorder={(id, direction) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await reorderCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    id,
-                    direction,
-                  ),
-                );
-              })
-            }
-            onSetDefault={(id) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationDefault(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    id,
-                  ),
-                );
-              })
-            }
-            onSetColor={(id, color) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationOptionColor(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    id,
-                    color ?? null,
-                  ),
-                );
-              })
-            }
-            onSetIcon={(id, icon) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationOptionIcon(
-                    workspaceId,
-                    key,
-                    project,
-                    "stages",
-                    id,
-                    icon ?? null,
-                  ),
-                );
-              })
-            }
-            onSetCollapsedByDefault={(id, collapsed) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationOptionCollapsedByDefault(
-                    workspaceId,
-                    key,
-                    project,
-                    id,
-                    collapsed,
-                  ),
-                );
-              })
-            }
-          />
+          <Separator />
 
-          <OptionList
-            title="Priorities"
-            description="Required on tasks. Default is used for new tasks and when deleting an in-use priority."
-            kind="priorities"
-            options={project.categorizations.priorities}
-            showDefault
-            busy={busy}
-            onAdd={(name) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await addCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "priorities",
-                    name,
-                  ),
-                );
-              })
-            }
-            onRename={(id, name) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await renameCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "priorities",
-                    id,
-                    name,
-                  ),
-                );
-              })
-            }
-            onDelete={(id) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await deleteCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "priorities",
-                    id,
-                  ),
-                );
-              })
-            }
-            onReorder={(id, direction) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await reorderCategorizationOption(
-                    workspaceId,
-                    key,
-                    project,
-                    "priorities",
-                    id,
-                    direction,
-                  ),
-                );
-              })
-            }
-            onSetDefault={(id) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationDefault(
-                    workspaceId,
-                    key,
-                    project,
-                    "priorities",
-                    id,
-                  ),
-                );
-              })
-            }
-            onSetIcon={(id, icon) =>
-              withBusy(async () => {
-                const key = await getWorkspaceKey(workspaceId);
-                setProject(
-                  await setCategorizationOptionIcon(
-                    workspaceId,
-                    key,
-                    project,
-                    "priorities",
-                    id,
-                    icon ?? null,
-                  ),
-                );
-              })
-            }
-          />
-
-          <section className="flex max-w-lg flex-col gap-3">
-            <h2 className="text-sm font-medium">Copy categorizations</h2>
-            <p className="text-sm text-muted-foreground">
+          <FieldSet>
+            <FieldLegend>Import</FieldLegend>
+            <FieldDescription>
               Replace this project’s labels, stages, and priorities with a clone
               from another project. Tasks are remapped by matching option names.
-            </p>
-            <form onSubmit={(e) => void onCopy(e)} className="flex gap-2">
+            </FieldDescription>
+            <form
+              onSubmit={(e) => void onCopy(e)}
+              className="flex gap-2 pt-2"
+            >
               <select
                 className="flex h-8 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm"
                 value={copyFromId}
@@ -552,25 +575,29 @@ export function ProjectSettings({
                 Copy
               </Button>
             </form>
-          </section>
+          </FieldSet>
 
-          <section className="flex max-w-lg flex-col gap-3 border-t border-border pt-6">
-            <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
-            <p className="text-xs text-muted-foreground">
+          <Separator />
+
+          <FieldSet>
+            <FieldLegend className="text-destructive">Danger zone</FieldLegend>
+            <FieldDescription>
               Permanently delete this project and all of its tasks. This cannot
               be undone. Helvety cannot recover deleted vault data.
-            </p>
-            <DeleteButton
-              label="Delete project"
-              variant="destructive"
-              disabled={busy}
-              busy={busy}
-              dialogTitle={`Delete project “${project.name}”?`}
-              dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
-              onConfirm={onDeleteProject}
-            />
-          </section>
-        </>
+            </FieldDescription>
+            <div className="pt-2">
+              <DeleteButton
+                label="Delete project"
+                variant="destructive"
+                disabled={busy}
+                busy={busy}
+                dialogTitle={`Delete project “${project.name}”?`}
+                dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
+                onConfirm={onDeleteProject}
+              />
+            </div>
+          </FieldSet>
+        </FieldGroup>
       ) : null}
 
       {error ? (
@@ -596,7 +623,7 @@ function OptionList({
   onSetDefault,
   onSetColor,
   onSetIcon,
-  onSetCollapsedByDefault,
+  onSetMaxVisibleTasks,
 }: {
   title: string;
   description: string;
@@ -611,116 +638,144 @@ function OptionList({
   onSetDefault?: (id: string) => Promise<void>;
   onSetColor?: (id: string, color: EntityColor | undefined) => Promise<void>;
   onSetIcon?: (id: string, icon: CategorizationIcon | undefined) => Promise<void>;
-  onSetCollapsedByDefault?: (id: string, collapsed: boolean) => Promise<void>;
+  onSetMaxVisibleTasks?: (id: string, maxVisibleTasks: number) => Promise<void>;
 }) {
   const [newName, setNewName] = useState("");
   const sorted = [...options].sort(
     (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
   );
-  const canDelete =
-    kind === "labels" || sorted.length > 1;
+  const canDelete = kind === "labels" || sorted.length > 1;
 
   return (
-    <section className="flex max-w-2xl flex-col gap-3">
+    <section className="flex flex-col gap-3">
       <div>
-        <h2 className="text-sm font-medium">{title}</h2>
+        <h3 className="text-sm font-medium">{title}</h3>
         <p className="text-sm text-muted-foreground">{description}</p>
       </div>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col gap-3">
         {sorted.map((opt, index) => (
           <li
             key={opt.id}
-            className="flex flex-wrap items-center gap-2 border-b border-border py-2 last:border-0"
+            className="flex flex-col gap-2 border-b border-border pb-3 last:border-0"
           >
-            <Input
-              defaultValue={opt.name}
-              disabled={busy}
-              className="min-w-[10rem] flex-1"
-              aria-label={`${title} name`}
-              onBlur={(e) => {
-                const next = e.target.value.trim();
-                if (next && next !== opt.name) {
-                  void onRename(opt.id, next);
-                } else {
-                  e.target.value = opt.name;
-                }
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  (e.target as HTMLInputElement).blur();
-                }
-              }}
-            />
-            {onSetIcon ? (
-              <CategorizationIconPicker
-                compact
-                value={opt.icon}
+            <div className="flex flex-wrap items-center gap-2">
+              <Input
+                defaultValue={opt.name}
                 disabled={busy}
-                onChange={(icon) => void onSetIcon(opt.id, icon)}
-              />
-            ) : null}
-            {onSetColor ? (
-              <EntityColorPicker
-                compact
-                value={opt.color}
-                disabled={busy}
-                onChange={(color) => void onSetColor(opt.id, color)}
-              />
-            ) : null}
-            {showDefault ? (
-              <Button
-                type="button"
-                size="sm"
-                variant={opt.isDefault ? "secondary" : "ghost"}
-                disabled={busy || !!opt.isDefault}
-                onClick={() => void onSetDefault?.(opt.id)}
-              >
-                {opt.isDefault ? "Default" : "Set default"}
-              </Button>
-            ) : null}
-            {onSetCollapsedByDefault ? (
-              <label className="flex items-center gap-2 text-xs text-muted-foreground">
-                <Checkbox
-                  checked={opt.collapsedByDefault === true}
-                  disabled={busy}
-                  aria-label={`Collapsed by default for ${opt.name}`}
-                  onCheckedChange={(checked) =>
-                    void onSetCollapsedByDefault(opt.id, checked === true)
+                className="min-w-[10rem] flex-1"
+                aria-label={`${title} name`}
+                onBlur={(e) => {
+                  const next = e.target.value.trim();
+                  if (next && next !== opt.name) {
+                    void onRename(opt.id, next);
+                  } else {
+                    e.target.value = opt.name;
                   }
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    (e.target as HTMLInputElement).blur();
+                  }
+                }}
+              />
+              {onSetIcon ? (
+                <CategorizationIconPicker
+                  compact
+                  value={opt.icon}
+                  disabled={busy}
+                  onChange={(icon) => void onSetIcon(opt.id, icon)}
                 />
-                Collapsed by default
-              </label>
-            ) : null}
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={busy || index === 0}
-              onClick={() => void onReorder(opt.id, "up")}
-              aria-label="Move up"
-            >
-              ↑
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={busy || index === sorted.length - 1}
-              onClick={() => void onReorder(opt.id, "down")}
-              aria-label="Move down"
-            >
-              ↓
-            </Button>
-            <Button
-              type="button"
-              size="sm"
-              variant="ghost"
-              disabled={busy || !canDelete}
-              onClick={() => void onDelete(opt.id)}
-            >
-              Remove
-            </Button>
+              ) : null}
+              {onSetColor ? (
+                <EntityColorPicker
+                  compact
+                  value={opt.color}
+                  disabled={busy}
+                  onChange={(color) => void onSetColor(opt.id, color)}
+                />
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {showDefault ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={opt.isDefault ? "secondary" : "ghost"}
+                  disabled={busy || !!opt.isDefault}
+                  onClick={() => void onSetDefault?.(opt.id)}
+                >
+                  {opt.isDefault ? "Default" : "Set default"}
+                </Button>
+              ) : null}
+              {onSetMaxVisibleTasks ? (
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>Show</span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={MIN_MAX_VISIBLE_TASKS}
+                    max={MAX_MAX_VISIBLE_TASKS}
+                    defaultValue={resolveMaxVisibleTasks(opt)}
+                    disabled={busy}
+                    className="h-8 w-16 tabular-nums"
+                    aria-label={`Max visible tasks for ${opt.name}`}
+                    onBlur={(e) => {
+                      const parsed = Number.parseInt(e.target.value, 10);
+                      const current = resolveMaxVisibleTasks(opt);
+                      if (
+                        !Number.isInteger(parsed) ||
+                        parsed < MIN_MAX_VISIBLE_TASKS ||
+                        parsed > MAX_MAX_VISIBLE_TASKS
+                      ) {
+                        e.target.value = String(current);
+                        return;
+                      }
+                      if (parsed !== current) {
+                        void onSetMaxVisibleTasks(opt.id, parsed);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
+                </label>
+              ) : null}
+              <div className="ml-auto flex items-center gap-1">
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy || index === 0}
+                  onClick={() => void onReorder(opt.id, "up")}
+                  aria-label="Move up"
+                >
+                  ↑
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy || index === sorted.length - 1}
+                  onClick={() => void onReorder(opt.id, "down")}
+                  aria-label="Move down"
+                >
+                  ↓
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={busy || !canDelete}
+                  onClick={() => void onDelete(opt.id)}
+                >
+                  Remove
+                </Button>
+              </div>
+            </div>
           </li>
         ))}
       </ul>

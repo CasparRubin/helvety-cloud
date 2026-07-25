@@ -23,7 +23,6 @@ import {
 } from "@dnd-kit/core";
 import {
   ChevronDownIcon,
-  ChevronRightIcon,
   ChevronUpIcon,
   GripVerticalIcon,
 } from "lucide-react";
@@ -38,6 +37,7 @@ import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
+  resolveMaxVisibleTasks,
   resolveStageColor,
   type CategorizationOption,
   type ProjectCategorizations,
@@ -283,7 +283,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
             {columns.map((col, index) => (
               <StageRow
-                key={col.stage.id}
+                key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
                 stage={col.stage}
                 prevStage={columns[index - 1]?.stage ?? null}
                 nextStage={columns[index + 1]?.stage ?? null}
@@ -348,12 +348,15 @@ function StageRow({
     id: stage.id,
     data: { type: "stage", stageId: stage.id },
   });
-  const [expanded, setExpanded] = useState(stage.collapsedByDefault !== true);
+  const limit = resolveMaxVisibleTasks(stage);
+  const [visibleCount, setVisibleCount] = useState(limit);
   const tintColor = resolveStageColor(stage);
   const tint = tintColor ? ENTITY_COLOR_CLASSES[tintColor] : null;
   const Icon = stage.icon
     ? CATEGORIZATION_ICON_COMPONENTS[stage.icon]
     : null;
+  const shownTasks = tasks.slice(0, visibleCount);
+  const remaining = tasks.length - shownTasks.length;
 
   return (
     <section
@@ -365,35 +368,26 @@ function StageRow({
         isOver && "ring-2 ring-ring ring-inset",
       )}
     >
-      <button
-        type="button"
-        aria-expanded={expanded}
+      <div
         className={cn(
-          "flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left",
+          "flex w-full items-center gap-2 border-b border-border px-3 py-2",
           tint ? cn(tint.bg, tint.text) : "bg-muted/40",
-          !expanded && "border-b-0",
         )}
-        onClick={() => setExpanded((prev) => !prev)}
       >
-        {expanded ? (
-          <ChevronDownIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
-        ) : (
-          <ChevronRightIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
-        )}
         {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden /> : null}
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
           {stage.name}
         </h2>
         <span className="text-xs tabular-nums opacity-70">{tasks.length}</span>
-      </button>
-      {expanded ? (
-        <div className="flex flex-col">
-          {tasks.length === 0 ? (
-            <EntityListEmpty className="m-2 px-3 py-4 text-center text-xs">
-              No tasks in this stage
-            </EntityListEmpty>
-          ) : (
-            tasks.map((task) => (
+      </div>
+      <div className="flex flex-col">
+        {tasks.length === 0 ? (
+          <EntityListEmpty className="m-2 px-3 py-4 text-center text-xs">
+            No tasks in this stage
+          </EntityListEmpty>
+        ) : (
+          <>
+            {shownTasks.map((task) => (
               <TaskCard
                 key={task.id}
                 task={task}
@@ -406,10 +400,25 @@ function StageRow({
                 disabled={busy || savingTaskId === task.id}
                 onUpdateIds={onUpdateIds}
               />
-            ))
-          )}
-        </div>
-      ) : null}
+            ))}
+            {remaining > 0 ? (
+              <div className="border-t border-border px-3 py-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="w-full text-xs text-muted-foreground"
+                  onClick={() =>
+                    setVisibleCount((prev) => prev + limit)
+                  }
+                >
+                  Show more ({remaining} remaining)
+                </Button>
+              </div>
+            ) : null}
+          </>
+        )}
+      </div>
     </section>
   );
 }
