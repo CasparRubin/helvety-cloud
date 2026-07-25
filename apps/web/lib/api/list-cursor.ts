@@ -31,6 +31,22 @@ export function decodeSortOrderCursor(
   }
 }
 
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+function parseOptionalUuid(
+  raw: string | null,
+  field: string,
+): { ok: true; value: string | undefined } | { ok: false; message: string } {
+  if (raw === null || raw === "") {
+    return { ok: true, value: undefined };
+  }
+  if (!UUID_RE.test(raw)) {
+    return { ok: false, message: `${field} must be a uuid` };
+  }
+  return { ok: true, value: raw };
+}
+
 /**
  * Parse list query from URL search params.
  * Returns `{ ok: false, message }` on invalid cursor/limit.
@@ -65,4 +81,42 @@ export function parseListSearchParams(url: URL):
   const includeDeleted = url.searchParams.get("includeDeleted") === "true";
 
   return { ok: true, limit, cursor, includeDeleted };
+}
+
+/**
+ * Parse task list query including optional categorization filters.
+ */
+export function parseTaskListSearchParams(url: URL):
+  | {
+      ok: true;
+      limit: number;
+      cursor: SortOrderCursor | null;
+      includeDeleted: boolean;
+      labelId?: string;
+      stageId?: string;
+      priorityId?: string;
+    }
+  | { ok: false; message: string } {
+  const base = parseListSearchParams(url);
+  if (!base.ok) return base;
+
+  const label = parseOptionalUuid(url.searchParams.get("labelId"), "labelId");
+  if (!label.ok) return label;
+  const stage = parseOptionalUuid(url.searchParams.get("stageId"), "stageId");
+  if (!stage.ok) return stage;
+  const priority = parseOptionalUuid(
+    url.searchParams.get("priorityId"),
+    "priorityId",
+  );
+  if (!priority.ok) return priority;
+
+  return {
+    ok: true,
+    limit: base.limit,
+    cursor: base.cursor,
+    includeDeleted: base.includeDeleted,
+    labelId: label.value,
+    stageId: stage.value,
+    priorityId: priority.value,
+  };
 }

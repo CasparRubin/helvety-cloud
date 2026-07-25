@@ -42,11 +42,11 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
 | Table | Content |
 |-------|---------|
-| `projects` | `encrypted_blob` holds `{ name }`; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
-| `tasks` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`); legacy unversioned `{ title, body: string }` is normalized on decrypt; plaintext FKs: `id`, `project_id`, optional status id, sort, `updated_at`, tombstone |
+| `projects` | `encrypted_blob` holds `{ name, categorizations }` where `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, isDefault? }` (names encrypted); plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
+| `tasks` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`); legacy unversioned `{ title, body: string }` is normalized on decrypt; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), sort, `updated_at`, tombstone |
 | `notes` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`) and `tags` is `string[]`; optional nullable plaintext `project_id` / `task_id` for filtered lists without decrypting all notes |
 | `contacts` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes }` under **workspace_key**; duplicates across workspaces OK |
-| Later | `milestones`, label **names** encrypted; color/id metadata may stay plaintext |
+| Later | `milestones`; color tokens as plaintext metadata if needed for boards |
 
 ## RLS
 

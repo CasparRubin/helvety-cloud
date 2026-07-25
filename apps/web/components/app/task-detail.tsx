@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
@@ -8,6 +9,12 @@ import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import {
+  defaultPriority,
+  defaultStage,
+  type ProjectCategorizations,
+} from "@/lib/vault/categorizations";
+import { loadDecryptedProject } from "@/lib/vault/projects";
 import {
   EMPTY_TASK_BODY,
   toTaskPlaintext,
@@ -39,8 +46,13 @@ export function TaskDetail({
   const { vault, getWorkspaceKey } = useVaultSession();
 
   const [task, setTask] = useState<DecryptedTask | null>(null);
+  const [categorizations, setCategorizations] =
+    useState<ProjectCategorizations | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState<TaskBodyDoc>(EMPTY_TASK_BODY);
+  const [labelId, setLabelId] = useState<string | null>(null);
+  const [stageId, setStageId] = useState("");
+  const [priorityId, setPriorityId] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -49,6 +61,9 @@ export function TaskDetail({
 
   const titleRef = useRef(title);
   const bodyRef = useRef(body);
+  const labelIdRef = useRef(labelId);
+  const stageIdRef = useRef(stageId);
+  const priorityIdRef = useRef(priorityId);
   const taskRef = useRef(task);
   const deletingRef = useRef(deleting);
   const savingRef = useRef(false);
@@ -61,6 +76,9 @@ export function TaskDetail({
   useEffect(() => {
     titleRef.current = title;
     bodyRef.current = body;
+    labelIdRef.current = labelId;
+    stageIdRef.current = stageId;
+    priorityIdRef.current = priorityId;
     taskRef.current = task;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
@@ -80,17 +98,40 @@ export function TaskDetail({
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const loaded = await loadDecryptedTask(
-          workspaceId,
-          projectId,
-          taskId,
-          key,
-        );
+        const [loaded, project] = await Promise.all([
+          loadDecryptedTask(workspaceId, projectId, taskId, key),
+          loadDecryptedProject(workspaceId, projectId, key),
+        ]);
         if (cancelled) return;
+        const cats = project.categorizations;
+        const nextStage =
+          loaded.stageId &&
+          cats.stages.some((s) => s.id === loaded.stageId)
+            ? loaded.stageId
+            : defaultStage(cats).id;
+        const nextPriority =
+          loaded.priorityId &&
+          cats.priorities.some((p) => p.id === loaded.priorityId)
+            ? loaded.priorityId
+            : defaultPriority(cats).id;
+        const nextLabel =
+          loaded.labelId && cats.labels.some((l) => l.id === loaded.labelId)
+            ? loaded.labelId
+            : null;
         setTask(loaded);
+        setCategorizations(cats);
         setTitle(loaded.title);
         setBody(loaded.body);
-        loadedSnapshotRef.current = snapshot(loaded.title, loaded.body);
+        setLabelId(nextLabel);
+        setStageId(nextStage);
+        setPriorityId(nextPriority);
+        loadedSnapshotRef.current = snapshot(
+          loaded.title,
+          loaded.body,
+          nextLabel,
+          nextStage,
+          nextPriority,
+        );
         setSaveStatus("idle");
         setError(null);
       } catch (e) {
@@ -111,7 +152,16 @@ export function TaskDetail({
 
     const nextTitle = titleRef.current;
     const nextBody = bodyRef.current;
-    const snap = snapshot(nextTitle, nextBody);
+    const nextLabel = labelIdRef.current;
+    const nextStage = stageIdRef.current;
+    const nextPriority = priorityIdRef.current;
+    const snap = snapshot(
+      nextTitle,
+      nextBody,
+      nextLabel,
+      nextStage,
+      nextPriority,
+    );
     if (snap === loadedSnapshotRef.current) {
       if (mountedRef.current) {
         setSaveStatus((s) => (s === "dirty" ? "idle" : s));
@@ -137,13 +187,35 @@ export function TaskDetail({
         key,
         current,
         toTaskPlaintext(nextTitle, nextBody),
+        {
+          labelId: nextLabel,
+          stageId: nextStage,
+          priorityId: nextPriority,
+        },
       );
-      loadedSnapshotRef.current = snapshot(saved.title, saved.body);
+      loadedSnapshotRef.current = snapshot(
+        saved.title,
+        saved.body,
+        saved.labelId,
+        saved.stageId ?? nextStage,
+        saved.priorityId ?? nextPriority,
+      );
       if (!mountedRef.current) return;
       setTask(saved);
-      if (snapshot(titleRef.current, bodyRef.current) === snap) {
+      if (
+        snapshot(
+          titleRef.current,
+          bodyRef.current,
+          labelIdRef.current,
+          stageIdRef.current,
+          priorityIdRef.current,
+        ) === snap
+      ) {
         setTitle(saved.title);
         setBody(saved.body);
+        setLabelId(saved.labelId);
+        if (saved.stageId) setStageId(saved.stageId);
+        if (saved.priorityId) setPriorityId(saved.priorityId);
       }
       setSavedAt(new Date().toLocaleTimeString());
       setSaveStatus("saved");
@@ -166,7 +238,7 @@ export function TaskDetail({
 
   useEffect(() => {
     if (!task || loading) return;
-    const snap = snapshot(title, body);
+    const snap = snapshot(title, body, labelId, stageId, priorityId);
     if (snap === loadedSnapshotRef.current) return;
 
     setSaveStatus("dirty");
@@ -174,14 +246,29 @@ export function TaskDetail({
       void persistRef.current();
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [title, body, task, loading, workspaceId, projectId]);
+  }, [
+    title,
+    body,
+    labelId,
+    stageId,
+    priorityId,
+    task,
+    loading,
+    workspaceId,
+    projectId,
+  ]);
 
-  // Flush dirty edits on SPA leave / hard navigation (best-effort for pagehide).
   useEffect(() => {
     function flushIfDirty() {
       const current = taskRef.current;
       if (!current || deletingRef.current) return;
-      const snap = snapshot(titleRef.current, bodyRef.current);
+      const snap = snapshot(
+        titleRef.current,
+        bodyRef.current,
+        labelIdRef.current,
+        stageIdRef.current,
+        priorityIdRef.current,
+      );
       if (snap === loadedSnapshotRef.current) return;
       void persistRef.current();
     }
@@ -210,13 +297,24 @@ export function TaskDetail({
 
   if (!vault) return null;
 
+  const selectClass =
+    "h-8 min-w-[8rem] rounded-md border border-input bg-transparent px-2 text-sm";
+
   return (
     <div className="flex h-full flex-col gap-4 p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Task</h1>
-        <p className="text-sm text-muted-foreground">
-          Edits are encrypted on your device before upload.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Task</h1>
+          <p className="text-sm text-muted-foreground">
+            Edits are encrypted on your device before upload.
+          </p>
+        </div>
+        <Link
+          href={`/app/w/${workspaceId}/p/${projectId}`}
+          className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium hover:bg-muted"
+        >
+          Back
+        </Link>
       </div>
 
       {loading ? (
@@ -231,6 +329,75 @@ export function TaskDetail({
             maxLength={500}
             aria-label="Title"
           />
+
+          {categorizations ? (
+            <div className="flex flex-wrap gap-3">
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Label
+                <select
+                  className={selectClass}
+                  value={labelId ?? ""}
+                  disabled={deleting}
+                  onChange={(e) =>
+                    setLabelId(e.target.value === "" ? null : e.target.value)
+                  }
+                >
+                  <option value="">None</option>
+                  {[...categorizations.labels]
+                    .sort(
+                      (a, b) =>
+                        a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+                    )
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Stage
+                <select
+                  className={selectClass}
+                  value={stageId}
+                  disabled={deleting}
+                  onChange={(e) => setStageId(e.target.value)}
+                >
+                  {[...categorizations.stages]
+                    .sort(
+                      (a, b) =>
+                        a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+                    )
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Priority
+                <select
+                  className={selectClass}
+                  value={priorityId}
+                  disabled={deleting}
+                  onChange={(e) => setPriorityId(e.target.value)}
+                >
+                  {[...categorizations.priorities]
+                    .sort(
+                      (a, b) =>
+                        a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+                    )
+                    .map((o) => (
+                      <option key={o.id} value={o.id}>
+                        {o.name}
+                      </option>
+                    ))}
+                </select>
+              </label>
+            </div>
+          ) : null}
+
           <TaskBodyEditor
             content={body}
             onChange={setBody}
@@ -267,8 +434,14 @@ export function TaskDetail({
   );
 }
 
-function snapshot(title: string, body: TaskBodyDoc): string {
-  return JSON.stringify({ title, body });
+function snapshot(
+  title: string,
+  body: TaskBodyDoc,
+  labelId: string | null,
+  stageId: string,
+  priorityId: string,
+): string {
+  return JSON.stringify({ title, body, labelId, stageId, priorityId });
 }
 
 function SaveStatusLabel({

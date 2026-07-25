@@ -234,11 +234,29 @@ export type ListParams = {
   includeDeleted?: boolean;
 };
 
+export type ListTasksParams = ListParams & {
+  labelId?: string;
+  stageId?: string;
+  priorityId?: string;
+};
+
 function listQuery(params?: ListParams): string {
   const q = new URLSearchParams();
   if (params?.limit !== undefined) q.set("limit", String(params.limit));
   if (params?.cursor) q.set("cursor", params.cursor);
   if (params?.includeDeleted) q.set("includeDeleted", "true");
+  const s = q.toString();
+  return s ? `?${s}` : "";
+}
+
+function tasksListQuery(params?: ListTasksParams): string {
+  const q = new URLSearchParams();
+  if (params?.limit !== undefined) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  if (params?.includeDeleted) q.set("includeDeleted", "true");
+  if (params?.labelId) q.set("labelId", params.labelId);
+  if (params?.stageId) q.set("stageId", params.stageId);
+  if (params?.priorityId) q.set("priorityId", params.priorityId);
   const s = q.toString();
   return s ? `?${s}` : "";
 }
@@ -291,10 +309,10 @@ export async function deleteProject(
 export async function listTasks(
   workspaceId: string,
   projectId: string,
-  params?: ListParams,
+  params?: ListTasksParams,
 ): Promise<ListTasksResponse> {
   return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks${listQuery(params)}`,
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks${tasksListQuery(params)}`,
     listTasksResponseSchema,
   );
 }

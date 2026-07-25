@@ -42,8 +42,9 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P6d | Notes + contacts (workspace-scoped) | **Done** |
 | P6e | Workspace sharing / invites | **Done** |
 | P6f | Stripe billing + entitlements | **Done** |
+| P7 | Task categorizations (label / stage / priority) | **Done** |
 
-Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md` for product).
+Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md`, `P7.md` for product).
 
 ## Tooling
 

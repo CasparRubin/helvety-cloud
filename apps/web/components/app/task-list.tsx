@@ -8,13 +8,20 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
-import { getProject } from "@/lib/api/v1-client";
+import {
+  defaultStage,
+  findOption,
+} from "@/lib/vault/categorizations";
 import {
   createTask,
   loadDecryptedTasks,
   type DecryptedTask,
 } from "@/lib/vault/tasks";
-import { decryptProjectName, deleteProject } from "@/lib/vault/projects";
+import {
+  deleteProject,
+  loadDecryptedProject,
+  type DecryptedProject,
+} from "@/lib/vault/projects";
 
 type TaskListProps = {
   workspaceId: string;
@@ -25,12 +32,13 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
 
-  const [projectName, setProjectName] = useState<string>("Project");
+  const [project, setProject] = useState<DecryptedProject | null>(null);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
+  const [stageFilter, setStageFilter] = useState("");
 
   useEffect(() => {
     if (!vault) return;
@@ -39,22 +47,14 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const [projectRow, tasksPage] = await Promise.all([
-          getProject(workspaceId, projectId),
-          loadDecryptedTasks(workspaceId, projectId, key),
+        const [loadedProject, tasksPage] = await Promise.all([
+          loadDecryptedProject(workspaceId, projectId, key),
+          loadDecryptedTasks(workspaceId, projectId, key, {
+            stageId: stageFilter || undefined,
+          }),
         ]);
         if (cancelled) return;
-        let name = "Untitled project";
-        try {
-          name = await decryptProjectName(
-            key,
-            projectId,
-            projectRow.encryptedBlob,
-          );
-        } catch {
-          name = "Unable to decrypt";
-        }
-        setProjectName(name);
+        setProject(loadedProject);
         setTasks(tasksPage.tasks);
         setError(null);
       } catch (e) {
@@ -67,12 +67,12 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, projectId, getWorkspaceKey]);
+  }, [vault, workspaceId, projectId, getWorkspaceKey, stageFilter]);
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = title.trim();
-    if (!trimmed || busy) return;
+    if (!trimmed || busy || !project) return;
     setBusy(true);
     setError(null);
     try {
@@ -85,6 +85,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         key,
         { title: trimmed },
         nextOrder,
+        project.categorizations,
       );
       setTitle("");
       window.dispatchEvent(new Event("helvety:tasks-changed"));
@@ -96,18 +97,11 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   }
 
   async function onDeleteProject() {
-    if (busy) return;
+    if (busy || !project) return;
     setBusy(true);
     setError(null);
     try {
-      await deleteProject(workspaceId, {
-        id: projectId,
-        workspaceId,
-        name: projectName,
-        sortOrder: 0,
-        updatedAt: "",
-        deletedAt: null,
-      });
+      await deleteProject(workspaceId, project);
       window.dispatchEvent(new Event("helvety:projects-changed"));
       router.push(`/app/w/${workspaceId}`);
     } catch (err) {
@@ -118,24 +112,38 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   if (!vault) return null;
 
+  const stages = project
+    ? [...project.categorizations.stages].sort(
+        (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+      )
+    : [];
+
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">
-            {projectName}
+            {project?.name ?? "Project"}
           </h1>
           <p className="text-sm text-muted-foreground">
             Task titles and bodies are encrypted end-to-end.
           </p>
         </div>
-        <DeleteButton
-          disabled={busy || loading}
-          busy={busy}
-          dialogTitle={`Delete project “${projectName}”?`}
-          dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
-          onConfirm={onDeleteProject}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <Link
+            href={`/app/w/${workspaceId}/p/${projectId}/settings`}
+            className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium hover:bg-muted"
+          >
+            Settings
+          </Link>
+          <DeleteButton
+            disabled={busy || loading}
+            busy={busy}
+            dialogTitle={`Delete project “${project?.name ?? "Project"}”?`}
+            dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
+            onConfirm={onDeleteProject}
+          />
+        </div>
       </div>
 
       <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
@@ -152,6 +160,32 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         </Button>
       </form>
 
+      {stages.length > 0 ? (
+        <div className="flex items-center gap-2">
+          <label htmlFor="stage-filter" className="text-sm text-muted-foreground">
+            Stage
+          </label>
+          <select
+            id="stage-filter"
+            className="h-8 rounded-md border border-input bg-transparent px-2 text-sm"
+            value={stageFilter}
+            onChange={(e) => {
+              setLoading(true);
+              setStageFilter(e.target.value);
+            }}
+            disabled={busy}
+          >
+            <option value="">All</option>
+            {stages.map((s) => (
+              <option key={s.id} value={s.id}>
+                {s.name}
+                {s.isDefault ? " (default)" : ""}
+              </option>
+            ))}
+          </select>
+        </div>
+      ) : null}
+
       {error ? (
         <p className="text-sm text-destructive" role="alert">
           {error}
@@ -166,16 +200,40 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         </div>
       ) : (
         <ul className="flex flex-col gap-1">
-          {tasks.map((task) => (
-            <li key={task.id}>
-              <Link
-                href={`/app/w/${workspaceId}/p/${projectId}/t/${task.id}`}
-                className="block rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted/40"
-              >
-                {task.title || "Untitled"}
-              </Link>
-            </li>
-          ))}
+          {tasks.map((task) => {
+            const stage =
+              findOption(project?.categorizations.stages ?? [], task.stageId) ??
+              (project ? defaultStage(project.categorizations) : null);
+            const priority = findOption(
+              project?.categorizations.priorities ?? [],
+              task.priorityId,
+            );
+            const label = findOption(
+              project?.categorizations.labels ?? [],
+              task.labelId,
+            );
+            return (
+              <li key={task.id}>
+                <Link
+                  href={`/app/w/${workspaceId}/p/${projectId}/t/${task.id}`}
+                  className="flex items-baseline justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40"
+                >
+                  <span className="font-medium">
+                    {task.title || "Untitled"}
+                  </span>
+                  <span className="shrink-0 text-xs text-muted-foreground">
+                    {[
+                      label?.name,
+                      stage?.name,
+                      priority?.name,
+                    ]
+                      .filter(Boolean)
+                      .join(" · ")}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

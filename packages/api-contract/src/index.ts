@@ -179,6 +179,12 @@ export const putTaskRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
+  /** Soft ref to a label option id in project ciphertext; null clears. */
+  labelId: uuidSchema.nullable().optional(),
+  /** Soft ref to a stage option id in project ciphertext. */
+  stageId: uuidSchema.optional(),
+  /** Soft ref to a priority option id in project ciphertext. */
+  priorityId: uuidSchema.optional(),
 });
 export type PutTaskRequest = z.infer<typeof putTaskRequestSchema>;
 
@@ -187,6 +193,9 @@ export const taskResponseSchema = z.object({
   projectId: uuidSchema,
   workspaceId: uuidSchema,
   encryptedBlob: ciphertextEnvelopeSchema,
+  labelId: uuidSchema.nullable(),
+  stageId: uuidSchema.nullable(),
+  priorityId: uuidSchema.nullable(),
   sortOrder: z.number().int(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),

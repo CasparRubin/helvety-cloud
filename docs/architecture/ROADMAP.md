@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. **Product wave complete.** Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. Product wave (P6a–P6f) complete; **P7** adds task categorizations. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -36,7 +36,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/tasks CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
 
-**Out of this wave:** milestone diagrams, custom labels, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps.
+**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations / custom labels: **P7**.)
 
 ---
 
@@ -121,7 +121,7 @@ helvety-cloud/
 | `docs/architecture/SCHEMA_WORKFLOW.md` | schemas → diff → migrate → types → MCP advisors |
 | `docs/architecture/BILLING.md` | Stripe later; meter metadata only |
 | `docs/architecture/LEGAL_REQUIREMENTS.md` | Checklist §7; not final ToS text |
-| `docs/architecture/prompts/P1.md` … `P5.md`, `P-legal*.md`, `P6a.md` … `P6f.md` | Copy-paste prompts (same as below) |
+| `docs/architecture/prompts/P1.md` … `P5.md`, `P-legal*.md`, `P6a.md` … `P6f.md`, `P7.md` | Copy-paste prompts (same as below) |
 | `.cursor/rules/helvety-cloud-constitution.mdc` | `alwaysApply: true` |
 | `.cursor/rules/helvety-cloud-crypto.mdc` | globs crypto |
 | `.cursor/rules/helvety-cloud-api.mdc` | globs api |
@@ -444,6 +444,28 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P7 — Task categorizations
+
+**Status:** **Done**
+
+**Goal:** Project-scoped labels, stages, and priorities for tasks — hybrid ZK (encrypted option names in project blob; plaintext option ids on tasks for filtering).
+
+**Do:**
+
+- Seed defaults on project create (labels: bug / new feature / change request; stages: backlog → cancelled; priorities: low → urgent).  
+- Label optional; stage + priority required (defaults backlog / normal).  
+- Project settings: edit lists, set defaults, copy categorizations from another project (remap tasks by name).  
+- Task detail pickers + list meta / stage filter.  
+- Delete in-use stage/priority remaps to default; delete label clears `label_id`.
+
+**Don’t:** Separate options table; kanban; multi-label; workspace-global taxonomies; server-enforced “id must exist in defs.”
+
+**Done when:** Defaults seeded; settings + copy work; tasks filter by stage id without decrypting names.
+
+**Paste prompt:** [`docs/architecture/prompts/P7.md`](./prompts/P7.md)
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -525,4 +547,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f done — product wave complete.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

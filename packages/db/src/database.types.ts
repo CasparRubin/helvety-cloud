@@ -93,8 +93,11 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
+          label_id: string | null
+          priority_id: string | null
           project_id: string
           sort_order: number
+          stage_id: string | null
           updated_at: string
         }
         Insert: {
@@ -102,8 +105,11 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
+          label_id?: string | null
+          priority_id?: string | null
           project_id: string
           sort_order?: number
+          stage_id?: string | null
           updated_at?: string
         }
         Update: {
@@ -111,8 +117,11 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
+          label_id?: string | null
+          priority_id?: string | null
           project_id?: string
           sort_order?: number
+          stage_id?: string | null
           updated_at?: string
         }
         Relationships: [

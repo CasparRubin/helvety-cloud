@@ -11,8 +11,13 @@ import {
   getTask,
   listTasks,
   putTask,
-  type ListParams,
+  type ListTasksParams,
 } from "@/lib/api/v1-client";
+import {
+  defaultPriority,
+  defaultStage,
+  type ProjectCategorizations,
+} from "@/lib/vault/categorizations";
 import {
   EMPTY_TASK_BODY,
   parseTaskPlaintext,
@@ -29,6 +34,9 @@ export type DecryptedTask = {
   workspaceId: string;
   title: string;
   body: TaskBodyDoc;
+  labelId: string | null;
+  stageId: string | null;
+  priorityId: string | null;
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
@@ -93,6 +101,9 @@ async function toDecrypted(
     workspaceId: row.workspaceId,
     title,
     body,
+    labelId: row.labelId,
+    stageId: row.stageId,
+    priorityId: row.priorityId,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -103,7 +114,7 @@ export async function loadDecryptedTasks(
   workspaceId: string,
   projectId: string,
   workspaceKey: Uint8Array,
-  params?: ListParams,
+  params?: ListTasksParams,
 ): Promise<{ tasks: DecryptedTask[]; nextCursor: string | null }> {
   const page = await listTasks(workspaceId, projectId, params);
   const tasks = await Promise.all(
@@ -128,6 +139,7 @@ export async function createTask(
   workspaceKey: Uint8Array,
   content: { title: string; body?: TaskBodyDoc },
   sortOrder = 0,
+  categorizations?: ProjectCategorizations,
 ): Promise<DecryptedTask> {
   const taskId = crypto.randomUUID();
   const encryptedBlob = await encryptTaskContent(
@@ -135,9 +147,18 @@ export async function createTask(
     taskId,
     toTaskPlaintext(content.title, content.body ?? EMPTY_TASK_BODY),
   );
+  const stageId = categorizations
+    ? defaultStage(categorizations).id
+    : undefined;
+  const priorityId = categorizations
+    ? defaultPriority(categorizations).id
+    : undefined;
   const row = await putTask(workspaceId, projectId, taskId, {
     encryptedBlob,
     sortOrder,
+    labelId: null,
+    stageId,
+    priorityId,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -148,6 +169,11 @@ export async function saveTask(
   workspaceKey: Uint8Array,
   task: DecryptedTask,
   content: TaskPlaintext,
+  categorizationIds?: {
+    labelId?: string | null;
+    stageId?: string;
+    priorityId?: string;
+  },
 ): Promise<DecryptedTask> {
   const encryptedBlob = await encryptTaskContent(
     workspaceKey,
@@ -158,8 +184,90 @@ export async function saveTask(
     encryptedBlob,
     sortOrder: task.sortOrder,
     deletedAt: task.deletedAt,
+    labelId:
+      categorizationIds?.labelId !== undefined
+        ? categorizationIds.labelId
+        : task.labelId,
+    stageId:
+      categorizationIds?.stageId !== undefined
+        ? categorizationIds.stageId
+        : (task.stageId ?? undefined),
+    priorityId:
+      categorizationIds?.priorityId !== undefined
+        ? categorizationIds.priorityId
+        : (task.priorityId ?? undefined),
   });
   return toDecrypted(workspaceKey, row);
+}
+
+/** Persist only categorization id columns (keeps ciphertext). */
+export async function saveTaskCategorizationIds(
+  workspaceId: string,
+  projectId: string,
+  workspaceKey: Uint8Array,
+  task: DecryptedTask,
+  ids: {
+    labelId: string | null;
+    stageId: string | null;
+    priorityId: string | null;
+  },
+): Promise<DecryptedTask> {
+  const encryptedBlob = await encryptTaskContent(
+    workspaceKey,
+    task.id,
+    toTaskPlaintext(task.title, task.body),
+  );
+  const row = await putTask(workspaceId, projectId, task.id, {
+    encryptedBlob,
+    sortOrder: task.sortOrder,
+    deletedAt: task.deletedAt,
+    labelId: ids.labelId,
+    stageId: ids.stageId ?? undefined,
+    priorityId: ids.priorityId ?? undefined,
+  });
+  return toDecrypted(workspaceKey, row);
+}
+
+/**
+ * Remap tasks after deleting an option or copying categorizations.
+ * Loads all pages, updates matching tasks.
+ */
+export async function remapTasksForCategorizationChange(
+  workspaceId: string,
+  projectId: string,
+  workspaceKey: Uint8Array,
+  remap: (task: DecryptedTask) => {
+    labelId: string | null;
+    stageId: string | null;
+    priorityId: string | null;
+  } | null,
+): Promise<void> {
+  let cursor: string | null = null;
+  do {
+    const page = await loadDecryptedTasks(workspaceId, projectId, workspaceKey, {
+      limit: 100,
+      cursor,
+    });
+    for (const task of page.tasks) {
+      const next = remap(task);
+      if (!next) continue;
+      if (
+        next.labelId === task.labelId &&
+        next.stageId === task.stageId &&
+        next.priorityId === task.priorityId
+      ) {
+        continue;
+      }
+      await saveTaskCategorizationIds(
+        workspaceId,
+        projectId,
+        workspaceKey,
+        task,
+        next,
+      );
+    }
+    cursor = page.nextCursor;
+  } while (cursor);
 }
 
 export async function deleteTask(
