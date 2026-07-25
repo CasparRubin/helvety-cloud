@@ -111,6 +111,7 @@ export function NavBackButton({ href }: { href: string }) {
       title="Back"
       className="text-muted-foreground hover:text-foreground"
       render={<Link href={href} />}
+      nativeButton={false}
     >
       <ChevronLeftIcon />
     </Button>
