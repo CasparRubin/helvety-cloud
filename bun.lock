@@ -7,7 +7,6 @@
       "dependencies": {
         "@helvety-cloud/api-contract": "workspace:*",
         "@helvety-cloud/crypto": "workspace:*",
-        "@helvety-cloud/db": "workspace:*",
       },
       "devDependencies": {
         "@eslint/js": "^9.39.2",

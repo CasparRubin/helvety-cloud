@@ -2,14 +2,17 @@
 
 Greenfield E2EE workspace product for **[helvety.cloud](https://helvety.cloud)**.
 
-**Start here for agents and humans:** [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) · [`AGENTS.md`](AGENTS.md)
+This repository is open source so users and auditors can **verify** our security and privacy claims (zero-knowledge vault, no server-side decrypt). It is licensed under the **AGPL-3.0** (copyleft): see [LICENSE](LICENSE).
+
+**Start here:** [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) · [`AGENTS.md`](AGENTS.md)  
+Cursor / AI contributors: [`.cursor/rules/`](.cursor/rules/) encode the same non-negotiables (ZK, free-tier, `/api/v1`, correct Supabase project).
 
 ## Local development
 
 ```bash
 bun install
 bun run dev          # http://localhost:3000 — signed-out shell / sign-in
-bun run test         # Vitest workspace smoke
+bun run test         # Vitest unit tests
 bun run lint
 bun run typecheck
 ```
@@ -21,3 +24,9 @@ Auth (email OTP + passkeys, passwords off): [`docs/architecture/AUTH.md`](docs/a
 UI: shadcn **Base UI** (`apps/web`, preset `base-nova`).
 
 Supabase project: `helvety-cloud` (`qnoeiurmyyyuawkcifmw`, Zurich). Do not use the old helvety.com Supabase project (`bkdzeihxzvrkndjvyzye`).
+
+## License
+
+Copyright (c) Helvety by Rubin / Caspar Rubin.
+
+This program is free software under the **GNU Affero General Public License v3.0 only** — see [LICENSE](LICENSE). Network use of a modified version requires offering corresponding source (AGPL §13).

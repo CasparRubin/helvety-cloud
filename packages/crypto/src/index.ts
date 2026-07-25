@@ -6,8 +6,6 @@
  * recovery plaintext, or raw user/workspace keys.
  */
 
-export const PACKAGE_NAME = "@helvety-cloud/crypto" as const;
-
 export {
   ENVELOPE_VERSION,
   KEY_BYTES,

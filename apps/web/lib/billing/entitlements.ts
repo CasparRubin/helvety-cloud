@@ -4,8 +4,7 @@
  * is plaintext counts only and never touches vault keys or content.
  */
 
-export const PLANS = ["free", "pro"] as const;
-export type Plan = (typeof PLANS)[number];
+export type Plan = "free" | "pro";
 
 export type PlanLimits = {
   /** Workspaces where the user has the `owner` role. */

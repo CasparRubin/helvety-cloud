@@ -19,7 +19,6 @@ import {
   generateUserKeyMaterial,
   importRecoveryKey,
   openSealedKey,
-  PACKAGE_NAME,
   sealToPublicKey,
   unwrapKey,
   verifyKeyCheck,
@@ -47,10 +46,6 @@ const recoveryWrappedAad = {
 } as const;
 
 describe("@helvety-cloud/crypto", () => {
-  it("exports package name", () => {
-    expect(PACKAGE_NAME).toBe("@helvety-cloud/crypto");
-  });
-
   describe("deriveUnlockKey", () => {
     it("is deterministic for the same PRF output and salt", async () => {
       const prf = crypto.getRandomValues(new Uint8Array(32));

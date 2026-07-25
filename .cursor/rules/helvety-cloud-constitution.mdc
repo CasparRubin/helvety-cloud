@@ -22,4 +22,4 @@ Before any feature work, read `AGENTS.md` and `docs/architecture/ROADMAP.md`. Im
 
 - Implement multiple roadmap phases in one go unless the user explicitly expands scope.
 - Add paid SaaS “for best practice.”
-- Public signup/billing without counsel-reviewed legal pack.
+- Public signup/billing without the live legal pack and acceptance gates (P-legal2). Counsel review is optional for risk, not a product gate.

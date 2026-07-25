@@ -1,6 +1,5 @@
 import {
   invitationStatusSchema,
-  sealedKeyEnvelopeSchema,
   workspaceInvitationSchema,
   workspaceInviteRoleSchema,
   type InvitationStatus,
@@ -54,8 +53,4 @@ export function mapInvitationRow(
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   });
-}
-
-export function parseSealedKeyJson(value: unknown) {
-  return sealedKeyEnvelopeSchema.parse(value);
 }

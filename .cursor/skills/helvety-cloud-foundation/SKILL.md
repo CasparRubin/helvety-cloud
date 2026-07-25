@@ -3,14 +3,14 @@ name: helvety-cloud-foundation
 description: >-
   Extend Helvety Cloud schema, API, or crypto safely under zero-knowledge and
   free-tier rules. Use when changing supabase schemas, /api/v1, packages/crypto,
-  or starting roadmap phases P1–P5.
+  or extending product features under ROADMAP locked decisions.
 ---
 
 # Helvety Cloud foundation skill
 
 ## Before you start
 
-1. Read `AGENTS.md` and `docs/architecture/ROADMAP.md` §2 + the target P\* playbook.  
+1. Read `AGENTS.md` and `docs/architecture/ROADMAP.md` §2 + the relevant playbook if extending a past phase.  
 2. Confirm scope is a **single** phase unless the user expands it.  
 3. Prefer MCP (Supabase/Vercel) over guessing.
 
@@ -43,7 +43,3 @@ Omit Redis, Sentry, paid email, heavy CI, analytics unless the user explicitly a
 ## Legal copy
 
 No false recovery/E2EE claims. See `docs/architecture/LEGAL_REQUIREMENTS.md`.
-
-## Phase prompts
-
-Use `docs/architecture/prompts/P1.md` … `P5.md` as the user-facing implement prompt.

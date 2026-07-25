@@ -1,7 +1,5 @@
 import { z } from "zod";
 
-export const PACKAGE_NAME = "@helvety-cloud/api-contract" as const;
-
 /** Stable API error codes for /api/v1. */
 export const apiErrorCodes = [
   "unauthorized",

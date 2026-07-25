@@ -3,7 +3,6 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 export type SettingsNavItem = {
@@ -15,8 +14,6 @@ export type SettingsNavItem = {
 type SettingsShellProps = {
   title: string;
   description?: string;
-  backHref?: string;
-  backLabel?: string;
   items: SettingsNavItem[];
   children: React.ReactNode;
 };
@@ -28,8 +25,6 @@ function isActiveSettingsPath(pathname: string, href: string): boolean {
 export function SettingsShell({
   title,
   description,
-  backHref,
-  backLabel = "Back",
   items,
   children,
 }: SettingsShellProps) {
@@ -37,22 +32,10 @@ export function SettingsShell({
 
   return (
     <div className="flex h-full flex-col gap-6 p-4 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-          {description ? (
-            <p className="text-sm text-muted-foreground">{description}</p>
-          ) : null}
-        </div>
-        {backHref ? (
-          <Button
-            variant="outline"
-            size="sm"
-            render={<Link href={backHref} />}
-            nativeButton={false}
-          >
-            {backLabel}
-          </Button>
+      <div>
+        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+        {description ? (
+          <p className="text-sm text-muted-foreground">{description}</p>
         ) : null}
       </div>
 

@@ -28,17 +28,6 @@ export function randomPrfSalt(): Uint8Array {
   return randomBytes(PRF_SALT_BYTES);
 }
 
-export function concatBytes(...parts: Uint8Array[]): Uint8Array {
-  const total = parts.reduce((sum, p) => sum + p.byteLength, 0);
-  const out = new Uint8Array(total);
-  let offset = 0;
-  for (const part of parts) {
-    out.set(part, offset);
-    offset += part.byteLength;
-  }
-  return out;
-}
-
 export function bytesEqual(a: Uint8Array, b: Uint8Array): boolean {
   if (a.byteLength !== b.byteLength) {
     return false;
@@ -73,10 +62,6 @@ export function fromBase64Url(value: string): Uint8Array {
     out[i] = binary.charCodeAt(i);
   }
   return out;
-}
-
-export function copyBytes(bytes: Uint8Array): Uint8Array {
-  return new Uint8Array(bytes);
 }
 
 /**

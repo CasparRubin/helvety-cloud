@@ -22,7 +22,6 @@ export default function ProjectSettingsLayout({
       <SettingsShell
         title="Project settings"
         description="Categorization names are encrypted. Option ids on tasks are plaintext metadata for filtering."
-        backHref={`/app/w/${workspaceId}/p/${projectId}`}
         items={projectSettingsNavItems(workspaceId, projectId)}
       >
         {children}

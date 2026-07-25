@@ -10,15 +10,16 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 
 ## Want / don’t / later
 
-| Shipped (P0–P6f) | Don’t | Later |
+| Shipped (P0–P9) | Don’t | Later |
 |------------------|--------|--------|
-| Passwordless auth (OTP + passkey) | Passwords; company master key / escrow | Milestone diagrams, custom labels |
+| Passwordless auth (OTP + passkey) | Passwords; company master key / escrow | Milestone diagrams |
 | Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Sync push/pull batch API |
 | Workspace-scoped projects/tasks/notes/contacts | Browser PostgREST for vault data | Extension, Tauri, calendar send-to |
 | `/api/v1` + TipTap + workspace sharing | Paid Redis/Sentry/analytics | Deprecate old helvety.com apps |
 | Recovery key (user-held) + Personal workspace | “Email reset restores vault” | Copy-contact-across-workspaces UX |
 | Legal pack + acceptance; Stripe entitlements | Misleading E2EE marketing | Optional Swiss counsel; GmbH if desired |
-| Dense shadcn + Base UI | Radix shadcn; unused SaaS | Further Linear-like polish |
+| Labels/stages/priorities + entity links + stage board | Radix shadcn; unused SaaS | Further Linear-like polish |
+| Dense shadcn + Base UI | | |
 
 ## Foundation proof (P5) — still the ZK bar
 

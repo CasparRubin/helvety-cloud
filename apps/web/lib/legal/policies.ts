@@ -49,11 +49,3 @@ export const LEGAL_DOC_META: Record<
   billing: { title: "Billing terms", href: "/legal/billing" },
   subprocessors: { title: "Subprocessors", href: "/legal/subprocessors" },
 };
-
-export function isCurrentPolicyVersions(
-  versions: Record<SignupPolicyId, string>,
-): boolean {
-  return SIGNUP_POLICY_IDS.every(
-    (id) => versions[id] === CURRENT_POLICY_VERSIONS[id],
-  );
-}

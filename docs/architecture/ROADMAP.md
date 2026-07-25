@@ -1,7 +1,7 @@
 # Helvety Cloud — Master Roadmap
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
-> **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
+> **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
 > **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
@@ -11,9 +11,8 @@
 1. Read **§1 Product** and **§2 Locked decisions** first.  
 2. Find your phase under **§4 Phase playbooks** — that section is the full brief.  
 3. Follow **Out of scope** strictly. Prefer omit over add.  
-4. Use **Paste prompt** at the end of each phase to start work.  
-5. Prefer **Supabase MCP** / **Vercel MCP** / project skills over guessing.  
-6. Never copy from sibling repos `helvety` or `helvety-browser-extension-chromium`.
+4. Prefer **Supabase MCP** / **Vercel MCP** / project skills over guessing.  
+5. Never copy from sibling repos `helvety` or `helvety-browser-extension-chromium`.
 
 ---
 
@@ -44,7 +43,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 | Topic | Decision |
 |-------|----------|
-| Repo | `/Users/caspar/Repos/helvety-cloud` · GitHub `CasparRubin/helvety-cloud` |
+| Repo | `helvety-cloud` · GitHub `CasparRubin/helvety-cloud` |
 | Legacy | **Never** port UI/crypto/catalogs from `helvety` or Chromium extension |
 | Package manager | **Bun** workspaces |
 | Web | **Next.js** App Router → **Vercel** Hobby |
@@ -121,7 +120,6 @@ helvety-cloud/
 | `docs/architecture/SCHEMA_WORKFLOW.md` | schemas → diff → migrate → types → MCP advisors |
 | `docs/architecture/BILLING.md` | Stripe later; meter metadata only |
 | `docs/architecture/LEGAL_REQUIREMENTS.md` | Checklist §7; not final ToS text |
-| `docs/architecture/prompts/P1.md` … `P5.md`, `P-legal*.md`, `P6a.md` … `P6f.md`, `P7.md` | Copy-paste prompts (same as below) |
 | `.cursor/rules/helvety-cloud-constitution.mdc` | `alwaysApply: true` |
 | `.cursor/rules/helvety-cloud-crypto.mdc` | globs crypto |
 | `.cursor/rules/helvety-cloud-api.mdc` | globs api |
@@ -134,9 +132,6 @@ helvety-cloud/
 **Out of scope:** Next.js app, dependencies beyond docs, migrations applied remotely, Vercel deploy.
 
 **Done when:** Files exist; a fresh agent reading only `AGENTS.md` + `ROADMAP.md` can state ZK rules, stack, and P1 next steps.
-
-**Paste prompt:**  
-`Implement P0 only per @docs/architecture/ROADMAP.md (or this Cursor plan). Write constitution docs into helvety-cloud. No app code.`
 
 ---
 
@@ -156,9 +151,6 @@ helvety-cloud/
 **Don’t:** Auth UI, real crypto, real SQL schema, Stripe, Redis, Sentry, copy helvety.com UI, shadcn (defer to P2).
 
 **Done when:** `bun install` && web app starts locally; README points to ROADMAP.
-
-**Paste prompt:**  
-`@docs/architecture/ROADMAP.md — Implement P1 Scaffold only. Bun + Next.js + package stubs + supabase folder. No auth/crypto/migrations.`
 
 ---
 
@@ -180,9 +172,6 @@ helvety-cloud/
 
 **Done when:** User can create session via OTP (+ passkey sign-in); shadcn is Base UI; no content decryption yet.
 
-**Paste prompt:**  
-`@docs/architecture/ROADMAP.md — Implement P2 Auth only. Init shadcn Base UI (not Radix). Supabase email OTP + passkeys; passwords off. No vault crypto.`
-
 ---
 
 ### P3 — Crypto library
@@ -200,9 +189,6 @@ helvety-cloud/
 **Don’t:** HTTP routes, SQL migrations, UI beyond optional tiny harness.
 
 **Done when:** Tests pass; KEY_HIERARCHY.md matches code.
-
-**Paste prompt:**  
-`@docs/architecture/ROADMAP.md — Implement P3 Crypto only in packages/crypto with tests. No DB/API.`
 
 ---
 
@@ -242,9 +228,6 @@ helvety-cloud/
 
 **Done when:** Migrations on remote; types committed; wrap/key_check AAD bound; health + crypto/workspace stubs work with auth.
 
-**Paste prompt:**  
-`@docs/architecture/ROADMAP.md — Implement P4 Schema+API only. Before persisting wraps: AAD on wrapKey/unwrapKey + real userId for key_check. Declarative supabase schemas, migrations, types, /api/v1 stubs. Use Supabase MCP. Project qnoeiurmyyyuawkcifmw only.`
-
 ---
 
 ### P5 — E2EE proof
@@ -259,9 +242,6 @@ helvety-cloud/
 - Honest lose-unlock = data-gone copy.
 
 **Don’t reopen** unless regressions. Next = P-legal.
-
-**Paste prompt (only if re-doing):**  
-`@docs/architecture/ROADMAP.md — Implement P5 E2EE proof only. Wire P2–P4 for one encrypted task via /api/v1. Seal/wrap AAD; recovery = key + wrap offline once — never log/POST.`
 
 ---
 
@@ -289,9 +269,6 @@ helvety-cloud/
 **Don’t:** Enable Stripe charges here; redesign crypto; start sharing/TipTap P6 work unless separately planned.
 
 **Done when:** `/legal/*` shows production versions; gate copy is non-draft; versions `2026-07-24-v1` (or later) accepted via API.
-
-**Paste prompt:**  
-`@docs/architecture/prompts/P-legal2.md @docs/architecture/LEGAL_REQUIREMENTS.md — Implement P-legal2 only.`
 
 ---
 
@@ -334,8 +311,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Status:** **Done** (app shell + Personal workspace + list/create/rename).
 
-**Paste prompt:** [`docs/architecture/prompts/P6a.md`](./prompts/P6a.md)
-
 ---
 
 ### P6b — Projects + tasks (minimal E2EE product)
@@ -356,8 +331,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Status:** **Done** (post-review: `projects.encrypted_blob` NOT NULL; PUT requires envelope — no omit→null wipe).
 
-**Paste prompt:** [`docs/architecture/prompts/P6b.md`](./prompts/P6b.md)
-
 ---
 
 ### P6c — Editor (TipTap-style)
@@ -375,8 +348,6 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** Realtime CRDT/Yjs paid stack; sharing; notes tables; Stripe.
 
 **Done when:** Rich body round-trips encrypt → API → decrypt.
-
-**Paste prompt:** [`docs/architecture/prompts/P6c.md`](./prompts/P6c.md)
 
 ---
 
@@ -398,8 +369,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Status:** **Done**
 
-**Paste prompt:** [`docs/architecture/prompts/P6d.md`](./prompts/P6d.md)
-
 ---
 
 ### P6e — Sharing workspaces
@@ -419,8 +388,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Status:** **Done** (email invite → claim → owner seal with AAD → accept; members decrypt all workspace ciphertext).
 
-**Paste prompt:** [`docs/architecture/prompts/P6e.md`](./prompts/P6e.md)
-
 ---
 
 ### P6f — Billing setup
@@ -439,8 +406,6 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** Paid Redis/Sentry; Clerk; redesign crypto/sharing UX beyond entitlement gates.
 
 **Done when:** Checkout/Portal/webhooks land entitlements; API enforces free/paid limits; meters are plaintext counts only.
-
-**Paste prompt:** [`docs/architecture/prompts/P6f.md`](./prompts/P6f.md)
 
 ---
 
@@ -462,8 +427,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Done when:** Defaults seeded; settings + copy work; tasks filter by stage id without decrypting names.
 
-**Paste prompt:** [`docs/architecture/prompts/P7.md`](./prompts/P7.md)
-
 ---
 
 ### P8a — Entity link graph
@@ -482,8 +445,6 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** TipTap EntityRef / BubbleMenu (P8b); entity colors / rich badges (P8c); cross-workspace links; titles/colors in junction rows.
 
 **Done when:** Notes link to many tasks; reverse lookup works; `task_id` column gone; link graph documented as metadata.
-
-**Paste prompt:** [`docs/architecture/prompts/P8a.md`](./prompts/P8a.md)
 
 ---
 
@@ -505,8 +466,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Done when:** Select text in a note → create task/contact → chip appears; links sync to junction; chips resolve labels from decrypted cache.
 
-**Paste prompt:** [`docs/architecture/prompts/P8b.md`](./prompts/P8b.md)
-
 ---
 
 ### P8c — Visual layer + navigation
@@ -525,8 +484,6 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** Hover preview cards; cross-workspace links; store colors in plaintext columns; AI.
 
 **Done when:** Chips colored + badged; jump + backlinks work; colors stay ciphertext.
-
-**Paste prompt:** [`docs/architecture/prompts/P8c.md`](./prompts/P8c.md)
 
 ---
 
@@ -548,8 +505,6 @@ Workspace  (members + per-member wrapped_keys)
 
 **Done when:** Stage colors drive task chips; linking works from note/task/contact bodies; badges not always-on.
 
-**Paste prompt:** [`docs/architecture/prompts/P8d.md`](./prompts/P8d.md)
-
 ---
 
 ### P8e — Categorization icons + polished task pickers
@@ -569,8 +524,6 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** Full Lucide catalog search; kanban board; colors on labels/priorities; plaintext icon columns; AI.
 
 **Done when:** Defaults have icons; settings can set/clear; task detail/list use chip popovers; icons stay in project ciphertext.
-
-**Paste prompt:** [`docs/architecture/prompts/P8e.md`](./prompts/P8e.md)
 
 ---
 
@@ -592,8 +545,6 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** Manual within-stage reorder; schema migration; colors on labels/priorities; cross-project DnD; AI.
 
 **Done when:** All stages render; drag changes stage; priority orders cards; flat lists share the shell; no new plaintext columns.
-
-**Paste prompt:** [`docs/architecture/prompts/P9.md`](./prompts/P9.md)
 
 ---
 

@@ -47,6 +47,6 @@ Swiss FADP (nDSG); GDPR/UK GDPR principles when offering to those users; consume
 
 ## Status
 
-**P-legal** = drafts + gates. **P-legal2** = production pack + acceptance (no draft banners). Stripe charges remain off until a separate billing phase. Optional counsel review is recommended for risk reduction but is **not** a product gate after P-legal2.
+**P-legal** = drafts + gates. **P-legal2** = production pack + acceptance (no draft banners). Stripe workspace billing landed in **P6f** (see [`BILLING.md`](BILLING.md)). Optional counsel review is recommended for risk reduction but is **not** a product gate after P-legal2.
 
 See [`ROADMAP.md`](ROADMAP.md) §7 and P-legal2 playbook.
