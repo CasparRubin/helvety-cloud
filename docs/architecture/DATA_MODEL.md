@@ -9,9 +9,10 @@ All vault entities are **workspace-scoped**. There is no user-global contacts/no
 ```text
 Workspace  (members + per-member wrapped_keys)
   ├── projects → milestones → tasks
-  ├── notes     (required workspace_id; optional project_id filing FK; TipTap body may embed EntityRef)
+  ├── notes     (required workspace_id; optional project_id filing FK; TipTap body may embed EntityRef + fileAttachment)
   ├── contacts  (workspace address book; no global dedupe)
-  └── entity_links  (plaintext UUID graph: source ↔ target kinds/ids — intentional metadata)
+  ├── entity_links  (plaintext UUID graph: source ↔ target kinds/ids — intentional metadata)
+  └── attachments + attachment_links  (E2EE files in Storage; TipTap fileAttachment atoms)
 ```
 
 - **Personal workspace** — created/ensured on first vault setup (P6a); home for “general” notes/contacts.  
@@ -39,6 +40,8 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | Sync helpers | `updated_at`, optional generation/cursor fields |
 | `subscriptions` (P6f) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `stripe_customer_id` / `stripe_subscription_id` / `stripe_price_id`, `current_period_end`, `cancel_at_period_end`. Members SELECT only; writes via service-role webhook |
 | `billing_events` (P6f) | Webhook audit + idempotency: unique `stripe_event_id`, `type`, nullable `workspace_id`, raw event `payload` (billing metadata only). No client grants; service-role only |
+| `attachments` (P11) | Workspace-scoped file ciphertext in Storage: plaintext `byte_size`, `storage_path`, `status` (`pending`\|`ready`\|`failed`), timestamps, tombstone; ciphertext `encrypted_meta` + `wrapped_dek` envelopes |
+| `attachment_links` (P11) | Plaintext junction: `parent_kind`/`parent_id` (`note`\|`task`\|`contact`) → `attachment_id` for reverse lookup + cascade cleanup without decrypting TipTap bodies |
 | `policy_acceptances` | Plaintext signup gates: `user_id`, `policy` (`tos`/`privacy`/`aup`/`e2ee`), `version`, `accepted_at`; unique `(user_id, policy, version)`; append-only for clients |
 
 ## Ciphertext (never readable by server)
@@ -50,6 +53,8 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `tasks` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`) that may include `entityRef` atoms (P8d); legacy unversioned `{ title, body: string }` is normalized on decrypt; **no per-task accent** — chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. Outgoing `entity_links` replaced on PUT when `links` provided. |
 | `notes` (P6d/P8) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags, color? }` where `body` is TipTap JSON that may include `entityRef` atoms `{ type: "entityRef", attrs: { kind, id } }` (P8b); `tags` is `string[]`; optional `color` palette token (P8c); optional nullable plaintext `project_id` for filing filters. Task associations live in `entity_links`, not a note column. |
 | `contacts` (P6d/P8d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; `notes` is TipTap JSON (legacy string notes upgraded on parse); may include `entityRef` atoms; optional `color` palette token; duplicates across workspaces OK. Outgoing `entity_links` replaced on PUT when `links` provided. |
+| `attachments` (P11) | `encrypted_meta` = `{ filename, mimeType }` envelope; `wrapped_dek` under workspace_key; raw file ciphertext in Storage (`vault-attachments/{workspaceId}/{attachmentId}`) as packed binary AES-GCM. TipTap `fileAttachment` atoms + `attachment_links` junction. |
+| `milestones` (P10) | Project-scoped ciphertext `{ version: 1, title, description, targetDate }` |
 
 ## RLS
 

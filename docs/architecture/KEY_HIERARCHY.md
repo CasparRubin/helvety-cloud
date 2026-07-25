@@ -41,6 +41,7 @@ Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod sh
 | P5 | Wire unlock → API → encrypt task round-trip (**done**) |
 | P6e | Seal `workspace_key` to invitees via claim → owner seal → accept (**done**) |
 | P6+ | Project keys / richer sharing if needed |
+| P11 | Per-file DEK + binary AES-GCM for Storage objects; meta/wrap envelopes under `workspace_key` |
 
 ## Forbidden
 

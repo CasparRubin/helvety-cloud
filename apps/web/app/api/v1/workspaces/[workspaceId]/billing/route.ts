@@ -64,6 +64,8 @@ export async function GET(request: Request, context: RouteContext) {
         tasks: limits.tasksPerWorkspace,
         notes: limits.notesPerWorkspace,
         contacts: limits.contactsPerWorkspace,
+        storageBytes: limits.storageBytesPerWorkspace,
+        maxUploadBytes: limits.maxUploadBytes,
       },
       usage,
     }),

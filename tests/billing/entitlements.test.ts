@@ -12,6 +12,7 @@ import {
   ownedWorkspacesLimitMessage,
   resolvePlan,
   seatLimitMessage,
+  storageLimitMessage,
   workspaceMeterLimit,
   type WorkspaceMeter,
 } from "../../apps/web/lib/billing/entitlements";
@@ -57,6 +58,17 @@ describe("plan limits", () => {
     expect(pro.tasksPerWorkspace).toBeGreaterThan(free.tasksPerWorkspace);
     expect(pro.notesPerWorkspace).toBeGreaterThan(free.notesPerWorkspace);
     expect(pro.contactsPerWorkspace).toBeGreaterThan(free.contactsPerWorkspace);
+    expect(pro.storageBytesPerWorkspace).toBeGreaterThan(
+      free.storageBytesPerWorkspace,
+    );
+    expect(pro.maxUploadBytes).toBeGreaterThan(free.maxUploadBytes);
+  });
+
+  it("free plan blocks all file uploads (zero storage)", () => {
+    expect(PLAN_LIMITS.free.storageBytesPerWorkspace).toBe(0);
+    expect(PLAN_LIMITS.free.maxUploadBytes).toBe(0);
+    expect(PLAN_LIMITS.pro.storageBytesPerWorkspace).toBeGreaterThan(0);
+    expect(PLAN_LIMITS.pro.maxUploadBytes).toBeGreaterThan(0);
   });
 
   it("free plan keeps at least the Personal workspace plus one", () => {
@@ -95,6 +107,13 @@ describe("limit copy", () => {
 
   it("owned workspace copy never promises recovery or data access", () => {
     const msg = ownedWorkspacesLimitMessage("free", 2);
+    expect(msg.toLowerCase()).not.toContain("recover");
+    expect(msg.toLowerCase()).not.toContain("decrypt");
+  });
+
+  it("storage copy blocks free uploads without recovery claims", () => {
+    const msg = storageLimitMessage("free", 0);
+    expect(msg.toLowerCase()).toContain("pro");
     expect(msg.toLowerCase()).not.toContain("recover");
     expect(msg.toLowerCase()).not.toContain("decrypt");
   });

@@ -203,6 +203,8 @@ export const putTaskRequestSchema = z.object({
   milestoneId: uuidSchema.nullable().optional(),
   /** Replace outgoing entity_links from this task when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
+  /** Replace TipTap fileAttachment links when provided. */
+  attachmentIds: z.array(uuidSchema).optional(),
 });
 export type PutTaskRequest = z.infer<typeof putTaskRequestSchema>;
 
@@ -290,6 +292,8 @@ export const putNoteRequestSchema = z.object({
   projectId: uuidSchema.nullable().optional(),
   /** Replace outgoing entity_links from this note when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
+  /** Replace TipTap fileAttachment links when provided. */
+  attachmentIds: z.array(uuidSchema).optional(),
 });
 export type PutNoteRequest = z.infer<typeof putNoteRequestSchema>;
 
@@ -335,6 +339,8 @@ export const putContactRequestSchema = z.object({
   deletedAt: z.string().nullable().optional(),
   /** Replace outgoing entity_links from this contact when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
+  /** Replace TipTap fileAttachment links when provided. */
+  attachmentIds: z.array(uuidSchema).optional(),
 });
 export type PutContactRequest = z.infer<typeof putContactRequestSchema>;
 
@@ -510,6 +516,10 @@ export const workspaceLimitsSchema = z.object({
   tasks: z.number().int().positive(),
   notes: z.number().int().positive(),
   contacts: z.number().int().positive(),
+  /** Ciphertext bytes; free plan is 0 (no uploads). */
+  storageBytes: z.number().int().nonnegative(),
+  /** Max ciphertext bytes per file; free plan is 0. */
+  maxUploadBytes: z.number().int().nonnegative(),
 });
 export type WorkspaceLimits = z.infer<typeof workspaceLimitsSchema>;
 
@@ -520,6 +530,8 @@ export const workspaceUsageSchema = z.object({
   tasks: z.number().int().nonnegative(),
   notes: z.number().int().nonnegative(),
   contacts: z.number().int().nonnegative(),
+  /** Sum of ready (+ reserved pending) attachment ciphertext bytes. */
+  storageBytes: z.number().int().nonnegative(),
 });
 export type WorkspaceUsage = z.infer<typeof workspaceUsageSchema>;
 
@@ -542,6 +554,76 @@ export const billingRedirectResponseSchema = z.object({
 });
 export type BillingRedirectResponse = z.infer<
   typeof billingRedirectResponseSchema
+>;
+
+/** P11 attachments — ciphertext-opaque metadata + signed URL handoff. */
+export const attachmentStatusSchema = z.enum(["pending", "ready", "failed"]);
+export type AttachmentStatus = z.infer<typeof attachmentStatusSchema>;
+
+export const attachmentParentKindSchema = z.enum(["note", "task", "contact"]);
+export type AttachmentParentKind = z.infer<typeof attachmentParentKindSchema>;
+
+export const createAttachmentRequestSchema = z.object({
+  id: uuidSchema,
+  byteSize: z.number().int().nonnegative(),
+  encryptedMeta: ciphertextEnvelopeSchema,
+  wrappedDek: wrappedKeyEnvelopeSchema,
+});
+export type CreateAttachmentRequest = z.infer<
+  typeof createAttachmentRequestSchema
+>;
+
+export const createAttachmentResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  byteSize: z.number().int().nonnegative(),
+  storagePath: z.string().min(1),
+  status: attachmentStatusSchema,
+  uploadUrl: z.string().url(),
+  encryptedMeta: ciphertextEnvelopeSchema,
+  wrappedDek: wrappedKeyEnvelopeSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+export type CreateAttachmentResponse = z.infer<
+  typeof createAttachmentResponseSchema
+>;
+
+export const attachmentResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  byteSize: z.number().int().nonnegative(),
+  storagePath: z.string().min(1),
+  status: attachmentStatusSchema,
+  encryptedMeta: ciphertextEnvelopeSchema,
+  wrappedDek: wrappedKeyEnvelopeSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type AttachmentResponse = z.infer<typeof attachmentResponseSchema>;
+
+export const completeAttachmentResponseSchema = attachmentResponseSchema;
+export type CompleteAttachmentResponse = z.infer<
+  typeof completeAttachmentResponseSchema
+>;
+
+export const downloadAttachmentResponseSchema = z.object({
+  id: uuidSchema,
+  downloadUrl: z.string().url(),
+  byteSize: z.number().int().nonnegative(),
+  encryptedMeta: ciphertextEnvelopeSchema,
+  wrappedDek: wrappedKeyEnvelopeSchema,
+});
+export type DownloadAttachmentResponse = z.infer<
+  typeof downloadAttachmentResponseSchema
+>;
+
+export const listAttachmentsResponseSchema = z.object({
+  attachments: z.array(attachmentResponseSchema),
+});
+export type ListAttachmentsResponse = z.infer<
+  typeof listAttachmentsResponseSchema
 >;
 
 export const getMeAccountResponseSchema = z.object({

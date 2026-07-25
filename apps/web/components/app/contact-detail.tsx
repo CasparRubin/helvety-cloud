@@ -55,6 +55,9 @@ export function ContactDetail({
   const [color, setColor] = useState<EntityColor | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [storageLimitMessage, setStorageLimitMessage] = useState<string | null>(
+    null,
+  );
   const [deleting, setDeleting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
@@ -405,7 +408,17 @@ export function ContactDetail({
             enableEntityLinks
             linkCandidates={linkCandidates}
             onEntityLinkAction={onEntityLinkAction}
+            fileAttachments={{
+              workspaceId,
+              getWorkspaceKey: () => getWorkspaceKey(workspaceId),
+              onStorageLimit: (message) => setStorageLimitMessage(message),
+            }}
           />
+          {storageLimitMessage ? (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {storageLimitMessage}
+            </p>
+          ) : null}
           <BacklinksPanel
             workspaceId={workspaceId}
             kind="contact"

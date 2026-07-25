@@ -22,7 +22,7 @@ import {
   type ContactPlaintext,
 } from "@/lib/vault/contact-plaintext";
 import type { EntityColor } from "@/lib/vault/entity-colors";
-import { extractEntityRefsFromDoc } from "@/lib/vault/entity-refs";
+import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/vault/entity-refs";
 import {
   EMPTY_TASK_BODY,
   type TaskBodyDoc,
@@ -164,6 +164,7 @@ export async function createContact(
     encryptedBlob,
     sortOrder,
     links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.notes),
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -192,6 +193,7 @@ export async function saveContact(
     sortOrder: contact.sortOrder,
     deletedAt: contact.deletedAt,
     links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(content.notes),
   });
   return toDecrypted(workspaceKey, row);
 }

@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { formatBytes } from "@/lib/billing/entitlements";
 
 function SettingsError({ error }: { error: string | null }) {
   if (!error) return null;
@@ -283,41 +284,49 @@ export function WorkspaceBillingSettings() {
       {billingLoading && !billing ? (
         <p className="text-xs text-muted-foreground">Loading billing…</p>
       ) : billing ? (
-        <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
-          <p className="text-xs text-muted-foreground">
-            Plan: <span className="uppercase">{billing.plan}</span>
-            {" · "}
-            Seats {billing.usage.members + billing.usage.pendingInvitations}/
-            {billing.limits.members}
-            {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
-          </p>
-          {isOwner ? (
-            billing.plan === "free" ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => void onUpgrade()}
-              >
-                Upgrade to Pro
-              </Button>
-            ) : billing.hasStripeCustomer ? (
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={pending}
-                onClick={() => void onManageBilling()}
-              >
-                Manage billing
-              </Button>
-            ) : null
-          ) : (
+        <div className="flex flex-col gap-2 rounded-md border border-border px-3 py-2">
+          <div className="flex items-center justify-between gap-2">
             <p className="text-xs text-muted-foreground">
-              Only the owner can manage billing.
+              Plan: <span className="uppercase">{billing.plan}</span>
+              {" · "}
+              Seats {billing.usage.members + billing.usage.pendingInvitations}/
+              {billing.limits.members}
+              {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
             </p>
-          )}
+            {isOwner ? (
+              billing.plan === "free" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void onUpgrade()}
+                >
+                  Upgrade to Pro
+                </Button>
+              ) : billing.hasStripeCustomer ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void onManageBilling()}
+                >
+                  Manage billing
+                </Button>
+              ) : null
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Only the owner can manage billing.
+              </p>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            File storage:{" "}
+            {billing.limits.storageBytes === 0
+              ? "not included on Free — upgrade to attach files"
+              : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file)`}
+          </p>
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">

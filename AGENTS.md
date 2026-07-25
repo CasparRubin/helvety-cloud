@@ -50,6 +50,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P8e | Categorization icons + polished task pickers | **Done** |
 | P9 | Task stage board (DnD between stages) | **Done** |
 | P10 | Project descriptions + milestones | **Done** |
+| P11 | E2EE files & documents | **Done** |
 
 ## Tooling
 

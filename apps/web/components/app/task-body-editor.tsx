@@ -1,13 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
 import type { EntityLinkKind, EntityLinkTarget } from "@helvety-cloud/api-contract";
+import { Paperclip } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { ApiClientError } from "@/lib/api/v1-client";
 import { EntityRef } from "@/lib/editor/entity-ref-extension";
+import { FileAttachment } from "@/lib/editor/file-attachment-extension";
+import { uploadVaultAttachment } from "@/lib/vault/attachments";
 import type { TaskBodyDoc } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
 
@@ -15,6 +19,12 @@ export type EntityLinkAction =
   | { type: "create-task"; title: string }
   | { type: "create-contact"; displayName: string }
   | { type: "link-existing"; target: EntityLinkTarget };
+
+type FileAttachmentsConfig = {
+  workspaceId: string;
+  getWorkspaceKey: () => Promise<Uint8Array>;
+  onStorageLimit?: (message: string) => void;
+};
 
 type TaskBodyEditorProps = {
   content: TaskBodyDoc;
@@ -32,6 +42,8 @@ type TaskBodyEditorProps = {
   onEntityLinkAction?: (
     action: EntityLinkAction,
   ) => Promise<EntityLinkTarget | void> | EntityLinkTarget | void;
+  /** When set, enables TipTap fileAttachment upload/paste/drop. */
+  fileAttachments?: FileAttachmentsConfig;
 };
 
 export function TaskBodyEditor({
@@ -43,10 +55,28 @@ export function TaskBodyEditor({
   enableEntityLinks = false,
   linkCandidates = [],
   onEntityLinkAction,
+  fileAttachments,
 }: TaskBodyEditorProps) {
   const [linkQuery, setLinkQuery] = useState("");
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [busy, setBusy] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const fileAttachmentsRef = useRef<FileAttachmentsConfig | undefined>(
+    fileAttachments,
+  );
+  const uploadingRef = useRef(false);
+  const uploadFilesRef = useRef<(files: File[]) => Promise<void>>(
+    async () => {},
+  );
+
+  useEffect(() => {
+    fileAttachmentsRef.current = fileAttachments;
+  }, [fileAttachments]);
+
+  useEffect(() => {
+    uploadingRef.current = uploading;
+  }, [uploading]);
 
   const editor = useEditor({
     extensions: [
@@ -54,6 +84,15 @@ export function TaskBodyEditor({
         heading: { levels: [2, 3] },
       }),
       ...(enableEntityLinks ? [EntityRef] : []),
+      ...(fileAttachments
+        ? [
+            FileAttachment.configure({
+              workspaceId: fileAttachments.workspaceId,
+              getWorkspaceKey: fileAttachments.getWorkspaceKey,
+              onStorageLimit: fileAttachments.onStorageLimit,
+            }),
+          ]
+        : []),
     ],
     content,
     editable: !disabled,
@@ -72,11 +111,68 @@ export function TaskBodyEditor({
         ),
         "aria-label": "Body",
       },
+      handlePaste: (_view, event) => {
+        if (!fileAttachmentsRef.current || disabled) return false;
+        const items = event.clipboardData?.items;
+        if (!items) return false;
+        const files: File[] = [];
+        for (const item of items) {
+          if (item.kind === "file") {
+            const file = item.getAsFile();
+            if (file) files.push(file);
+          }
+        }
+        if (files.length === 0) return false;
+        event.preventDefault();
+        void uploadFilesRef.current(files);
+        return true;
+      },
+      handleDrop: (_view, event) => {
+        if (!fileAttachmentsRef.current || disabled) return false;
+        const files = event.dataTransfer?.files;
+        if (!files || files.length === 0) return false;
+        event.preventDefault();
+        void uploadFilesRef.current(Array.from(files));
+        return true;
+      },
     },
     onUpdate: ({ editor: ed }) => {
       onChange(ed.getJSON() as TaskBodyDoc);
     },
   });
+
+  useEffect(() => {
+    uploadFilesRef.current = async (files: File[]) => {
+      const cfg = fileAttachmentsRef.current;
+      if (!cfg || !editor || uploadingRef.current) return;
+      setUploading(true);
+      try {
+        for (const file of files) {
+          try {
+            const key = await cfg.getWorkspaceKey();
+            const uploaded = await uploadVaultAttachment({
+              workspaceId: cfg.workspaceId,
+              workspaceKey: key,
+              file,
+            });
+            editor
+              .chain()
+              .focus()
+              .insertFileAttachment({ id: uploaded.id })
+              .run();
+          } catch (e) {
+            if (e instanceof ApiClientError && e.code === "limit_exceeded") {
+              cfg.onStorageLimit?.(e.message);
+              break;
+            }
+            throw e;
+          }
+        }
+      } finally {
+        setUploading(false);
+      }
+    };
+  }, [editor]);
 
   useEffect(() => {
     if (!editor) return;
@@ -185,6 +281,34 @@ export function TaskBodyEditor({
           disabled={disabled}
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         />
+        {fileAttachments ? (
+          <>
+            <Button
+              type="button"
+              variant="ghost"
+              size="xs"
+              disabled={disabled || uploading}
+              onClick={() => fileInputRef.current?.click()}
+              aria-label="Attach file"
+            >
+              <Paperclip className="size-3.5" />
+              {uploading ? "Uploading…" : "Attach"}
+            </Button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              multiple
+              onChange={(e) => {
+                const files = e.target.files
+                  ? Array.from(e.target.files)
+                  : [];
+                e.target.value = "";
+                if (files.length > 0) void uploadFilesRef.current(files);
+              }}
+            />
+          </>
+        ) : null}
       </div>
 
       {enableEntityLinks && onEntityLinkAction ? (

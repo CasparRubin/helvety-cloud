@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board; **P10** project descriptions + milestones. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board; **P10** project descriptions + milestones; **P11** E2EE files & documents. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -569,6 +569,26 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P11 — E2EE files & documents
+
+**Status:** **Done**
+
+**Goal:** Attach encrypted files to notes, tasks, and contacts. Images render inline in TipTap; other formats (PDF, Office, zip, …) render as downloadable chips. Free workspaces cannot upload anything; Pro unlocks storage.
+
+**Do:**
+
+- `attachments` + `attachment_links` tables; private Supabase Storage bucket `vault-attachments`.  
+- Client: per-file DEK → AES-GCM file bytes; wrap DEK + encrypt `{ filename, mimeType }` under `workspace_key`.  
+- `/api/v1` create / complete / download / delete / list with signed URLs; gate on workspace plan (`storageBytes = 0` on free).  
+- TipTap `fileAttachment` node; sync `attachment_links` on entity save; cascade cleanup on delete.  
+- Quotas in code: free 0 / Pro 5 GB workspace, 25 MB max file.
+
+**Don’t:** TipTap PDF/Office previewers; per-user (cross-workspace) entitlements; Enterprise SKU; streaming crypto for huge files; attachments outside note/task/contact bodies.
+
+**Done when:** Pro workspace can upload/download E2EE files in TipTap; free workspace is blocked server-side; Helvety cannot decrypt filenames or bytes.
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -650,4 +670,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

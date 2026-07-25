@@ -59,6 +59,9 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     title: string;
     resolve: (projectId: string | null) => void;
   } | null>(null);
+  const [storageLimitMessage, setStorageLimitMessage] = useState<string | null>(
+    null,
+  );
 
   const titleRef = useRef(title);
   const bodyRef = useRef(body);
@@ -406,8 +409,17 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
             enableEntityLinks
             linkCandidates={linkCandidates}
             onEntityLinkAction={onEntityLinkAction}
+            fileAttachments={{
+              workspaceId,
+              getWorkspaceKey: () => getWorkspaceKey(workspaceId),
+              onStorageLimit: (message) => setStorageLimitMessage(message),
+            }}
           />
-
+          {storageLimitMessage ? (
+            <p className="text-sm text-amber-700 dark:text-amber-400">
+              {storageLimitMessage}
+            </p>
+          ) : null}
           <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
 
           <div className="flex flex-wrap items-center gap-2">

@@ -36,6 +36,12 @@ import {
   putProjectRequestSchema,
   sealWorkspaceInvitationRequestSchema,
   workspaceInvitationSchema,
+  createAttachmentRequestSchema,
+  createAttachmentResponseSchema,
+  completeAttachmentResponseSchema,
+  downloadAttachmentResponseSchema,
+  listAttachmentsResponseSchema,
+  attachmentResponseSchema,
   type BillingRedirectResponse,
   type ContactResponse,
   type CreateWorkspaceInvitationRequest,
@@ -72,6 +78,13 @@ import {
   type PutProjectRequest,
   type SealWorkspaceInvitationRequest,
   type WorkspaceInvitation,
+  type CreateAttachmentRequest,
+  type CreateAttachmentResponse,
+  type CompleteAttachmentResponse,
+  type DownloadAttachmentResponse,
+  type ListAttachmentsResponse,
+  type AttachmentResponse,
+  type AttachmentParentKind,
 } from "@helvety-cloud/api-contract";
 
 import { createClient } from "@/lib/supabase/client";
@@ -652,5 +665,73 @@ export async function acceptInvitation(
     `/api/v1/me/invitations/${invitationId}/accept`,
     workspaceInvitationSchema,
     { method: "POST" },
+  );
+}
+
+export async function createAttachment(
+  workspaceId: string,
+  body: CreateAttachmentRequest,
+): Promise<CreateAttachmentResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/attachments`,
+    createAttachmentResponseSchema,
+    {
+      method: "POST",
+      body: JSON.stringify(createAttachmentRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function completeAttachment(
+  workspaceId: string,
+  attachmentId: string,
+): Promise<CompleteAttachmentResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/attachments/${attachmentId}/complete`,
+    completeAttachmentResponseSchema,
+    { method: "POST" },
+  );
+}
+
+export async function downloadAttachment(
+  workspaceId: string,
+  attachmentId: string,
+): Promise<DownloadAttachmentResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/attachments/${attachmentId}/download`,
+    downloadAttachmentResponseSchema,
+  );
+}
+
+export async function getAttachment(
+  workspaceId: string,
+  attachmentId: string,
+): Promise<AttachmentResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/attachments/${attachmentId}`,
+    attachmentResponseSchema,
+  );
+}
+
+export async function listAttachments(
+  workspaceId: string,
+  params?: { parentKind: AttachmentParentKind; parentId: string },
+): Promise<ListAttachmentsResponse> {
+  const qs = params
+    ? `?parentKind=${encodeURIComponent(params.parentKind)}&parentId=${encodeURIComponent(params.parentId)}`
+    : "";
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/attachments${qs}`,
+    listAttachmentsResponseSchema,
+  );
+}
+
+export async function deleteAttachment(
+  workspaceId: string,
+  attachmentId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/attachments/${attachmentId}`,
+    { method: "DELETE" },
   );
 }

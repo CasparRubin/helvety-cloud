@@ -24,7 +24,7 @@ import {
   type NotePlaintext,
 } from "@/lib/vault/note-plaintext";
 import type { EntityColor } from "@/lib/vault/entity-colors";
-import { extractEntityRefsFromDoc } from "@/lib/vault/entity-refs";
+import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/vault/entity-refs";
 
 const textDecoder = new TextDecoder();
 
@@ -167,6 +167,7 @@ export async function createNote(
     sortOrder,
     projectId: content.projectId ?? null,
     links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.body),
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -198,6 +199,7 @@ export async function saveNote(
     projectId:
       options?.projectId !== undefined ? options.projectId : note.projectId,
     links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(content.body),
   });
   return toDecrypted(workspaceKey, row);
 }

@@ -41,6 +41,22 @@ export {
 } from "./content";
 
 export {
+  encryptBinary,
+  decryptBinary,
+  packBinaryCiphertext,
+  unpackBinaryCiphertext,
+  type BinaryCiphertext,
+} from "./binary";
+
+export {
+  encryptAttachment,
+  decryptAttachmentMeta,
+  decryptAttachmentBytes,
+  type AttachmentMetaPlaintext,
+  type EncryptedAttachmentPayload,
+} from "./attachments";
+
+export {
   formatAad,
   type CiphertextEnvelope,
   type WrappedKeyEnvelope,

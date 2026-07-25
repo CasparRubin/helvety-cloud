@@ -15,7 +15,14 @@ export type PlanLimits = {
   tasksPerWorkspace: number;
   notesPerWorkspace: number;
   contactsPerWorkspace: number;
+  /** Total ciphertext bytes allowed in Supabase Storage for the workspace. Free = 0. */
+  storageBytesPerWorkspace: number;
+  /** Max ciphertext bytes for a single upload. Free = 0. */
+  maxUploadBytes: number;
 };
+
+const PRO_STORAGE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GiB
+const PRO_MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MiB
 
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: {
@@ -25,6 +32,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     tasksPerWorkspace: 100,
     notesPerWorkspace: 50,
     contactsPerWorkspace: 50,
+    storageBytesPerWorkspace: 0,
+    maxUploadBytes: 0,
   },
   pro: {
     ownedWorkspaces: 10,
@@ -33,6 +42,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     tasksPerWorkspace: 10_000,
     notesPerWorkspace: 5_000,
     contactsPerWorkspace: 5_000,
+    storageBytesPerWorkspace: PRO_STORAGE_BYTES,
+    maxUploadBytes: PRO_MAX_UPLOAD_BYTES,
   },
 };
 
@@ -118,6 +129,30 @@ export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
       ? " Upgrade an existing workspace to Pro or delete an unused workspace."
       : "";
   return `Workspace limit reached (${limit} owned workspaces on the ${plan} plan).${upgradeHint}`;
+}
+
+/** Honest copy when free workspaces (or over-quota Pro) cannot upload files. */
+export function storageLimitMessage(plan: Plan, limitBytes: number): string {
+  if (plan === "free" || limitBytes === 0) {
+    return "File uploads require a Pro workspace. Upgrade this workspace to Pro to attach files.";
+  }
+  return `Storage limit reached for the ${plan} plan (${formatBytes(limitBytes)} per workspace).`;
+}
+
+export function maxUploadLimitMessage(plan: Plan, limitBytes: number): string {
+  if (plan === "free" || limitBytes === 0) {
+    return "File uploads require a Pro workspace. Upgrade this workspace to Pro to attach files.";
+  }
+  return `File is too large for the ${plan} plan (max ${formatBytes(limitBytes)} per file).`;
+}
+
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(0)} KB`;
+  if (bytes < 1024 * 1024 * 1024) {
+    return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
+  }
+  return `${(bytes / (1024 * 1024 * 1024)).toFixed(0)} GB`;
 }
 
 function capitalize(value: string): string {

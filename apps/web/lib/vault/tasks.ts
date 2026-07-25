@@ -21,7 +21,7 @@ import {
   defaultStage,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
-import { extractEntityRefsFromDoc } from "@/lib/vault/entity-refs";
+import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/vault/entity-refs";
 import {
   EMPTY_TASK_BODY,
   parseTaskPlaintext,
@@ -193,6 +193,7 @@ export async function createTask(
     priorityId,
     milestoneId: null,
     links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.body),
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -244,6 +245,7 @@ export async function saveTask(
         ? categorizationIds.milestoneId
         : task.milestoneId,
     links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(content.body),
   });
   return toDecrypted(workspaceKey, row);
 }

@@ -42,6 +42,8 @@ P6f; charges only happen when a workspace owner completes Stripe Checkout.
 | Tasks | 100 | 10,000 |
 | Notes | 50 | 5,000 |
 | Contacts | 50 | 5,000 |
+| File storage (ciphertext bytes) | **0** (no uploads) | 5 GB |
+| Max upload size | **0** | 25 MB |
 
 Gates apply to **creates only** (net-new rows / invites / accepts) and return
 `limit_exceeded` (403). Updates, soft-deletes, reads, seal/cancel are never

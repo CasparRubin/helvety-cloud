@@ -10,16 +10,23 @@ import {
   bytesEqual,
   createKeyCheck,
   decrypt,
+  decryptAttachmentBytes,
+  decryptAttachmentMeta,
+  decryptBinary,
   deriveUnlockKey,
   encodeUtf8,
   encrypt,
+  encryptAttachment,
+  encryptBinary,
   exportRecoveryKey,
   generatePrfSalt,
   generateRecoveryKey,
   generateUserKeyMaterial,
   importRecoveryKey,
   openSealedKey,
+  packBinaryCiphertext,
   sealToPublicKey,
+  unpackBinaryCiphertext,
   unwrapKey,
   verifyKeyCheck,
   wrapKey,
@@ -382,6 +389,85 @@ describe("P6b project/task vault content", () => {
       ),
     );
     expect(plain).toEqual(plaintext);
+  });
+});
+
+describe("attachment binary crypto (P11)", () => {
+  it("round-trips file bytes + metadata under workspace_key", async () => {
+    const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
+    const attachmentId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+    const plaintext = new TextEncoder().encode("hello office doc bytes");
+    const payload = await encryptAttachment({
+      workspaceKey,
+      attachmentId,
+      plaintext,
+      meta: { filename: "brief.docx", mimeType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document" },
+    });
+
+    expect(payload.byteSize).toBe(payload.packedCiphertext.byteLength);
+    expect(JSON.stringify(payload.encryptedMeta)).not.toContain("brief.docx");
+
+    const meta = await decryptAttachmentMeta({
+      workspaceKey,
+      attachmentId,
+      encryptedMeta: payload.encryptedMeta,
+    });
+    expect(meta.filename).toBe("brief.docx");
+
+    const bytes = await decryptAttachmentBytes({
+      workspaceKey,
+      attachmentId,
+      wrappedDek: payload.wrappedDek,
+      packedCiphertext: payload.packedCiphertext,
+    });
+    expect(new TextDecoder().decode(bytes)).toBe("hello office doc bytes");
+  });
+
+  it("fails with the wrong workspace key", async () => {
+    const workspaceKey = crypto.getRandomValues(new Uint8Array(32));
+    const wrongKey = crypto.getRandomValues(new Uint8Array(32));
+    const attachmentId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";
+    const payload = await encryptAttachment({
+      workspaceKey,
+      attachmentId,
+      plaintext: new Uint8Array([1, 2, 3, 4]),
+      meta: { filename: "a.png", mimeType: "image/png" },
+    });
+
+    await expect(
+      decryptAttachmentMeta({
+        workspaceKey: wrongKey,
+        attachmentId,
+        encryptedMeta: payload.encryptedMeta,
+      }),
+    ).rejects.toThrow();
+
+    await expect(
+      decryptAttachmentBytes({
+        workspaceKey: wrongKey,
+        attachmentId,
+        wrappedDek: payload.wrappedDek,
+        packedCiphertext: payload.packedCiphertext,
+      }),
+    ).rejects.toThrow();
+  });
+
+  it("pack/unpack preserves binary ciphertext", async () => {
+    const key = crypto.getRandomValues(new Uint8Array(32));
+    const aad = {
+      table: "attachments",
+      recordId: "id",
+      field: "ciphertext",
+    } as const;
+    const encrypted = await encryptBinary({
+      key,
+      plaintext: new Uint8Array([9, 8, 7]),
+      aad,
+    });
+    const packed = packBinaryCiphertext(encrypted);
+    const unpacked = unpackBinaryCiphertext(packed);
+    const plain = await decryptBinary({ key, ciphertext: unpacked, aad });
+    expect(Array.from(plain)).toEqual([9, 8, 7]);
   });
 });
 

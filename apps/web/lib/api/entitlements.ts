@@ -10,9 +10,11 @@ import { apiError } from "@/lib/api/errors";
 import {
   limitMessage,
   limitsForPlan,
+  maxUploadLimitMessage,
   ownedWorkspacesLimitMessage,
   resolvePlan,
   seatLimitMessage,
+  storageLimitMessage,
   workspaceMeterLimit,
   type Plan,
   type WorkspaceMeter,
@@ -27,6 +29,7 @@ export type WorkspaceUsageCounts = {
   tasks: number;
   notes: number;
   contacts: number;
+  storageBytes: number;
 };
 
 /**
@@ -44,30 +47,48 @@ export async function getWorkspaceUsage(
       .eq("workspace_id", workspaceId)
       .is("deleted_at", null);
 
-  const [projects, notes, contacts, tasks, members, pendingInvitations] =
-    await Promise.all([
-      countRows("projects"),
-      countRows("notes"),
-      countRows("contacts"),
-      supabase
-        .from("tasks")
-        .select("id, projects!inner(workspace_id)", {
-          count: "exact",
-          head: true,
-        })
-        .eq("projects.workspace_id", workspaceId)
-        .is("deleted_at", null),
-      supabase
-        .from("workspace_members")
-        .select("user_id", { count: "exact", head: true })
-        .eq("workspace_id", workspaceId),
-      supabase
-        .from("workspace_invitations")
-        .select("id", { count: "exact", head: true })
-        .eq("workspace_id", workspaceId)
-        .is("cancelled_at", null)
-        .is("accepted_at", null),
-    ]);
+  const [
+    projects,
+    notes,
+    contacts,
+    tasks,
+    members,
+    pendingInvitations,
+    storageRows,
+  ] = await Promise.all([
+    countRows("projects"),
+    countRows("notes"),
+    countRows("contacts"),
+    supabase
+      .from("tasks")
+      .select("id, projects!inner(workspace_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("projects.workspace_id", workspaceId)
+      .is("deleted_at", null),
+    supabase
+      .from("workspace_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId),
+    supabase
+      .from("workspace_invitations")
+      .select("id", { count: "exact", head: true })
+      .eq("workspace_id", workspaceId)
+      .is("cancelled_at", null)
+      .is("accepted_at", null),
+    supabase
+      .from("attachments")
+      .select("byte_size, status")
+      .eq("workspace_id", workspaceId)
+      .is("deleted_at", null)
+      .in("status", ["ready", "pending"]),
+  ]);
+
+  const storageBytes = (storageRows.data ?? []).reduce(
+    (sum, row) => sum + (row.byte_size ?? 0),
+    0,
+  );
 
   return {
     projects: projects.count ?? 0,
@@ -76,6 +97,7 @@ export async function getWorkspaceUsage(
     tasks: tasks.count ?? 0,
     members: members.count ?? 0,
     pendingInvitations: pendingInvitations.count ?? 0,
+    storageBytes,
   };
 }
 
@@ -208,6 +230,60 @@ export async function assertAcceptSeatAllowed(
   const limit = limitsForPlan(plan).membersPerWorkspace;
   if (usage.member_count >= limit) {
     return apiError("limit_exceeded", seatLimitMessage(plan, limit), 403);
+  }
+  return null;
+}
+
+/**
+ * Gate a file upload: free workspaces get 0 bytes (no uploads);
+ * Pro workspaces must stay under storage + per-file caps.
+ * Returns an error response to short-circuit with, or null when allowed.
+ */
+export async function assertWorkspaceStorageAllowed(
+  supabase: Api,
+  workspaceId: string,
+  incomingBytes: number,
+): Promise<NextResponse | null> {
+  if (!Number.isFinite(incomingBytes) || incomingBytes < 0) {
+    return apiError("invalid_body", "byteSize must be a non-negative number", 400);
+  }
+
+  const plan = await getWorkspacePlan(supabase, workspaceId);
+  const limits = limitsForPlan(plan);
+
+  if (limits.maxUploadBytes <= 0 || limits.storageBytesPerWorkspace <= 0) {
+    return apiError(
+      "limit_exceeded",
+      storageLimitMessage(plan, limits.storageBytesPerWorkspace),
+      403,
+    );
+  }
+
+  if (incomingBytes > limits.maxUploadBytes) {
+    return apiError(
+      "limit_exceeded",
+      maxUploadLimitMessage(plan, limits.maxUploadBytes),
+      403,
+    );
+  }
+
+  const { data: rows, error } = await supabase
+    .from("attachments")
+    .select("byte_size")
+    .eq("workspace_id", workspaceId)
+    .is("deleted_at", null)
+    .in("status", ["ready", "pending"]);
+  if (error) {
+    // Count failed (e.g. RLS): let the write itself surface the real error.
+    return null;
+  }
+  const used = (rows ?? []).reduce((sum, row) => sum + (row.byte_size ?? 0), 0);
+  if (used + incomingBytes > limits.storageBytesPerWorkspace) {
+    return apiError(
+      "limit_exceeded",
+      storageLimitMessage(plan, limits.storageBytesPerWorkspace),
+      403,
+    );
   }
   return null;
 }

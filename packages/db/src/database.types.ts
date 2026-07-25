@@ -14,6 +14,95 @@ export type Database = {
   }
   public: {
     Tables: {
+      attachment_links: {
+        Row: {
+          attachment_id: string
+          created_at: string
+          id: string
+          parent_id: string
+          parent_kind: string
+          workspace_id: string
+        }
+        Insert: {
+          attachment_id: string
+          created_at?: string
+          id?: string
+          parent_id: string
+          parent_kind: string
+          workspace_id: string
+        }
+        Update: {
+          attachment_id?: string
+          created_at?: string
+          id?: string
+          parent_id?: string
+          parent_kind?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachment_links_attachment_id_fkey"
+            columns: ["attachment_id"]
+            isOneToOne: false
+            referencedRelation: "attachments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "attachment_links_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      attachments: {
+        Row: {
+          byte_size: number
+          created_at: string
+          deleted_at: string | null
+          encrypted_meta: Json
+          id: string
+          status: string
+          storage_path: string
+          updated_at: string
+          workspace_id: string
+          wrapped_dek: Json
+        }
+        Insert: {
+          byte_size: number
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_meta: Json
+          id: string
+          status?: string
+          storage_path: string
+          updated_at?: string
+          workspace_id: string
+          wrapped_dek: Json
+        }
+        Update: {
+          byte_size?: number
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_meta?: Json
+          id?: string
+          status?: string
+          storage_path?: string
+          updated_at?: string
+          workspace_id?: string
+          wrapped_dek?: Json
+        }
+        Relationships: [
+          {
+            foreignKeyName: "attachments_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       billing_events: {
         Row: {
           id: string

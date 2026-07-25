@@ -43,3 +43,32 @@ export function extractEntityRefsFromDoc(
   walk(doc);
   return out;
 }
+
+/** Walk a TipTap doc and collect unique fileAttachment ids. */
+export function extractFileAttachmentIdsFromDoc(
+  doc: TaskBodyDoc | unknown,
+): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+
+  function walk(node: unknown): void {
+    if (typeof node !== "object" || node === null) return;
+    const n = node as {
+      type?: unknown;
+      attrs?: { id?: unknown };
+      content?: unknown[];
+    };
+    if (n.type === "fileAttachment" && typeof n.attrs?.id === "string") {
+      if (!seen.has(n.attrs.id)) {
+        seen.add(n.attrs.id);
+        out.push(n.attrs.id);
+      }
+    }
+    if (Array.isArray(n.content)) {
+      for (const child of n.content) walk(child);
+    }
+  }
+
+  walk(doc);
+  return out;
+}

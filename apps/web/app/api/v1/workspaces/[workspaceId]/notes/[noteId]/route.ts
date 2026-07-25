@@ -11,6 +11,11 @@ import {
   validateLinkTargetsInWorkspace,
   deleteLinksTouching,
 } from "@/lib/api/entity-links";
+import {
+  replaceAttachmentLinks,
+  softDeleteAttachmentsForParent,
+} from "@/lib/api/attachment-links";
+import { removeAttachmentObject } from "@/lib/api/vault-storage";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -211,6 +216,24 @@ export async function PUT(request: Request, context: RouteContext) {
     );
   }
 
+  if (data.attachmentIds !== undefined) {
+    try {
+      await replaceAttachmentLinks(
+        supabase,
+        workspaceId,
+        "note",
+        noteId,
+        data.attachmentIds,
+      );
+    } catch (e) {
+      return apiError(
+        "invalid_body",
+        e instanceof Error ? e.message : "Failed to update attachments",
+        400,
+      );
+    }
+  }
+
   return jsonOk(toNoteResponse(row, links));
 }
 
@@ -225,6 +248,19 @@ export async function DELETE(request: Request, context: RouteContext) {
   // Drop edges before deleting the note.
   try {
     await deleteLinksTouching(supabase, workspaceId, "note", noteId);
+    const orphanIds = await softDeleteAttachmentsForParent(
+      supabase,
+      workspaceId,
+      "note",
+      noteId,
+    );
+    for (const id of orphanIds) {
+      try {
+        await removeAttachmentObject(`${workspaceId}/${id}`);
+      } catch {
+        // Soft-delete is enough; Storage orphan can be swept later.
+      }
+    }
   } catch (e) {
     return apiError(
       "internal",

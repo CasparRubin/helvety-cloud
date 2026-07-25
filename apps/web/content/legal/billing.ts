@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const billingDoc: LegalDocument = {
   slug: "billing",
   title: "Billing terms",
-  versionLabel: "2026-07-25-v1",
+  versionLabel: "2026-07-25-v2",
   sections: [
     {
       heading: "Status",
@@ -15,7 +15,7 @@ export const billingDoc: LegalDocument = {
     {
       heading: "Free plan",
       paragraphs: [
-        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks, notes, and contacts). Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
+        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks, notes, and contacts). File uploads and document storage are not available on the free plan — including in free Personal workspaces. Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
         "Helvety may change free limits with notice in the product. Continued use after a change means you accept the updated limits.",
       ],
     },
@@ -23,9 +23,10 @@ export const billingDoc: LegalDocument = {
       heading: "Paid plans",
       paragraphs: [
         "Subscriptions are workspace-scoped: the workspace owner pays for that workspace’s Pro plan.",
+        "Pro includes encrypted file and document storage for that workspace, within the storage and per-file size limits shown in the product. Uploaded files are end-to-end encrypted on your device; Helvety stores ciphertext and operational size meters only and cannot decrypt file contents.",
         "Prices, billing intervals, renewals, and taxes are shown at Stripe Checkout. Unless stated otherwise, subscriptions renew automatically until cancelled.",
         "You may cancel renewal at any time in the Stripe billing portal (available from the workspace sharing dialog); access to Pro limits continues through the paid period already purchased unless stated otherwise. No cancellation fees, no retention tricks.",
-        "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs vault plaintext or raw vault keys for billing. Meters use plaintext operational counts only (for example workspace or project counts).",
+        "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs vault plaintext or raw vault keys for billing. Meters use plaintext operational counts and ciphertext byte sizes only (for example workspace, project, or storage counters).",
       ],
     },
     {
