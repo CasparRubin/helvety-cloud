@@ -6,14 +6,12 @@ import {
   useEffect,
   useMemo,
   useState,
-  type CSSProperties,
   type ReactNode,
 } from "react";
 import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
-  KeyboardSensor,
   PointerSensor,
   closestCorners,
   useDraggable,
@@ -79,7 +77,6 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(KeyboardSensor),
   );
 
   const reload = useCallback(async () => {
@@ -116,10 +113,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     return groupTasksByStage(tasks, project.categorizations);
   }, [project, tasks]);
 
-  const activeTask = useMemo(
-    () => (activeTaskId ? tasks.find((t) => t.id === activeTaskId) : null),
-    [activeTaskId, tasks],
-  );
+  const activeTask = activeTaskId
+    ? (tasks.find((t) => t.id === activeTaskId) ?? null)
+    : null;
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -451,17 +447,11 @@ function TaskCard({
     },
   ) => void;
 }) {
-  const { attributes, listeners, setNodeRef, transform, isDragging } =
-    useDraggable({
-      id: task.id,
-      disabled,
-      data: { type: "task", stageId, taskId: task.id },
-    });
-  const style: CSSProperties | undefined = transform
-    ? {
-        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
-      }
-    : undefined;
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: task.id,
+    disabled,
+    data: { type: "task", stageId, taskId: task.id },
+  });
   const canMove = !disabled && Boolean(task.priorityId);
 
   function moveToStage(target: CategorizationOption | null) {
@@ -474,11 +464,7 @@ function TaskCard({
   }
 
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(isDragging && "opacity-40")}
-    >
+    <div ref={setNodeRef} className={cn(isDragging && "opacity-40")}>
       <TaskCardContent
         task={task}
         cats={cats}

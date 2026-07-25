@@ -33,21 +33,23 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
-  const refresh = useCallback(async () => {
+  const loadProjects = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
-    const page = await loadDecryptedProjects(workspaceId, key);
+    return loadDecryptedProjects(workspaceId, key);
+  }, [getWorkspaceKey, workspaceId]);
+
+  const refresh = useCallback(async () => {
+    const page = await loadProjects();
     setProjects(page.projects);
     setError(null);
-  }, [getWorkspaceKey, workspaceId]);
+  }, [loadProjects]);
 
   useEffect(() => {
     if (!vault) return;
     let cancelled = false;
     void (async () => {
       try {
-        const key = await getWorkspaceKey(workspaceId);
-        if (cancelled) return;
-        const page = await loadDecryptedProjects(workspaceId, key);
+        const page = await loadProjects();
         if (cancelled) return;
         setProjects(page.projects);
         setError(null);
@@ -61,7 +63,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, getWorkspaceKey]);
+  }, [vault, loadProjects]);
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();

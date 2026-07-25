@@ -268,10 +268,7 @@ export async function saveTaskCategorizationIds(
   return toDecrypted(workspaceKey, row);
 }
 
-/**
- * Remap tasks after deleting an option or copying categorizations.
- * Loads all pages, updates matching tasks.
- */
+/** Remap tasks after deleting an option or copying categorizations. */
 export async function remapTasksForCategorizationChange(
   workspaceId: string,
   projectId: string,
@@ -282,32 +279,29 @@ export async function remapTasksForCategorizationChange(
     priorityId: string | null;
   } | null,
 ): Promise<void> {
-  let cursor: string | null = null;
-  do {
-    const page = await loadDecryptedTasks(workspaceId, projectId, workspaceKey, {
-      limit: 100,
-      cursor,
-    });
-    for (const task of page.tasks) {
-      const next = remap(task);
-      if (!next) continue;
-      if (
-        next.labelId === task.labelId &&
-        next.stageId === task.stageId &&
-        next.priorityId === task.priorityId
-      ) {
-        continue;
-      }
-      await saveTaskCategorizationIds(
-        workspaceId,
-        projectId,
-        workspaceKey,
-        task,
-        next,
-      );
+  const tasks = await loadAllDecryptedTasks(
+    workspaceId,
+    projectId,
+    workspaceKey,
+  );
+  for (const task of tasks) {
+    const next = remap(task);
+    if (!next) continue;
+    if (
+      next.labelId === task.labelId &&
+      next.stageId === task.stageId &&
+      next.priorityId === task.priorityId
+    ) {
+      continue;
     }
-    cursor = page.nextCursor;
-  } while (cursor);
+    await saveTaskCategorizationIds(
+      workspaceId,
+      projectId,
+      workspaceKey,
+      task,
+      next,
+    );
+  }
 }
 
 export async function deleteTask(

@@ -1,5 +1,3 @@
-/** Pure helpers for grouping tasks into stage board columns. */
-
 import {
   defaultStage,
   type CategorizationOption,

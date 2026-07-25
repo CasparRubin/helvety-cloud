@@ -101,7 +101,7 @@ export function TaskJumpSwitcher({
       <PopoverTrigger
         render={
           <Button
-            variant="outline"
+            variant="ghost"
             size="sm"
             className="h-8 max-w-[9rem] justify-between gap-2 px-2 font-normal sm:max-w-[14rem]"
           />
