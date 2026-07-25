@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { SettingsIcon } from "lucide-react";
 
 import {
   EntityListRow,
@@ -9,11 +10,9 @@ import {
 } from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   createProject,
-  deleteProject,
   loadDecryptedProjects,
   reorderProjects,
   type DecryptedProject,
@@ -113,21 +112,6 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     }
   }
 
-  async function onDelete(project: DecryptedProject) {
-    if (busy) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await deleteProject(workspaceId, project);
-      await refresh();
-      window.dispatchEvent(new Event("helvety:projects-changed"));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
-    } finally {
-      setBusy(false);
-    }
-  }
-
   if (!vault) return null;
 
   return (
@@ -187,13 +171,19 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
             >
               ↓
             </Button>
-            <DeleteButton
-              disabled={busy}
-              busy={busy}
-              dialogTitle={`Delete project “${project.name}”?`}
-              dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
-              onConfirm={() => onDelete(project)}
-            />
+            <Button
+              variant="ghost"
+              size="sm"
+              aria-label={`Project settings for ${project.name}`}
+              render={
+                <Link
+                  href={`/app/w/${workspaceId}/p/${project.id}/settings`}
+                />
+              }
+              nativeButton={false}
+            >
+              <SettingsIcon className="size-4" aria-hidden="true" />
+            </Button>
           </div>
         </EntityListRow>
       ))}

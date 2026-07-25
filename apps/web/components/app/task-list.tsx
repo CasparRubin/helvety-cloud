@@ -29,7 +29,6 @@ import {
 } from "lucide-react";
 
 import { CategorizationPicker } from "@/components/app/categorization-picker";
-import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import {
   EntityListEmpty,
   EntityListShell,
@@ -52,7 +51,6 @@ import {
   type DecryptedTask,
 } from "@/lib/vault/tasks";
 import {
-  deleteProject,
   loadDecryptedProject,
   type DecryptedProject,
 } from "@/lib/vault/projects";
@@ -141,20 +139,6 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       router.push(`/app/w/${workspaceId}/p/${projectId}/t/${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
-      setBusy(false);
-    }
-  }
-
-  async function onDeleteProject() {
-    if (busy || !project) return;
-    setBusy(true);
-    setError(null);
-    try {
-      await deleteProject(workspaceId, project);
-      window.dispatchEvent(new Event("helvety:projects-changed"));
-      router.push(`/app/w/${workspaceId}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Delete failed");
       setBusy(false);
     }
   }
@@ -264,15 +248,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             }
             nativeButton={false}
           >
-            Settings
+            Project settings
           </Button>
-          <DeleteButton
-            disabled={busy || loading}
-            busy={busy}
-            dialogTitle={`Delete project “${project?.name ?? "Project"}”?`}
-            dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
-            onConfirm={onDeleteProject}
-          />
         </>
       }
       createForm={

@@ -72,7 +72,7 @@ function workspaceSections(workspaceBase: string): {
     {
       id: "settings",
       href: `${workspaceBase}/settings`,
-      label: "Settings",
+      label: "Workspace settings",
       icon: SettingsIcon,
     },
   ];

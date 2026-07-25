@@ -1,14 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 
+import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
-import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   addCategorizationOption,
@@ -28,6 +30,7 @@ import {
 } from "@/lib/vault/categorizations";
 import type { EntityColor } from "@/lib/vault/entity-colors";
 import {
+  deleteProject,
   loadDecryptedProject,
   loadDecryptedProjects,
   renameProject,
@@ -44,6 +47,7 @@ export function ProjectSettings({
   workspaceId,
   projectId,
 }: ProjectSettingsProps) {
+  const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
 
   const [project, setProject] = useState<DecryptedProject | null>(null);
@@ -126,6 +130,20 @@ export function ProjectSettings({
       setProject(saved);
       setCopyFromId("");
     });
+  }
+
+  async function onDeleteProject() {
+    if (busy || !project) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteProject(workspaceId, project);
+      window.dispatchEvent(new Event("helvety:projects-changed"));
+      router.push(`/app/w/${workspaceId}`);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Delete failed");
+      setBusy(false);
+    }
   }
 
   if (!vault) return null;
@@ -534,6 +552,23 @@ export function ProjectSettings({
                 Copy
               </Button>
             </form>
+          </section>
+
+          <section className="flex max-w-lg flex-col gap-3 border-t border-border pt-6">
+            <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
+            <p className="text-xs text-muted-foreground">
+              Permanently delete this project and all of its tasks. This cannot
+              be undone. Helvety cannot recover deleted vault data.
+            </p>
+            <DeleteButton
+              label="Delete project"
+              variant="destructive"
+              disabled={busy}
+              busy={busy}
+              dialogTitle={`Delete project “${project.name}”?`}
+              dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
+              onConfirm={onDeleteProject}
+            />
           </section>
         </>
       ) : null}
