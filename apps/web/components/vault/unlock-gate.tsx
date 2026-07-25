@@ -159,8 +159,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       <CardHeader>
         <CardTitle>Unlock Helvety</CardTitle>
         <CardDescription>
-          Signed in as <span className="text-foreground">{email}</span>. Auth
-          session does not decrypt your vault.
+          Signed in as <span className="text-foreground">{email}</span>.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
