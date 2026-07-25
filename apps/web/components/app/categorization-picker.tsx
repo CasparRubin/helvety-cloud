@@ -25,6 +25,7 @@ type CategorizationPickerProps = {
   noneLabel?: string;
   useStageColor?: boolean;
   disabled?: boolean;
+  variant?: "outline" | "ghost";
   className?: string;
   "aria-label"?: string;
 };
@@ -37,6 +38,7 @@ export function CategorizationPicker({
   noneLabel = "None",
   useStageColor = false,
   disabled,
+  variant = "outline",
   className,
   "aria-label": ariaLabel,
 }: CategorizationPickerProps) {
@@ -60,14 +62,19 @@ export function CategorizationPicker({
       <PopoverTrigger
         render={
           <Button
-            variant="outline"
+            variant={variant}
             size="sm"
             disabled={disabled}
             aria-label={ariaLabel}
             className={cn(
-              "h-7 max-w-[12rem] justify-between gap-1.5 px-2 font-normal",
+              "h-8 max-w-[12rem] justify-between gap-1.5 px-2 font-normal",
               tint &&
-                cn(tint.bg, tint.text, "border-transparent ring-1", tint.ring),
+                cn(
+                  tint.bg,
+                  tint.text,
+                  variant === "outline" &&
+                    cn("border-transparent ring-1", tint.ring),
+                ),
               className,
             )}
           />

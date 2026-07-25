@@ -155,6 +155,28 @@ export async function setCategorizationOptionIcon(
   );
 }
 
+export async function setCategorizationOptionCollapsedByDefault(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  project: DecryptedProject,
+  optionId: string,
+  collapsedByDefault: boolean,
+): Promise<DecryptedProject> {
+  const categorizations: ProjectCategorizations = {
+    ...project.categorizations,
+    // Store both values: absent means "fall back to the stage name default".
+    stages: project.categorizations.stages.map((o) =>
+      o.id === optionId ? { ...o, collapsedByDefault } : o,
+    ),
+  };
+  return updateProjectCategorizations(
+    workspaceId,
+    workspaceKey,
+    project,
+    categorizations,
+  );
+}
+
 export async function reorderCategorizationOption(
   workspaceId: string,
   workspaceKey: Uint8Array,

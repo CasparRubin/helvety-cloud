@@ -238,7 +238,7 @@ export function TaskBodyEditor({
             {showLinkPicker ? (
               <div className="w-full min-w-[14rem] space-y-1 border-t border-border pt-1">
                 <input
-                  className="h-7 w-full rounded border border-input bg-background px-2 text-xs"
+                  className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs"
                   placeholder="Search…"
                   value={linkQuery}
                   onChange={(e) => setLinkQuery(e.target.value)}

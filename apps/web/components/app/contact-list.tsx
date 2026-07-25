@@ -95,11 +95,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
             maxLength={500}
             aria-label="Contact name"
           />
-          <Button
-            type="submit"
-            disabled={busy || !displayName.trim()}
-            size="sm"
-          >
+          <Button type="submit" disabled={busy || !displayName.trim()}>
             Create
           </Button>
         </form>

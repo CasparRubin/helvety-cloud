@@ -371,12 +371,14 @@ export function TaskDetail({
             on your device before upload.
           </p>
         </div>
-        <Link
-          href={`/app/w/${workspaceId}/p/${projectId}`}
-          className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium hover:bg-muted"
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href={`/app/w/${workspaceId}/p/${projectId}`} />}
+          nativeButton={false}
         >
           Back
-        </Link>
+        </Button>
       </div>
 
       {loading ? (

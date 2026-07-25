@@ -23,6 +23,7 @@ import {
 } from "@dnd-kit/core";
 import {
   ChevronDownIcon,
+  ChevronRightIcon,
   ChevronUpIcon,
   GripVerticalIcon,
 } from "lucide-react";
@@ -38,6 +39,7 @@ import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
+  resolveStageCollapsedByDefault,
   resolveStageColor,
   type CategorizationOption,
   type ProjectCategorizations,
@@ -255,12 +257,16 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       subtitle="Task titles and bodies are encrypted end-to-end."
       actions={
         <>
-          <Link
-            href={`/app/w/${workspaceId}/p/${projectId}/settings`}
-            className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium hover:bg-muted"
+          <Button
+            variant="outline"
+            size="sm"
+            render={
+              <Link href={`/app/w/${workspaceId}/p/${projectId}/settings`} />
+            }
+            nativeButton={false}
           >
             Settings
-          </Link>
+          </Button>
           <DeleteButton
             disabled={busy || loading}
             busy={busy}
@@ -280,7 +286,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             maxLength={500}
             aria-label="Task title"
           />
-          <Button type="submit" disabled={busy || !title.trim()} size="sm">
+          <Button type="submit" disabled={busy || !title.trim()}>
             Create
           </Button>
         </form>
@@ -298,9 +304,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           onDragEnd={onDragEnd}
           onDragCancel={() => setActiveTaskId(null)}
         >
-          <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
             {columns.map((col, index) => (
-              <StageColumn
+              <StageRow
                 key={col.stage.id}
                 stage={col.stage}
                 prevStage={columns[index - 1]?.stage ?? null}
@@ -332,7 +338,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   );
 }
 
-function StageColumn({
+function StageRow({
   stage,
   prevStage,
   nextStage,
@@ -366,6 +372,9 @@ function StageColumn({
     id: stage.id,
     data: { type: "stage", stageId: stage.id },
   });
+  const [expanded, setExpanded] = useState(
+    !resolveStageCollapsedByDefault(stage),
+  );
   const tintColor = resolveStageColor(stage);
   const tint = tintColor ? ENTITY_COLOR_CLASSES[tintColor] : null;
   const Icon = stage.icon
@@ -377,44 +386,56 @@ function StageColumn({
       ref={setNodeRef}
       aria-label={`${stage.name} stage`}
       className={cn(
-        "flex w-72 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-background",
-        isOver && "ring-2 ring-ring",
+        "flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background",
+        // Inset ring: an outward ring gets clipped by the scrolling board.
+        isOver && "ring-2 ring-ring ring-inset",
       )}
     >
-      <header
+      <button
+        type="button"
+        aria-expanded={expanded}
         className={cn(
-          "flex items-center gap-2 border-b border-border px-3 py-2",
+          "flex w-full items-center gap-2 border-b border-border px-3 py-2 text-left",
           tint ? cn(tint.bg, tint.text) : "bg-muted/40",
+          !expanded && "border-b-0",
         )}
+        onClick={() => setExpanded((prev) => !prev)}
       >
+        {expanded ? (
+          <ChevronDownIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+        ) : (
+          <ChevronRightIcon className="size-3.5 shrink-0 opacity-70" aria-hidden />
+        )}
         {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden /> : null}
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
           {stage.name}
         </h2>
         <span className="text-xs tabular-nums opacity-70">{tasks.length}</span>
-      </header>
-      <div className="flex flex-1 flex-col">
-        {tasks.length === 0 ? (
-          <EntityListEmpty className="m-2 px-3 py-6 text-center text-xs">
-            No tasks in this stage
-          </EntityListEmpty>
-        ) : (
-          tasks.map((task) => (
-            <TaskCard
-              key={task.id}
-              task={task}
-              stageId={stage.id}
-              prevStage={prevStage}
-              nextStage={nextStage}
-              cats={cats}
-              workspaceId={workspaceId}
-              projectId={projectId}
-              disabled={busy || savingTaskId === task.id}
-              onUpdateIds={onUpdateIds}
-            />
-          ))
-        )}
-      </div>
+      </button>
+      {expanded ? (
+        <div className="flex flex-col">
+          {tasks.length === 0 ? (
+            <EntityListEmpty className="m-2 px-3 py-4 text-center text-xs">
+              No tasks in this stage
+            </EntityListEmpty>
+          ) : (
+            tasks.map((task) => (
+              <TaskCard
+                key={task.id}
+                task={task}
+                stageId={stage.id}
+                prevStage={prevStage}
+                nextStage={nextStage}
+                cats={cats}
+                workspaceId={workspaceId}
+                projectId={projectId}
+                disabled={busy || savingTaskId === task.id}
+                onUpdateIds={onUpdateIds}
+              />
+            ))
+          )}
+        </div>
+      ) : null}
     </section>
   );
 }
@@ -558,8 +579,7 @@ function TaskCardContent({
     <article
       className={cn(
         "flex flex-wrap items-center gap-1 border-b border-border bg-background px-1 py-0.5 last:border-b-0 hover:bg-muted/40",
-        overlay &&
-          "w-72 rounded-md border border-border shadow-lg ring-1 ring-ring",
+        overlay && "rounded-md border border-border shadow-lg ring-1 ring-ring",
       )}
     >
       {dragHandle}
@@ -581,6 +601,7 @@ function TaskCardContent({
             value={task.labelId}
             allowNone
             disabled={disabled}
+            variant="ghost"
             className="max-w-[8rem]"
             aria-label={`Label for ${task.title || "task"}`}
             onChange={(id) =>
@@ -595,6 +616,7 @@ function TaskCardContent({
             options={cats.priorities}
             value={priorityId || null}
             disabled={disabled || !priorityId}
+            variant="ghost"
             className="max-w-[8rem]"
             aria-label={`Priority for ${task.title || "task"}`}
             onChange={(id) => {

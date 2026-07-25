@@ -234,7 +234,6 @@ export function AccountSettings() {
         <Button
           type="button"
           variant="destructive"
-          size="sm"
           disabled={!canSubmit}
           onClick={() => setDeleteOpen(true)}
         >

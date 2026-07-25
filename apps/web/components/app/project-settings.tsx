@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
@@ -16,13 +17,15 @@ import {
   renameCategorizationOption,
   reorderCategorizationOption,
   setCategorizationDefault,
+  setCategorizationOptionCollapsedByDefault,
   setCategorizationOptionColor,
   setCategorizationOptionIcon,
 } from "@/lib/vault/categorization-ops";
-import type {
-  CategorizationIcon,
-  CategorizationKind,
-  CategorizationOption,
+import {
+  resolveStageCollapsedByDefault,
+  type CategorizationIcon,
+  type CategorizationKind,
+  type CategorizationOption,
 } from "@/lib/vault/categorizations";
 import type { EntityColor } from "@/lib/vault/entity-colors";
 import {
@@ -140,12 +143,14 @@ export function ProjectSettings({
             plaintext metadata for filtering.
           </p>
         </div>
-        <Link
-          href={`/app/w/${workspaceId}/p/${projectId}`}
-          className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium hover:bg-muted"
+        <Button
+          variant="outline"
+          size="sm"
+          render={<Link href={`/app/w/${workspaceId}/p/${projectId}`} />}
+          nativeButton={false}
         >
           Back
-        </Link>
+        </Button>
       </div>
 
       {loading ? (
@@ -164,7 +169,6 @@ export function ProjectSettings({
               />
               <Button
                 type="submit"
-                size="sm"
                 disabled={
                   busy ||
                   !nameDraft.trim() ||
@@ -283,7 +287,7 @@ export function ProjectSettings({
 
           <OptionList
             title="Stages"
-            description="Required on tasks. Default is used for new tasks and when deleting an in-use stage."
+            description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Collapsed by default sets the board’s initial state."
             kind="stages"
             options={project.categorizations.stages}
             showDefault
@@ -386,6 +390,20 @@ export function ProjectSettings({
                     "stages",
                     id,
                     icon ?? null,
+                  ),
+                );
+              })
+            }
+            onSetCollapsedByDefault={(id, collapsed) =>
+              withBusy(async () => {
+                const key = await getWorkspaceKey(workspaceId);
+                setProject(
+                  await setCategorizationOptionCollapsedByDefault(
+                    workspaceId,
+                    key,
+                    project,
+                    id,
+                    collapsed,
                   ),
                 );
               })
@@ -496,7 +514,7 @@ export function ProjectSettings({
             </p>
             <form onSubmit={(e) => void onCopy(e)} className="flex gap-2">
               <select
-                className="flex h-9 min-w-0 flex-1 rounded-md border border-input bg-transparent px-3 text-sm"
+                className="flex h-8 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm"
                 value={copyFromId}
                 onChange={(e) => setCopyFromId(e.target.value)}
                 disabled={busy || siblings.length === 0}
@@ -513,11 +531,7 @@ export function ProjectSettings({
                   </option>
                 ))}
               </select>
-              <Button
-                type="submit"
-                size="sm"
-                disabled={busy || !copyFromId}
-              >
+              <Button type="submit" disabled={busy || !copyFromId}>
                 Copy
               </Button>
             </form>
@@ -548,6 +562,7 @@ function OptionList({
   onSetDefault,
   onSetColor,
   onSetIcon,
+  onSetCollapsedByDefault,
 }: {
   title: string;
   description: string;
@@ -562,6 +577,7 @@ function OptionList({
   onSetDefault?: (id: string) => Promise<void>;
   onSetColor?: (id: string, color: EntityColor | undefined) => Promise<void>;
   onSetIcon?: (id: string, icon: CategorizationIcon | undefined) => Promise<void>;
+  onSetCollapsedByDefault?: (id: string, collapsed: boolean) => Promise<void>;
 }) {
   const [newName, setNewName] = useState("");
   const sorted = [...options].sort(
@@ -629,6 +645,19 @@ function OptionList({
                 {opt.isDefault ? "Default" : "Set default"}
               </Button>
             ) : null}
+            {onSetCollapsedByDefault ? (
+              <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Checkbox
+                  checked={resolveStageCollapsedByDefault(opt)}
+                  disabled={busy}
+                  aria-label={`Collapsed by default for ${opt.name}`}
+                  onCheckedChange={(checked) =>
+                    void onSetCollapsedByDefault(opt.id, checked === true)
+                  }
+                />
+                Collapsed by default
+              </label>
+            ) : null}
             <Button
               type="button"
               size="sm"
@@ -681,7 +710,7 @@ function OptionList({
           disabled={busy}
           maxLength={80}
         />
-        <Button type="submit" size="sm" disabled={busy || !newName.trim()}>
+        <Button type="submit" disabled={busy || !newName.trim()}>
           Add
         </Button>
       </form>

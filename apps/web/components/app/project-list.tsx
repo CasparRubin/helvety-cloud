@@ -144,7 +144,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
             maxLength={120}
             aria-label="Project name"
           />
-          <Button type="submit" disabled={busy || !name.trim()} size="sm">
+          <Button type="submit" disabled={busy || !name.trim()}>
             Create
           </Button>
         </form>

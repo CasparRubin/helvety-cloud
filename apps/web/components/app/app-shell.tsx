@@ -159,73 +159,75 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
 
   return (
     <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
-        <Link
-          href="/app"
-          title="Helvety Cloud"
-          className="size-6 shrink-0"
-        >
-          <Image
-            src="/icon.svg"
-            width={24}
-            height={24}
-            alt="Helvety Cloud"
-            className="size-6 rounded-md"
-            priority
-          />
-        </Link>
-        {backHref ? <NavBackButton href={backHref} /> : null}
-        <nav
-          aria-label="Breadcrumb"
-          className="flex min-w-0 items-center gap-1.5 overflow-hidden"
-        >
-          <WorkspaceSwitcher
-            userId={userId}
-            activeWorkspaceId={activeWorkspaceId}
-          />
-          {location?.entity ? (
-            <>
-              <NavSeparator />
-              <WorkspaceJumpSwitcher
-                workspaceId={location.workspaceId}
-                active={location.entity}
-              />
-            </>
-          ) : null}
-          {location?.entity?.kind === "project" && location.taskId ? (
-            <>
-              <NavSeparator />
-              <TaskJumpSwitcher
-                workspaceId={location.workspaceId}
-                projectId={location.entity.id}
-                taskId={location.taskId}
-              />
-            </>
-          ) : null}
-        </nav>
-        <div className="ml-auto flex shrink-0 items-center gap-1">
-          <ThemeToggle />
-          <UserMenu email={email} />
-        </div>
-      </header>
-      {workspaceBase ? (
-        <nav
-          aria-label="Workspace sections"
-          className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
-        >
-          {sections.map((section) => (
-            <SectionLink
-              key={section.id}
-              href={section.href}
-              active={activeSection === section.id}
-              icon={section.icon}
-              variant="mobile"
-            >
-              {section.label}
-            </SectionLink>
-          ))}
-        </nav>
-      ) : null}
+      <div className="sticky top-0 z-40 bg-background">
+        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+          <Link
+            href="/app"
+            title="Helvety Cloud"
+            className="size-6 shrink-0"
+          >
+            <Image
+              src="/icon.svg"
+              width={24}
+              height={24}
+              alt="Helvety Cloud"
+              className="size-6 rounded-md"
+              priority
+            />
+          </Link>
+          {backHref ? <NavBackButton href={backHref} /> : null}
+          <nav
+            aria-label="Breadcrumb"
+            className="flex min-w-0 items-center gap-1.5 overflow-hidden"
+          >
+            <WorkspaceSwitcher
+              userId={userId}
+              activeWorkspaceId={activeWorkspaceId}
+            />
+            {location?.entity ? (
+              <>
+                <NavSeparator />
+                <WorkspaceJumpSwitcher
+                  workspaceId={location.workspaceId}
+                  active={location.entity}
+                />
+              </>
+            ) : null}
+            {location?.entity?.kind === "project" && location.taskId ? (
+              <>
+                <NavSeparator />
+                <TaskJumpSwitcher
+                  workspaceId={location.workspaceId}
+                  projectId={location.entity.id}
+                  taskId={location.taskId}
+                />
+              </>
+            ) : null}
+          </nav>
+          <div className="ml-auto flex shrink-0 items-center gap-1">
+            <ThemeToggle />
+            <UserMenu email={email} />
+          </div>
+        </header>
+        {workspaceBase ? (
+          <nav
+            aria-label="Workspace sections"
+            className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
+          >
+            {sections.map((section) => (
+              <SectionLink
+                key={section.id}
+                href={section.href}
+                active={activeSection === section.id}
+                icon={section.icon}
+                variant="mobile"
+              >
+                {section.label}
+              </SectionLink>
+            ))}
+          </nav>
+        ) : null}
+      </div>
       <div className="flex min-h-0 flex-1">
         <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">

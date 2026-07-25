@@ -341,7 +341,6 @@ export function WorkspaceSettings({ workspaceId }: WorkspaceSettingsProps) {
             />
             <Button
               type="button"
-              size="sm"
               disabled={
                 pending || !name.trim() || name.trim() === workspace.name
               }
@@ -386,7 +385,7 @@ export function WorkspaceSettings({ workspaceId }: WorkspaceSettingsProps) {
               </Label>
               <select
                 id="invite-role"
-                className="h-8 flex-1 rounded-md border border-input bg-transparent px-2 text-sm"
+                className="h-8 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm"
                 value={role}
                 disabled={pending}
                 onChange={(e) =>
@@ -398,7 +397,6 @@ export function WorkspaceSettings({ workspaceId }: WorkspaceSettingsProps) {
               </select>
               <Button
                 type="button"
-                size="sm"
                 disabled={pending || !email.trim()}
                 onClick={() => void onInvite()}
               >
@@ -593,7 +591,6 @@ export function WorkspaceSettings({ workspaceId }: WorkspaceSettingsProps) {
                 <Button
                   type="button"
                   variant="destructive"
-                  size="sm"
                   disabled={
                     pending ||
                     deleteConfirmName !== workspace.name ||

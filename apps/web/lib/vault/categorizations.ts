@@ -21,6 +21,8 @@ export type CategorizationOption = {
   sortOrder: number;
   /** Stages and priorities only; exactly one default per kind. */
   isDefault?: boolean;
+  /** Stages only: board starts collapsed when true. */
+  collapsedByDefault?: boolean;
 };
 
 export type ProjectCategorizations = {
@@ -70,6 +72,21 @@ export function resolveStageColor(
   ];
 }
 
+/** Seeded stage names that start collapsed (also used when the flag is unset). */
+const DEFAULT_COLLAPSED_STAGE_NAMES = new Set(["backlog", "cancelled"]);
+
+/** Resolve board collapse: stored flag, else name map, else expanded. */
+export function resolveStageCollapsedByDefault(
+  stage:
+    | Pick<CategorizationOption, "name" | "collapsedByDefault">
+    | null
+    | undefined,
+): boolean {
+  if (!stage) return false;
+  if (stage.collapsedByDefault !== undefined) return stage.collapsedByDefault;
+  return DEFAULT_COLLAPSED_STAGE_NAMES.has(stage.name.toLowerCase());
+}
+
 function option(
   name: string,
   sortOrder: number,
@@ -77,6 +94,7 @@ function option(
     isDefault?: boolean;
     color?: EntityColor;
     icon?: CategorizationIcon;
+    collapsedByDefault?: boolean;
   },
 ): CategorizationOption {
   const o: CategorizationOption = {
@@ -87,6 +105,7 @@ function option(
   if (opts?.isDefault) o.isDefault = true;
   if (opts?.color) o.color = opts.color;
   if (opts?.icon) o.icon = opts.icon;
+  if (opts?.collapsedByDefault) o.collapsedByDefault = true;
   return o;
 }
 
@@ -101,6 +120,7 @@ export function defaultCategorizations(): ProjectCategorizations {
         isDefault: name === "backlog",
         color: DEFAULT_STAGE_COLORS[name],
         icon: DEFAULT_OPTION_ICONS[name],
+        collapsedByDefault: name === "backlog" || name === "cancelled",
       }),
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
@@ -128,6 +148,9 @@ function normalizeOption(item: unknown): CategorizationOption | null {
     sortOrder: o.sortOrder,
   };
   if (o.isDefault === true) next.isDefault = true;
+  if (typeof o.collapsedByDefault === "boolean") {
+    next.collapsedByDefault = o.collapsedByDefault;
+  }
   // Ignore invalid color/icon tokens rather than rejecting the whole option.
   if (o.color !== undefined && isEntityColor(o.color)) {
     next.color = o.color;
@@ -195,6 +218,9 @@ export function cloneCategorizations(
       if (o.color !== undefined) next.color = o.color;
       if (o.icon !== undefined) next.icon = o.icon;
       if (o.isDefault) next.isDefault = true;
+      if (o.collapsedByDefault !== undefined) {
+        next.collapsedByDefault = o.collapsedByDefault;
+      }
       return next;
     });
   }

@@ -378,7 +378,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
             <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
               Filed under project
               <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
+                className="h-8 rounded-lg border border-input bg-background px-2.5 text-sm text-foreground"
                 value={projectId}
                 disabled={deleting}
                 onChange={(e) => setProjectId(e.target.value)}

@@ -95,7 +95,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
             maxLength={500}
             aria-label="Note title"
           />
-          <Button type="submit" disabled={busy || !title.trim()} size="sm">
+          <Button type="submit" disabled={busy || !title.trim()}>
             Create
           </Button>
         </form>
