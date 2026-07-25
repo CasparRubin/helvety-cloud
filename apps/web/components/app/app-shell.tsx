@@ -175,7 +175,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
               priority
             />
           </Link>
-          {backHref ? <NavBackButton href={backHref} /> : null}
+          <NavBackButton href={backHref} />
           <nav
             aria-label="Breadcrumb"
             className="flex min-w-0 items-center gap-1.5 overflow-hidden"

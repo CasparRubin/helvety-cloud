@@ -109,7 +109,7 @@ export function NavSeparator() {
   );
 }
 
-export function NavBackButton({ href }: { href: string }) {
+export function NavBackButton({ href }: { href: string | null }) {
   return (
     <Button
       variant="ghost"
@@ -117,8 +117,8 @@ export function NavBackButton({ href }: { href: string }) {
       aria-label="Back"
       title="Back"
       className="text-muted-foreground hover:text-foreground"
-      render={<Link href={href} />}
-      nativeButton={false}
+      disabled={!href}
+      {...(href ? { render: <Link href={href} />, nativeButton: false } : {})}
     >
       <ChevronLeftIcon />
     </Button>
