@@ -123,6 +123,8 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
 
   const location = parseAppNavPath(pathname);
   const activeWorkspaceId = location?.workspaceId ?? null;
+  const activeWorkspaceName =
+    workspaces.find((w) => w.id === activeWorkspaceId)?.name ?? null;
   const workspaceBase = location?.workspaceBase ?? null;
   const backHref = location ? parentHrefFor(location) : null;
   const activeSection = location?.section ?? null;
@@ -233,6 +235,14 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">
             {workspaceBase ? (
               <>
+                {activeWorkspaceName ? (
+                  <p
+                    className="truncate px-2 pb-1.5 text-xs font-medium text-muted-foreground"
+                    title={activeWorkspaceName}
+                  >
+                    {activeWorkspaceName}
+                  </p>
+                ) : null}
                 {sections.map((section) => (
                   <Fragment key={section.id}>
                     {section.id === "settings" ? (
