@@ -21,9 +21,6 @@ import {
   type NotePlaintext,
 } from "@/lib/vault/note-plaintext";
 
-export type { TaskBodyDoc, NotePlaintext };
-export { EMPTY_NOTE_BODY, parseNotePlaintext, toNotePlaintext };
-
 const textDecoder = new TextDecoder();
 
 export type DecryptedNote = {

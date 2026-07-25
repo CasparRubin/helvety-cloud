@@ -22,7 +22,6 @@ import {
   type RecoveryExport,
 } from "@/lib/vault/recovery";
 import {
-  hasUserCrypto,
   setupUserKeys,
   unlockUserKeys,
   type UnlockedVault,
@@ -223,5 +222,3 @@ export function useVaultSession(): VaultSessionValue {
   }
   return ctx;
 }
-
-export { hasUserCrypto };

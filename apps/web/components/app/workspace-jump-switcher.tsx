@@ -68,34 +68,37 @@ export function WorkspaceJumpSwitcher({
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
 
-  const refresh = useCallback(async () => {
+  const loadEntries = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
     const [projectsPage, notesPage, contactsPage] = await Promise.all([
       loadDecryptedProjects(workspaceId, key, { limit: 100 }),
       loadDecryptedNotes(workspaceId, key, { limit: 100 }),
       loadDecryptedContacts(workspaceId, key, { limit: 100 }),
     ]);
-    setProjects(projectsPage.projects);
-    setNotes(notesPage.notes);
-    setContacts(contactsPage.contacts);
+    return {
+      projects: projectsPage.projects,
+      notes: notesPage.notes,
+      contacts: contactsPage.contacts,
+    };
   }, [getWorkspaceKey, workspaceId]);
+
+  const refresh = useCallback(async () => {
+    const next = await loadEntries();
+    setProjects(next.projects);
+    setNotes(next.notes);
+    setContacts(next.contacts);
+  }, [loadEntries]);
 
   useEffect(() => {
     if (!vault) return;
     let cancelled = false;
     void (async () => {
       try {
-        const key = await getWorkspaceKey(workspaceId);
+        const next = await loadEntries();
         if (cancelled) return;
-        const [projectsPage, notesPage, contactsPage] = await Promise.all([
-          loadDecryptedProjects(workspaceId, key, { limit: 100 }),
-          loadDecryptedNotes(workspaceId, key, { limit: 100 }),
-          loadDecryptedContacts(workspaceId, key, { limit: 100 }),
-        ]);
-        if (cancelled) return;
-        setProjects(projectsPage.projects);
-        setNotes(notesPage.notes);
-        setContacts(contactsPage.contacts);
+        setProjects(next.projects);
+        setNotes(next.notes);
+        setContacts(next.contacts);
       } catch {
         if (!cancelled) {
           setProjects([]);
@@ -107,7 +110,7 @@ export function WorkspaceJumpSwitcher({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, getWorkspaceKey]);
+  }, [vault, loadEntries]);
 
   useEffect(() => {
     if (!vault) return;

@@ -45,34 +45,32 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const loadInvitations = useCallback(async () => {
+    const listed = await listMyInvitations();
+    return listed.invitations.filter(
+      (i) => i.status !== "cancelled" && i.status !== "accepted",
+    );
+  }, []);
+
   const refresh = useCallback(async () => {
     setError(null);
     try {
-      const listed = await listMyInvitations();
-      setInvitations(
-        listed.invitations.filter(
-          (i) => i.status !== "cancelled" && i.status !== "accepted",
-        ),
-      );
+      setInvitations(await loadInvitations());
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load invitations");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [loadInvitations]);
 
   useEffect(() => {
     if (!vault) return;
     let cancelled = false;
     void (async () => {
       try {
-        const listed = await listMyInvitations();
+        const next = await loadInvitations();
         if (cancelled) return;
-        setInvitations(
-          listed.invitations.filter(
-            (i) => i.status !== "cancelled" && i.status !== "accepted",
-          ),
-        );
+        setInvitations(next);
         setError(null);
       } catch (err) {
         if (cancelled) return;
@@ -86,7 +84,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault]);
+  }, [vault, loadInvitations]);
 
   async function onClaim(invitation: WorkspaceInvitation) {
     setPendingId(invitation.id);

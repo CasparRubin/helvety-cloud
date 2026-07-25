@@ -14,18 +14,15 @@ import {
 } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { PolicyAcceptanceGate } from "@/components/legal/policy-acceptance-gate";
-import {
-  hasUserCrypto,
-  useVaultSession,
-} from "@/components/vault/vault-session-provider";
+import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { ApiClientError, getMePolicyAcceptances } from "@/lib/api/v1-client";
 import { createClient } from "@/lib/supabase/client";
 import type { RecoveryExport } from "@/lib/vault/recovery";
+import { hasUserCrypto } from "@/lib/vault/user-keys";
 
 type UnlockGateProps = {
   email: string;
   userId: string;
-  onUnlocked: () => void;
 };
 
 type Step = "loading" | "needs_acceptance" | "locked" | "needs_setup";
@@ -46,7 +43,7 @@ function downloadRecoveryFile(recovery: RecoveryExport): void {
   URL.revokeObjectURL(url);
 }
 
-export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
+export function UnlockGate({ email, userId }: UnlockGateProps) {
   const { recovery, setupVault, unlockVault, clearRecovery, lock } =
     useVaultSession();
   const [error, setError] = useState<string | null>(null);
@@ -140,7 +137,6 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
     setPending(true);
     try {
       await unlockVault(userId);
-      onUnlocked();
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 404) {
         setVaultReadyStep("needs_setup");
@@ -156,7 +152,6 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
 
   function acknowledgeRecovery() {
     clearRecovery();
-    onUnlocked();
   }
 
   return (

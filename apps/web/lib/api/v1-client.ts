@@ -8,7 +8,6 @@ import {
   getMeCryptoResponseSchema,
   getMePolicyAcceptancesResponseSchema,
   getWorkspaceBillingResponseSchema,
-  getWorkspaceResponseSchema,
   taskResponseSchema,
   listContactsResponseSchema,
   listTasksResponseSchema,
@@ -40,7 +39,6 @@ import {
   type GetMeCryptoResponse,
   type GetMePolicyAcceptancesResponse,
   type GetWorkspaceBillingResponse,
-  type GetWorkspaceResponse,
   type TaskResponse,
   type ListContactsResponse,
   type ListTasksResponse,
@@ -208,15 +206,6 @@ export async function createWorkspace(
     method: "POST",
     body: JSON.stringify(createWorkspaceRequestSchema.parse(body)),
   });
-}
-
-export async function getWorkspace(
-  workspaceId: string,
-): Promise<GetWorkspaceResponse> {
-  return apiFetch(
-    `/api/v1/workspaces/${workspaceId}`,
-    getWorkspaceResponseSchema,
-  );
 }
 
 export async function patchWorkspace(

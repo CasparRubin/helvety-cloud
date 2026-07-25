@@ -21,9 +21,6 @@ import {
   type TaskPlaintext,
 } from "@/lib/vault/task-plaintext";
 
-export type { TaskBodyDoc, TaskPlaintext };
-export { EMPTY_TASK_BODY, parseTaskPlaintext, toTaskPlaintext };
-
 const textDecoder = new TextDecoder();
 
 export type DecryptedTask = {

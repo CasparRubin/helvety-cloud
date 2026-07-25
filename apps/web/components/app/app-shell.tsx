@@ -96,7 +96,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   if (!vault || recovery) {
     return (
       <main className="flex min-h-svh flex-col items-center justify-center p-6">
-        <UnlockGate email={email} userId={userId} onUnlocked={() => undefined} />
+        <UnlockGate email={email} userId={userId} />
       </main>
     );
   }

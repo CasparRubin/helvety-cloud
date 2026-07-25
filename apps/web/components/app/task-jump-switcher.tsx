@@ -37,26 +37,25 @@ export function TaskJumpSwitcher({
   const [query, setQuery] = useState("");
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
 
-  const refresh = useCallback(async () => {
+  const loadTasks = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
     const page = await loadDecryptedTasks(workspaceId, projectId, key, {
       limit: 100,
     });
-    setTasks(page.tasks);
+    return page.tasks;
   }, [getWorkspaceKey, workspaceId, projectId]);
+
+  const refresh = useCallback(async () => {
+    setTasks(await loadTasks());
+  }, [loadTasks]);
 
   useEffect(() => {
     if (!vault) return;
     let cancelled = false;
     void (async () => {
       try {
-        const key = await getWorkspaceKey(workspaceId);
-        if (cancelled) return;
-        const page = await loadDecryptedTasks(workspaceId, projectId, key, {
-          limit: 100,
-        });
-        if (cancelled) return;
-        setTasks(page.tasks);
+        const next = await loadTasks();
+        if (!cancelled) setTasks(next);
       } catch {
         if (!cancelled) setTasks([]);
       }
@@ -64,7 +63,7 @@ export function TaskJumpSwitcher({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, projectId, getWorkspaceKey]);
+  }, [vault, loadTasks]);
 
   useEffect(() => {
     if (!vault) return;

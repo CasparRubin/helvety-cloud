@@ -11,9 +11,9 @@ import {
   deleteContact,
   loadDecryptedContact,
   saveContact,
-  toContactPlaintext,
   type DecryptedContact,
 } from "@/lib/vault/contacts";
+import { toContactPlaintext } from "@/lib/vault/contact-plaintext";
 
 const AUTOSAVE_MS = 600;
 

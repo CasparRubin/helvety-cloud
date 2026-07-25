@@ -19,9 +19,6 @@ import {
   type ContactPlaintext,
 } from "@/lib/vault/contact-plaintext";
 
-export type { ContactPlaintext };
-export { parseContactPlaintext, toContactPlaintext };
-
 const textDecoder = new TextDecoder();
 
 export type DecryptedContact = {
