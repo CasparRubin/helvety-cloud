@@ -151,8 +151,8 @@ describe("limit copy", () => {
   });
 
   it("seat copy counts pending invitations honestly", () => {
-    const msg = seatLimitMessage("free", 2);
-    expect(msg).toContain("2 seats");
+    const msg = seatLimitMessage("free", 4);
+    expect(msg).toContain("4 seats");
     expect(msg).toContain("pending invitations");
   });
 

@@ -53,7 +53,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: {
     ownedWorkspaces: 2,
     projectsPerWorkspace: 1,
-    membersPerWorkspace: 2,
+    membersPerWorkspace: 4,
     tasksPerProject: 50,
     notesPerWorkspace: 50,
     contactsPerWorkspace: 50,

@@ -46,7 +46,7 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 | Owned free-tier workspaces / user | 2 | — |
 | Soft owned Pro ceiling / user | — | 50 |
 | Projects / workspace | 1 | 25 |
-| Members (incl. pending invites) | 2 | 25 |
+| Members (incl. pending invites) | 4 | 25 |
 | Tasks / **project** | 50 | 500 |
 | Notes / workspace | 50 | 500 |
 | Contacts / workspace | 50 | 500 |
