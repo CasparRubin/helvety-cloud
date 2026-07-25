@@ -67,6 +67,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
         nextOrder,
       );
       setDisplayName("");
+      window.dispatchEvent(new Event("helvety:contacts-changed"));
       router.push(`/app/w/${workspaceId}/contacts/${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");

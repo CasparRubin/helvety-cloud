@@ -67,6 +67,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
         nextOrder,
       );
       setTitle("");
+      window.dispatchEvent(new Event("helvety:notes-changed"));
       router.push(`/app/w/${workspaceId}/notes/${created.id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Create failed");
