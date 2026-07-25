@@ -23,6 +23,7 @@ import {
   decryptContactContent,
   encryptContactContent,
 } from "../../apps/web/lib/vault/contacts";
+import { toContactPlaintext } from "../../apps/web/lib/vault/contact-plaintext";
 import {
   decryptTaskContent,
   encryptTaskContent,
@@ -141,13 +142,12 @@ describe("P6e invitee seal / open", () => {
     const contactBlob = await encryptContactContent(
       workspaceKey,
       contactId,
-      {
-        version: 1,
+      toContactPlaintext({
         displayName: "Ada",
         emails: ["ada@example.com"],
         phones: [],
         notes: "",
-      },
+      }),
     );
 
     expect(JSON.stringify(taskBlob)).not.toContain("Shared task");

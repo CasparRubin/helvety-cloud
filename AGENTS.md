@@ -46,8 +46,9 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P8a | Entity link graph | **Done** |
 | P8b | Editor entity refs + create from selection | **Done** |
 | P8c | Visual chips + colors + backlinks | **Done** |
+| P8d | Stage colors + universal entity links | **Done** |
 
-Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md`, `P7.md`, `P8a.md` … `P8c.md` for product).
+Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md`, `P7.md`, `P8a.md` … `P8d.md` for product).
 
 ## Tooling
 

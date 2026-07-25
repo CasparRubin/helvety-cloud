@@ -35,12 +35,12 @@ Realtime (optional later) = wake-up only, not a second write API.
 | GET | `/api/v1/workspaces/:workspaceId/projects` | List projects (paginated; ciphertext-opaque) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch |
 | GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks` | List tasks (paginated; ciphertext-opaque; optional `labelId` / `stageId` / `priorityId` filters) |
-| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks/:taskId` | Task upsert / fetch (`labelId` / `stageId` / `priorityId` plaintext soft refs) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks/:taskId` | Task upsert / fetch (`labelId` / `stageId` / `priorityId` plaintext soft refs; `links` replace outgoing edges) |
 | GET | `/api/v1/workspaces/:workspaceId/notes` | List notes (paginated; optional `projectId` / `taskId` filters — `taskId` via `entity_links`) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/notes/:noteId` | Note upsert / fetch (`projectId` filing FK; `links: [{ kind, id }]` replace outgoing edges) |
 | GET | `/api/v1/workspaces/:workspaceId/links` | List entity link edges (`sourceKind`/`sourceId` and/or `targetKind`/`targetId`) |
-| GET | `/api/v1/workspaces/:workspaceId/contacts` | List contacts (paginated; ciphertext-opaque) |
-| PUT/GET | `/api/v1/workspaces/:workspaceId/contacts/:contactId` | Contact upsert / fetch |
+| GET | `/api/v1/workspaces/:workspaceId/contacts` | List contacts (paginated; ciphertext-opaque; includes `links`) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/contacts/:contactId` | Contact upsert / fetch (`links` replace outgoing edges) |
 | GET | `/api/v1/workspaces/:workspaceId/members` | List members (`userId`, `role`) |
 | GET/POST | `/api/v1/workspaces/:workspaceId/invitations` | List / create email invitations (owner/admin) |
 | POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/seal` | Owner/admin stores client-sealed workspace key for claimed invitee |
@@ -59,7 +59,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 
 **Task categorizations (P7):** Project `encrypted_blob` includes `categorizations` (encrypted names). Tasks store `labelId` (nullable), `stageId`, `priorityId` as plaintext soft refs. No separate categorization API — defs ride on project PUT/GET.
 
-**Entity links (P8a–P8c):** Note PUT may include `links: [{ kind: "task"|"contact"|"project"|"note", id }]` — server validates ids belong to the workspace, then **replaces** that note’s outgoing `entity_links` rows. Note responses include the current `links` array. `GET …/links` supports reverse lookup for backlinks UI. Link graph is intentional metadata (UUIDs only); titles and colors stay in ciphertext. Inline TipTap `entityRef` nodes live only inside note/task body ciphertext (P8b); client extracts them on save to sync the junction.
+**Entity links (P8a–P8d):** Note / task / contact PUT may include `links: [{ kind: "task"|"contact"|"project"|"note", id }]` — server validates ids belong to the workspace, then **replaces** that source’s outgoing `entity_links` rows. Responses include the current `links` array. `GET …/links` supports reverse lookup for backlinks UI. Link graph is intentional metadata (UUIDs only); titles and colors stay in ciphertext. Inline TipTap `entityRef` nodes live inside note/task/contact body ciphertext; client extracts them on save to sync the junction. Task chip color comes from the stage option’s `EntityColor` (P8d), not a per-task accent.
 
 **Entitlement gates (P6f):** create mutations (new workspace/project/task/note/contact, invite create, invite accept) are gated by the workspace plan (`BILLING.md`) and return `limit_exceeded` (403) at the cap. Updates, soft-deletes, reads, seal/cancel are never gated. Meters are plaintext row counts only.
 

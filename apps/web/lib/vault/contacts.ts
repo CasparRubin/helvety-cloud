@@ -4,7 +4,10 @@ import {
   encodeUtf8,
   type CiphertextEnvelope,
 } from "@helvety-cloud/crypto";
-import type { ContactResponse } from "@helvety-cloud/api-contract";
+import type {
+  ContactResponse,
+  EntityLinkTarget,
+} from "@helvety-cloud/api-contract";
 
 import {
   deleteContact as deleteContactApi,
@@ -19,6 +22,11 @@ import {
   type ContactPlaintext,
 } from "@/lib/vault/contact-plaintext";
 import type { EntityColor } from "@/lib/vault/entity-colors";
+import { extractEntityRefsFromDoc } from "@/lib/vault/entity-refs";
+import {
+  EMPTY_TASK_BODY,
+  type TaskBodyDoc,
+} from "@/lib/vault/task-plaintext";
 
 const textDecoder = new TextDecoder();
 
@@ -28,8 +36,9 @@ export type DecryptedContact = {
   displayName: string;
   emails: string[];
   phones: string[];
-  notes: string;
+  notes: TaskBodyDoc;
   color?: EntityColor;
+  links: EntityLinkTarget[];
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
@@ -49,10 +58,9 @@ export async function encryptContactContent(
   content: ContactPlaintext,
   keyVersion = 1,
 ): Promise<CiphertextEnvelope> {
-  const plaintext = toContactPlaintext(content);
   return encrypt({
     key: workspaceKey,
-    plaintext: encodeUtf8(JSON.stringify(plaintext)),
+    plaintext: encodeUtf8(JSON.stringify(content)),
     aad: contactAad(contactId),
     keyVersion,
   });
@@ -78,7 +86,7 @@ async function toDecrypted(
   let displayName = "Untitled";
   let emails: string[] = [];
   let phones: string[] = [];
-  let notes = "";
+  let notes: TaskBodyDoc = EMPTY_TASK_BODY;
   let color: EntityColor | undefined;
   try {
     const content = await decryptContactContent(
@@ -102,6 +110,7 @@ async function toDecrypted(
     phones,
     notes,
     color,
+    links: row.links,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -136,20 +145,25 @@ export async function createContact(
     displayName: string;
     emails?: string[];
     phones?: string[];
-    notes?: string;
+    notes?: TaskBodyDoc | string;
     color?: EntityColor;
+    links?: EntityLinkTarget[];
   },
   sortOrder = 0,
 ): Promise<DecryptedContact> {
   const contactId = crypto.randomUUID();
+  const plaintext = toContactPlaintext(content);
   const encryptedBlob = await encryptContactContent(
     workspaceKey,
     contactId,
-    toContactPlaintext(content),
+    plaintext,
   );
+  const links =
+    content.links ?? extractEntityRefsFromDoc(plaintext.notes);
   const row = await putContact(workspaceId, contactId, {
     encryptedBlob,
     sortOrder,
+    links,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -159,16 +173,25 @@ export async function saveContact(
   workspaceKey: Uint8Array,
   contact: DecryptedContact,
   content: ContactPlaintext,
+  options?: {
+    /** When omitted, links are extracted from the TipTap notes body. */
+    links?: EntityLinkTarget[];
+  },
 ): Promise<DecryptedContact> {
   const encryptedBlob = await encryptContactContent(
     workspaceKey,
     contact.id,
     content,
   );
+  const links =
+    options?.links !== undefined
+      ? options.links
+      : extractEntityRefsFromDoc(content.notes);
   const row = await putContact(workspaceId, contact.id, {
     encryptedBlob,
     sortOrder: contact.sortOrder,
     deletedAt: contact.deletedAt,
+    links,
   });
   return toDecrypted(workspaceKey, row);
 }

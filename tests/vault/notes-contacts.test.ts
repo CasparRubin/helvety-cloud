@@ -97,7 +97,33 @@ describe("contact plaintext v1", () => {
       displayName: "Ada",
       emails: ["ada@example.com"],
       phones: ["+1"],
-      notes: "friend",
+      notes: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "friend" }],
+          },
+        ],
+      },
+    });
+  });
+
+  it("parses TipTap notes body", () => {
+    expect(
+      parseContactPlaintext({
+        version: 1,
+        displayName: "Ada",
+        emails: [],
+        phones: [],
+        notes: {
+          type: "doc",
+          content: [{ type: "paragraph" }],
+        },
+      }).notes,
+    ).toEqual({
+      type: "doc",
+      content: [{ type: "paragraph" }],
     });
   });
 
@@ -129,7 +155,15 @@ describe("contact plaintext v1", () => {
       displayName: "Ada",
       emails: ["a@b.c"],
       phones: ["1"],
-      notes: "n",
+      notes: {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "n" }],
+          },
+        ],
+      },
     });
   });
 });

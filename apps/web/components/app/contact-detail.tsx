@@ -1,15 +1,22 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
+import {
+  TaskBodyEditor,
+  type EntityLinkAction,
+} from "@/components/app/task-body-editor";
+import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
+  createContact,
   deleteContact,
   loadDecryptedContact,
   saveContact,
@@ -17,6 +24,11 @@ import {
 } from "@/lib/vault/contacts";
 import { toContactPlaintext } from "@/lib/vault/contact-plaintext";
 import type { EntityColor } from "@/lib/vault/entity-colors";
+import { createTask } from "@/lib/vault/tasks";
+import {
+  EMPTY_TASK_BODY,
+  type TaskBodyDoc,
+} from "@/lib/vault/task-plaintext";
 
 const AUTOSAVE_MS = 600;
 
@@ -33,18 +45,23 @@ export function ContactDetail({
 }: ContactDetailProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
+  const cache = useVaultEntityCache();
 
   const [contact, setContact] = useState<DecryptedContact | null>(null);
   const [displayName, setDisplayName] = useState("");
   const [emailsText, setEmailsText] = useState("");
   const [phonesText, setPhonesText] = useState("");
-  const [notes, setNotes] = useState("");
+  const [notes, setNotes] = useState<TaskBodyDoc>(EMPTY_TASK_BODY);
   const [color, setColor] = useState<EntityColor | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [pendingProjectPick, setPendingProjectPick] = useState<{
+    title: string;
+    resolve: (id: string | null) => void;
+  } | null>(null);
 
   const displayNameRef = useRef(displayName);
   const emailsTextRef = useRef(emailsText);
@@ -57,6 +74,7 @@ export function ContactDetail({
   const pendingSaveRef = useRef(false);
   const loadedSnapshotRef = useRef<string | null>(null);
   const getWorkspaceKeyRef = useRef(getWorkspaceKey);
+  const upsertContactRef = useRef(cache.upsertContact);
   const mountedRef = useRef(true);
   const persistRef = useRef<() => Promise<void>>(async () => {});
 
@@ -69,6 +87,7 @@ export function ContactDetail({
     contactRef.current = contact;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
+    upsertContactRef.current = cache.upsertContact;
   });
 
   useEffect(() => {
@@ -106,6 +125,7 @@ export function ContactDetail({
         );
         setSaveStatus("idle");
         setError(null);
+        upsertContactRef.current(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load contact");
@@ -127,7 +147,13 @@ export function ContactDetail({
     const nextPhones = phonesTextRef.current;
     const nextNotes = notesRef.current;
     const nextColor = colorRef.current;
-    const snap = snapshot(nextName, nextEmails, nextPhones, nextNotes, nextColor);
+    const snap = snapshot(
+      nextName,
+      nextEmails,
+      nextPhones,
+      nextNotes,
+      nextColor,
+    );
     if (snap === loadedSnapshotRef.current) {
       if (mountedRef.current) {
         setSaveStatus((s) => (s === "dirty" ? "idle" : s));
@@ -168,6 +194,7 @@ export function ContactDetail({
       );
       if (!mountedRef.current) return;
       setContact(saved);
+      upsertContactRef.current(saved);
       if (
         snapshot(
           displayNameRef.current,
@@ -259,6 +286,74 @@ export function ContactDetail({
     }
   }
 
+  async function pickProjectForNewTask(): Promise<string | null> {
+    if (cache.projects.length === 1) return cache.projects[0]!.id;
+    return new Promise((resolve) => {
+      setPendingProjectPick({
+        title: "Choose a project for the new task",
+        resolve: (id) => {
+          setPendingProjectPick(null);
+          resolve(id);
+        },
+      });
+    });
+  }
+
+  async function onEntityLinkAction(
+    action: EntityLinkAction,
+  ): Promise<EntityLinkTarget | void> {
+    const key = await getWorkspaceKey(workspaceId);
+    switch (action.type) {
+      case "create-task": {
+        const projectForTask = await pickProjectForNewTask();
+        if (!projectForTask) return;
+        const project = cache.projects.find((p) => p.id === projectForTask);
+        const task = await createTask(
+          workspaceId,
+          projectForTask,
+          key,
+          { title: action.title },
+          0,
+          project?.categorizations,
+        );
+        cache.upsertTask(task);
+        return { kind: "task", id: task.id };
+      }
+      case "create-contact": {
+        const created = await createContact(workspaceId, key, {
+          displayName: action.displayName,
+        });
+        cache.upsertContact(created);
+        return { kind: "contact", id: created.id };
+      }
+      case "link-existing":
+        return action.target;
+      default: {
+        const _exhaustive: never = action;
+        return _exhaustive;
+      }
+    }
+  }
+
+  const linkCandidates = useMemo(() => {
+    const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
+      [];
+    for (const t of cache.tasks) {
+      items.push({ kind: "task", id: t.id, label: t.title });
+    }
+    for (const c of cache.contacts) {
+      if (c.id === contactId) continue;
+      items.push({ kind: "contact", id: c.id, label: c.displayName });
+    }
+    for (const n of cache.notes) {
+      items.push({ kind: "note", id: n.id, label: n.title });
+    }
+    for (const p of cache.projects) {
+      items.push({ kind: "project", id: p.id, label: p.name });
+    }
+    return items;
+  }, [cache.tasks, cache.contacts, cache.notes, cache.projects, contactId]);
+
   if (!vault) return null;
 
   return (
@@ -266,7 +361,8 @@ export function ContactDetail({
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Contact</h1>
         <p className="text-sm text-muted-foreground">
-          Edits are encrypted on your device before upload.
+          Select text to create linked tasks or contacts. Edits are encrypted on
+          your device before upload.
         </p>
       </div>
 
@@ -296,19 +392,19 @@ export function ContactDetail({
             disabled={deleting}
             aria-label="Phones"
           />
-          <textarea
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Notes"
-            disabled={deleting}
-            rows={4}
-            aria-label="Notes"
-            className="min-h-[6rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
-          />
           <EntityColorPicker
             value={color}
             disabled={deleting}
             onChange={setColor}
+          />
+
+          <TaskBodyEditor
+            content={notes}
+            onChange={setNotes}
+            disabled={deleting}
+            enableEntityLinks
+            linkCandidates={linkCandidates}
+            onEntityLinkAction={onEntityLinkAction}
           />
           <BacklinksPanel
             workspaceId={workspaceId}
@@ -342,6 +438,37 @@ export function ContactDetail({
           {error}
         </p>
       ) : null}
+
+      {pendingProjectPick ? (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+          <div className="w-full max-w-sm rounded-lg border border-border bg-background p-4 shadow-lg">
+            <p className="text-sm font-medium">{pendingProjectPick.title}</p>
+            <ul className="mt-3 flex max-h-60 flex-col gap-1 overflow-auto">
+              {cache.projects.map((p) => (
+                <li key={p.id}>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    className="w-full justify-start"
+                    onClick={() => pendingProjectPick.resolve(p.id)}
+                  >
+                    {p.name}
+                  </Button>
+                </li>
+              ))}
+            </ul>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="mt-3"
+              onClick={() => pendingProjectPick.resolve(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -350,7 +477,7 @@ function snapshot(
   displayName: string,
   emailsText: string,
   phonesText: string,
-  notes: string,
+  notes: TaskBodyDoc,
   color: EntityColor | undefined,
 ): string {
   return JSON.stringify({

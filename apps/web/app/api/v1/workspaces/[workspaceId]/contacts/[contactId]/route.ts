@@ -2,8 +2,15 @@ import {
   ciphertextEnvelopeSchema,
   contactResponseSchema,
   putContactRequestSchema,
+  type EntityLinkTarget,
 } from "@helvety-cloud/api-contract";
 
+import {
+  listOutgoingLinks,
+  replaceOutgoingLinks,
+  validateLinkTargetsInWorkspace,
+  deleteLinksTouching,
+} from "@/lib/api/entity-links";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -15,14 +22,17 @@ type RouteContext = {
 const CONTACT_SELECT =
   "id, workspace_id, encrypted_blob, sort_order, updated_at, deleted_at";
 
-function toContactResponse(row: {
-  id: string;
-  workspace_id: string;
-  encrypted_blob: unknown;
-  sort_order: number;
-  updated_at: string;
-  deleted_at: string | null;
-}) {
+function toContactResponse(
+  row: {
+    id: string;
+    workspace_id: string;
+    encrypted_blob: unknown;
+    sort_order: number;
+    updated_at: string;
+    deleted_at: string | null;
+  },
+  links: EntityLinkTarget[],
+) {
   return contactResponseSchema.parse({
     id: row.id,
     workspaceId: row.workspace_id,
@@ -30,6 +40,7 @@ function toContactResponse(row: {
     sortOrder: row.sort_order,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
+    links,
   });
 }
 
@@ -55,7 +66,23 @@ export async function GET(_request: Request, context: RouteContext) {
     return apiError("not_found", "Contact not found", 404);
   }
 
-  return jsonOk(toContactResponse(data));
+  let links: EntityLinkTarget[];
+  try {
+    links = await listOutgoingLinks(
+      supabase,
+      workspaceId,
+      "contact",
+      contactId,
+    );
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to load links",
+      500,
+    );
+  }
+
+  return jsonOk(toContactResponse(data, links));
 }
 
 export async function PUT(request: Request, context: RouteContext) {
@@ -102,6 +129,17 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
+  if (data.links !== undefined) {
+    const validated = await validateLinkTargetsInWorkspace(
+      supabase,
+      workspaceId,
+      data.links,
+    );
+    if (!validated.ok) {
+      return apiError("invalid_body", validated.message, 400);
+    }
+  }
+
   const { data: row, error } = await supabase
     .from("contacts")
     .upsert(
@@ -124,7 +162,33 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("invalid_ciphertext", error.message, 400);
   }
 
-  return jsonOk(toContactResponse(row));
+  let links: EntityLinkTarget[];
+  try {
+    if (data.links !== undefined) {
+      links = await replaceOutgoingLinks(
+        supabase,
+        workspaceId,
+        "contact",
+        contactId,
+        data.links,
+      );
+    } else {
+      links = await listOutgoingLinks(
+        supabase,
+        workspaceId,
+        "contact",
+        contactId,
+      );
+    }
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to update links",
+      500,
+    );
+  }
+
+  return jsonOk(toContactResponse(row, links));
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
@@ -134,6 +198,16 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
   const { supabase } = auth;
   const { workspaceId, contactId } = await context.params;
+
+  try {
+    await deleteLinksTouching(supabase, workspaceId, "contact", contactId);
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to delete links",
+      500,
+    );
+  }
 
   const { data, error } = await supabase
     .from("contacts")

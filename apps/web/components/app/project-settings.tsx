@@ -15,6 +15,7 @@ import {
   renameCategorizationOption,
   reorderCategorizationOption,
   setCategorizationDefault,
+  setCategorizationOptionColor,
 } from "@/lib/vault/categorization-ops";
 import type {
   CategorizationKind,
@@ -341,6 +342,21 @@ export function ProjectSettings({
                 );
               })
             }
+            onSetColor={(id, color) =>
+              withBusy(async () => {
+                const key = await getWorkspaceKey(workspaceId);
+                setProject(
+                  await setCategorizationOptionColor(
+                    workspaceId,
+                    key,
+                    project,
+                    "stages",
+                    id,
+                    color ?? null,
+                  ),
+                );
+              })
+            }
           />
 
           <OptionList
@@ -482,6 +498,7 @@ function OptionList({
   onDelete,
   onReorder,
   onSetDefault,
+  onSetColor,
 }: {
   title: string;
   description: string;
@@ -494,6 +511,7 @@ function OptionList({
   onDelete: (id: string) => Promise<void>;
   onReorder: (id: string, direction: "up" | "down") => Promise<void>;
   onSetDefault?: (id: string) => Promise<void>;
+  onSetColor?: (id: string, color: EntityColor | undefined) => Promise<void>;
 }) {
   const [newName, setNewName] = useState("");
   const sorted = [...options].sort(
@@ -534,6 +552,14 @@ function OptionList({
                 }
               }}
             />
+            {onSetColor ? (
+              <EntityColorPicker
+                compact
+                value={opt.color}
+                disabled={busy}
+                onChange={(color) => void onSetColor(opt.id, color)}
+              />
+            ) : null}
             {showDefault ? (
               <Button
                 type="button"

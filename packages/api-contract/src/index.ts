@@ -201,6 +201,8 @@ export const putTaskRequestSchema = z.object({
   stageId: uuidSchema.optional(),
   /** Soft ref to a priority option id in project ciphertext. */
   priorityId: uuidSchema.optional(),
+  /** Replace outgoing entity_links from this task when provided. */
+  links: z.array(entityLinkTargetSchema).optional(),
 });
 export type PutTaskRequest = z.infer<typeof putTaskRequestSchema>;
 
@@ -215,6 +217,7 @@ export const taskResponseSchema = z.object({
   sortOrder: z.number().int(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
+  links: z.array(entityLinkTargetSchema),
 });
 export type TaskResponse = z.infer<typeof taskResponseSchema>;
 
@@ -303,6 +306,8 @@ export const putContactRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
+  /** Replace outgoing entity_links from this contact when provided. */
+  links: z.array(entityLinkTargetSchema).optional(),
 });
 export type PutContactRequest = z.infer<typeof putContactRequestSchema>;
 
@@ -313,6 +318,7 @@ export const contactResponseSchema = z.object({
   sortOrder: z.number().int(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
+  links: z.array(entityLinkTargetSchema),
 });
 export type ContactResponse = z.infer<typeof contactResponseSchema>;
 

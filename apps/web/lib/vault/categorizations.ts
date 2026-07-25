@@ -1,9 +1,14 @@
 /** Project-scoped task categorization option definitions (encrypted in project blob). */
 
+import {
+  isEntityColor,
+  type EntityColor,
+} from "@/lib/vault/entity-colors";
+
 export type CategorizationOption = {
   id: string;
   name: string;
-  color?: string;
+  color?: EntityColor;
   sortOrder: number;
   /** Stages and priorities only; exactly one default per kind. */
   isDefault?: boolean;
@@ -30,17 +35,44 @@ const STAGE_NAMES = [
 ] as const;
 const PRIORITY_NAMES = ["low", "normal", "high", "urgent"] as const;
 
+/** Default colors for seeded stage names (also used when stage.color is missing). */
+const DEFAULT_STAGE_COLORS: Record<
+  (typeof STAGE_NAMES)[number],
+  EntityColor
+> = {
+  backlog: "slate",
+  discovery: "violet",
+  ready: "blue",
+  "in progress": "amber",
+  testing: "teal",
+  acceptance: "orange",
+  completed: "green",
+  cancelled: "red",
+};
+
+/** Resolve a stage chip color: stored token, else name map, else undefined. */
+export function resolveStageColor(
+  stage: Pick<CategorizationOption, "name" | "color"> | null | undefined,
+): EntityColor | undefined {
+  if (!stage) return undefined;
+  if (stage.color) return stage.color;
+  return DEFAULT_STAGE_COLORS[
+    stage.name.toLowerCase() as keyof typeof DEFAULT_STAGE_COLORS
+  ];
+}
+
 function option(
   name: string,
   sortOrder: number,
-  isDefault?: boolean,
+  opts?: { isDefault?: boolean; color?: EntityColor },
 ): CategorizationOption {
   const o: CategorizationOption = {
     id: crypto.randomUUID(),
     name,
     sortOrder,
   };
-  if (isDefault) o.isDefault = true;
+  if (opts?.isDefault) o.isDefault = true;
+  if (opts?.color) o.color = opts.color;
   return o;
 }
 
@@ -49,24 +81,49 @@ export function defaultCategorizations(): ProjectCategorizations {
   return {
     labels: LABEL_NAMES.map((name, i) => option(name, i)),
     stages: STAGE_NAMES.map((name, i) =>
-      option(name, i, name === "backlog"),
+      option(name, i, {
+        isDefault: name === "backlog",
+        color: DEFAULT_STAGE_COLORS[name],
+      }),
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
-      option(name, i, name === "normal"),
+      option(name, i, { isDefault: name === "normal" }),
     ),
   };
 }
 
-function isOptionArray(value: unknown): value is CategorizationOption[] {
-  if (!Array.isArray(value)) return false;
-  return value.every(
-    (item) =>
-      item !== null &&
-      typeof item === "object" &&
-      typeof (item as CategorizationOption).id === "string" &&
-      typeof (item as CategorizationOption).name === "string" &&
-      typeof (item as CategorizationOption).sortOrder === "number",
-  );
+function normalizeOption(item: unknown): CategorizationOption | null {
+  if (item === null || typeof item !== "object") return null;
+  const o = item as Record<string, unknown>;
+  if (
+    typeof o.id !== "string" ||
+    typeof o.name !== "string" ||
+    typeof o.sortOrder !== "number"
+  ) {
+    return null;
+  }
+  const next: CategorizationOption = {
+    id: o.id,
+    name: o.name,
+    sortOrder: o.sortOrder,
+  };
+  if (o.isDefault === true) next.isDefault = true;
+  // Ignore invalid color tokens rather than rejecting the whole option.
+  if (o.color !== undefined && isEntityColor(o.color)) {
+    next.color = o.color;
+  }
+  return next;
+}
+
+function parseOptionArray(value: unknown): CategorizationOption[] | null {
+  if (!Array.isArray(value)) return null;
+  const out: CategorizationOption[] = [];
+  for (const item of value) {
+    const o = normalizeOption(item);
+    if (!o) return null;
+    out.push(o);
+  }
+  return out;
 }
 
 /** Parse categorizations from decrypted project plaintext; null if missing/invalid. */
@@ -75,19 +132,12 @@ export function parseCategorizations(
 ): ProjectCategorizations | null {
   if (value === null || typeof value !== "object") return null;
   const c = value as Record<string, unknown>;
-  if (
-    !isOptionArray(c.labels) ||
-    !isOptionArray(c.stages) ||
-    !isOptionArray(c.priorities)
-  ) {
-    return null;
-  }
-  if (c.stages.length < 1 || c.priorities.length < 1) return null;
-  return {
-    labels: c.labels,
-    stages: c.stages,
-    priorities: c.priorities,
-  };
+  const labels = parseOptionArray(c.labels);
+  const stages = parseOptionArray(c.stages);
+  const priorities = parseOptionArray(c.priorities);
+  if (!labels || !stages || !priorities) return null;
+  if (stages.length < 1 || priorities.length < 1) return null;
+  return { labels, stages, priorities };
 }
 
 export function defaultStage(c: ProjectCategorizations): CategorizationOption {

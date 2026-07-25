@@ -2,19 +2,22 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
-import { TaskBodyEditor } from "@/components/app/task-body-editor";
+import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   defaultPriority,
   defaultStage,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
+import { createContact } from "@/lib/vault/contacts";
 import { loadDecryptedProject } from "@/lib/vault/projects";
 import {
   EMPTY_TASK_BODY,
@@ -22,6 +25,7 @@ import {
   type TaskBodyDoc,
 } from "@/lib/vault/task-plaintext";
 import {
+  createTask,
   deleteTask,
   loadDecryptedTask,
   saveTask,
@@ -45,6 +49,7 @@ export function TaskDetail({
 }: TaskDetailProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
+  const cache = useVaultEntityCache();
 
   const [task, setTask] = useState<DecryptedTask | null>(null);
   const [categorizations, setCategorizations] =
@@ -71,6 +76,7 @@ export function TaskDetail({
   const pendingSaveRef = useRef(false);
   const loadedSnapshotRef = useRef<string | null>(null);
   const getWorkspaceKeyRef = useRef(getWorkspaceKey);
+  const upsertTaskRef = useRef(cache.upsertTask);
   const mountedRef = useRef(true);
   const persistRef = useRef<() => Promise<void>>(async () => {});
 
@@ -83,6 +89,7 @@ export function TaskDetail({
     taskRef.current = task;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
+    upsertTaskRef.current = cache.upsertTask;
   });
 
   useEffect(() => {
@@ -135,6 +142,7 @@ export function TaskDetail({
         );
         setSaveStatus("idle");
         setError(null);
+        upsertTaskRef.current(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load task");
@@ -203,6 +211,7 @@ export function TaskDetail({
       );
       if (!mountedRef.current) return;
       setTask(saved);
+      upsertTaskRef.current(saved);
       if (
         snapshot(
           titleRef.current,
@@ -296,6 +305,59 @@ export function TaskDetail({
     }
   }
 
+  async function onEntityLinkAction(
+    action: EntityLinkAction,
+  ): Promise<EntityLinkTarget | void> {
+    const key = await getWorkspaceKey(workspaceId);
+    switch (action.type) {
+      case "create-task": {
+        const project = cache.projects.find((p) => p.id === projectId);
+        const created = await createTask(
+          workspaceId,
+          projectId,
+          key,
+          { title: action.title },
+          0,
+          project?.categorizations ?? categorizations ?? undefined,
+        );
+        cache.upsertTask(created);
+        return { kind: "task", id: created.id };
+      }
+      case "create-contact": {
+        const contact = await createContact(workspaceId, key, {
+          displayName: action.displayName,
+        });
+        cache.upsertContact(contact);
+        return { kind: "contact", id: contact.id };
+      }
+      case "link-existing":
+        return action.target;
+      default: {
+        const _exhaustive: never = action;
+        return _exhaustive;
+      }
+    }
+  }
+
+  const linkCandidates = useMemo(() => {
+    const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
+      [];
+    for (const t of cache.tasks) {
+      if (t.id === taskId) continue;
+      items.push({ kind: "task", id: t.id, label: t.title });
+    }
+    for (const c of cache.contacts) {
+      items.push({ kind: "contact", id: c.id, label: c.displayName });
+    }
+    for (const n of cache.notes) {
+      items.push({ kind: "note", id: n.id, label: n.title });
+    }
+    for (const p of cache.projects) {
+      items.push({ kind: "project", id: p.id, label: p.name });
+    }
+    return items;
+  }, [cache.tasks, cache.contacts, cache.notes, cache.projects, taskId]);
+
   if (!vault) return null;
 
   const selectClass =
@@ -307,7 +369,8 @@ export function TaskDetail({
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Task</h1>
           <p className="text-sm text-muted-foreground">
-            Edits are encrypted on your device before upload.
+            Select text to create linked tasks or contacts. Edits are encrypted
+            on your device before upload.
           </p>
         </div>
         <Link
@@ -403,6 +466,9 @@ export function TaskDetail({
             content={body}
             onChange={setBody}
             disabled={deleting}
+            enableEntityLinks
+            linkCandidates={linkCandidates}
+            onEntityLinkAction={onEntityLinkAction}
           />
           <BacklinksPanel
             workspaceId={workspaceId}

@@ -11,16 +11,21 @@ type ColorPickerProps = {
   value?: EntityColor;
   onChange: (color: EntityColor | undefined) => void;
   disabled?: boolean;
+  /** Hide the “Accent color” label (e.g. stage rows). */
+  compact?: boolean;
 };
 
 export function EntityColorPicker({
   value,
   onChange,
   disabled,
+  compact = false,
 }: ColorPickerProps) {
   return (
-    <div className="flex flex-col gap-1">
-      <span className="text-xs text-muted-foreground">Accent color</span>
+    <div className={cn("flex flex-col gap-1", compact && "gap-0")}>
+      {compact ? null : (
+        <span className="text-xs text-muted-foreground">Accent color</span>
+      )}
       <div className="flex flex-wrap items-center gap-1">
         <button
           type="button"

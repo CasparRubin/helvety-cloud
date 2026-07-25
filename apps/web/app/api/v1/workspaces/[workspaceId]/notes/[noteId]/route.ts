@@ -9,6 +9,7 @@ import {
   listOutgoingLinks,
   replaceOutgoingLinks,
   validateLinkTargetsInWorkspace,
+  deleteLinksTouching,
 } from "@/lib/api/entity-links";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
@@ -221,20 +222,16 @@ export async function DELETE(request: Request, context: RouteContext) {
   const { supabase } = auth;
   const { workspaceId, noteId } = await context.params;
 
-  // Drop outgoing edges before deleting the note.
-  await supabase
-    .from("entity_links")
-    .delete()
-    .eq("workspace_id", workspaceId)
-    .eq("source_kind", "note")
-    .eq("source_id", noteId);
-
-  await supabase
-    .from("entity_links")
-    .delete()
-    .eq("workspace_id", workspaceId)
-    .eq("target_kind", "note")
-    .eq("target_id", noteId);
+  // Drop edges before deleting the note.
+  try {
+    await deleteLinksTouching(supabase, workspaceId, "note", noteId);
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to delete links",
+      500,
+    );
+  }
 
   const { data, error } = await supabase
     .from("notes")

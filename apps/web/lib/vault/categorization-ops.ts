@@ -7,6 +7,7 @@ import {
   type CategorizationOption,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
+import type { EntityColor } from "@/lib/vault/entity-colors";
 import {
   loadDecryptedProject,
   saveProjectContent,
@@ -90,6 +91,33 @@ export async function setCategorizationDefault(
   const categorizations: ProjectCategorizations = {
     ...project.categorizations,
     [kind]: setDefaultOption(project.categorizations[kind], optionId),
+  };
+  return updateProjectCategorizations(
+    workspaceId,
+    workspaceKey,
+    project,
+    categorizations,
+  );
+}
+
+/** Set or clear a stage option accent color (stages only). */
+export async function setCategorizationOptionColor(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  project: DecryptedProject,
+  kind: "stages",
+  optionId: string,
+  color: EntityColor | null,
+): Promise<DecryptedProject> {
+  const categorizations: ProjectCategorizations = {
+    ...project.categorizations,
+    [kind]: project.categorizations[kind].map((o) => {
+      if (o.id !== optionId) return o;
+      const next = { ...o };
+      if (color) next.color = color;
+      else delete next.color;
+      return next;
+    }),
   };
   return updateProjectCategorizations(
     workspaceId,

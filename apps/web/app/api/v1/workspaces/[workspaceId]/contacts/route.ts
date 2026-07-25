@@ -2,8 +2,10 @@ import {
   ciphertextEnvelopeSchema,
   contactResponseSchema,
   listContactsResponseSchema,
+  type EntityLinkTarget,
 } from "@helvety-cloud/api-contract";
 
+import { listOutgoingLinksForSources } from "@/lib/api/entity-links";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import {
   encodeSortOrderCursor,
@@ -68,6 +70,22 @@ export async function GET(request: Request, context: RouteContext) {
       ? encodeSortOrderCursor({ sortOrder: last.sort_order, id: last.id })
       : null;
 
+  let linksByContact: Map<string, EntityLinkTarget[]>;
+  try {
+    linksByContact = await listOutgoingLinksForSources(
+      supabase,
+      workspaceId,
+      "contact",
+      page.map((r) => r.id),
+    );
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to load links",
+      500,
+    );
+  }
+
   const contacts = page.map((row) =>
     contactResponseSchema.parse({
       id: row.id,
@@ -76,6 +94,7 @@ export async function GET(request: Request, context: RouteContext) {
       sortOrder: row.sort_order,
       updatedAt: row.updated_at,
       deletedAt: row.deleted_at,
+      links: linksByContact.get(row.id) ?? [],
     }),
   );
 

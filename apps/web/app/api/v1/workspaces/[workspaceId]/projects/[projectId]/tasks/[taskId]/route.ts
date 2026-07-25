@@ -2,8 +2,15 @@ import {
   ciphertextEnvelopeSchema,
   putTaskRequestSchema,
   taskResponseSchema,
+  type EntityLinkTarget,
 } from "@helvety-cloud/api-contract";
 
+import {
+  listOutgoingLinks,
+  replaceOutgoingLinks,
+  validateLinkTargetsInWorkspace,
+  deleteLinksTouching,
+} from "@/lib/api/entity-links";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -32,6 +39,7 @@ function toTaskResponse(
     deleted_at: string | null;
   },
   workspaceId: string,
+  links: EntityLinkTarget[],
 ) {
   return taskResponseSchema.parse({
     id: row.id,
@@ -44,6 +52,7 @@ function toTaskResponse(
     sortOrder: row.sort_order,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
+    links,
   });
 }
 
@@ -83,7 +92,18 @@ export async function GET(_request: Request, context: RouteContext) {
     return apiError("not_found", "Task not found", 404);
   }
 
-  return jsonOk(toTaskResponse(data, workspaceId));
+  let links: EntityLinkTarget[];
+  try {
+    links = await listOutgoingLinks(supabase, workspaceId, "task", taskId);
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to load links",
+      500,
+    );
+  }
+
+  return jsonOk(toTaskResponse(data, workspaceId, links));
 }
 
 export async function PUT(request: Request, context: RouteContext) {
@@ -141,6 +161,17 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
+  if (data.links !== undefined) {
+    const validated = await validateLinkTargetsInWorkspace(
+      supabase,
+      workspaceId,
+      data.links,
+    );
+    if (!validated.ok) {
+      return apiError("invalid_body", validated.message, 400);
+    }
+  }
+
   const labelId =
     data.labelId !== undefined
       ? data.labelId
@@ -177,7 +208,28 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("invalid_ciphertext", error.message, 400);
   }
 
-  return jsonOk(toTaskResponse(row, workspaceId));
+  let links: EntityLinkTarget[];
+  try {
+    if (data.links !== undefined) {
+      links = await replaceOutgoingLinks(
+        supabase,
+        workspaceId,
+        "task",
+        taskId,
+        data.links,
+      );
+    } else {
+      links = await listOutgoingLinks(supabase, workspaceId, "task", taskId);
+    }
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to update links",
+      500,
+    );
+  }
+
+  return jsonOk(toTaskResponse(row, workspaceId, links));
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
@@ -200,6 +252,16 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
   if (!project) {
     return apiError("not_found", "Project not found", 404);
+  }
+
+  try {
+    await deleteLinksTouching(supabase, workspaceId, "task", taskId);
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to delete links",
+      500,
+    );
   }
 
   const { data, error } = await supabase

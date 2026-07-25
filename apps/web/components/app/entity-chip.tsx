@@ -19,6 +19,23 @@ type EntityChipProps = {
   className?: string;
 };
 
+function kindLabel(kind: EntityLinkKind): string {
+  switch (kind) {
+    case "note":
+      return "Note";
+    case "task":
+      return "Task";
+    case "contact":
+      return "Contact";
+    case "project":
+      return "Project";
+    default: {
+      const _exhaustive: never = kind;
+      return _exhaustive;
+    }
+  }
+}
+
 export function EntityChip({
   kind,
   id,
@@ -31,20 +48,23 @@ export function EntityChip({
     return {
       kind,
       id,
-      label: kind.charAt(0).toUpperCase() + kind.slice(1),
+      label: kindLabel(kind),
       color: KIND_FALLBACK_COLOR[kind] as EntityColor,
       href: null as string | null,
       deleted: false,
       done: false,
-      badges: undefined as { key: string; label: string }[] | undefined,
+      badges: undefined as string[] | undefined,
     };
   }, [cache, kind, id]);
 
-  const color: EntityColor =
-    resolved.color ?? KIND_FALLBACK_COLOR[kind] ?? "slate";
+  const color = resolved.color;
   const classes = ENTITY_COLOR_CLASSES[color];
   const href = resolved.href;
   const muted = resolved.deleted || resolved.done;
+
+  const title = [kindLabel(resolved.kind), resolved.label]
+    .concat(resolved.badges ?? [])
+    .join(" · ");
 
   const inner = (
     <span
@@ -56,18 +76,10 @@ export function EntityChip({
         muted && "opacity-60 line-through",
         className,
       )}
-      title={resolved.label}
+      title={title}
     >
       <span className={cn("size-1.5 shrink-0 rounded-full", classes.dot)} />
       <span className="truncate">{resolved.label}</span>
-      {resolved.badges?.map((b) => (
-        <span
-          key={b.key}
-          className="truncate rounded bg-background/50 px-1 text-[10px] font-normal opacity-90"
-        >
-          {b.label}
-        </span>
-      ))}
     </span>
   );
 

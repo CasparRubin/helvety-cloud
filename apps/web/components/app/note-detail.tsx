@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
-import { EntityChip } from "@/components/app/entity-chip";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import {
   TaskBodyEditor,
@@ -72,6 +71,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const pendingSaveRef = useRef(false);
   const loadedSnapshotRef = useRef<string | null>(null);
   const getWorkspaceKeyRef = useRef(getWorkspaceKey);
+  const upsertNoteRef = useRef(cache.upsertNote);
   const mountedRef = useRef(true);
   const persistRef = useRef<() => Promise<void>>(async () => {});
 
@@ -84,6 +84,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     noteRef.current = note;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
+    upsertNoteRef.current = cache.upsertNote;
   });
 
   useEffect(() => {
@@ -117,7 +118,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         );
         setSaveStatus("idle");
         setError(null);
-        cache.upsertNote(loaded);
+        upsertNoteRef.current(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load note");
@@ -128,7 +129,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, noteId, getWorkspaceKey, cache]);
+  }, [vault, workspaceId, noteId, getWorkspaceKey]);
 
   async function persist() {
     const current = noteRef.current;
@@ -187,7 +188,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       );
       if (!mountedRef.current) return;
       setNote(saved);
-      cache.upsertNote(saved);
+      upsertNoteRef.current(saved);
       if (
         snapshot(
           titleRef.current,
@@ -397,19 +398,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
               onChange={setColor}
             />
           </div>
-
-          {note && note.links.length > 0 ? (
-            <div className="flex flex-col gap-1">
-              <span className="text-xs text-muted-foreground">
-                Linked entities
-              </span>
-              <div className="flex flex-wrap gap-1.5">
-                {note.links.map((link) => (
-                  <EntityChip key={`${link.kind}:${link.id}`} {...link} />
-                ))}
-              </div>
-            </div>
-          ) : null}
 
           <TaskBodyEditor
             content={body}

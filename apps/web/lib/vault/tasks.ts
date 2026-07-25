@@ -4,7 +4,10 @@ import {
   encodeUtf8,
   type CiphertextEnvelope,
 } from "@helvety-cloud/crypto";
-import type { TaskResponse } from "@helvety-cloud/api-contract";
+import type {
+  EntityLinkTarget,
+  TaskResponse,
+} from "@helvety-cloud/api-contract";
 
 import {
   deleteTask as deleteTaskApi,
@@ -18,6 +21,7 @@ import {
   defaultStage,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
+import { extractEntityRefsFromDoc } from "@/lib/vault/entity-refs";
 import {
   EMPTY_TASK_BODY,
   parseTaskPlaintext,
@@ -37,6 +41,7 @@ export type DecryptedTask = {
   labelId: string | null;
   stageId: string | null;
   priorityId: string | null;
+  links: EntityLinkTarget[];
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
@@ -56,10 +61,9 @@ export async function encryptTaskContent(
   content: TaskPlaintext,
   keyVersion = 1,
 ): Promise<CiphertextEnvelope> {
-  const plaintext = toTaskPlaintext(content.title, content.body);
   return encrypt({
     key: workspaceKey,
-    plaintext: encodeUtf8(JSON.stringify(plaintext)),
+    plaintext: encodeUtf8(JSON.stringify(content)),
     aad: taskAad(taskId),
     keyVersion,
   });
@@ -104,6 +108,7 @@ async function toDecrypted(
     labelId: row.labelId,
     stageId: row.stageId,
     priorityId: row.priorityId,
+    links: row.links,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -137,15 +142,19 @@ export async function createTask(
   workspaceId: string,
   projectId: string,
   workspaceKey: Uint8Array,
-  content: { title: string; body?: TaskBodyDoc },
+  content: { title: string; body?: TaskBodyDoc; links?: EntityLinkTarget[] },
   sortOrder = 0,
   categorizations?: ProjectCategorizations,
 ): Promise<DecryptedTask> {
   const taskId = crypto.randomUUID();
+  const plaintext = toTaskPlaintext(
+    content.title,
+    content.body ?? EMPTY_TASK_BODY,
+  );
   const encryptedBlob = await encryptTaskContent(
     workspaceKey,
     taskId,
-    toTaskPlaintext(content.title, content.body ?? EMPTY_TASK_BODY),
+    plaintext,
   );
   const stageId = categorizations
     ? defaultStage(categorizations).id
@@ -153,12 +162,15 @@ export async function createTask(
   const priorityId = categorizations
     ? defaultPriority(categorizations).id
     : undefined;
+  const links =
+    content.links ?? extractEntityRefsFromDoc(plaintext.body);
   const row = await putTask(workspaceId, projectId, taskId, {
     encryptedBlob,
     sortOrder,
     labelId: null,
     stageId,
     priorityId,
+    links,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -174,12 +186,20 @@ export async function saveTask(
     stageId?: string;
     priorityId?: string;
   },
+  options?: {
+    /** When omitted, links are extracted from the TipTap body. */
+    links?: EntityLinkTarget[];
+  },
 ): Promise<DecryptedTask> {
   const encryptedBlob = await encryptTaskContent(
     workspaceKey,
     task.id,
     content,
   );
+  const links =
+    options?.links !== undefined
+      ? options.links
+      : extractEntityRefsFromDoc(content.body);
   const row = await putTask(workspaceId, projectId, task.id, {
     encryptedBlob,
     sortOrder: task.sortOrder,
@@ -196,6 +216,7 @@ export async function saveTask(
       categorizationIds?.priorityId !== undefined
         ? categorizationIds.priorityId
         : (task.priorityId ?? undefined),
+    links,
   });
   return toDecrypted(workspaceKey, row);
 }

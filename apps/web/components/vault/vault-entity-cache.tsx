@@ -15,10 +15,14 @@ import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   findOption,
+  resolveStageColor,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
 import { loadDecryptedContacts, type DecryptedContact } from "@/lib/vault/contacts";
-import type { EntityColor } from "@/lib/vault/entity-colors";
+import {
+  KIND_FALLBACK_COLOR,
+  type EntityColor,
+} from "@/lib/vault/entity-colors";
 import { loadDecryptedNotes, type DecryptedNote } from "@/lib/vault/notes";
 import {
   loadDecryptedProjects,
@@ -30,11 +34,11 @@ export type ResolvedEntity = {
   kind: EntityLinkKind;
   id: string;
   label: string;
-  color?: EntityColor;
+  color: EntityColor;
   href: string | null;
   deleted: boolean;
   done: boolean;
-  badges?: { key: string; label: string }[];
+  badges?: string[];
 };
 
 type VaultEntityCacheValue = {
@@ -56,7 +60,12 @@ function doneStageIds(cats: ProjectCategorizations): Set<string> {
   const done = new Set<string>();
   for (const s of cats.stages) {
     const n = s.name.trim().toLowerCase();
-    if (n === "done" || n === "cancelled" || n === "canceled") {
+    if (
+      n === "done" ||
+      n === "completed" ||
+      n === "cancelled" ||
+      n === "canceled"
+    ) {
       done.add(s.id);
     }
   }
@@ -134,6 +143,7 @@ export function VaultEntityCacheProvider({
 
   const resolve = useCallback(
     (kind: EntityLinkKind, id: string): ResolvedEntity => {
+      const fallback = KIND_FALLBACK_COLOR[kind];
       switch (kind) {
         case "note": {
           const note = notes.find((n) => n.id === id);
@@ -141,7 +151,7 @@ export function VaultEntityCacheProvider({
             kind,
             id,
             label: note?.title ?? "Note",
-            color: note?.color,
+            color: note?.color ?? fallback,
             href: `/app/w/${workspaceId}/notes/${id}`,
             deleted: Boolean(note?.deletedAt),
             done: false,
@@ -153,19 +163,19 @@ export function VaultEntityCacheProvider({
             kind,
             id,
             label: contact?.displayName ?? "Contact",
-            color: contact?.color,
+            color: contact?.color ?? fallback,
             href: `/app/w/${workspaceId}/contacts/${id}`,
             deleted: Boolean(contact?.deletedAt),
             done: false,
           };
         }
         case "project": {
-          const project = projects.find((p) => p.id === id);
+          const project = projectById.get(id);
           return {
             kind,
             id,
             label: project?.name ?? "Project",
-            color: project?.color,
+            color: project?.color ?? fallback,
             href: `/app/w/${workspaceId}/p/${id}`,
             deleted: Boolean(project?.deletedAt),
             done: false,
@@ -181,28 +191,27 @@ export function VaultEntityCacheProvider({
           const priority = cats
             ? findOption(cats.priorities, task?.priorityId ?? null)
             : null;
-          const label = cats
+          const labelOpt = cats
             ? findOption(cats.labels, task?.labelId ?? null)
             : null;
           const done = Boolean(
             task && cats && doneStageIds(cats).has(task.stageId ?? ""),
           );
-          const badges: { key: string; label: string }[] = [];
-          if (stage?.name) badges.push({ key: "stage", label: stage.name });
-          if (priority?.name)
-            badges.push({ key: "priority", label: priority.name });
-          if (label?.name) badges.push({ key: "label", label: label.name });
+          const badges: string[] = [];
+          if (stage?.name) badges.push(stage.name);
+          if (priority?.name) badges.push(priority.name);
+          if (labelOpt?.name) badges.push(labelOpt.name);
           return {
             kind,
             id,
             label: task?.title ?? "Task",
-            color: project?.color,
+            color: resolveStageColor(stage) ?? fallback,
             href: task
               ? `/app/w/${workspaceId}/p/${task.projectId}/t/${id}`
               : null,
             deleted: Boolean(task?.deletedAt),
             done,
-            badges,
+            badges: badges.length > 0 ? badges : undefined,
           };
         }
         default: {
@@ -211,6 +220,7 @@ export function VaultEntityCacheProvider({
             kind: _exhaustive,
             id,
             label: "Unknown",
+            color: "slate",
             href: null,
             deleted: false,
             done: false,
@@ -218,8 +228,18 @@ export function VaultEntityCacheProvider({
         }
       }
     },
-    [notes, contacts, projects, tasks, projectById, workspaceId],
+    [notes, contacts, tasks, projectById, workspaceId],
   );
+
+  const upsertNote = useCallback((note: DecryptedNote) => {
+    setNotes((prev) => upsertById(prev, note));
+  }, []);
+  const upsertTask = useCallback((task: DecryptedTask) => {
+    setTasks((prev) => upsertById(prev, task));
+  }, []);
+  const upsertContact = useCallback((contact: DecryptedContact) => {
+    setContacts((prev) => upsertById(prev, contact));
+  }, []);
 
   const value = useMemo<VaultEntityCacheValue>(
     () => ({
@@ -228,12 +248,20 @@ export function VaultEntityCacheProvider({
       contacts,
       projects,
       resolve,
-      upsertNote: (note) => setNotes((prev) => upsertById(prev, note)),
-      upsertTask: (task) => setTasks((prev) => upsertById(prev, task)),
-      upsertContact: (contact) =>
-        setContacts((prev) => upsertById(prev, contact)),
+      upsertNote,
+      upsertTask,
+      upsertContact,
     }),
-    [notes, tasks, contacts, projects, resolve],
+    [
+      notes,
+      tasks,
+      contacts,
+      projects,
+      resolve,
+      upsertNote,
+      upsertTask,
+      upsertContact,
+    ],
   );
 
   return (

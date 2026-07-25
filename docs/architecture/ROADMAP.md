@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8c** entity linking. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8d** entity linking. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -36,7 +36,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/tasks CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
 
-**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8c**.)
+**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8d**.)
 
 ---
 
@@ -530,6 +530,28 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P8d — Stage colors + universal entity links
+
+**Status:** **Done**
+
+**Goal:** Task chips inherit stage color; stage colors editable with defaults; TipTap EntityRef linking works in note, task, and contact bodies; chip meta on hover only.
+
+**Do:**
+
+- Stage option `color` as `EntityColor`; seed defaults for default stage names; project settings stage color picker; chip resolve uses stage color (name→default map when unset).  
+- Note/contact keep own accent + kind fallbacks; no per-task accent.  
+- EntityChip: label + color only; kind / stage / priority / label in `title` hover.  
+- Contact `notes` TipTap body (legacy string upgraded on parse); task + contact PUT `links` + extract EntityRefs on save.  
+- Same BubbleMenu create/link UX as notes across task and contact bodies.
+
+**Don’t:** Per-task accent override; project body linking; self-link (same kind+id); plaintext color columns.
+
+**Done when:** Stage colors drive task chips; linking works from note/task/contact bodies; badges not always-on.
+
+**Paste prompt:** [`docs/architecture/prompts/P8d.md`](./prompts/P8d.md)
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -611,4 +633,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

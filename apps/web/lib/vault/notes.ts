@@ -56,15 +56,9 @@ export async function encryptNoteContent(
   content: NotePlaintext,
   keyVersion = 1,
 ): Promise<CiphertextEnvelope> {
-  const plaintext = toNotePlaintext(
-    content.title,
-    content.body,
-    content.tags,
-    content.color,
-  );
   return encrypt({
     key: workspaceKey,
-    plaintext: encodeUtf8(JSON.stringify(plaintext)),
+    plaintext: encodeUtf8(JSON.stringify(content)),
     aad: noteAad(noteId),
     keyVersion,
   });

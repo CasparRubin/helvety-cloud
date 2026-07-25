@@ -8,8 +8,7 @@ import type { Database } from "@helvety-cloud/db";
 
 type Db = SupabaseClient<Database>;
 
-
-export function dedupeLinkTargets(
+function dedupeLinkTargets(
   links: EntityLinkTarget[],
 ): EntityLinkTarget[] {
   const seen = new Set<string>();
@@ -177,6 +176,30 @@ export async function replaceOutgoingLinks(
   }
 
   return deduped;
+}
+
+/** Delete all entity_links where this entity is source or target. */
+export async function deleteLinksTouching(
+  supabase: Db,
+  workspaceId: string,
+  kind: EntityLinkKind,
+  id: string,
+): Promise<void> {
+  const { error: asSource } = await supabase
+    .from("entity_links")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("source_kind", kind)
+    .eq("source_id", id);
+  if (asSource) throw new Error(asSource.message);
+
+  const { error: asTarget } = await supabase
+    .from("entity_links")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("target_kind", kind)
+    .eq("target_id", id);
+  if (asTarget) throw new Error(asTarget.message);
 }
 
 export async function findNoteIdsLinkedToTask(
