@@ -36,8 +36,10 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PATCH | `/api/v1/workspaces/:workspaceId` | Rename workspace (`name` only; `kind` immutable) |
 | GET | `/api/v1/workspaces/:workspaceId/projects` | List projects (paginated; ciphertext-opaque) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch |
-| GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks` | List tasks (paginated; ciphertext-opaque; optional `labelId` / `stageId` / `priorityId` filters) |
-| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks/:taskId` | Task upsert / fetch (`labelId` / `stageId` / `priorityId` plaintext soft refs; `links` replace outgoing edges) |
+| GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks` | List tasks (paginated; ciphertext-opaque; optional `labelId` / `stageId` / `priorityId` / `milestoneId` filters) |
+| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks/:taskId` | Task upsert / fetch (`labelId` / `stageId` / `priorityId` soft refs; `milestoneId` FK; `links` replace outgoing edges) |
+| GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/milestones` | List milestones (paginated; ciphertext-opaque) |
+| PUT/GET/DELETE | `/api/v1/workspaces/:workspaceId/projects/:projectId/milestones/:milestoneId` | Milestone upsert / fetch / delete |
 | GET | `/api/v1/workspaces/:workspaceId/notes` | List notes (paginated; optional `projectId` / `taskId` filters — `taskId` via `entity_links`) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/notes/:noteId` | Note upsert / fetch (`projectId` filing FK; `links: [{ kind, id }]` replace outgoing edges) |
 | GET | `/api/v1/workspaces/:workspaceId/links` | List entity link edges (`sourceKind`/`sourceId` and/or `targetKind`/`targetId`) |

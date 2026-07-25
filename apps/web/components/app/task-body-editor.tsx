@@ -21,6 +21,8 @@ type TaskBodyEditorProps = {
   onChange: (doc: TaskBodyDoc) => void;
   disabled?: boolean;
   className?: string;
+  /** Shorter editor for project/milestone descriptions. */
+  compact?: boolean;
   enableEntityLinks?: boolean;
   linkCandidates?: {
     kind: EntityLinkKind;
@@ -37,6 +39,7 @@ export function TaskBodyEditor({
   onChange,
   disabled = false,
   className,
+  compact = false,
   enableEntityLinks = false,
   linkCandidates = [],
   onEntityLinkAction,
@@ -58,7 +61,8 @@ export function TaskBodyEditor({
     editorProps: {
       attributes: {
         class: cn(
-          "min-h-[240px] px-2.5 py-2 text-sm outline-none",
+          compact ? "min-h-[96px]" : "min-h-[240px]",
+          "px-2.5 py-2 text-sm outline-none",
           "prose prose-sm max-w-none dark:prose-invert",
           "[&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-base [&_h2]:font-semibold",
           "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold",

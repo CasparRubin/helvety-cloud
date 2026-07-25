@@ -24,7 +24,7 @@ type RouteContext = {
 };
 
 const TASK_SELECT =
-  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, sort_order, updated_at, deleted_at";
+  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, milestone_id, sort_order, updated_at, deleted_at";
 
 function toTaskResponse(
   row: {
@@ -34,6 +34,7 @@ function toTaskResponse(
     label_id: string | null;
     stage_id: string | null;
     priority_id: string | null;
+    milestone_id: string | null;
     sort_order: number;
     updated_at: string;
     deleted_at: string | null;
@@ -49,6 +50,7 @@ function toTaskResponse(
     labelId: row.label_id,
     stageId: row.stage_id,
     priorityId: row.priority_id,
+    milestoneId: row.milestone_id,
     sortOrder: row.sort_order,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
@@ -143,7 +145,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const { data: existing, error: existingError } = await supabase
     .from("tasks")
-    .select("id, label_id, stage_id, priority_id")
+    .select("id, label_id, stage_id, priority_id, milestone_id")
     .eq("id", taskId)
     .eq("project_id", projectId)
     .maybeSingle();
@@ -172,6 +174,21 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
+  if (data.milestoneId) {
+    const { data: milestone, error: milestoneError } = await supabase
+      .from("milestones")
+      .select("id")
+      .eq("id", data.milestoneId)
+      .eq("project_id", projectId)
+      .maybeSingle();
+    if (milestoneError) {
+      return apiError("internal", milestoneError.message, 500);
+    }
+    if (!milestone) {
+      return apiError("invalid_body", "Milestone not found in project", 400);
+    }
+  }
+
   const labelId =
     data.labelId !== undefined
       ? data.labelId
@@ -182,6 +199,10 @@ export async function PUT(request: Request, context: RouteContext) {
     data.priorityId !== undefined
       ? data.priorityId
       : (existing?.priority_id ?? null);
+  const milestoneId =
+    data.milestoneId !== undefined
+      ? data.milestoneId
+      : (existing?.milestone_id ?? null);
 
   const { data: row, error } = await supabase
     .from("tasks")
@@ -193,6 +214,7 @@ export async function PUT(request: Request, context: RouteContext) {
         label_id: labelId,
         stage_id: stageId,
         priority_id: priorityId,
+        milestone_id: milestoneId,
         sort_order: data.sortOrder ?? 0,
         deleted_at: data.deletedAt ?? null,
       },

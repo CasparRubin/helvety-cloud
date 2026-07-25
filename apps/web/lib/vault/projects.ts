@@ -22,11 +22,17 @@ import {
   isEntityColor,
   type EntityColor,
 } from "@/lib/vault/entity-colors";
+import {
+  EMPTY_TASK_BODY,
+  isTaskBodyDoc,
+  type TaskBodyDoc,
+} from "@/lib/vault/task-plaintext";
 
 const textDecoder = new TextDecoder();
 
 export type ProjectPlaintext = {
   name: string;
+  description: TaskBodyDoc;
   categorizations: ProjectCategorizations;
   color?: EntityColor;
 };
@@ -35,6 +41,7 @@ export type DecryptedProject = {
   id: string;
   workspaceId: string;
   name: string;
+  description: TaskBodyDoc;
   categorizations: ProjectCategorizations;
   color?: EntityColor;
   sortOrder: number;
@@ -44,11 +51,40 @@ export type DecryptedProject = {
   needsCategorizationPersist?: boolean;
 };
 
+export function projectPlaintextFrom(
+  project: DecryptedProject,
+  overrides?: Partial<ProjectPlaintext> & { clearColor?: boolean },
+): ProjectPlaintext {
+  const color =
+    overrides?.clearColor
+      ? undefined
+      : overrides?.color !== undefined
+        ? overrides.color
+        : project.color;
+  return {
+    name: overrides?.name ?? project.name,
+    description: overrides?.description ?? project.description,
+    categorizations: overrides?.categorizations ?? project.categorizations,
+    ...(color ? { color } : {}),
+  };
+}
+
 function projectAad(projectId: string) {
   return {
     table: "projects" as const,
     recordId: projectId,
     field: "encrypted_blob" as const,
+  };
+}
+
+function parseDescription(value: unknown): TaskBodyDoc {
+  if (value === undefined) return EMPTY_TASK_BODY;
+  if (!isTaskBodyDoc(value)) {
+    throw new Error("Invalid project description");
+  }
+  return {
+    type: "doc",
+    content: value.content ?? [{ type: "paragraph" }],
   };
 }
 
@@ -60,6 +96,7 @@ export async function encryptProjectContent(
 ): Promise<CiphertextEnvelope> {
   const plaintext: ProjectPlaintext = {
     name: content.name.trim(),
+    description: content.description,
     categorizations: content.categorizations,
     ...(content.color ? { color: content.color } : {}),
   };
@@ -77,6 +114,7 @@ export async function decryptProjectPlaintext(
   envelope: CiphertextEnvelope,
 ): Promise<{
   name: string;
+  description: TaskBodyDoc;
   categorizations: ProjectCategorizations;
   color?: EntityColor;
   migrated: boolean;
@@ -88,6 +126,7 @@ export async function decryptProjectPlaintext(
   });
   const parsed = JSON.parse(textDecoder.decode(bytes)) as {
     name?: unknown;
+    description?: unknown;
     categorizations?: unknown;
     color?: unknown;
   };
@@ -98,10 +137,12 @@ export async function decryptProjectPlaintext(
   if (parsed.color !== undefined && isEntityColor(parsed.color)) {
     color = parsed.color;
   }
+  const description = parseDescription(parsed.description);
   const cats = parseCategorizations(parsed.categorizations);
   if (cats) {
     return {
       name: parsed.name,
+      description,
       categorizations: cats,
       ...(color ? { color } : {}),
       migrated: false,
@@ -109,6 +150,7 @@ export async function decryptProjectPlaintext(
   }
   return {
     name: parsed.name,
+    description,
     categorizations: defaultCategorizations(),
     ...(color ? { color } : {}),
     migrated: true,
@@ -120,6 +162,7 @@ async function toDecrypted(
   row: ProjectResponse,
 ): Promise<DecryptedProject> {
   let name = "Untitled project";
+  let description: TaskBodyDoc = EMPTY_TASK_BODY;
   let categorizations = defaultCategorizations();
   let color: EntityColor | undefined;
   let needsCategorizationPersist = false;
@@ -130,6 +173,7 @@ async function toDecrypted(
       row.encryptedBlob,
     );
     name = plain.name;
+    description = plain.description;
     categorizations = plain.categorizations;
     color = plain.color;
     needsCategorizationPersist = plain.migrated;
@@ -140,6 +184,7 @@ async function toDecrypted(
     id: row.id,
     workspaceId: row.workspaceId,
     name,
+    description,
     categorizations,
     color,
     sortOrder: row.sortOrder,
@@ -156,11 +201,12 @@ export async function ensureProjectCategorizations(
   project: DecryptedProject,
 ): Promise<DecryptedProject> {
   if (!project.needsCategorizationPersist) return project;
-  return saveProjectContent(workspaceId, workspaceKey, project, {
-    name: project.name,
-    categorizations: project.categorizations,
-    ...(project.color ? { color: project.color } : {}),
-  });
+  return saveProjectContent(
+    workspaceId,
+    workspaceKey,
+    project,
+    projectPlaintextFrom(project),
+  );
 }
 
 export async function saveProjectContent(
@@ -215,7 +261,11 @@ export async function createProject(
   const encryptedBlob = await encryptProjectContent(
     workspaceKey,
     projectId,
-    { name, categorizations: defaultCategorizations() },
+    {
+      name,
+      description: EMPTY_TASK_BODY,
+      categorizations: defaultCategorizations(),
+    },
   );
   const row = await putProject(workspaceId, projectId, {
     encryptedBlob,
@@ -230,10 +280,12 @@ export async function renameProject(
   project: DecryptedProject,
   name: string,
 ): Promise<DecryptedProject> {
-  return saveProjectContent(workspaceId, workspaceKey, project, {
-    name,
-    categorizations: project.categorizations,
-  });
+  return saveProjectContent(
+    workspaceId,
+    workspaceKey,
+    project,
+    projectPlaintextFrom(project, { name }),
+  );
 }
 
 /** Swap sortOrder with the neighbor and persist both. */
@@ -254,14 +306,16 @@ export async function reorderProjects(
   const bOrder = b.sortOrder;
 
   const [aBlob, bBlob] = await Promise.all([
-    encryptProjectContent(workspaceKey, a.id, {
-      name: a.name,
-      categorizations: a.categorizations,
-    }),
-    encryptProjectContent(workspaceKey, b.id, {
-      name: b.name,
-      categorizations: b.categorizations,
-    }),
+    encryptProjectContent(
+      workspaceKey,
+      a.id,
+      projectPlaintextFrom(a),
+    ),
+    encryptProjectContent(
+      workspaceKey,
+      b.id,
+      projectPlaintextFrom(b),
+    ),
   ]);
 
   const [aRow, bRow] = await Promise.all([

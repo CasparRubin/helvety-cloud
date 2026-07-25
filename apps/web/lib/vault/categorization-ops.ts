@@ -13,6 +13,7 @@ import {
 import type { EntityColor } from "@/lib/vault/entity-colors";
 import {
   loadDecryptedProject,
+  projectPlaintextFrom,
   saveProjectContent,
   type DecryptedProject,
 } from "@/lib/vault/projects";
@@ -27,10 +28,12 @@ async function updateProjectCategorizations(
   project: DecryptedProject,
   categorizations: ProjectCategorizations,
 ): Promise<DecryptedProject> {
-  return saveProjectContent(workspaceId, workspaceKey, project, {
-    name: project.name,
-    categorizations,
-  });
+  return saveProjectContent(
+    workspaceId,
+    workspaceKey,
+    project,
+    projectPlaintextFrom(project, { categorizations }),
+  );
 }
 
 export async function addCategorizationOption(
@@ -286,10 +289,12 @@ export async function copyProjectCategorizations(
   ]);
   const oldCats = target.categorizations;
   const clone = cloneCategorizations(source.categorizations);
-  const saved = await saveProjectContent(workspaceId, workspaceKey, target, {
-    name: target.name,
-    categorizations: clone,
-  });
+  const saved = await saveProjectContent(
+    workspaceId,
+    workspaceKey,
+    target,
+    projectPlaintextFrom(target, { categorizations: clone }),
+  );
 
   await remapTasksForCategorizationChange(
     workspaceId,

@@ -95,6 +95,7 @@ export function parseTaskListSearchParams(url: URL):
       labelId?: string;
       stageId?: string;
       priorityId?: string;
+      milestoneId?: string;
     }
   | { ok: false; message: string } {
   const base = parseListSearchParams(url);
@@ -109,6 +110,11 @@ export function parseTaskListSearchParams(url: URL):
     "priorityId",
   );
   if (!priority.ok) return priority;
+  const milestone = parseOptionalUuid(
+    url.searchParams.get("milestoneId"),
+    "milestoneId",
+  );
+  if (!milestone.ok) return milestone;
 
   return {
     ok: true,
@@ -118,5 +124,6 @@ export function parseTaskListSearchParams(url: URL):
     labelId: label.value,
     stageId: stage.value,
     priorityId: priority.value,
+    milestoneId: milestone.value,
   };
 }

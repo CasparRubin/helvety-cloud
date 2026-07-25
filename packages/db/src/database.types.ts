@@ -125,6 +125,44 @@ export type Database = {
           },
         ]
       }
+      milestones: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          encrypted_blob: Json
+          id: string
+          project_id: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob: Json
+          id: string
+          project_id: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob?: Json
+          id?: string
+          project_id?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "milestones_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           created_at: string
@@ -132,6 +170,7 @@ export type Database = {
           encrypted_blob: Json
           id: string
           label_id: string | null
+          milestone_id: string | null
           priority_id: string | null
           project_id: string
           sort_order: number
@@ -144,6 +183,7 @@ export type Database = {
           encrypted_blob: Json
           id: string
           label_id?: string | null
+          milestone_id?: string | null
           priority_id?: string | null
           project_id: string
           sort_order?: number
@@ -156,6 +196,7 @@ export type Database = {
           encrypted_blob?: Json
           id?: string
           label_id?: string | null
+          milestone_id?: string | null
           priority_id?: string | null
           project_id?: string
           sort_order?: number
@@ -163,6 +204,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "tasks_milestone_id_fkey"
+            columns: ["milestone_id"]
+            isOneToOne: false
+            referencedRelation: "milestones"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tasks_project_id_fkey"
             columns: ["project_id"]

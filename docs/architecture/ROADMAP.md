@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board; **P10** project descriptions + milestones. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -548,6 +548,27 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P10 — Project descriptions + milestones
+
+**Status:** **Done**
+
+**Goal:** Rich TipTap project descriptions; project-scoped milestones (title, description, target date) with tasks assignable via plaintext `milestone_id`. Stage board stays primary; milestones are an orthogonal filter/badge/picker overlay.
+
+**Do:**
+
+- Project ciphertext: optional TipTap `description` (empty doc default; legacy upgrade on decrypt).  
+- `milestones` table under `project_id`; ciphertext `{ version: 1, title, description, targetDate }` (`targetDate` ISO date or null — encrypted).  
+- `tasks.milestone_id` FK → milestones ON DELETE SET NULL + index; API list/get/put/delete milestones; task PUT `milestoneId`.  
+- Project page overview: collapsible description editor + milestones CRUD (sorted by target date).  
+- Stage board: milestone filter (All / Unassigned / specific); card badge; task detail milestone picker.  
+- Reuse TipTap `TaskBodyEditor` (`compact`, no entity links) for descriptions.
+
+**Don’t:** Milestone kanban; entity_links `milestone` kind; plaintext target dates; replacing stage board; Gantt; auto-complete when all tasks done.
+
+**Done when:** User can write a rich project description, create milestones, assign tasks, filter the board by milestone, and reload decrypts correctly; service role cannot read titles/descriptions/dates.
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -629,4 +650,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

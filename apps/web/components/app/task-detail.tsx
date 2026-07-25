@@ -9,6 +9,7 @@ import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-bod
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { CategorizationPicker } from "@/components/app/categorization-picker";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { MilestonePicker } from "@/components/app/milestone-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
@@ -19,6 +20,7 @@ import {
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
 import { createContact } from "@/lib/vault/contacts";
+import { loadAllDecryptedMilestones } from "@/lib/vault/milestones";
 import { loadDecryptedProject } from "@/lib/vault/projects";
 import {
   EMPTY_TASK_BODY,
@@ -60,6 +62,10 @@ export function TaskDetail({
   const [labelId, setLabelId] = useState<string | null>(null);
   const [stageId, setStageId] = useState("");
   const [priorityId, setPriorityId] = useState("");
+  const [milestoneId, setMilestoneId] = useState<string | null>(null);
+  const [milestoneOptions, setMilestoneOptions] = useState<
+    { id: string; title: string; targetDate: string | null }[]
+  >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -71,6 +77,7 @@ export function TaskDetail({
   const labelIdRef = useRef(labelId);
   const stageIdRef = useRef(stageId);
   const priorityIdRef = useRef(priorityId);
+  const milestoneIdRef = useRef(milestoneId);
   const taskRef = useRef(task);
   const deletingRef = useRef(deleting);
   const savingRef = useRef(false);
@@ -87,6 +94,7 @@ export function TaskDetail({
     labelIdRef.current = labelId;
     stageIdRef.current = stageId;
     priorityIdRef.current = priorityId;
+    milestoneIdRef.current = milestoneId;
     taskRef.current = task;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
@@ -107,9 +115,10 @@ export function TaskDetail({
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const [loaded, project] = await Promise.all([
+        const [loaded, project, milestones] = await Promise.all([
           loadDecryptedTask(workspaceId, projectId, taskId, key),
           loadDecryptedProject(workspaceId, projectId, key),
+          loadAllDecryptedMilestones(workspaceId, projectId, key),
         ]);
         if (cancelled) return;
         const cats = project.categorizations;
@@ -127,19 +136,33 @@ export function TaskDetail({
           loaded.labelId && cats.labels.some((l) => l.id === loaded.labelId)
             ? loaded.labelId
             : null;
+        const nextMilestone =
+          loaded.milestoneId &&
+          milestones.some((m) => m.id === loaded.milestoneId)
+            ? loaded.milestoneId
+            : null;
         setTask(loaded);
         setCategorizations(cats);
+        setMilestoneOptions(
+          milestones.map((m) => ({
+            id: m.id,
+            title: m.title,
+            targetDate: m.targetDate,
+          })),
+        );
         setTitle(loaded.title);
         setBody(loaded.body);
         setLabelId(nextLabel);
         setStageId(nextStage);
         setPriorityId(nextPriority);
+        setMilestoneId(nextMilestone);
         loadedSnapshotRef.current = snapshot(
           loaded.title,
           loaded.body,
           nextLabel,
           nextStage,
           nextPriority,
+          nextMilestone,
         );
         setSaveStatus("idle");
         setError(null);
@@ -165,12 +188,14 @@ export function TaskDetail({
     const nextLabel = labelIdRef.current;
     const nextStage = stageIdRef.current;
     const nextPriority = priorityIdRef.current;
+    const nextMilestone = milestoneIdRef.current;
     const snap = snapshot(
       nextTitle,
       nextBody,
       nextLabel,
       nextStage,
       nextPriority,
+      nextMilestone,
     );
     if (snap === loadedSnapshotRef.current) {
       if (mountedRef.current) {
@@ -201,6 +226,7 @@ export function TaskDetail({
           labelId: nextLabel,
           stageId: nextStage,
           priorityId: nextPriority,
+          milestoneId: nextMilestone,
         },
       );
       loadedSnapshotRef.current = snapshot(
@@ -209,6 +235,7 @@ export function TaskDetail({
         saved.labelId,
         saved.stageId ?? nextStage,
         saved.priorityId ?? nextPriority,
+        saved.milestoneId,
       );
       if (!mountedRef.current) return;
       setTask(saved);
@@ -220,6 +247,7 @@ export function TaskDetail({
           labelIdRef.current,
           stageIdRef.current,
           priorityIdRef.current,
+          milestoneIdRef.current,
         ) === snap
       ) {
         setTitle(saved.title);
@@ -227,6 +255,7 @@ export function TaskDetail({
         setLabelId(saved.labelId);
         if (saved.stageId) setStageId(saved.stageId);
         if (saved.priorityId) setPriorityId(saved.priorityId);
+        setMilestoneId(saved.milestoneId);
       }
       setSavedAt(new Date().toLocaleTimeString());
       setSaveStatus("saved");
@@ -249,7 +278,7 @@ export function TaskDetail({
 
   useEffect(() => {
     if (!task || loading) return;
-    const snap = snapshot(title, body, labelId, stageId, priorityId);
+    const snap = snapshot(title, body, labelId, stageId, priorityId, milestoneId);
     if (snap === loadedSnapshotRef.current) return;
 
     setSaveStatus("dirty");
@@ -263,6 +292,7 @@ export function TaskDetail({
     labelId,
     stageId,
     priorityId,
+    milestoneId,
     task,
     loading,
     workspaceId,
@@ -279,6 +309,7 @@ export function TaskDetail({
         labelIdRef.current,
         stageIdRef.current,
         priorityIdRef.current,
+        milestoneIdRef.current,
       );
       if (snap === loadedSnapshotRef.current) return;
       void persistRef.current();
@@ -432,6 +463,16 @@ export function TaskDetail({
                   }}
                 />
               </label>
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Milestone
+                <MilestonePicker
+                  options={milestoneOptions}
+                  value={milestoneId}
+                  disabled={deleting}
+                  aria-label="Milestone"
+                  onChange={setMilestoneId}
+                />
+              </label>
             </div>
           ) : null}
 
@@ -485,8 +526,16 @@ function snapshot(
   labelId: string | null,
   stageId: string,
   priorityId: string,
+  milestoneId: string | null,
 ): string {
-  return JSON.stringify({ title, body, labelId, stageId, priorityId });
+  return JSON.stringify({
+    title,
+    body,
+    labelId,
+    stageId,
+    priorityId,
+    milestoneId,
+  });
 }
 
 function SaveStatusLabel({

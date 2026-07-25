@@ -32,6 +32,7 @@ import {
   EntityListEmpty,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { ProjectOverview } from "@/components/app/project-overview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -43,6 +44,10 @@ import {
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
 import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
+import {
+  loadAllDecryptedMilestones,
+  type DecryptedMilestone,
+} from "@/lib/vault/milestones";
 import { groupTasksByStage } from "@/lib/vault/task-board";
 import {
   createTask,
@@ -56,6 +61,8 @@ import {
 } from "@/lib/vault/projects";
 import { cn } from "@/lib/utils";
 
+type MilestoneFilter = "all" | "none" | string;
+
 type TaskListProps = {
   workspaceId: string;
   projectId: string;
@@ -67,6 +74,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   const [project, setProject] = useState<DecryptedProject | null>(null);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
+  const [milestones, setMilestones] = useState<DecryptedMilestone[]>([]);
+  const [milestoneFilter, setMilestoneFilter] =
+    useState<MilestoneFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
@@ -80,12 +90,14 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   const reload = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
-    const [loadedProject, allTasks] = await Promise.all([
+    const [loadedProject, allTasks, allMilestones] = await Promise.all([
       loadDecryptedProject(workspaceId, projectId, key),
       loadAllDecryptedTasks(workspaceId, projectId, key),
+      loadAllDecryptedMilestones(workspaceId, projectId, key),
     ]);
     setProject(loadedProject);
     setTasks(allTasks);
+    setMilestones(allMilestones);
   }, [getWorkspaceKey, workspaceId, projectId]);
 
   useEffect(() => {
@@ -107,10 +119,24 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     };
   }, [vault, reload]);
 
+  const filteredTasks = useMemo(() => {
+    if (milestoneFilter === "all") return tasks;
+    if (milestoneFilter === "none") {
+      return tasks.filter((t) => t.milestoneId == null);
+    }
+    return tasks.filter((t) => t.milestoneId === milestoneFilter);
+  }, [tasks, milestoneFilter]);
+
   const columns = useMemo(() => {
     if (!project) return [];
-    return groupTasksByStage(tasks, project.categorizations);
-  }, [project, tasks]);
+    return groupTasksByStage(filteredTasks, project.categorizations);
+  }, [project, filteredTasks]);
+
+  const milestoneById = useMemo(() => {
+    const map = new Map<string, DecryptedMilestone>();
+    for (const m of milestones) map.set(m.id, m);
+    return map;
+  }, [milestones]);
 
   const activeTask = activeTaskId
     ? (tasks.find((t) => t.id === activeTaskId) ?? null)
@@ -275,42 +301,88 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       bareChildren
     >
       {!loading && project ? (
-        <DndContext
-          sensors={sensors}
-          collisionDetection={closestCorners}
-          onDragStart={onDragStart}
-          onDragEnd={onDragEnd}
-          onDragCancel={() => setActiveTaskId(null)}
-        >
-          <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
-            {columns.map((col, index) => (
-              <StageRow
-                key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
-                stage={col.stage}
-                prevStage={columns[index - 1]?.stage ?? null}
-                nextStage={columns[index + 1]?.stage ?? null}
-                tasks={col.tasks}
-                cats={project.categorizations}
-                workspaceId={workspaceId}
-                projectId={projectId}
-                busy={busy}
-                savingTaskId={savingTaskId}
-                onUpdateIds={updateTaskIds}
-              />
-            ))}
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
+          <ProjectOverview
+            workspaceId={workspaceId}
+            project={project}
+            milestones={milestones}
+            onProjectChange={setProject}
+            onMilestonesChange={(next) => {
+              setMilestones(next);
+              const ids = new Set(next.map((m) => m.id));
+              if (
+                milestoneFilter !== "all" &&
+                milestoneFilter !== "none" &&
+                !ids.has(milestoneFilter)
+              ) {
+                setMilestoneFilter("all");
+              }
+            }}
+          />
+
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs text-muted-foreground">Milestone</span>
+            <select
+              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+              value={milestoneFilter}
+              aria-label="Filter by milestone"
+              onChange={(e) =>
+                setMilestoneFilter(e.target.value as MilestoneFilter)
+              }
+            >
+              <option value="all">All</option>
+              <option value="none">Unassigned</option>
+              {milestones.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.title}
+                </option>
+              ))}
+            </select>
           </div>
-          <DragOverlay dropAnimation={null}>
-            {activeTask && project ? (
-              <TaskCardContent
-                task={activeTask}
-                cats={project.categorizations}
-                workspaceId={workspaceId}
-                projectId={projectId}
-                overlay
-              />
-            ) : null}
-          </DragOverlay>
-        </DndContext>
+
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCorners}
+            onDragStart={onDragStart}
+            onDragEnd={onDragEnd}
+            onDragCancel={() => setActiveTaskId(null)}
+          >
+            <div className="flex flex-col gap-3">
+              {columns.map((col, index) => (
+                <StageRow
+                  key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
+                  stage={col.stage}
+                  prevStage={columns[index - 1]?.stage ?? null}
+                  nextStage={columns[index + 1]?.stage ?? null}
+                  tasks={col.tasks}
+                  cats={project.categorizations}
+                  milestoneById={milestoneById}
+                  workspaceId={workspaceId}
+                  projectId={projectId}
+                  busy={busy}
+                  savingTaskId={savingTaskId}
+                  onUpdateIds={updateTaskIds}
+                />
+              ))}
+            </div>
+            <DragOverlay dropAnimation={null}>
+              {activeTask && project ? (
+                <TaskCardContent
+                  task={activeTask}
+                  cats={project.categorizations}
+                  milestone={
+                    activeTask.milestoneId
+                      ? (milestoneById.get(activeTask.milestoneId) ?? null)
+                      : null
+                  }
+                  workspaceId={workspaceId}
+                  projectId={projectId}
+                  overlay
+                />
+              ) : null}
+            </DragOverlay>
+          </DndContext>
+        </div>
       ) : null}
     </EntityListShell>
   );
@@ -322,6 +394,7 @@ function StageRow({
   nextStage,
   tasks,
   cats,
+  milestoneById,
   workspaceId,
   projectId,
   busy,
@@ -333,6 +406,7 @@ function StageRow({
   nextStage: CategorizationOption | null;
   tasks: DecryptedTask[];
   cats: ProjectCategorizations;
+  milestoneById: Map<string, DecryptedMilestone>;
   workspaceId: string;
   projectId: string;
   busy: boolean;
@@ -397,6 +471,11 @@ function StageRow({
                 prevStage={prevStage}
                 nextStage={nextStage}
                 cats={cats}
+                milestone={
+                  task.milestoneId
+                    ? (milestoneById.get(task.milestoneId) ?? null)
+                    : null
+                }
                 workspaceId={workspaceId}
                 projectId={projectId}
                 disabled={busy || savingTaskId === task.id}
@@ -431,6 +510,7 @@ function TaskCard({
   prevStage,
   nextStage,
   cats,
+  milestone,
   workspaceId,
   projectId,
   disabled,
@@ -441,6 +521,7 @@ function TaskCard({
   prevStage: CategorizationOption | null;
   nextStage: CategorizationOption | null;
   cats: ProjectCategorizations;
+  milestone: DecryptedMilestone | null;
   workspaceId: string;
   projectId: string;
   disabled: boolean;
@@ -474,6 +555,7 @@ function TaskCard({
       <TaskCardContent
         task={task}
         cats={cats}
+        milestone={milestone}
         workspaceId={workspaceId}
         projectId={projectId}
         disabled={disabled}
@@ -532,6 +614,7 @@ function TaskCard({
 function TaskCardContent({
   task,
   cats,
+  milestone,
   workspaceId,
   projectId,
   disabled,
@@ -542,6 +625,7 @@ function TaskCardContent({
 }: {
   task: DecryptedTask;
   cats: ProjectCategorizations;
+  milestone?: DecryptedMilestone | null;
   workspaceId: string;
   projectId: string;
   disabled?: boolean;
@@ -578,6 +662,18 @@ function TaskCardContent({
       >
         {task.title || "Untitled"}
       </Link>
+      {milestone ? (
+        <span
+          className="max-w-[7rem] truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
+          title={
+            milestone.targetDate
+              ? `${milestone.title} · ${milestone.targetDate}`
+              : milestone.title
+          }
+        >
+          {milestone.title}
+        </span>
+      ) : null}
       {onUpdateIds ? (
         <>
           <CategorizationPicker

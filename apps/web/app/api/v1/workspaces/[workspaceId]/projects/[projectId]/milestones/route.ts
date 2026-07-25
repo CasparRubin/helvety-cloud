@@ -1,15 +1,13 @@
 import {
   ciphertextEnvelopeSchema,
-  listTasksResponseSchema,
-  taskResponseSchema,
-  type EntityLinkTarget,
+  listMilestonesResponseSchema,
+  milestoneResponseSchema,
 } from "@helvety-cloud/api-contract";
 
-import { listOutgoingLinksForSources } from "@/lib/api/entity-links";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import {
   encodeSortOrderCursor,
-  parseTaskListSearchParams,
+  parseListSearchParams,
 } from "@/lib/api/list-cursor";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
@@ -17,8 +15,8 @@ type RouteContext = {
   params: Promise<{ workspaceId: string; projectId: string }>;
 };
 
-const TASK_SELECT =
-  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, milestone_id, sort_order, updated_at, deleted_at";
+const MILESTONE_SELECT =
+  "id, project_id, encrypted_blob, sort_order, updated_at, deleted_at";
 
 export async function GET(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -29,19 +27,11 @@ export async function GET(request: Request, context: RouteContext) {
   const { workspaceId, projectId } = await context.params;
 
   const url = new URL(request.url);
-  const parsed = parseTaskListSearchParams(url);
+  const parsed = parseListSearchParams(url);
   if (!parsed.ok) {
     return apiError("invalid_body", parsed.message, 400);
   }
-  const {
-    limit,
-    cursor,
-    includeDeleted,
-    labelId,
-    stageId,
-    priorityId,
-    milestoneId,
-  } = parsed;
+  const { limit, cursor, includeDeleted } = parsed;
 
   const { data: project, error: projectError } = await supabase
     .from("projects")
@@ -58,8 +48,8 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   let query = supabase
-    .from("tasks")
-    .select(TASK_SELECT)
+    .from("milestones")
+    .select(MILESTONE_SELECT)
     .eq("project_id", projectId)
     .order("sort_order", { ascending: true })
     .order("id", { ascending: true })
@@ -67,18 +57,6 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (!includeDeleted) {
     query = query.is("deleted_at", null);
-  }
-  if (labelId) {
-    query = query.eq("label_id", labelId);
-  }
-  if (stageId) {
-    query = query.eq("stage_id", stageId);
-  }
-  if (priorityId) {
-    query = query.eq("priority_id", priorityId);
-  }
-  if (milestoneId) {
-    query = query.eq("milestone_id", milestoneId);
   }
 
   if (cursor) {
@@ -105,42 +83,21 @@ export async function GET(request: Request, context: RouteContext) {
       ? encodeSortOrderCursor({ sortOrder: last.sort_order, id: last.id })
       : null;
 
-  let linksByTask: Map<string, EntityLinkTarget[]>;
-  try {
-    linksByTask = await listOutgoingLinksForSources(
-      supabase,
-      workspaceId,
-      "task",
-      page.map((r) => r.id),
-    );
-  } catch (e) {
-    return apiError(
-      "internal",
-      e instanceof Error ? e.message : "Failed to load links",
-      500,
-    );
-  }
-
-  const tasks = page.map((row) =>
-    taskResponseSchema.parse({
+  const milestones = page.map((row) =>
+    milestoneResponseSchema.parse({
       id: row.id,
       projectId: row.project_id,
       workspaceId,
       encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
-      labelId: row.label_id,
-      stageId: row.stage_id,
-      priorityId: row.priority_id,
-      milestoneId: row.milestone_id,
       sortOrder: row.sort_order,
       updatedAt: row.updated_at,
       deletedAt: row.deleted_at,
-      links: linksByTask.get(row.id) ?? [],
     }),
   );
 
   return jsonOk(
-    listTasksResponseSchema.parse({
-      tasks,
+    listMilestonesResponseSchema.parse({
+      milestones,
       nextCursor,
     }),
   );

@@ -32,6 +32,7 @@ import {
   loadDecryptedProjects,
   renameProject,
   saveProjectContent,
+  projectPlaintextFrom,
   type DecryptedProject,
 } from "@/lib/vault/projects";
 
@@ -202,11 +203,15 @@ export function ProjectSettingsProvider({
     if (!project) return;
     await withBusy(async () => {
       const key = await getWorkspaceKey(workspaceId);
-      const saved = await saveProjectContent(workspaceId, key, project, {
-        name: project.name,
-        categorizations: project.categorizations,
-        ...(color ? { color } : {}),
-      });
+      const saved = await saveProjectContent(
+        workspaceId,
+        key,
+        project,
+        projectPlaintextFrom(
+          project,
+          color ? { color } : { clearColor: true },
+        ),
+      );
       setProject(saved);
     });
   }

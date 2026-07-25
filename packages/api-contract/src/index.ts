@@ -199,6 +199,8 @@ export const putTaskRequestSchema = z.object({
   stageId: uuidSchema.optional(),
   /** Soft ref to a priority option id in project ciphertext. */
   priorityId: uuidSchema.optional(),
+  /** FK to milestones; null clears. */
+  milestoneId: uuidSchema.nullable().optional(),
   /** Replace outgoing entity_links from this task when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
 });
@@ -212,12 +214,39 @@ export const taskResponseSchema = z.object({
   labelId: uuidSchema.nullable(),
   stageId: uuidSchema.nullable(),
   priorityId: uuidSchema.nullable(),
+  milestoneId: uuidSchema.nullable(),
   sortOrder: z.number().int(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
   links: z.array(entityLinkTargetSchema),
 });
 export type TaskResponse = z.infer<typeof taskResponseSchema>;
+
+export const putMilestoneRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int().optional(),
+  deletedAt: z.string().nullable().optional(),
+});
+export type PutMilestoneRequest = z.infer<typeof putMilestoneRequestSchema>;
+
+export const milestoneResponseSchema = z.object({
+  id: uuidSchema,
+  projectId: uuidSchema,
+  workspaceId: uuidSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type MilestoneResponse = z.infer<typeof milestoneResponseSchema>;
+
+export const listMilestonesResponseSchema = z.object({
+  milestones: z.array(milestoneResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListMilestonesResponse = z.infer<
+  typeof listMilestonesResponseSchema
+>;
 
 /** Shared list query: keyset cursor on (sort_order ASC, id ASC). */
 export const listQuerySchema = z.object({

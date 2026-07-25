@@ -12,10 +12,12 @@ import {
   taskResponseSchema,
   listContactsResponseSchema,
   listTasksResponseSchema,
+  listMilestonesResponseSchema,
   listMyInvitationsResponseSchema,
   listNotesResponseSchema,
   listEntityLinksResponseSchema,
   listProjectsResponseSchema,
+  milestoneResponseSchema,
   listWorkspaceInvitationsResponseSchema,
   listWorkspaceMembersResponseSchema,
   listWorkspacesResponseSchema,
@@ -25,6 +27,7 @@ import {
   projectResponseSchema,
   putContactRequestSchema,
   putTaskRequestSchema,
+  putMilestoneRequestSchema,
   putMeCryptoRequestSchema,
   putMeCryptoResponseSchema,
   putMePolicyAcceptancesRequestSchema,
@@ -45,6 +48,7 @@ import {
   type TaskResponse,
   type ListContactsResponse,
   type ListTasksResponse,
+  type ListMilestonesResponse,
   type ListMyInvitationsResponse,
   type ListNotesResponse,
   type ListEntityLinksResponse,
@@ -56,8 +60,10 @@ import {
   type PatchWorkspaceRequest,
   type PatchWorkspaceResponse,
   type ProjectResponse,
+  type MilestoneResponse,
   type PutContactRequest,
   type PutTaskRequest,
+  type PutMilestoneRequest,
   type PutMeCryptoRequest,
   type PutMeCryptoResponse,
   type PutMePolicyAcceptancesRequest,
@@ -252,6 +258,7 @@ export type ListTasksParams = ListParams & {
   labelId?: string;
   stageId?: string;
   priorityId?: string;
+  milestoneId?: string;
 };
 
 function listQuery(params?: ListParams): string {
@@ -271,6 +278,7 @@ function tasksListQuery(params?: ListTasksParams): string {
   if (params?.labelId) q.set("labelId", params.labelId);
   if (params?.stageId) q.set("stageId", params.stageId);
   if (params?.priorityId) q.set("priorityId", params.priorityId);
+  if (params?.milestoneId) q.set("milestoneId", params.milestoneId);
   const s = q.toString();
   return s ? `?${s}` : "";
 }
@@ -365,6 +373,44 @@ export async function deleteTask(
 ): Promise<void> {
   await apiFetchNoContent(
     `/api/v1/workspaces/${workspaceId}/projects/${projectId}/tasks/${taskId}`,
+    { method: "DELETE" },
+  );
+}
+
+export async function listMilestones(
+  workspaceId: string,
+  projectId: string,
+  params?: ListParams,
+): Promise<ListMilestonesResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/milestones${listQuery(params)}`,
+    listMilestonesResponseSchema,
+  );
+}
+
+export async function putMilestone(
+  workspaceId: string,
+  projectId: string,
+  milestoneId: string,
+  body: PutMilestoneRequest,
+): Promise<MilestoneResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/milestones/${milestoneId}`,
+    milestoneResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putMilestoneRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function deleteMilestone(
+  workspaceId: string,
+  projectId: string,
+  milestoneId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/milestones/${milestoneId}`,
     { method: "DELETE" },
   );
 }

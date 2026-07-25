@@ -41,6 +41,7 @@ export type DecryptedTask = {
   labelId: string | null;
   stageId: string | null;
   priorityId: string | null;
+  milestoneId: string | null;
   links: EntityLinkTarget[];
   sortOrder: number;
   updatedAt: string;
@@ -108,6 +109,7 @@ async function toDecrypted(
     labelId: row.labelId,
     stageId: row.stageId,
     priorityId: row.priorityId,
+    milestoneId: row.milestoneId,
     links: row.links,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
@@ -189,6 +191,7 @@ export async function createTask(
     labelId: null,
     stageId,
     priorityId,
+    milestoneId: null,
     links,
   });
   return toDecrypted(workspaceKey, row);
@@ -204,6 +207,7 @@ export async function saveTask(
     labelId?: string | null;
     stageId?: string;
     priorityId?: string;
+    milestoneId?: string | null;
   },
   options?: {
     /** When omitted, links are extracted from the TipTap body. */
@@ -235,6 +239,10 @@ export async function saveTask(
       categorizationIds?.priorityId !== undefined
         ? categorizationIds.priorityId
         : (task.priorityId ?? undefined),
+    milestoneId:
+      categorizationIds?.milestoneId !== undefined
+        ? categorizationIds.milestoneId
+        : task.milestoneId,
     links,
   });
   return toDecrypted(workspaceKey, row);
@@ -250,6 +258,7 @@ export async function saveTaskCategorizationIds(
     labelId: string | null;
     stageId: string | null;
     priorityId: string | null;
+    milestoneId?: string | null;
   },
 ): Promise<DecryptedTask> {
   const encryptedBlob = await encryptTaskContent(
@@ -264,6 +273,8 @@ export async function saveTaskCategorizationIds(
     labelId: ids.labelId,
     stageId: ids.stageId ?? undefined,
     priorityId: ids.priorityId ?? undefined,
+    milestoneId:
+      ids.milestoneId !== undefined ? ids.milestoneId : task.milestoneId,
   });
   return toDecrypted(workspaceKey, row);
 }
