@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   addCategorizationOption,
@@ -19,10 +20,12 @@ import type {
   CategorizationKind,
   CategorizationOption,
 } from "@/lib/vault/categorizations";
+import type { EntityColor } from "@/lib/vault/entity-colors";
 import {
   loadDecryptedProject,
   loadDecryptedProjects,
   renameProject,
+  saveProjectContent,
   type DecryptedProject,
 } from "@/lib/vault/projects";
 
@@ -167,6 +170,29 @@ export function ProjectSettings({
                 Save
               </Button>
             </form>
+          </section>
+
+          <section className="flex max-w-lg flex-col gap-3">
+            <EntityColorPicker
+              value={project.color}
+              disabled={busy}
+              onChange={(next: EntityColor | undefined) => {
+                void withBusy(async () => {
+                  const key = await getWorkspaceKey(workspaceId);
+                  const saved = await saveProjectContent(
+                    workspaceId,
+                    key,
+                    project,
+                    {
+                      name: project.name,
+                      categorizations: project.categorizations,
+                      ...(next ? { color: next } : {}),
+                    },
+                  );
+                  setProject(saved);
+                });
+              }}
+            />
           </section>
 
           <OptionList

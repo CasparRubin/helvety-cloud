@@ -18,6 +18,7 @@ import {
   toContactPlaintext,
   type ContactPlaintext,
 } from "@/lib/vault/contact-plaintext";
+import type { EntityColor } from "@/lib/vault/entity-colors";
 
 const textDecoder = new TextDecoder();
 
@@ -28,6 +29,7 @@ export type DecryptedContact = {
   emails: string[];
   phones: string[];
   notes: string;
+  color?: EntityColor;
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
@@ -77,6 +79,7 @@ async function toDecrypted(
   let emails: string[] = [];
   let phones: string[] = [];
   let notes = "";
+  let color: EntityColor | undefined;
   try {
     const content = await decryptContactContent(
       workspaceKey,
@@ -87,6 +90,7 @@ async function toDecrypted(
     emails = content.emails;
     phones = content.phones;
     notes = content.notes;
+    color = content.color;
   } catch {
     displayName = "Unable to decrypt";
   }
@@ -97,6 +101,7 @@ async function toDecrypted(
     emails,
     phones,
     notes,
+    color,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -132,6 +137,7 @@ export async function createContact(
     emails?: string[];
     phones?: string[];
     notes?: string;
+    color?: EntityColor;
   },
   sortOrder = 0,
 ): Promise<DecryptedContact> {

@@ -60,6 +60,22 @@ export type SealedKeyEnvelope = z.infer<typeof sealedKeyEnvelopeSchema>;
 
 export const uuidSchema = z.string().uuid();
 
+/** Entity kinds that can appear in entity_links (P8a). */
+export const entityLinkKinds = [
+  "note",
+  "task",
+  "contact",
+  "project",
+] as const;
+export const entityLinkKindSchema = z.enum(entityLinkKinds);
+export type EntityLinkKind = z.infer<typeof entityLinkKindSchema>;
+
+export const entityLinkTargetSchema = z.object({
+  kind: entityLinkKindSchema,
+  id: uuidSchema,
+});
+export type EntityLinkTarget = z.infer<typeof entityLinkTargetSchema>;
+
 export const healthResponseSchema = z.object({
   ok: z.literal(true),
 });
@@ -242,7 +258,8 @@ export const putNoteRequestSchema = z.object({
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
   projectId: uuidSchema.nullable().optional(),
-  taskId: uuidSchema.nullable().optional(),
+  /** Replace outgoing entity_links from this note when provided. */
+  links: z.array(entityLinkTargetSchema).optional(),
 });
 export type PutNoteRequest = z.infer<typeof putNoteRequestSchema>;
 
@@ -250,7 +267,7 @@ export const noteResponseSchema = z.object({
   id: uuidSchema,
   workspaceId: uuidSchema,
   projectId: uuidSchema.nullable(),
-  taskId: uuidSchema.nullable(),
+  links: z.array(entityLinkTargetSchema),
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
   updatedAt: z.string(),
@@ -263,6 +280,24 @@ export const listNotesResponseSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 export type ListNotesResponse = z.infer<typeof listNotesResponseSchema>;
+
+export const entityLinkEdgeSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  sourceKind: entityLinkKindSchema,
+  sourceId: uuidSchema,
+  targetKind: entityLinkKindSchema,
+  targetId: uuidSchema,
+  createdAt: z.string(),
+});
+export type EntityLinkEdge = z.infer<typeof entityLinkEdgeSchema>;
+
+export const listEntityLinksResponseSchema = z.object({
+  links: z.array(entityLinkEdgeSchema),
+});
+export type ListEntityLinksResponse = z.infer<
+  typeof listEntityLinksResponseSchema
+>;
 
 export const putContactRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,

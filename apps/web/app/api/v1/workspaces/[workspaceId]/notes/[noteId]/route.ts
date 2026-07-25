@@ -2,8 +2,14 @@ import {
   ciphertextEnvelopeSchema,
   noteResponseSchema,
   putNoteRequestSchema,
+  type EntityLinkTarget,
 } from "@helvety-cloud/api-contract";
 
+import {
+  listOutgoingLinks,
+  replaceOutgoingLinks,
+  validateLinkTargetsInWorkspace,
+} from "@/lib/api/entity-links";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -13,23 +19,25 @@ type RouteContext = {
 };
 
 const NOTE_SELECT =
-  "id, workspace_id, project_id, task_id, encrypted_blob, sort_order, updated_at, deleted_at";
+  "id, workspace_id, project_id, encrypted_blob, sort_order, updated_at, deleted_at";
 
-function toNoteResponse(row: {
-  id: string;
-  workspace_id: string;
-  project_id: string | null;
-  task_id: string | null;
-  encrypted_blob: unknown;
-  sort_order: number;
-  updated_at: string;
-  deleted_at: string | null;
-}) {
+function toNoteResponse(
+  row: {
+    id: string;
+    workspace_id: string;
+    project_id: string | null;
+    encrypted_blob: unknown;
+    sort_order: number;
+    updated_at: string;
+    deleted_at: string | null;
+  },
+  links: EntityLinkTarget[],
+) {
   return noteResponseSchema.parse({
     id: row.id,
     workspaceId: row.workspace_id,
     projectId: row.project_id,
-    taskId: row.task_id,
+    links,
     encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
     sortOrder: row.sort_order,
     updatedAt: row.updated_at,
@@ -59,7 +67,18 @@ export async function GET(_request: Request, context: RouteContext) {
     return apiError("not_found", "Note not found", 404);
   }
 
-  return jsonOk(toNoteResponse(data));
+  let links: EntityLinkTarget[];
+  try {
+    links = await listOutgoingLinks(supabase, workspaceId, "note", noteId);
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to load links",
+      500,
+    );
+  }
+
+  return jsonOk(toNoteResponse(data, links));
 }
 
 export async function PUT(request: Request, context: RouteContext) {
@@ -108,7 +127,6 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const projectId =
     data.projectId === undefined ? undefined : data.projectId;
-  const taskId = data.taskId === undefined ? undefined : data.taskId;
 
   if (projectId) {
     const { data: project, error: projectError } = await supabase
@@ -125,29 +143,14 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
-  if (taskId) {
-    const { data: task, error: taskError } = await supabase
-      .from("tasks")
-      .select("id, project_id")
-      .eq("id", taskId)
-      .maybeSingle();
-    if (taskError) {
-      return apiError("internal", taskError.message, 500);
-    }
-    if (!task) {
-      return apiError("invalid_body", "taskId not in workspace", 400);
-    }
-    const { data: taskProject, error: taskProjectError } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("id", task.project_id)
-      .eq("workspace_id", workspaceId)
-      .maybeSingle();
-    if (taskProjectError) {
-      return apiError("internal", taskProjectError.message, 500);
-    }
-    if (!taskProject) {
-      return apiError("invalid_body", "taskId not in workspace", 400);
+  if (data.links !== undefined) {
+    const validated = await validateLinkTargetsInWorkspace(
+      supabase,
+      workspaceId,
+      data.links,
+    );
+    if (!validated.ok) {
+      return apiError("invalid_body", validated.message, 400);
     }
   }
 
@@ -158,7 +161,6 @@ export async function PUT(request: Request, context: RouteContext) {
     sort_order: number;
     deleted_at: string | null;
     project_id?: string | null;
-    task_id?: string | null;
   } = {
     id: noteId,
     workspace_id: workspaceId,
@@ -170,14 +172,8 @@ export async function PUT(request: Request, context: RouteContext) {
   if (projectId !== undefined) {
     upsertRow.project_id = projectId;
   }
-  if (taskId !== undefined) {
-    upsertRow.task_id = taskId;
-  }
-
-  // On first insert without projectId/taskId in body, default to null.
-  if (!existing) {
-    if (projectId === undefined) upsertRow.project_id = null;
-    if (taskId === undefined) upsertRow.task_id = null;
+  if (!existing && projectId === undefined) {
+    upsertRow.project_id = null;
   }
 
   const { data: row, error } = await supabase
@@ -193,7 +189,28 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("invalid_ciphertext", error.message, 400);
   }
 
-  return jsonOk(toNoteResponse(row));
+  let links: EntityLinkTarget[];
+  try {
+    if (data.links !== undefined) {
+      links = await replaceOutgoingLinks(
+        supabase,
+        workspaceId,
+        "note",
+        noteId,
+        data.links,
+      );
+    } else {
+      links = await listOutgoingLinks(supabase, workspaceId, "note", noteId);
+    }
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to update links",
+      500,
+    );
+  }
+
+  return jsonOk(toNoteResponse(row, links));
 }
 
 export async function DELETE(request: Request, context: RouteContext) {
@@ -203,6 +220,21 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
   const { supabase } = auth;
   const { workspaceId, noteId } = await context.params;
+
+  // Drop outgoing edges before deleting the note.
+  await supabase
+    .from("entity_links")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("source_kind", "note")
+    .eq("source_id", noteId);
+
+  await supabase
+    .from("entity_links")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("target_kind", "note")
+    .eq("target_id", noteId);
 
   const { data, error } = await supabase
     .from("notes")

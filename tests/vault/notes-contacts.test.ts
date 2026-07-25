@@ -42,6 +42,24 @@ describe("note plaintext v1", () => {
     });
   });
 
+  it("parses optional color palette token", () => {
+    expect(
+      parseNotePlaintext({
+        version: 1,
+        title: "T",
+        body: EMPTY_NOTE_BODY,
+        tags: [],
+        color: "violet",
+      }),
+    ).toEqual({
+      version: 1,
+      title: "T",
+      body: EMPTY_NOTE_BODY,
+      tags: [],
+      color: "violet",
+    });
+  });
+
   it("rejects invalid shapes", () => {
     expect(() => parseNotePlaintext(null)).toThrow("Invalid note plaintext");
     expect(() =>

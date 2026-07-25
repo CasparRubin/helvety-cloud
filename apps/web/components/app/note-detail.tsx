@@ -1,13 +1,23 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
-import { TaskBodyEditor } from "@/components/app/task-body-editor";
+import { BacklinksPanel } from "@/components/app/backlinks-panel";
+import { EntityChip } from "@/components/app/entity-chip";
+import { EntityColorPicker } from "@/components/app/entity-color-picker";
+import {
+  TaskBodyEditor,
+  type EntityLinkAction,
+} from "@/components/app/task-body-editor";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import type { EntityColor } from "@/lib/vault/entity-colors";
+import { createContact } from "@/lib/vault/contacts";
 import {
   EMPTY_NOTE_BODY,
   toNotePlaintext,
@@ -19,14 +29,7 @@ import {
   saveNote,
   type DecryptedNote,
 } from "@/lib/vault/notes";
-import {
-  loadDecryptedProjects,
-  type DecryptedProject,
-} from "@/lib/vault/projects";
-import {
-  loadDecryptedTasks,
-  type DecryptedTask,
-} from "@/lib/vault/tasks";
+import { createTask } from "@/lib/vault/tasks";
 
 const AUTOSAVE_MS = 600;
 
@@ -40,26 +43,29 @@ type SaveStatus = "idle" | "dirty" | "saving" | "saved" | "error";
 export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const router = useRouter();
   const { vault, getWorkspaceKey } = useVaultSession();
+  const cache = useVaultEntityCache();
 
   const [note, setNote] = useState<DecryptedNote | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState<TaskBodyDoc>(EMPTY_NOTE_BODY);
   const [tagsText, setTagsText] = useState("");
   const [projectId, setProjectId] = useState<string>("");
-  const [taskId, setTaskId] = useState<string>("");
-  const [projects, setProjects] = useState<DecryptedProject[]>([]);
-  const [tasks, setTasks] = useState<DecryptedTask[]>([]);
+  const [color, setColor] = useState<EntityColor | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [pendingProjectPick, setPendingProjectPick] = useState<{
+    title: string;
+    resolve: (projectId: string | null) => void;
+  } | null>(null);
 
   const titleRef = useRef(title);
   const bodyRef = useRef(body);
   const tagsTextRef = useRef(tagsText);
   const projectIdRef = useRef(projectId);
-  const taskIdRef = useRef(taskId);
+  const colorRef = useRef(color);
   const noteRef = useRef(note);
   const deletingRef = useRef(deleting);
   const savingRef = useRef(false);
@@ -74,7 +80,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     bodyRef.current = body;
     tagsTextRef.current = tagsText;
     projectIdRef.current = projectId;
-    taskIdRef.current = taskId;
+    colorRef.current = color;
     noteRef.current = note;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
@@ -94,27 +100,24 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const [loaded, projectsPage] = await Promise.all([
-          loadDecryptedNote(workspaceId, noteId, key),
-          loadDecryptedProjects(workspaceId, key, { limit: 100 }),
-        ]);
+        const loaded = await loadDecryptedNote(workspaceId, noteId, key);
         if (cancelled) return;
         setNote(loaded);
         setTitle(loaded.title);
         setBody(loaded.body);
         setTagsText(loaded.tags.join(", "));
         setProjectId(loaded.projectId ?? "");
-        setTaskId(loaded.taskId ?? "");
-        setProjects(projectsPage.projects);
+        setColor(loaded.color);
         loadedSnapshotRef.current = snapshot(
           loaded.title,
           loaded.body,
           loaded.tags.join(", "),
           loaded.projectId ?? "",
-          loaded.taskId ?? "",
+          loaded.color,
         );
         setSaveStatus("idle");
         setError(null);
+        cache.upsertNote(loaded);
       } catch (e) {
         if (cancelled) return;
         setError(e instanceof Error ? e.message : "Failed to load note");
@@ -125,30 +128,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, noteId, getWorkspaceKey]);
-
-  useEffect(() => {
-    if (!vault || !projectId) {
-      return;
-    }
-    let cancelled = false;
-    void (async () => {
-      try {
-        const key = await getWorkspaceKey(workspaceId);
-        if (cancelled) return;
-        const page = await loadDecryptedTasks(workspaceId, projectId, key, {
-          limit: 100,
-        });
-        if (cancelled) return;
-        setTasks(page.tasks);
-      } catch {
-        if (!cancelled) setTasks([]);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [vault, workspaceId, projectId, getWorkspaceKey]);
+  }, [vault, workspaceId, noteId, getWorkspaceKey, cache]);
 
   async function persist() {
     const current = noteRef.current;
@@ -158,13 +138,13 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     const nextBody = bodyRef.current;
     const nextTagsText = tagsTextRef.current;
     const nextProjectId = projectIdRef.current;
-    const nextTaskId = taskIdRef.current;
+    const nextColor = colorRef.current;
     const snap = snapshot(
       nextTitle,
       nextBody,
       nextTagsText,
       nextProjectId,
-      nextTaskId,
+      nextColor,
     );
     if (snap === loadedSnapshotRef.current) {
       if (mountedRef.current) {
@@ -193,10 +173,9 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         workspaceId,
         key,
         current,
-        toNotePlaintext(nextTitle, nextBody, tags),
+        toNotePlaintext(nextTitle, nextBody, tags, nextColor),
         {
           projectId: nextProjectId || null,
-          taskId: nextTaskId || null,
         },
       );
       loadedSnapshotRef.current = snapshot(
@@ -204,24 +183,25 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         saved.body,
         saved.tags.join(", "),
         saved.projectId ?? "",
-        saved.taskId ?? "",
+        saved.color,
       );
       if (!mountedRef.current) return;
       setNote(saved);
+      cache.upsertNote(saved);
       if (
         snapshot(
           titleRef.current,
           bodyRef.current,
           tagsTextRef.current,
           projectIdRef.current,
-          taskIdRef.current,
+          colorRef.current,
         ) === snap
       ) {
         setTitle(saved.title);
         setBody(saved.body);
         setTagsText(saved.tags.join(", "));
         setProjectId(saved.projectId ?? "");
-        setTaskId(saved.taskId ?? "");
+        setColor(saved.color);
       }
       setSavedAt(new Date().toLocaleTimeString());
       setSaveStatus("saved");
@@ -244,7 +224,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
   useEffect(() => {
     if (!note || loading) return;
-    const snap = snapshot(title, body, tagsText, projectId, taskId);
+    const snap = snapshot(title, body, tagsText, projectId, color);
     if (snap === loadedSnapshotRef.current) return;
 
     setSaveStatus("dirty");
@@ -252,7 +232,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       void persistRef.current();
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [title, body, tagsText, projectId, taskId, note, loading, workspaceId]);
+  }, [title, body, tagsText, projectId, color, note, loading, workspaceId]);
 
   useEffect(() => {
     function flushIfDirty() {
@@ -263,7 +243,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         bodyRef.current,
         tagsTextRef.current,
         projectIdRef.current,
-        taskIdRef.current,
+        colorRef.current,
       );
       if (snap === loadedSnapshotRef.current) return;
       void persistRef.current();
@@ -290,6 +270,78 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     }
   }
 
+  async function pickProjectForNewTask(): Promise<string | null> {
+    if (projectIdRef.current) return projectIdRef.current;
+    if (cache.projects.length === 1) return cache.projects[0]!.id;
+    return new Promise((resolve) => {
+      setPendingProjectPick({
+        title: "Choose a project for the new task",
+        resolve: (id) => {
+          setPendingProjectPick(null);
+          resolve(id);
+        },
+      });
+    });
+  }
+
+  async function onEntityLinkAction(
+    action: EntityLinkAction,
+  ): Promise<EntityLinkTarget | void> {
+    const key = await getWorkspaceKey(workspaceId);
+    switch (action.type) {
+      case "create-task": {
+        const projectForTask = await pickProjectForNewTask();
+        if (!projectForTask) return;
+        const project = cache.projects.find((p) => p.id === projectForTask);
+        const task = await createTask(
+          workspaceId,
+          projectForTask,
+          key,
+          { title: action.title },
+          0,
+          project?.categorizations,
+        );
+        cache.upsertTask(task);
+        if (!projectIdRef.current) {
+          setProjectId(projectForTask);
+        }
+        return { kind: "task", id: task.id };
+      }
+      case "create-contact": {
+        const contact = await createContact(workspaceId, key, {
+          displayName: action.displayName,
+        });
+        cache.upsertContact(contact);
+        return { kind: "contact", id: contact.id };
+      }
+      case "link-existing":
+        return action.target;
+      default: {
+        const _exhaustive: never = action;
+        return _exhaustive;
+      }
+    }
+  }
+
+  const linkCandidates = useMemo(() => {
+    const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
+      [];
+    for (const t of cache.tasks) {
+      items.push({ kind: "task", id: t.id, label: t.title });
+    }
+    for (const c of cache.contacts) {
+      items.push({ kind: "contact", id: c.id, label: c.displayName });
+    }
+    for (const n of cache.notes) {
+      if (n.id === noteId) continue;
+      items.push({ kind: "note", id: n.id, label: n.title });
+    }
+    for (const p of cache.projects) {
+      items.push({ kind: "project", id: p.id, label: p.name });
+    }
+    return items;
+  }, [cache.tasks, cache.contacts, cache.notes, cache.projects, noteId]);
+
   if (!vault) return null;
 
   return (
@@ -297,7 +349,8 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Note</h1>
         <p className="text-sm text-muted-foreground">
-          Edits are encrypted on your device before upload.
+          Select text to create linked tasks or contacts. Edits are encrypted on
+          your device before upload.
         </p>
       </div>
 
@@ -320,50 +373,55 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
             disabled={deleting}
             aria-label="Tags"
           />
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-3">
             <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              Project link
+              Filed under project
               <select
                 className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
                 value={projectId}
                 disabled={deleting}
-                onChange={(e) => {
-                  setProjectId(e.target.value);
-                  setTaskId("");
-                }}
-                aria-label="Linked project"
+                onChange={(e) => setProjectId(e.target.value)}
+                aria-label="Filed under project"
               >
                 <option value="">None</option>
-                {projects.map((p) => (
+                {cache.projects.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.name}
                   </option>
                 ))}
               </select>
             </label>
-            <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              Task link
-              <select
-                className="h-8 rounded-md border border-input bg-background px-2 text-sm text-foreground"
-                value={taskId}
-                disabled={deleting || !projectId}
-                onChange={(e) => setTaskId(e.target.value)}
-                aria-label="Linked task"
-              >
-                <option value="">None</option>
-                {(!projectId ? [] : tasks).map((t) => (
-                  <option key={t.id} value={t.id}>
-                    {t.title}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <EntityColorPicker
+              value={color}
+              disabled={deleting}
+              onChange={setColor}
+            />
           </div>
+
+          {note && note.links.length > 0 ? (
+            <div className="flex flex-col gap-1">
+              <span className="text-xs text-muted-foreground">
+                Linked entities
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {note.links.map((link) => (
+                  <EntityChip key={`${link.kind}:${link.id}`} {...link} />
+                ))}
+              </div>
+            </div>
+          ) : null}
+
           <TaskBodyEditor
             content={body}
             onChange={setBody}
             disabled={deleting}
+            enableEntityLinks
+            linkCandidates={linkCandidates}
+            onEntityLinkAction={onEntityLinkAction}
           />
+
+          <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
+
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -386,6 +444,41 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         </div>
       )}
 
+      {pendingProjectPick ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Choose project"
+        >
+          <div className="w-full max-w-sm rounded-lg border border-border bg-background p-4 shadow-lg">
+            <p className="text-sm font-medium">{pendingProjectPick.title}</p>
+            <ul className="mt-3 max-h-60 space-y-1 overflow-auto">
+              {cache.projects.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted"
+                    onClick={() => pendingProjectPick.resolve(p.id)}
+                  >
+                    {p.name}
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <Button
+              type="button"
+              size="sm"
+              variant="ghost"
+              className="mt-2"
+              onClick={() => pendingProjectPick.resolve(null)}
+            >
+              Cancel
+            </Button>
+          </div>
+        </div>
+      ) : null}
+
       {error ? (
         <p className="text-sm text-destructive" role="alert">
           {error}
@@ -400,9 +493,9 @@ function snapshot(
   body: TaskBodyDoc,
   tagsText: string,
   projectId: string,
-  taskId: string,
+  color: EntityColor | undefined,
 ): string {
-  return JSON.stringify({ title, body, tagsText, projectId, taskId });
+  return JSON.stringify({ title, body, tagsText, projectId, color: color ?? null });
 }
 
 function SaveStatusLabel({

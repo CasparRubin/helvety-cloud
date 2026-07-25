@@ -1,18 +1,35 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { EditorContent, useEditor } from "@tiptap/react";
+import { BubbleMenu } from "@tiptap/react/menus";
 import StarterKit from "@tiptap/starter-kit";
+import type { EntityLinkKind, EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { Button } from "@/components/ui/button";
+import { EntityRef } from "@/lib/editor/entity-ref-extension";
 import type { TaskBodyDoc } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
+
+export type EntityLinkAction =
+  | { type: "create-task"; title: string }
+  | { type: "create-contact"; displayName: string }
+  | { type: "link-existing"; target: EntityLinkTarget };
 
 type TaskBodyEditorProps = {
   content: TaskBodyDoc;
   onChange: (doc: TaskBodyDoc) => void;
   disabled?: boolean;
   className?: string;
+  enableEntityLinks?: boolean;
+  linkCandidates?: {
+    kind: EntityLinkKind;
+    id: string;
+    label: string;
+  }[];
+  onEntityLinkAction?: (
+    action: EntityLinkAction,
+  ) => Promise<EntityLinkTarget | void> | EntityLinkTarget | void;
 };
 
 export function TaskBodyEditor({
@@ -20,12 +37,20 @@ export function TaskBodyEditor({
   onChange,
   disabled = false,
   className,
+  enableEntityLinks = false,
+  linkCandidates = [],
+  onEntityLinkAction,
 }: TaskBodyEditorProps) {
+  const [linkQuery, setLinkQuery] = useState("");
+  const [showLinkPicker, setShowLinkPicker] = useState(false);
+  const [busy, setBusy] = useState(false);
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
         heading: { levels: [2, 3] },
       }),
+      ...(enableEntityLinks ? [EntityRef] : []),
     ],
     content,
     editable: !disabled,
@@ -63,6 +88,27 @@ export function TaskBodyEditor({
     }
   }, [editor, content]);
 
+  async function handleAction(action: EntityLinkAction) {
+    if (!editor || !onEntityLinkAction || busy) return;
+    const { from, to } = editor.state.selection;
+    setBusy(true);
+    try {
+      const target = await onEntityLinkAction(action);
+      if (target) {
+        editor
+          .chain()
+          .focus()
+          .deleteRange({ from, to })
+          .insertEntityRef(target)
+          .run();
+      }
+      setShowLinkPicker(false);
+      setLinkQuery("");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!editor) {
     return (
       <div
@@ -73,6 +119,11 @@ export function TaskBodyEditor({
       />
     );
   }
+
+  const filteredCandidates = linkCandidates.filter((c) => {
+    if (!linkQuery.trim()) return true;
+    return c.label.toLowerCase().includes(linkQuery.trim().toLowerCase());
+  });
 
   return (
     <div
@@ -131,6 +182,98 @@ export function TaskBodyEditor({
           onClick={() => editor.chain().focus().toggleOrderedList().run()}
         />
       </div>
+
+      {enableEntityLinks && onEntityLinkAction ? (
+        <BubbleMenu
+          editor={editor}
+          options={{ placement: "top" }}
+          shouldShow={({ editor: ed, state }) => {
+            const { from, to } = state.selection;
+            return !ed.isActive("entityRef") && from !== to && !disabled;
+          }}
+        >
+          <div className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-popover p-1 shadow-md">
+            <Button
+              type="button"
+              size="xs"
+              variant="secondary"
+              disabled={disabled || busy}
+              onClick={() => {
+                const { from, to } = editor.state.selection;
+                const title = editor.state.doc.textBetween(from, to, " ").trim();
+                if (!title) return;
+                void handleAction({ type: "create-task", title });
+              }}
+            >
+              Create task
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant="secondary"
+              disabled={disabled || busy}
+              onClick={() => {
+                const { from, to } = editor.state.selection;
+                const displayName = editor.state.doc
+                  .textBetween(from, to, " ")
+                  .trim();
+                if (!displayName) return;
+                void handleAction({
+                  type: "create-contact",
+                  displayName,
+                });
+              }}
+            >
+              Create contact
+            </Button>
+            <Button
+              type="button"
+              size="xs"
+              variant="outline"
+              disabled={disabled || busy}
+              onClick={() => setShowLinkPicker((v) => !v)}
+            >
+              Link existing…
+            </Button>
+            {showLinkPicker ? (
+              <div className="w-full min-w-[14rem] space-y-1 border-t border-border pt-1">
+                <input
+                  className="h-7 w-full rounded border border-input bg-background px-2 text-xs"
+                  placeholder="Search…"
+                  value={linkQuery}
+                  onChange={(e) => setLinkQuery(e.target.value)}
+                  aria-label="Search entities"
+                />
+                <ul className="max-h-40 overflow-auto text-xs">
+                  {filteredCandidates.slice(0, 40).map((c) => (
+                    <li key={`${c.kind}:${c.id}`}>
+                      <button
+                        type="button"
+                        className="flex w-full items-center gap-1 rounded px-1.5 py-1 text-left hover:bg-muted"
+                        onClick={() =>
+                          void handleAction({
+                            type: "link-existing",
+                            target: { kind: c.kind, id: c.id },
+                          })
+                        }
+                      >
+                        <span className="text-muted-foreground">{c.kind}</span>
+                        <span className="truncate">{c.label}</span>
+                      </button>
+                    </li>
+                  ))}
+                  {filteredCandidates.length === 0 ? (
+                    <li className="px-1.5 py-1 text-muted-foreground">
+                      No matches
+                    </li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        </BubbleMenu>
+      ) : null}
+
       <EditorContent editor={editor} />
     </div>
   );

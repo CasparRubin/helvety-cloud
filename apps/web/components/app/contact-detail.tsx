@@ -5,7 +5,9 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   deleteContact,
@@ -14,6 +16,7 @@ import {
   type DecryptedContact,
 } from "@/lib/vault/contacts";
 import { toContactPlaintext } from "@/lib/vault/contact-plaintext";
+import type { EntityColor } from "@/lib/vault/entity-colors";
 
 const AUTOSAVE_MS = 600;
 
@@ -36,6 +39,7 @@ export function ContactDetail({
   const [emailsText, setEmailsText] = useState("");
   const [phonesText, setPhonesText] = useState("");
   const [notes, setNotes] = useState("");
+  const [color, setColor] = useState<EntityColor | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -46,6 +50,7 @@ export function ContactDetail({
   const emailsTextRef = useRef(emailsText);
   const phonesTextRef = useRef(phonesText);
   const notesRef = useRef(notes);
+  const colorRef = useRef(color);
   const contactRef = useRef(contact);
   const deletingRef = useRef(deleting);
   const savingRef = useRef(false);
@@ -60,6 +65,7 @@ export function ContactDetail({
     emailsTextRef.current = emailsText;
     phonesTextRef.current = phonesText;
     notesRef.current = notes;
+    colorRef.current = color;
     contactRef.current = contact;
     deletingRef.current = deleting;
     getWorkspaceKeyRef.current = getWorkspaceKey;
@@ -90,11 +96,13 @@ export function ContactDetail({
         setEmailsText(loaded.emails.join(", "));
         setPhonesText(loaded.phones.join(", "));
         setNotes(loaded.notes);
+        setColor(loaded.color);
         loadedSnapshotRef.current = snapshot(
           loaded.displayName,
           loaded.emails.join(", "),
           loaded.phones.join(", "),
           loaded.notes,
+          loaded.color,
         );
         setSaveStatus("idle");
         setError(null);
@@ -118,7 +126,8 @@ export function ContactDetail({
     const nextEmails = emailsTextRef.current;
     const nextPhones = phonesTextRef.current;
     const nextNotes = notesRef.current;
-    const snap = snapshot(nextName, nextEmails, nextPhones, nextNotes);
+    const nextColor = colorRef.current;
+    const snap = snapshot(nextName, nextEmails, nextPhones, nextNotes, nextColor);
     if (snap === loadedSnapshotRef.current) {
       if (mountedRef.current) {
         setSaveStatus((s) => (s === "dirty" ? "idle" : s));
@@ -147,6 +156,7 @@ export function ContactDetail({
           emails: nextEmails.split(",").map((e) => e.trim()).filter(Boolean),
           phones: nextPhones.split(",").map((p) => p.trim()).filter(Boolean),
           notes: nextNotes,
+          color: nextColor,
         }),
       );
       loadedSnapshotRef.current = snapshot(
@@ -154,6 +164,7 @@ export function ContactDetail({
         saved.emails.join(", "),
         saved.phones.join(", "),
         saved.notes,
+        saved.color,
       );
       if (!mountedRef.current) return;
       setContact(saved);
@@ -163,12 +174,14 @@ export function ContactDetail({
           emailsTextRef.current,
           phonesTextRef.current,
           notesRef.current,
+          colorRef.current,
         ) === snap
       ) {
         setDisplayName(saved.displayName);
         setEmailsText(saved.emails.join(", "));
         setPhonesText(saved.phones.join(", "));
         setNotes(saved.notes);
+        setColor(saved.color);
       }
       setSavedAt(new Date().toLocaleTimeString());
       setSaveStatus("saved");
@@ -191,7 +204,7 @@ export function ContactDetail({
 
   useEffect(() => {
     if (!contact || loading) return;
-    const snap = snapshot(displayName, emailsText, phonesText, notes);
+    const snap = snapshot(displayName, emailsText, phonesText, notes, color);
     if (snap === loadedSnapshotRef.current) return;
 
     setSaveStatus("dirty");
@@ -199,7 +212,16 @@ export function ContactDetail({
       void persistRef.current();
     }, AUTOSAVE_MS);
     return () => window.clearTimeout(timer);
-  }, [displayName, emailsText, phonesText, notes, contact, loading, workspaceId]);
+  }, [
+    displayName,
+    emailsText,
+    phonesText,
+    notes,
+    color,
+    contact,
+    loading,
+    workspaceId,
+  ]);
 
   useEffect(() => {
     function flushIfDirty() {
@@ -210,6 +232,7 @@ export function ContactDetail({
         emailsTextRef.current,
         phonesTextRef.current,
         notesRef.current,
+        colorRef.current,
       );
       if (snap === loadedSnapshotRef.current) return;
       void persistRef.current();
@@ -282,6 +305,16 @@ export function ContactDetail({
             aria-label="Notes"
             className="min-h-[6rem] w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"
           />
+          <EntityColorPicker
+            value={color}
+            disabled={deleting}
+            onChange={setColor}
+          />
+          <BacklinksPanel
+            workspaceId={workspaceId}
+            kind="contact"
+            id={contactId}
+          />
           <div className="flex flex-wrap items-center gap-2">
             <Button
               type="button"
@@ -318,8 +351,15 @@ function snapshot(
   emailsText: string,
   phonesText: string,
   notes: string,
+  color: EntityColor | undefined,
 ): string {
-  return JSON.stringify({ displayName, emailsText, phonesText, notes });
+  return JSON.stringify({
+    displayName,
+    emailsText,
+    phonesText,
+    notes,
+    color: color ?? null,
+  });
 }
 
 function SaveStatusLabel({

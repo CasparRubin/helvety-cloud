@@ -1,9 +1,15 @@
+import {
+  isEntityColor,
+  type EntityColor,
+} from "@/lib/vault/entity-colors";
+
 export type ContactPlaintext = {
   version: 1;
   displayName: string;
   emails: string[];
   phones: string[];
   notes: string;
+  color?: EntityColor;
 };
 
 function isStringArray(value: unknown): value is string[] {
@@ -29,12 +35,20 @@ export function parseContactPlaintext(raw: unknown): ContactPlaintext {
   if (typeof obj.notes !== "string") {
     throw new Error("Invalid contact plaintext");
   }
+  let color: EntityColor | undefined;
+  if (obj.color !== undefined) {
+    if (!isEntityColor(obj.color)) {
+      throw new Error("Invalid contact plaintext");
+    }
+    color = obj.color;
+  }
   return {
     version: 1,
     displayName: obj.displayName,
     emails: emails.map((e) => e.trim()).filter(Boolean),
     phones: phones.map((p) => p.trim()).filter(Boolean),
     notes: obj.notes,
+    ...(color ? { color } : {}),
   };
 }
 
@@ -43,6 +57,7 @@ export function toContactPlaintext(input: {
   emails?: string[];
   phones?: string[];
   notes?: string;
+  color?: EntityColor;
 }): ContactPlaintext {
   return {
     version: 1,
@@ -50,5 +65,6 @@ export function toContactPlaintext(input: {
     emails: (input.emails ?? []).map((e) => e.trim()).filter(Boolean),
     phones: (input.phones ?? []).map((p) => p.trim()).filter(Boolean),
     notes: input.notes ?? "",
+    ...(input.color ? { color: input.color } : {}),
   };
 }

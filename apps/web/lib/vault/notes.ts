@@ -4,7 +4,10 @@ import {
   encodeUtf8,
   type CiphertextEnvelope,
 } from "@helvety-cloud/crypto";
-import type { NoteResponse } from "@helvety-cloud/api-contract";
+import type {
+  EntityLinkTarget,
+  NoteResponse,
+} from "@helvety-cloud/api-contract";
 
 import {
   deleteNote as deleteNoteApi,
@@ -20,6 +23,8 @@ import {
   type TaskBodyDoc,
   type NotePlaintext,
 } from "@/lib/vault/note-plaintext";
+import type { EntityColor } from "@/lib/vault/entity-colors";
+import { extractEntityRefsFromDoc } from "@/lib/vault/entity-refs";
 
 const textDecoder = new TextDecoder();
 
@@ -27,10 +32,11 @@ export type DecryptedNote = {
   id: string;
   workspaceId: string;
   projectId: string | null;
-  taskId: string | null;
+  links: EntityLinkTarget[];
   title: string;
   body: TaskBodyDoc;
   tags: string[];
+  color?: EntityColor;
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
@@ -50,7 +56,12 @@ export async function encryptNoteContent(
   content: NotePlaintext,
   keyVersion = 1,
 ): Promise<CiphertextEnvelope> {
-  const plaintext = toNotePlaintext(content.title, content.body, content.tags);
+  const plaintext = toNotePlaintext(
+    content.title,
+    content.body,
+    content.tags,
+    content.color,
+  );
   return encrypt({
     key: workspaceKey,
     plaintext: encodeUtf8(JSON.stringify(plaintext)),
@@ -79,6 +90,7 @@ async function toDecrypted(
   let title = "Untitled";
   let body: TaskBodyDoc = EMPTY_NOTE_BODY;
   let tags: string[] = [];
+  let color: EntityColor | undefined;
   try {
     const content = await decryptNoteContent(
       workspaceKey,
@@ -88,6 +100,7 @@ async function toDecrypted(
     title = content.title;
     body = content.body;
     tags = content.tags;
+    color = content.color;
   } catch {
     title = "Unable to decrypt";
   }
@@ -95,10 +108,11 @@ async function toDecrypted(
     id: row.id,
     workspaceId: row.workspaceId,
     projectId: row.projectId,
-    taskId: row.taskId,
+    links: row.links,
     title,
     body,
     tags,
+    color,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -133,26 +147,32 @@ export async function createNote(
     title: string;
     body?: TaskBodyDoc;
     tags?: string[];
+    color?: EntityColor;
     projectId?: string | null;
-    taskId?: string | null;
+    links?: EntityLinkTarget[];
   },
   sortOrder = 0,
 ): Promise<DecryptedNote> {
   const noteId = crypto.randomUUID();
+  const plaintext = toNotePlaintext(
+    content.title,
+    content.body ?? EMPTY_NOTE_BODY,
+    content.tags ?? [],
+    content.color,
+  );
   const encryptedBlob = await encryptNoteContent(
     workspaceKey,
     noteId,
-    toNotePlaintext(
-      content.title,
-      content.body ?? EMPTY_NOTE_BODY,
-      content.tags ?? [],
-    ),
+    plaintext,
   );
+  const links =
+    content.links ??
+    extractEntityRefsFromDoc(plaintext.body);
   const row = await putNote(workspaceId, noteId, {
     encryptedBlob,
     sortOrder,
     projectId: content.projectId ?? null,
-    taskId: content.taskId ?? null,
+    links,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -162,19 +182,28 @@ export async function saveNote(
   workspaceKey: Uint8Array,
   note: DecryptedNote,
   content: NotePlaintext,
-  links?: { projectId?: string | null; taskId?: string | null },
+  options?: {
+    projectId?: string | null;
+    /** When omitted, links are extracted from the TipTap body. */
+    links?: EntityLinkTarget[];
+  },
 ): Promise<DecryptedNote> {
   const encryptedBlob = await encryptNoteContent(
     workspaceKey,
     note.id,
     content,
   );
+  const links =
+    options?.links !== undefined
+      ? options.links
+      : extractEntityRefsFromDoc(content.body);
   const row = await putNote(workspaceId, note.id, {
     encryptedBlob,
     sortOrder: note.sortOrder,
     deletedAt: note.deletedAt,
-    projectId: links?.projectId !== undefined ? links.projectId : note.projectId,
-    taskId: links?.taskId !== undefined ? links.taskId : note.taskId,
+    projectId:
+      options?.projectId !== undefined ? options.projectId : note.projectId,
+    links,
   });
   return toDecrypted(workspaceKey, row);
 }

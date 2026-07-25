@@ -9,8 +9,9 @@ All vault entities are **workspace-scoped**. There is no user-global contacts/no
 ```text
 Workspace  (members + per-member wrapped_keys)
   ├── projects → tasks
-  ├── notes     (required workspace_id; optional project/task FKs; dynamic encrypted JSON)
-  └── contacts  (workspace address book; no global dedupe)
+  ├── notes     (required workspace_id; optional project_id filing FK; TipTap body may embed EntityRef)
+  ├── contacts  (workspace address book; no global dedupe)
+  └── entity_links  (plaintext UUID graph: source ↔ target kinds/ids — intentional metadata)
 ```
 
 - **Personal workspace** — created/ensured on first vault setup (P6a); home for “general” notes/contacts.  
@@ -30,8 +31,9 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `workspace_members` | `workspace_id`, `user_id`, `role` |
 | `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key` — always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
 | `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
-| `notes` | `id`, `workspace_id`, optional `project_id` / `task_id`, sort, timestamps, tombstone |
+| `notes` | `id`, `workspace_id`, optional `project_id` (filing), sort, timestamps, tombstone |
 | `contacts` | `id`, `workspace_id`, sort, timestamps, tombstone |
+| `entity_links` (P8a) | UUID graph edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. **Intentional metadata** — Helvety sees which ids are linked, never titles/colors. Used for reverse lookup without decrypting all notes. |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
 | `subscriptions` (P6f) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `stripe_customer_id` / `stripe_subscription_id` / `stripe_price_id`, `current_period_end`, `cancel_at_period_end`. Members SELECT only; writes via service-role webhook |
@@ -42,11 +44,11 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
 | Table | Content |
 |-------|---------|
-| `projects` | `encrypted_blob` holds `{ name, categorizations }` where `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, isDefault? }` (names encrypted); plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
+| `projects` | `encrypted_blob` holds `{ name, categorizations, color? }` where `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, isDefault? }` (names + colors encrypted); optional top-level `color` is a palette token (P8c); plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
 | `tasks` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`); legacy unversioned `{ title, body: string }` is normalized on decrypt; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), sort, `updated_at`, tombstone |
-| `notes` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`) and `tags` is `string[]`; optional nullable plaintext `project_id` / `task_id` for filtered lists without decrypting all notes |
-| `contacts` (P6d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes }` under **workspace_key**; duplicates across workspaces OK |
-| Later | `milestones`; color tokens as plaintext metadata if needed for boards |
+| `notes` (P6d/P8) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags, color? }` where `body` is TipTap JSON that may include `entityRef` atoms `{ type: "entityRef", attrs: { kind, id } }` (P8b); `tags` is `string[]`; optional `color` palette token (P8c); optional nullable plaintext `project_id` for filing filters. Task associations live in `entity_links`, not a note column. |
+| `contacts` (P6d/P8c) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; optional `color` palette token; duplicates across workspaces OK |
+| Later | `milestones` |
 
 ## RLS
 

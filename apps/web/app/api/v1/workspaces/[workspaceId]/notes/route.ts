@@ -3,8 +3,13 @@ import {
   listNotesResponseSchema,
   noteResponseSchema,
   uuidSchema,
+  type EntityLinkTarget,
 } from "@helvety-cloud/api-contract";
 
+import {
+  findNoteIdsLinkedToTask,
+  listOutgoingLinksForSources,
+} from "@/lib/api/entity-links";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import {
   encodeSortOrderCursor,
@@ -50,10 +55,32 @@ export async function GET(request: Request, context: RouteContext) {
     taskId = i.data;
   }
 
+  let noteIdFilter: string[] | null = null;
+  if (taskId !== null) {
+    try {
+      noteIdFilter = await findNoteIdsLinkedToTask(
+        supabase,
+        workspaceId,
+        taskId,
+      );
+    } catch (e) {
+      return apiError(
+        "internal",
+        e instanceof Error ? e.message : "Failed to resolve task links",
+        500,
+      );
+    }
+    if (noteIdFilter.length === 0) {
+      return jsonOk(
+        listNotesResponseSchema.parse({ notes: [], nextCursor: null }),
+      );
+    }
+  }
+
   let query = supabase
     .from("notes")
     .select(
-      "id, workspace_id, project_id, task_id, encrypted_blob, sort_order, updated_at, deleted_at",
+      "id, workspace_id, project_id, encrypted_blob, sort_order, updated_at, deleted_at",
     )
     .eq("workspace_id", workspaceId)
     .order("sort_order", { ascending: true })
@@ -66,8 +93,8 @@ export async function GET(request: Request, context: RouteContext) {
   if (projectId !== null) {
     query = query.eq("project_id", projectId);
   }
-  if (taskId !== null) {
-    query = query.eq("task_id", taskId);
+  if (noteIdFilter !== null) {
+    query = query.in("id", noteIdFilter);
   }
 
   if (cursor) {
@@ -94,12 +121,28 @@ export async function GET(request: Request, context: RouteContext) {
       ? encodeSortOrderCursor({ sortOrder: last.sort_order, id: last.id })
       : null;
 
+  let linksByNote: Map<string, EntityLinkTarget[]>;
+  try {
+    linksByNote = await listOutgoingLinksForSources(
+      supabase,
+      workspaceId,
+      "note",
+      page.map((r) => r.id),
+    );
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to load links",
+      500,
+    );
+  }
+
   const notes = page.map((row) =>
     noteResponseSchema.parse({
       id: row.id,
       workspaceId: row.workspace_id,
       projectId: row.project_id,
-      taskId: row.task_id,
+      links: linksByNote.get(row.id) ?? [],
       encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
       sortOrder: row.sort_order,
       updatedAt: row.updated_at,

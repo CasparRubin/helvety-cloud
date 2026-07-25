@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
+import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -402,6 +403,11 @@ export function TaskDetail({
             content={body}
             onChange={setBody}
             disabled={deleting}
+          />
+          <BacklinksPanel
+            workspaceId={workspaceId}
+            kind="task"
+            id={taskId}
           />
           <div className="flex flex-wrap items-center gap-2">
             <Button

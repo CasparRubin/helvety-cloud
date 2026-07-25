@@ -87,6 +87,44 @@ export type Database = {
           },
         ]
       }
+      entity_links: {
+        Row: {
+          created_at: string
+          id: string
+          source_id: string
+          source_kind: string
+          target_id: string
+          target_kind: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          source_id: string
+          source_kind: string
+          target_id: string
+          target_kind: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          source_id?: string
+          source_kind?: string
+          target_id?: string
+          target_kind?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "entity_links_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           created_at: string
@@ -140,7 +178,6 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
-          task_id: string | null
           project_id: string | null
           sort_order: number
           updated_at: string
@@ -151,7 +188,6 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
-          task_id?: string | null
           project_id?: string | null
           sort_order?: number
           updated_at?: string
@@ -162,20 +198,12 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
-          task_id?: string | null
           project_id?: string | null
           sort_order?: number
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "notes_task_id_fkey"
-            columns: ["task_id"]
-            isOneToOne: false
-            referencedRelation: "tasks"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "notes_project_id_fkey"
             columns: ["project_id"]

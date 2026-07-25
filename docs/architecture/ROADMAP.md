@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat. Product wave (P6a–P6f) complete; **P7** adds task categorizations. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8c** entity linking. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -36,7 +36,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/tasks CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
 
-**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations / custom labels: **P7**.)
+**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8c**.)
 
 ---
 
@@ -466,6 +466,70 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P8a — Entity link graph
+
+**Status:** **Done**
+
+**Goal:** Many-to-many UUID link graph between vault entities (notes ↔ tasks/contacts/projects/notes) as intentional plaintext metadata; migrate off single `notes.task_id`.
+
+**Do:**
+
+- Schema: `entity_links` (`workspace_id`, `source_kind`, `source_id`, `target_kind`, `target_id`); unique edge; indexes for forward + reverse lookup; RLS via membership.  
+- Migrate existing `notes.task_id` → `entity_links` (`note`→`task`); drop `notes.task_id`. Keep `notes.project_id` as filing metadata.  
+- API: note PUT accepts `links: [{ kind, id }]`, replaces that note’s outgoing edges after workspace ID validation; note responses include `links`; list notes by `taskId` via junction; `GET …/links` for reverse lookup (backlinks).  
+- UI: multi-link chips on note detail (outside editor OK); remove single-task dropdown.
+
+**Don’t:** TipTap EntityRef / BubbleMenu (P8b); entity colors / rich badges (P8c); cross-workspace links; titles/colors in junction rows.
+
+**Done when:** Notes link to many tasks; reverse lookup works; `task_id` column gone; link graph documented as metadata.
+
+**Paste prompt:** [`docs/architecture/prompts/P8a.md`](./prompts/P8a.md)
+
+---
+
+### P8b — Editor entity refs + create from selection
+
+**Status:** **Done**
+
+**Goal:** Inline TipTap `EntityRef` chips in note bodies + BubbleMenu create/link-from-selection; extract refs on save → sync `entity_links`.
+
+**Do:**
+
+- TipTap atom node `entityRef` `{ kind, id }` inside encrypted note body.  
+- BubbleMenu: Create task (title = selection), Create contact (displayName = selection), Link existing… (typeahead over decrypted workspace cache).  
+- New tasks: default project = note’s `project_id`, else project picker.  
+- On save: walk TipTap doc → replace note’s outgoing `entity_links`.  
+- Optional `@` mention suggestion (same node).
+
+**Don’t:** Entity accent colors / stage badges (P8c); AI extract; CRDT/Yjs; server plaintext search.
+
+**Done when:** Select text in a note → create task/contact → chip appears; links sync to junction; chips resolve labels from decrypted cache.
+
+**Paste prompt:** [`docs/architecture/prompts/P8b.md`](./prompts/P8b.md)
+
+---
+
+### P8c — Visual layer + navigation
+
+**Status:** **Done**
+
+**Goal:** Colored live chips (refs, not snapshots) with task stage/priority/label badges; click-to-jump; backlinks panels.
+
+**Do:**
+
+- Optional `color` palette token in project/note/contact ciphertext; kind-level fallback constants.  
+- Rich chip: task shows live stage/priority/label from decrypted project categorizations; done/tombstoned = strikethrough.  
+- Click chip → navigate to target; backlinks panel on task/note/contact/project detail via `entity_links` reverse lookup.  
+- Shared client vault cache so chips re-render when targets change.
+
+**Don’t:** Hover preview cards; cross-workspace links; store colors in plaintext columns; AI.
+
+**Done when:** Chips colored + badged; jump + backlinks work; colors stay ciphertext.
+
+**Paste prompt:** [`docs/architecture/prompts/P8c.md`](./prompts/P8c.md)
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -547,4 +611,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

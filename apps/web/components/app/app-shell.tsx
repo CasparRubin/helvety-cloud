@@ -24,6 +24,7 @@ import {
 } from "@/components/app/workspace-nav";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import { UnlockGate } from "@/components/vault/unlock-gate";
+import { VaultEntityCacheProvider } from "@/components/vault/vault-entity-cache";
 import {
   useVaultSession,
   VaultSessionProvider,
@@ -202,7 +203,18 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             )}
           </nav>
         </aside>
-        <main className="min-w-0 flex-1">{children}</main>
+        <main className="min-w-0 flex-1">
+          {activeWorkspaceId ? (
+            <VaultEntityCacheProvider
+              key={activeWorkspaceId}
+              workspaceId={activeWorkspaceId}
+            >
+              {children}
+            </VaultEntityCacheProvider>
+          ) : (
+            children
+          )}
+        </main>
       </div>
     </div>
   );

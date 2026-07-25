@@ -13,6 +13,7 @@ import {
   listTasksResponseSchema,
   listMyInvitationsResponseSchema,
   listNotesResponseSchema,
+  listEntityLinksResponseSchema,
   listProjectsResponseSchema,
   listWorkspaceInvitationsResponseSchema,
   listWorkspaceMembersResponseSchema,
@@ -44,6 +45,7 @@ import {
   type ListTasksResponse,
   type ListMyInvitationsResponse,
   type ListNotesResponse,
+  type ListEntityLinksResponse,
   type ListProjectsResponse,
   type ListWorkspaceInvitationsResponse,
   type ListWorkspaceMembersResponse,
@@ -413,6 +415,29 @@ export async function deleteNote(
   await apiFetchNoContent(
     `/api/v1/workspaces/${workspaceId}/notes/${noteId}`,
     { method: "DELETE" },
+  );
+}
+
+export type ListEntityLinksParams = {
+  sourceKind?: string;
+  sourceId?: string;
+  targetKind?: string;
+  targetId?: string;
+};
+
+export async function listEntityLinks(
+  workspaceId: string,
+  params: ListEntityLinksParams,
+): Promise<ListEntityLinksResponse> {
+  const q = new URLSearchParams();
+  if (params.sourceKind) q.set("sourceKind", params.sourceKind);
+  if (params.sourceId) q.set("sourceId", params.sourceId);
+  if (params.targetKind) q.set("targetKind", params.targetKind);
+  if (params.targetId) q.set("targetId", params.targetId);
+  const qs = q.toString();
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/links${qs ? `?${qs}` : ""}`,
+    listEntityLinksResponseSchema,
   );
 }
 
