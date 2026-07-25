@@ -94,7 +94,7 @@ export function WorkspaceSwitcher({
             <Button
               variant="outline"
               size="sm"
-              className="h-8 max-w-[10rem] justify-between gap-2 px-2 font-normal"
+              className="h-8 max-w-[8rem] justify-between gap-2 px-2 font-normal sm:max-w-[10rem]"
             />
           }
         >

@@ -1,17 +1,54 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { useRouter } from "next/navigation";
+import {
+  DndContext,
+  DragOverlay,
+  KeyboardSensor,
+  PointerSensor,
+  closestCorners,
+  useDraggable,
+  useDroppable,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+  type DragStartEvent,
+} from "@dnd-kit/core";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  GripVerticalIcon,
+} from "lucide-react";
 
 import { CategorizationPicker } from "@/components/app/categorization-picker";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import {
+  EntityListEmpty,
+  EntityListShell,
+} from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
+import {
+  resolveStageColor,
+  type CategorizationOption,
+  type ProjectCategorizations,
+} from "@/lib/vault/categorizations";
+import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
+import { groupTasksByStage } from "@/lib/vault/task-board";
 import {
   createTask,
-  loadDecryptedTasks,
+  loadAllDecryptedTasks,
   saveTaskCategorizationIds,
   type DecryptedTask,
 } from "@/lib/vault/tasks";
@@ -20,6 +57,7 @@ import {
   loadDecryptedProject,
   type DecryptedProject,
 } from "@/lib/vault/projects";
+import { cn } from "@/lib/utils";
 
 type TaskListProps = {
   workspaceId: string;
@@ -36,20 +74,23 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
-  const [stageFilter, setStageFilter] = useState<string | null>(null);
   const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor),
+  );
 
   const reload = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
-    const [loadedProject, tasksPage] = await Promise.all([
+    const [loadedProject, allTasks] = await Promise.all([
       loadDecryptedProject(workspaceId, projectId, key),
-      loadDecryptedTasks(workspaceId, projectId, key, {
-        stageId: stageFilter || undefined,
-      }),
+      loadAllDecryptedTasks(workspaceId, projectId, key),
     ]);
     setProject(loadedProject);
-    setTasks(tasksPage.tasks);
-  }, [getWorkspaceKey, workspaceId, projectId, stageFilter]);
+    setTasks(allTasks);
+  }, [getWorkspaceKey, workspaceId, projectId]);
 
   useEffect(() => {
     if (!vault) return;
@@ -69,6 +110,16 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       cancelled = true;
     };
   }, [vault, reload]);
+
+  const columns = useMemo(() => {
+    if (!project) return [];
+    return groupTasksByStage(tasks, project.categorizations);
+  }, [project, tasks]);
+
+  const activeTask = useMemo(
+    () => (activeTaskId ? tasks.find((t) => t.id === activeTaskId) : null),
+    [activeTaskId, tasks],
+  );
 
   async function onCreate(e: React.FormEvent) {
     e.preventDefault();
@@ -127,8 +178,21 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     ) {
       return;
     }
+    const previous = tasks;
     setSavingTaskId(task.id);
     setError(null);
+    setTasks((prev) =>
+      prev.map((t) =>
+        t.id === task.id
+          ? {
+              ...t,
+              labelId: next.labelId,
+              stageId: next.stageId,
+              priorityId: next.priorityId,
+            }
+          : t,
+      ),
+    );
     try {
       const key = await getWorkspaceKey(workspaceId);
       const saved = await saveTaskCategorizationIds(
@@ -142,41 +206,59 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           priorityId: next.priorityId,
         },
       );
-      if (stageFilter && next.stageId !== stageFilter) {
-        setLoading(true);
-        await reload();
-        setLoading(false);
-      } else {
-        setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)));
-      }
+      setTasks((prev) => prev.map((t) => (t.id === saved.id ? saved : t)));
       window.dispatchEvent(new Event("helvety:tasks-changed"));
     } catch (err) {
+      setTasks(previous);
       setError(err instanceof Error ? err.message : "Update failed");
     } finally {
       setSavingTaskId(null);
     }
   }
 
+  function resolveDropStageId(
+    overData: Record<string, unknown> | undefined,
+  ): string | null {
+    if (overData?.type === "stage" && typeof overData.stageId === "string") {
+      return overData.stageId;
+    }
+    if (overData?.type === "task" && typeof overData.stageId === "string") {
+      return overData.stageId;
+    }
+    return null;
+  }
+
+  function onDragStart(event: DragStartEvent) {
+    setActiveTaskId(String(event.active.id));
+  }
+
+  function onDragEnd(event: DragEndEvent) {
+    setActiveTaskId(null);
+    const { active, over } = event;
+    if (!over || !project) return;
+    const task = tasks.find((t) => t.id === String(active.id));
+    if (!task) return;
+    const nextStageId = resolveDropStageId(
+      over.data.current as Record<string, unknown> | undefined,
+    );
+    if (!nextStageId || nextStageId === task.stageId) return;
+    const priorityId = task.priorityId ?? "";
+    if (!priorityId) return;
+    void updateTaskIds(task, {
+      labelId: task.labelId,
+      stageId: nextStageId,
+      priorityId,
+    });
+  }
+
   if (!vault) return null;
 
-  const stages = project
-    ? [...project.categorizations.stages].sort(
-        (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
-      )
-    : [];
-
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h1 className="text-lg font-semibold tracking-tight">
-            {project?.name ?? "Project"}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            Task titles and bodies are encrypted end-to-end.
-          </p>
-        </div>
-        <div className="flex shrink-0 items-center gap-2">
+    <EntityListShell
+      title={project?.name ?? "Project"}
+      subtitle="Task titles and bodies are encrypted end-to-end."
+      actions={
+        <>
           <Link
             href={`/app/w/${workspaceId}/p/${projectId}/settings`}
             className="inline-flex h-7 items-center rounded-lg border border-border px-2.5 text-[0.8rem] font-medium hover:bg-muted"
@@ -190,124 +272,356 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
             onConfirm={onDeleteProject}
           />
-        </div>
-      </div>
-
-      <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="New task title"
-          disabled={busy}
-          maxLength={500}
-          aria-label="Task title"
-        />
-        <Button type="submit" disabled={busy || !title.trim()} size="sm">
-          Create
-        </Button>
-      </form>
-
-      {stages.length > 0 ? (
-        <div className="flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Stage</span>
-          <CategorizationPicker
-            options={stages}
-            value={stageFilter}
-            allowNone
-            noneLabel="All"
-            useStageColor
+        </>
+      }
+      createForm={
+        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="New task title"
             disabled={busy}
-            aria-label="Filter by stage"
+            maxLength={500}
+            aria-label="Task title"
+          />
+          <Button type="submit" disabled={busy || !title.trim()} size="sm">
+            Create
+          </Button>
+        </form>
+      }
+      error={error}
+      loading={loading}
+      loadingLabel="Loading tasks…"
+      bareChildren
+    >
+      {!loading && project ? (
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCorners}
+          onDragStart={onDragStart}
+          onDragEnd={onDragEnd}
+          onDragCancel={() => setActiveTaskId(null)}
+        >
+          <div className="flex min-h-0 flex-1 gap-3 overflow-x-auto pb-2">
+            {columns.map((col, index) => (
+              <StageColumn
+                key={col.stage.id}
+                stage={col.stage}
+                prevStage={columns[index - 1]?.stage ?? null}
+                nextStage={columns[index + 1]?.stage ?? null}
+                tasks={col.tasks}
+                cats={project.categorizations}
+                workspaceId={workspaceId}
+                projectId={projectId}
+                busy={busy}
+                savingTaskId={savingTaskId}
+                onUpdateIds={updateTaskIds}
+              />
+            ))}
+          </div>
+          <DragOverlay dropAnimation={null}>
+            {activeTask && project ? (
+              <TaskCardContent
+                task={activeTask}
+                cats={project.categorizations}
+                workspaceId={workspaceId}
+                projectId={projectId}
+                overlay
+              />
+            ) : null}
+          </DragOverlay>
+        </DndContext>
+      ) : null}
+    </EntityListShell>
+  );
+}
+
+function StageColumn({
+  stage,
+  prevStage,
+  nextStage,
+  tasks,
+  cats,
+  workspaceId,
+  projectId,
+  busy,
+  savingTaskId,
+  onUpdateIds,
+}: {
+  stage: CategorizationOption;
+  prevStage: CategorizationOption | null;
+  nextStage: CategorizationOption | null;
+  tasks: DecryptedTask[];
+  cats: ProjectCategorizations;
+  workspaceId: string;
+  projectId: string;
+  busy: boolean;
+  savingTaskId: string | null;
+  onUpdateIds: (
+    task: DecryptedTask,
+    next: {
+      labelId: string | null;
+      stageId: string;
+      priorityId: string;
+    },
+  ) => void;
+}) {
+  const { setNodeRef, isOver } = useDroppable({
+    id: stage.id,
+    data: { type: "stage", stageId: stage.id },
+  });
+  const tintColor = resolveStageColor(stage);
+  const tint = tintColor ? ENTITY_COLOR_CLASSES[tintColor] : null;
+  const Icon = stage.icon
+    ? CATEGORIZATION_ICON_COMPONENTS[stage.icon]
+    : null;
+
+  return (
+    <section
+      ref={setNodeRef}
+      aria-label={`${stage.name} stage`}
+      className={cn(
+        "flex w-72 shrink-0 flex-col overflow-hidden rounded-lg border border-border bg-background",
+        isOver && "ring-2 ring-ring",
+      )}
+    >
+      <header
+        className={cn(
+          "flex items-center gap-2 border-b border-border px-3 py-2",
+          tint ? cn(tint.bg, tint.text) : "bg-muted/40",
+        )}
+      >
+        {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden /> : null}
+        <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
+          {stage.name}
+        </h2>
+        <span className="text-xs tabular-nums opacity-70">{tasks.length}</span>
+      </header>
+      <div className="flex flex-1 flex-col">
+        {tasks.length === 0 ? (
+          <EntityListEmpty className="m-2 px-3 py-6 text-center text-xs">
+            No tasks in this stage
+          </EntityListEmpty>
+        ) : (
+          tasks.map((task) => (
+            <TaskCard
+              key={task.id}
+              task={task}
+              stageId={stage.id}
+              prevStage={prevStage}
+              nextStage={nextStage}
+              cats={cats}
+              workspaceId={workspaceId}
+              projectId={projectId}
+              disabled={busy || savingTaskId === task.id}
+              onUpdateIds={onUpdateIds}
+            />
+          ))
+        )}
+      </div>
+    </section>
+  );
+}
+
+function TaskCard({
+  task,
+  stageId,
+  prevStage,
+  nextStage,
+  cats,
+  workspaceId,
+  projectId,
+  disabled,
+  onUpdateIds,
+}: {
+  task: DecryptedTask;
+  stageId: string;
+  prevStage: CategorizationOption | null;
+  nextStage: CategorizationOption | null;
+  cats: ProjectCategorizations;
+  workspaceId: string;
+  projectId: string;
+  disabled: boolean;
+  onUpdateIds: (
+    task: DecryptedTask,
+    next: {
+      labelId: string | null;
+      stageId: string;
+      priorityId: string;
+    },
+  ) => void;
+}) {
+  const { attributes, listeners, setNodeRef, transform, isDragging } =
+    useDraggable({
+      id: task.id,
+      disabled,
+      data: { type: "task", stageId, taskId: task.id },
+    });
+  const style: CSSProperties | undefined = transform
+    ? {
+        transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+      }
+    : undefined;
+  const canMove = !disabled && Boolean(task.priorityId);
+
+  function moveToStage(target: CategorizationOption | null) {
+    if (!target || !task.priorityId) return;
+    onUpdateIds(task, {
+      labelId: task.labelId,
+      stageId: target.id,
+      priorityId: task.priorityId,
+    });
+  }
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(isDragging && "opacity-40")}
+    >
+      <TaskCardContent
+        task={task}
+        cats={cats}
+        workspaceId={workspaceId}
+        projectId={projectId}
+        disabled={disabled}
+        onUpdateIds={onUpdateIds}
+        dragHandle={
+          <button
+            type="button"
+            className="inline-flex size-7 shrink-0 touch-none items-center justify-center rounded-md text-muted-foreground hover:bg-muted disabled:opacity-50"
+            aria-label={`Drag ${task.title || "task"}`}
+            disabled={disabled}
+            {...listeners}
+            {...attributes}
+          >
+            <GripVerticalIcon className="size-4" aria-hidden />
+          </button>
+        }
+        moveActions={
+          <div className="flex shrink-0 flex-col">
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-muted-foreground"
+              disabled={!canMove || !prevStage}
+              aria-label={
+                prevStage
+                  ? `Move to ${prevStage.name}`
+                  : "No previous stage"
+              }
+              title={prevStage ? `Move to ${prevStage.name}` : undefined}
+              onClick={() => moveToStage(prevStage)}
+            >
+              <ChevronUpIcon aria-hidden />
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="icon-xs"
+              className="text-muted-foreground"
+              disabled={!canMove || !nextStage}
+              aria-label={
+                nextStage ? `Move to ${nextStage.name}` : "No next stage"
+              }
+              title={nextStage ? `Move to ${nextStage.name}` : undefined}
+              onClick={() => moveToStage(nextStage)}
+            >
+              <ChevronDownIcon aria-hidden />
+            </Button>
+          </div>
+        }
+      />
+    </div>
+  );
+}
+
+function TaskCardContent({
+  task,
+  cats,
+  workspaceId,
+  projectId,
+  disabled,
+  onUpdateIds,
+  dragHandle,
+  moveActions,
+  overlay = false,
+}: {
+  task: DecryptedTask;
+  cats: ProjectCategorizations;
+  workspaceId: string;
+  projectId: string;
+  disabled?: boolean;
+  onUpdateIds?: (
+    task: DecryptedTask,
+    next: {
+      labelId: string | null;
+      stageId: string;
+      priorityId: string;
+    },
+  ) => void;
+  dragHandle?: ReactNode;
+  moveActions?: ReactNode;
+  overlay?: boolean;
+}) {
+  const stageId = task.stageId ?? "";
+  const priorityId = task.priorityId ?? "";
+
+  return (
+    <article
+      className={cn(
+        "flex flex-wrap items-center gap-1 border-b border-border bg-background px-1 py-0.5 last:border-b-0 hover:bg-muted/40",
+        overlay &&
+          "w-72 rounded-md border border-border shadow-lg ring-1 ring-ring",
+      )}
+    >
+      {dragHandle}
+      <Link
+        href={`/app/w/${workspaceId}/p/${projectId}/t/${task.id}`}
+        className="min-w-0 flex-1 truncate text-sm font-medium hover:underline"
+        tabIndex={overlay ? -1 : undefined}
+        onClick={(e) => {
+          if (overlay) e.preventDefault();
+        }}
+      >
+        {task.title || "Untitled"}
+      </Link>
+      {moveActions}
+      {onUpdateIds ? (
+        <>
+          <CategorizationPicker
+            options={cats.labels}
+            value={task.labelId}
+            allowNone
+            disabled={disabled}
+            className="max-w-[8rem]"
+            aria-label={`Label for ${task.title || "task"}`}
+            onChange={(id) =>
+              onUpdateIds(task, {
+                labelId: id,
+                stageId,
+                priorityId,
+              })
+            }
+          />
+          <CategorizationPicker
+            options={cats.priorities}
+            value={priorityId || null}
+            disabled={disabled || !priorityId}
+            className="max-w-[8rem]"
+            aria-label={`Priority for ${task.title || "task"}`}
             onChange={(id) => {
-              setLoading(true);
-              setStageFilter(id);
+              if (!id) return;
+              onUpdateIds(task, {
+                labelId: task.labelId,
+                stageId,
+                priorityId: id,
+              });
             }}
           />
-        </div>
+        </>
       ) : null}
-
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading tasks…</p>
-      ) : tasks.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-          No tasks yet.
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {tasks.map((task) => {
-            const cats = project?.categorizations;
-            const rowBusy = busy || savingTaskId === task.id;
-            const stageId = task.stageId ?? "";
-            const priorityId = task.priorityId ?? "";
-            return (
-              <li
-                key={task.id}
-                className="flex items-center justify-between gap-3 rounded-md border border-border px-3 py-2 text-sm hover:bg-muted/40"
-              >
-                <Link
-                  href={`/app/w/${workspaceId}/p/${projectId}/t/${task.id}`}
-                  className="min-w-0 flex-1 font-medium hover:underline"
-                >
-                  {task.title || "Untitled"}
-                </Link>
-                {cats ? (
-                  <div className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-                    <CategorizationPicker
-                      options={cats.labels}
-                      value={task.labelId}
-                      allowNone
-                      disabled={rowBusy}
-                      aria-label={`Label for ${task.title || "task"}`}
-                      onChange={(id) =>
-                        void updateTaskIds(task, {
-                          labelId: id,
-                          stageId,
-                          priorityId,
-                        })
-                      }
-                    />
-                    <CategorizationPicker
-                      options={cats.stages}
-                      value={stageId || null}
-                      useStageColor
-                      disabled={rowBusy || !stageId}
-                      aria-label={`Stage for ${task.title || "task"}`}
-                      onChange={(id) => {
-                        if (!id) return;
-                        void updateTaskIds(task, {
-                          labelId: task.labelId,
-                          stageId: id,
-                          priorityId,
-                        });
-                      }}
-                    />
-                    <CategorizationPicker
-                      options={cats.priorities}
-                      value={priorityId || null}
-                      disabled={rowBusy || !priorityId}
-                      aria-label={`Priority for ${task.title || "task"}`}
-                      onChange={(id) => {
-                        if (!id) return;
-                        void updateTaskIds(task, {
-                          labelId: task.labelId,
-                          stageId,
-                          priorityId: id,
-                        });
-                      }}
-                    />
-                  </div>
-                ) : null}
-              </li>
-            );
-          })}
-        </ul>
-      )}
-    </div>
+    </article>
   );
 }

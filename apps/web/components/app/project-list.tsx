@@ -3,6 +3,10 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 
+import {
+  EntityListRow,
+  EntityListShell,
+} from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
@@ -125,88 +129,72 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   if (!vault) return null;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">
-          {workspace?.name ?? "Workspace"}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Projects are encrypted on your device. Helvety only stores ciphertext.
-        </p>
-      </div>
-
-      <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-        <Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="New project name"
-          disabled={busy}
-          maxLength={120}
-          aria-label="Project name"
-        />
-        <Button type="submit" disabled={busy || !name.trim()} size="sm">
-          Create
-        </Button>
-      </form>
-
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading projects…</p>
-      ) : projects.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-          No projects yet. Create one to add encrypted tasks.
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {projects.map((project, index) => (
-            <li
-              key={project.id}
-              className="flex items-center gap-2 rounded-md border border-border px-3 py-2"
+    <EntityListShell
+      title={workspace?.name ?? "Workspace"}
+      subtitle="Projects are encrypted on your device. Helvety only stores ciphertext."
+      createForm={
+        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="New project name"
+            disabled={busy}
+            maxLength={120}
+            aria-label="Project name"
+          />
+          <Button type="submit" disabled={busy || !name.trim()} size="sm">
+            Create
+          </Button>
+        </form>
+      }
+      error={error}
+      loading={loading}
+      loadingLabel="Loading projects…"
+      empty={!loading && projects.length === 0}
+      emptyLabel="No projects yet. Create one to add encrypted tasks."
+    >
+      {projects.map((project, index) => (
+        <EntityListRow
+          key={project.id}
+          className="flex items-center gap-2"
+        >
+          <Link
+            href={`/app/w/${workspaceId}/p/${project.id}`}
+            className="min-w-0 flex-1 truncate font-medium hover:underline"
+          >
+            {project.name}
+          </Link>
+          <div className="flex shrink-0 gap-1">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={busy || index === 0}
+              onClick={() => void onReorder(index, "up")}
+              aria-label="Move up"
             >
-              <Link
-                href={`/app/w/${workspaceId}/p/${project.id}`}
-                className="min-w-0 flex-1 truncate text-sm font-medium hover:underline"
-              >
-                {project.name}
-              </Link>
-              <div className="flex shrink-0 gap-1">
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={busy || index === 0}
-                  onClick={() => void onReorder(index, "up")}
-                  aria-label="Move up"
-                >
-                  ↑
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  disabled={busy || index === projects.length - 1}
-                  onClick={() => void onReorder(index, "down")}
-                  aria-label="Move down"
-                >
-                  ↓
-                </Button>
-                <DeleteButton
-                  disabled={busy}
-                  busy={busy}
-                  dialogTitle={`Delete project “${project.name}”?`}
-                  dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
-                  onConfirm={() => onDelete(project)}
-                />
-              </div>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+              ↑
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              disabled={busy || index === projects.length - 1}
+              onClick={() => void onReorder(index, "down")}
+              aria-label="Move down"
+            >
+              ↓
+            </Button>
+            <DeleteButton
+              disabled={busy}
+              busy={busy}
+              dialogTitle={`Delete project “${project.name}”?`}
+              dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
+              onConfirm={() => onDelete(project)}
+            />
+          </div>
+        </EntityListRow>
+      ))}
+    </EntityListShell>
   );
 }

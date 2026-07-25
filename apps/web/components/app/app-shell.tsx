@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, Fragment } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
@@ -42,26 +42,75 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-function SidebarLink({
+type SectionId = "projects" | "notes" | "contacts" | "settings";
+
+function workspaceSections(workspaceBase: string): {
+  id: SectionId;
+  href: string;
+  label: string;
+  icon: LucideIcon;
+}[] {
+  return [
+    {
+      id: "projects",
+      href: workspaceBase,
+      label: "Projects",
+      icon: FolderKanbanIcon,
+    },
+    {
+      id: "notes",
+      href: `${workspaceBase}/notes`,
+      label: "Notes",
+      icon: StickyNoteIcon,
+    },
+    {
+      id: "contacts",
+      href: `${workspaceBase}/contacts`,
+      label: "Contacts",
+      icon: ContactIcon,
+    },
+    {
+      id: "settings",
+      href: `${workspaceBase}/settings`,
+      label: "Settings",
+      icon: SettingsIcon,
+    },
+  ];
+}
+
+function SectionLink({
   href,
   active,
   icon: Icon,
   children,
+  variant,
 }: {
   href: string;
   active: boolean;
   icon: LucideIcon;
   children: React.ReactNode;
+  variant: "sidebar" | "mobile";
 }) {
   return (
     <Link
       href={href}
+      aria-current={active ? "page" : undefined}
       className={cn(
-        "flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        active && "bg-sidebar-accent text-sidebar-accent-foreground",
+        variant === "sidebar"
+          ? "flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+          : "flex shrink-0 items-center gap-1.5 rounded-md px-2.5 py-1.5 text-sm text-muted-foreground hover:bg-muted hover:text-foreground",
+        active &&
+          (variant === "sidebar"
+            ? "bg-sidebar-accent text-sidebar-accent-foreground"
+            : "bg-muted text-foreground"),
       )}
     >
-      <Icon className="size-4 shrink-0 opacity-60" />
+      <Icon
+        className={cn(
+          "size-4 shrink-0",
+          variant === "sidebar" ? "opacity-60" : "opacity-70",
+        )}
+      />
       {children}
     </Link>
   );
@@ -76,10 +125,8 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const activeWorkspaceId = location?.workspaceId ?? null;
   const workspaceBase = location?.workspaceBase ?? null;
   const backHref = location ? parentHrefFor(location) : null;
-  const projectsActive = location?.section === "projects";
-  const notesActive = location?.section === "notes";
-  const contactsActive = location?.section === "contacts";
-  const settingsActive = location?.section === "settings";
+  const activeSection = location?.section ?? null;
+  const sections = workspaceBase ? workspaceSections(workspaceBase) : [];
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
   const shouldRedirectToWorkspace =
@@ -130,7 +177,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
         {backHref ? <NavBackButton href={backHref} /> : null}
         <nav
           aria-label="Breadcrumb"
-          className="flex min-w-0 items-center gap-1.5"
+          className="flex min-w-0 items-center gap-1.5 overflow-hidden"
         >
           <WorkspaceSwitcher
             userId={userId}
@@ -156,45 +203,49 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             </>
           ) : null}
         </nav>
-        <div className="ml-auto flex items-center gap-1">
+        <div className="ml-auto flex shrink-0 items-center gap-1">
           <ThemeToggle />
           <UserMenu email={email} />
         </div>
       </header>
+      {workspaceBase ? (
+        <nav
+          aria-label="Workspace sections"
+          className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
+        >
+          {sections.map((section) => (
+            <SectionLink
+              key={section.id}
+              href={section.href}
+              active={activeSection === section.id}
+              icon={section.icon}
+              variant="mobile"
+            >
+              {section.label}
+            </SectionLink>
+          ))}
+        </nav>
+      ) : null}
       <div className="flex min-h-0 flex-1">
-        <aside className="flex w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground">
+        <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
           <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">
             {workspaceBase ? (
               <>
-                <SidebarLink
-                  href={workspaceBase}
-                  active={projectsActive}
-                  icon={FolderKanbanIcon}
-                >
-                  Projects
-                </SidebarLink>
-                <SidebarLink
-                  href={`${workspaceBase}/notes`}
-                  active={notesActive}
-                  icon={StickyNoteIcon}
-                >
-                  Notes
-                </SidebarLink>
-                <SidebarLink
-                  href={`${workspaceBase}/contacts`}
-                  active={contactsActive}
-                  icon={ContactIcon}
-                >
-                  Contacts
-                </SidebarLink>
-                <div className="my-1 border-t border-sidebar-border" />
-                <SidebarLink
-                  href={`${workspaceBase}/settings`}
-                  active={settingsActive}
-                  icon={SettingsIcon}
-                >
-                  Settings
-                </SidebarLink>
+                {sections.map((section) => (
+                  <Fragment key={section.id}>
+                    {section.id === "settings" ? (
+                      <div className="my-1 border-t border-sidebar-border" />
+                    ) : null}
+                    <SectionLink
+                      href={section.href}
+                      active={activeSection === section.id}
+                      icon={section.icon}
+                      variant="sidebar"
+                    >
+                      {section.label}
+                    </SectionLink>
+                  </Fragment>
+                ))}
               </>
             ) : (
               <p className="px-2 py-1 text-xs text-muted-foreground">

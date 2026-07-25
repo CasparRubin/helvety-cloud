@@ -128,6 +128,25 @@ export async function loadDecryptedTasks(
   return { tasks, nextCursor: page.nextCursor };
 }
 
+/** Load every page of tasks for a project (board / remap). */
+export async function loadAllDecryptedTasks(
+  workspaceId: string,
+  projectId: string,
+  workspaceKey: Uint8Array,
+): Promise<DecryptedTask[]> {
+  const all: DecryptedTask[] = [];
+  let cursor: string | null = null;
+  do {
+    const page = await loadDecryptedTasks(workspaceId, projectId, workspaceKey, {
+      limit: 100,
+      cursor,
+    });
+    all.push(...page.tasks);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return all;
+}
+
 export async function loadDecryptedTask(
   workspaceId: string,
   projectId: string,

@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  EntityListRow,
+  EntityListShell,
+} from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -78,59 +82,49 @@ export function ContactList({ workspaceId }: ContactListProps) {
   if (!vault) return null;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Contacts</h1>
-        <p className="text-sm text-muted-foreground">
-          Contact details are encrypted end-to-end in this workspace.
-        </p>
-      </div>
-
-      <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-        <Input
-          value={displayName}
-          onChange={(e) => setDisplayName(e.target.value)}
-          placeholder="New contact name"
-          disabled={busy}
-          maxLength={500}
-          aria-label="Contact name"
-        />
-        <Button type="submit" disabled={busy || !displayName.trim()} size="sm">
-          Create
-        </Button>
-      </form>
-
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading contacts…</p>
-      ) : contacts.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-          No contacts yet.
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {contacts.map((contact) => (
-            <li key={contact.id}>
-              <Link
-                href={`/app/w/${workspaceId}/contacts/${contact.id}`}
-                className="block rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted/40"
-              >
-                {contact.displayName || "Untitled"}
-                {contact.emails[0] ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {contact.emails[0]}
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <EntityListShell
+      title="Contacts"
+      subtitle="Contact details are encrypted end-to-end in this workspace."
+      createForm={
+        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
+          <Input
+            value={displayName}
+            onChange={(e) => setDisplayName(e.target.value)}
+            placeholder="New contact name"
+            disabled={busy}
+            maxLength={500}
+            aria-label="Contact name"
+          />
+          <Button
+            type="submit"
+            disabled={busy || !displayName.trim()}
+            size="sm"
+          >
+            Create
+          </Button>
+        </form>
+      }
+      error={error}
+      loading={loading}
+      loadingLabel="Loading contacts…"
+      empty={!loading && contacts.length === 0}
+      emptyLabel="No contacts yet."
+    >
+      {contacts.map((contact) => (
+        <EntityListRow key={contact.id}>
+          <Link
+            href={`/app/w/${workspaceId}/contacts/${contact.id}`}
+            className="font-medium"
+          >
+            {contact.displayName || "Untitled"}
+            {contact.emails[0] ? (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {contact.emails[0]}
+              </span>
+            ) : null}
+          </Link>
+        </EntityListRow>
+      ))}
+    </EntityListShell>
   );
 }

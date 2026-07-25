@@ -48,8 +48,9 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P8c | Visual chips + colors + backlinks | **Done** |
 | P8d | Stage colors + universal entity links | **Done** |
 | P8e | Categorization icons + polished task pickers | **Done** |
+| P9 | Task stage board (DnD between stages) | **Done** |
 
-Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md`, `P7.md`, `P8a.md` … `P8e.md` for product).
+Paste prompts: [`docs/architecture/prompts/`](docs/architecture/prompts/) (`P6a.md` … `P6f.md`, `P7.md`, `P8a.md` … `P8e.md`, `P9.md` for product).
 
 ## Tooling
 

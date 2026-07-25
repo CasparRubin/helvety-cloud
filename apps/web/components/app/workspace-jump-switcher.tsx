@@ -187,7 +187,7 @@ export function WorkspaceJumpSwitcher({
           <Button
             variant="outline"
             size="sm"
-            className="h-8 max-w-[14rem] justify-between gap-2 px-2 font-normal"
+            className="h-8 max-w-[9rem] justify-between gap-2 px-2 font-normal sm:max-w-[14rem]"
           />
         }
       >

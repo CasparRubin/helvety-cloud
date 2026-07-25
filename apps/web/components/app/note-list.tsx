@@ -4,6 +4,10 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import {
+  EntityListRow,
+  EntityListShell,
+} from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -78,59 +82,45 @@ export function NoteList({ workspaceId }: NoteListProps) {
   if (!vault) return null;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Notes</h1>
-        <p className="text-sm text-muted-foreground">
-          Note titles and bodies are encrypted end-to-end in this workspace.
-        </p>
-      </div>
-
-      <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-        <Input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="New note title"
-          disabled={busy}
-          maxLength={500}
-          aria-label="Note title"
-        />
-        <Button type="submit" disabled={busy || !title.trim()} size="sm">
-          Create
-        </Button>
-      </form>
-
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading notes…</p>
-      ) : notes.length === 0 ? (
-        <div className="rounded-md border border-dashed border-border px-4 py-8 text-sm text-muted-foreground">
-          No notes yet.
-        </div>
-      ) : (
-        <ul className="flex flex-col gap-1">
-          {notes.map((note) => (
-            <li key={note.id}>
-              <Link
-                href={`/app/w/${workspaceId}/notes/${note.id}`}
-                className="block rounded-md border border-border px-3 py-2 text-sm font-medium hover:bg-muted/40"
-              >
-                {note.title || "Untitled"}
-                {note.tags.length > 0 ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {note.tags.join(", ")}
-                  </span>
-                ) : null}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
+    <EntityListShell
+      title="Notes"
+      subtitle="Note titles and bodies are encrypted end-to-end in this workspace."
+      createForm={
+        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
+          <Input
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="New note title"
+            disabled={busy}
+            maxLength={500}
+            aria-label="Note title"
+          />
+          <Button type="submit" disabled={busy || !title.trim()} size="sm">
+            Create
+          </Button>
+        </form>
+      }
+      error={error}
+      loading={loading}
+      loadingLabel="Loading notes…"
+      empty={!loading && notes.length === 0}
+      emptyLabel="No notes yet."
+    >
+      {notes.map((note) => (
+        <EntityListRow key={note.id}>
+          <Link
+            href={`/app/w/${workspaceId}/notes/${note.id}`}
+            className="font-medium"
+          >
+            {note.title || "Untitled"}
+            {note.tags.length > 0 ? (
+              <span className="ml-2 text-xs font-normal text-muted-foreground">
+                {note.tags.join(", ")}
+              </span>
+            ) : null}
+          </Link>
+        </EntityListRow>
+      ))}
+    </EntityListShell>
   );
 }

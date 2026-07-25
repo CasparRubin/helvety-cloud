@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -36,7 +36,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/tasks CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
 
-**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8d**. Categorization icons + pickers: **P8e**.)
+**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8d**. Categorization icons + pickers: **P8e**. Stage board: **P9**.)
 
 ---
 
@@ -574,6 +574,29 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P9 — Task stage board
+
+**Status:** **Done**
+
+**Goal:** Horizontally scrollable stage columns (always shown, even empty); drag tasks between stages; order within a stage by priority (highest first); thin shared list shell for flat entity lists.
+
+**Do:**
+
+- Stage columns from project ciphertext stage defs; empty stages visible; stage header uses stage color + icon.  
+- Within-stage sort: priority `sortOrder` descending (urgent top); ties by task `sortOrder` then id.  
+- Accessible DnD (`@dnd-kit/core`) across stages; persist via existing plaintext `stage_id` PUT; optimistic update + rollback.  
+- Paginate all tasks for the board (follow `nextCursor`).  
+- Thin presentational `EntityListShell` for notes/contacts/projects + column empty/rows; no domain mega-list.  
+- Keep inline label/stage/priority pickers as keyboard fallback.
+
+**Don’t:** Manual within-stage reorder; schema migration; colors on labels/priorities; cross-project DnD; AI.
+
+**Done when:** All stages render; drag changes stage; priority orders cards; flat lists share the shell; no new plaintext columns.
+
+**Paste prompt:** [`docs/architecture/prompts/P9.md`](./prompts/P9.md)
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -655,4 +678,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

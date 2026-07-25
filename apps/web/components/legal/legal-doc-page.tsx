@@ -9,7 +9,7 @@ type LegalDocPageProps = {
 export function LegalDocPage({ doc }: LegalDocPageProps) {
   return (
     <main className="min-h-svh bg-background text-foreground">
-      <article className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-6 py-10">
+      <article className="mx-auto flex w-full max-w-2xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
         <header className="flex flex-col gap-4">
           <p className="text-sm text-muted-foreground">
             <Link href="/legal" className="underline underline-offset-4">

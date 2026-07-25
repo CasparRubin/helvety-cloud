@@ -122,7 +122,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   }
 
   return (
-    <div className="flex flex-col gap-4 p-6">
+    <div className="flex flex-col gap-4 p-4 sm:p-6">
       <div>
         <h1 className="text-lg font-semibold tracking-tight">Invitations</h1>
         <p className="mt-1 text-sm text-muted-foreground">

@@ -362,7 +362,7 @@ export function TaskDetail({
   if (!vault) return null;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-6">
+    <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h1 className="text-lg font-semibold tracking-tight">Task</h1>
