@@ -159,8 +159,6 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
     onUnlocked();
   }
 
-  const showRecovery = Boolean(recovery);
-
   return (
     <Card className="w-full max-w-lg">
       <CardHeader>
@@ -195,7 +193,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
           </Alert>
         ) : null}
 
-        {!showRecovery && step === "needs_acceptance" ? (
+        {!recovery && step === "needs_acceptance" ? (
           <PolicyAcceptanceGate
             pending={pending}
             onPendingChange={setPending}
@@ -207,7 +205,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
           />
         ) : null}
 
-        {showRecovery && recovery ? (
+        {recovery ? (
           <div className="flex flex-col gap-3 rounded-md border border-border p-3">
             <p className="text-sm font-medium">Recovery material (shown once)</p>
             <p className="text-sm text-muted-foreground">
@@ -264,13 +262,13 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
         ) : null}
 
         <div className="flex flex-col gap-2">
-          {!showRecovery && step === "loading" ? (
+          {!recovery && step === "loading" ? (
             <p className="text-sm text-muted-foreground">
               Checking policies and vault…
             </p>
           ) : null}
 
-          {!showRecovery && step === "needs_setup" ? (
+          {!recovery && step === "needs_setup" ? (
             <Button
               type="button"
               disabled={pending}
@@ -281,7 +279,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
             </Button>
           ) : null}
 
-          {!showRecovery && step === "locked" ? (
+          {!recovery && step === "locked" ? (
             <Button
               type="button"
               disabled={pending}
@@ -292,7 +290,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
             </Button>
           ) : null}
 
-          {!showRecovery ? (
+          {!recovery ? (
             <>
               {!hasAuthPasskey ? (
                 <Button

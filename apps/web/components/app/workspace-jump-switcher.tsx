@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ChevronsUpDownIcon,
   ContactIcon,
@@ -35,8 +35,6 @@ import {
   loadDecryptedProjects,
   type DecryptedProject,
 } from "@/lib/vault/projects";
-
-const LOAD_LIMIT = 100;
 
 type WorkspaceJumpSwitcherProps = {
   workspaceId: string;
@@ -73,9 +71,9 @@ export function WorkspaceJumpSwitcher({
   const refresh = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
     const [projectsPage, notesPage, contactsPage] = await Promise.all([
-      loadDecryptedProjects(workspaceId, key, { limit: LOAD_LIMIT }),
-      loadDecryptedNotes(workspaceId, key, { limit: LOAD_LIMIT }),
-      loadDecryptedContacts(workspaceId, key, { limit: LOAD_LIMIT }),
+      loadDecryptedProjects(workspaceId, key, { limit: 100 }),
+      loadDecryptedNotes(workspaceId, key, { limit: 100 }),
+      loadDecryptedContacts(workspaceId, key, { limit: 100 }),
     ]);
     setProjects(projectsPage.projects);
     setNotes(notesPage.notes);
@@ -90,19 +88,20 @@ export function WorkspaceJumpSwitcher({
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
         const [projectsPage, notesPage, contactsPage] = await Promise.all([
-          loadDecryptedProjects(workspaceId, key, { limit: LOAD_LIMIT }),
-          loadDecryptedNotes(workspaceId, key, { limit: LOAD_LIMIT }),
-          loadDecryptedContacts(workspaceId, key, { limit: LOAD_LIMIT }),
+          loadDecryptedProjects(workspaceId, key, { limit: 100 }),
+          loadDecryptedNotes(workspaceId, key, { limit: 100 }),
+          loadDecryptedContacts(workspaceId, key, { limit: 100 }),
         ]);
         if (cancelled) return;
         setProjects(projectsPage.projects);
         setNotes(notesPage.notes);
         setContacts(contactsPage.contacts);
       } catch {
-        if (cancelled) return;
-        setProjects([]);
-        setNotes([]);
-        setContacts([]);
+        if (!cancelled) {
+          setProjects([]);
+          setNotes([]);
+          setContacts([]);
+        }
       }
     })();
     return () => {
@@ -118,70 +117,56 @@ export function WorkspaceJumpSwitcher({
     window.addEventListener("helvety:projects-changed", onChange);
     window.addEventListener("helvety:notes-changed", onChange);
     window.addEventListener("helvety:contacts-changed", onChange);
-    window.addEventListener("focus", onChange);
     return () => {
       window.removeEventListener("helvety:projects-changed", onChange);
       window.removeEventListener("helvety:notes-changed", onChange);
       window.removeEventListener("helvety:contacts-changed", onChange);
-      window.removeEventListener("focus", onChange);
     };
   }, [vault, refresh]);
 
-  const entries = useMemo<Record<JumpEntryKind, JumpEntry[]>>(() => {
-    const base = `/app/w/${workspaceId}`;
-    return {
-      project: projects.map((p) => ({
-        kind: "project" as const,
-        id: p.id,
-        name: p.name,
-        href: `${base}/p/${p.id}`,
-      })),
-      note: notes.map((n) => ({
-        kind: "note" as const,
-        id: n.id,
-        name: n.title || "Untitled note",
-        href: `${base}/notes/${n.id}`,
-      })),
-      contact: contacts.map((c) => ({
-        kind: "contact" as const,
-        id: c.id,
-        name: c.displayName || "Unnamed contact",
-        href: `${base}/contacts/${c.id}`,
-      })),
-    };
-  }, [workspaceId, projects, notes, contacts]);
+  const base = `/app/w/${workspaceId}`;
+  const entries: Record<JumpEntryKind, JumpEntry[]> = {
+    project: projects.map((p) => ({
+      kind: "project",
+      id: p.id,
+      name: p.name,
+      href: `${base}/p/${p.id}`,
+    })),
+    note: notes.map((n) => ({
+      kind: "note",
+      id: n.id,
+      name: n.title || "Untitled note",
+      href: `${base}/notes/${n.id}`,
+    })),
+    contact: contacts.map((c) => ({
+      kind: "contact",
+      id: c.id,
+      name: c.displayName || "Unnamed contact",
+      href: `${base}/contacts/${c.id}`,
+    })),
+  };
 
-  const activeEntry = useMemo(
-    () => entries[active.kind].find((e) => e.id === active.id) ?? null,
-    [active.kind, active.id, entries],
-  );
-
-  const normalizedQuery = query.trim().toLowerCase();
-  const filtered = useMemo(() => {
-    if (!normalizedQuery) return entries;
-    return {
-      project: entries.project.filter((e) =>
-        e.name.toLowerCase().includes(normalizedQuery),
-      ),
-      note: entries.note.filter((e) =>
-        e.name.toLowerCase().includes(normalizedQuery),
-      ),
-      contact: entries.contact.filter((e) =>
-        e.name.toLowerCase().includes(normalizedQuery),
-      ),
-    };
-  }, [entries, normalizedQuery]);
-
-  const nothingFound =
-    filtered.project.length === 0 &&
-    filtered.note.length === 0 &&
-    filtered.contact.length === 0;
+  const activeName =
+    entries[active.kind].find((e) => e.id === active.id)?.name ?? "…";
+  const q = query.trim().toLowerCase();
+  const filtered = {
+    project: q
+      ? entries.project.filter((e) => e.name.toLowerCase().includes(q))
+      : entries.project,
+    note: q
+      ? entries.note.filter((e) => e.name.toLowerCase().includes(q))
+      : entries.note,
+    contact: q
+      ? entries.contact.filter((e) => e.name.toLowerCase().includes(q))
+      : entries.contact,
+  };
 
   const groups: { heading: string; items: JumpEntry[] }[] = [
     { heading: "Projects", items: filtered.project },
     { heading: "Notes", items: filtered.note },
     { heading: "Contacts", items: filtered.contact },
   ];
+  const nothingFound = groups.every((g) => g.items.length === 0);
 
   return (
     <Popover
@@ -203,9 +188,7 @@ export function WorkspaceJumpSwitcher({
           />
         }
       >
-        <span className="truncate text-left text-sm">
-          {activeEntry?.name ?? "…"}
-        </span>
+        <span className="truncate text-left text-sm">{activeName}</span>
         <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-60" />
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
