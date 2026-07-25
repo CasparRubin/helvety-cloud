@@ -1,10 +1,12 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { useParams } from "next/navigation";
+type PageProps = {
+  params: Promise<{ workspaceId: string }>;
+};
 
-import { WorkspaceSettings } from "@/components/app/workspace-settings";
-
-export default function WorkspaceSettingsPage() {
-  const params = useParams<{ workspaceId: string }>();
-  return <WorkspaceSettings workspaceId={params.workspaceId} />;
+export default async function WorkspaceSettingsIndexPage({
+  params,
+}: PageProps) {
+  const { workspaceId } = await params;
+  redirect(`/app/w/${workspaceId}/settings/general`);
 }

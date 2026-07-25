@@ -244,7 +244,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             variant="outline"
             size="sm"
             render={
-              <Link href={`/app/w/${workspaceId}/p/${projectId}/settings`} />
+              <Link
+                href={`/app/w/${workspaceId}/p/${projectId}/settings/general`}
+              />
             }
             nativeButton={false}
           >

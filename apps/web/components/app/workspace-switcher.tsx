@@ -148,7 +148,9 @@ export function WorkspaceSwitcher({
           ) : null}
           {active ? (
             <DropdownMenuItem
-              onClick={() => router.push(`/app/w/${active.id}/settings`)}
+              onClick={() =>
+                router.push(`/app/w/${active.id}/settings/general`)
+              }
             >
               Workspace settings
             </DropdownMenuItem>

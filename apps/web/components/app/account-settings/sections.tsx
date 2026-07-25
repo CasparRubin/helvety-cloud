@@ -1,102 +1,86 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { GetMeAccountResponse } from "@helvety-cloud/api-contract";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
+import { useAccountSettings } from "@/components/app/account-settings/provider";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
-import { deleteAccount, getMeAccount } from "@/lib/api/v1-client";
-import { createClient } from "@/lib/supabase/client";
-import { clearStoredPrfCredentialId } from "@/lib/vault/prf";
 
-export function AccountSettings() {
-  const { lock } = useVaultSession();
-  const [account, setAccount] = useState<GetMeAccountResponse | null>(null);
-  const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
-  const [confirmEmail, setConfirmEmail] = useState("");
-  const [cleanupAck, setCleanupAck] = useState(false);
-  const [deleteOpen, setDeleteOpen] = useState(false);
-
-  useEffect(() => {
-    let cancelled = false;
-    void (async () => {
-      try {
-        const data = await getMeAccount();
-        if (!cancelled) setAccount(data);
-      } catch (err) {
-        if (!cancelled) {
-          setError(
-            err instanceof Error ? err.message : "Failed to load account",
-          );
-        }
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  async function onDeleteAccount() {
-    if (!account) return;
-    setPending(true);
-    setError(null);
-    try {
-      await deleteAccount();
-      clearStoredPrfCredentialId(account.userId);
-      lock();
-      await createClient().auth.signOut();
-      window.location.href = "/?account-deleted=1";
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Account deletion failed");
-      setPending(false);
-      throw err;
-    }
-  }
+export function AccountGeneralSettings() {
+  const { account, error } = useAccountSettings();
 
   if (error && !account) {
     return (
-      <div className="mx-auto w-full max-w-xl p-4 sm:p-6">
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      </div>
+      <p className="text-sm text-destructive" role="alert">
+        {error}
+      </p>
     );
   }
 
   if (!account) {
     return (
-      <div className="mx-auto w-full max-w-xl p-4 sm:p-6">
-        <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner className="size-4" /> Loading account…
-        </p>
-      </div>
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner className="size-4" /> Loading account…
+      </p>
     );
   }
 
-  const canDelete = account.blockingWorkspaces.length === 0;
-  const canSubmit =
-    canDelete && confirmEmail === account.email && cleanupAck && !pending;
+  return (
+    <div className="flex max-w-xl flex-col gap-4">
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+      <p className="text-sm text-muted-foreground">
+        Signed in as{" "}
+        <span className="font-medium text-foreground">{account.email}</span>.
+        Auth is email OTP and optional sign-in passkeys — there is no account
+        password. Billing is per workspace (owner manages Plan in workspace
+        settings).
+      </p>
+    </div>
+  );
+}
+
+export function AccountDangerSettings() {
+  const {
+    account,
+    error,
+    pending,
+    confirmEmail,
+    setConfirmEmail,
+    cleanupAck,
+    setCleanupAck,
+    deleteOpen,
+    setDeleteOpen,
+    canDelete,
+    canSubmit,
+    onDeleteAccount,
+  } = useAccountSettings();
+
+  if (error && !account) {
+    return (
+      <p className="text-sm text-destructive" role="alert">
+        {error}
+      </p>
+    );
+  }
+
+  if (!account) {
+    return (
+      <p className="flex items-center gap-2 text-sm text-muted-foreground">
+        <Spinner className="size-4" /> Loading account…
+      </p>
+    );
+  }
 
   return (
-    <div className="mx-auto flex w-full max-w-xl flex-col gap-8 p-4 sm:p-6">
-      <div>
-        <h1 className="text-lg font-semibold tracking-tight">Account</h1>
-        <p className="text-sm text-muted-foreground">
-          Signed in as{" "}
-          <span className="font-medium text-foreground">{account.email}</span>.
-          Auth is email OTP and optional sign-in passkeys — there is no account
-          password. Billing is per workspace (owner manages Plan in workspace
-          settings).
-        </p>
-      </div>
-
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-8">
       {error ? (
         <p className="text-sm text-destructive" role="alert">
           {error}
@@ -117,7 +101,9 @@ export function AccountSettings() {
             wrapped keys — are permanently deleted. Helvety cannot decrypt or
             recover vault data.
           </li>
-          <li>Pro subscriptions on those deleted solo workspaces are cancelled.</li>
+          <li>
+            Pro subscriptions on those deleted solo workspaces are cancelled.
+          </li>
           <li>
             Shared workspaces you do not solely own remain. You leave them: your
             membership and wrapped keys are removed, so you lose access while
@@ -177,7 +163,7 @@ export function AccountSettings() {
             {account.blockingWorkspaces.map((ws) => (
               <li key={ws.id}>
                 <Link
-                  href={`/app/w/${ws.id}/settings`}
+                  href={`/app/w/${ws.id}/settings/general`}
                   className="underline underline-offset-4"
                 >
                   {ws.name}

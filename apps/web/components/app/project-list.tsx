@@ -177,7 +177,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
               aria-label={`Project settings for ${project.name}`}
               render={
                 <Link
-                  href={`/app/w/${workspaceId}/p/${project.id}/settings`}
+                  href={`/app/w/${workspaceId}/p/${project.id}/settings/general`}
                 />
               }
               nativeButton={false}

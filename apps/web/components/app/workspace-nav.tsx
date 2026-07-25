@@ -16,6 +16,8 @@ type AppNavLocation = {
   section: "projects" | "notes" | "contacts" | "settings" | null;
   entity: AppNavEntity | null;
   taskId: string | null;
+  /** Nested project settings under /p/{id}/settings. */
+  projectSettings: boolean;
 };
 
 const WORKSPACE_PREFIX = "/app/w/";
@@ -36,17 +38,20 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
     section: null,
     entity: null,
     taskId: null,
+    projectSettings: false,
   };
 
   if (!section) return { ...base, section: "projects" };
 
   if (section === "p") {
     if (!entityId) return { ...base, section: "projects" };
+    const onProjectSettings = childSegment === "settings";
     return {
       ...base,
       section: "projects",
       entity: { kind: "project", id: entityId },
       taskId: childSegment === "t" && childId ? childId : null,
+      projectSettings: onProjectSettings,
     };
   }
 
@@ -72,12 +77,14 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
 }
 
 export function parentHrefFor(location: AppNavLocation): string | null {
-  const { workspaceBase, section, entity, taskId } = location;
+  const { workspaceBase, section, entity, taskId, projectSettings } = location;
 
   if (entity) {
     switch (entity.kind) {
       case "project":
-        return taskId ? `${workspaceBase}/p/${entity.id}` : workspaceBase;
+        return taskId || projectSettings
+          ? `${workspaceBase}/p/${entity.id}`
+          : workspaceBase;
       case "note":
         return `${workspaceBase}/notes`;
       case "contact":

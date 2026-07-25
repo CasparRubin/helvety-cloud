@@ -57,7 +57,7 @@ export function UserMenu({ email }: UserMenuProps) {
           {email}
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => router.push("/app/account")}>
+        <DropdownMenuItem onClick={() => router.push("/app/account/general")}>
           <UserRoundIcon className="size-4 shrink-0 opacity-60" />
           Account
         </DropdownMenuItem>
