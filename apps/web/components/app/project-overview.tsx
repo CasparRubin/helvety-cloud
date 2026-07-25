@@ -114,10 +114,8 @@ export function ProjectDescriptionEditor({
     projectRef.current = project;
   });
 
-  const draft = useMemo(() => ({ description }), [description]);
-
   const { status, savedAt, flush } = useAutosave({
-    draft,
+    draft: description,
     enabled: true,
     save: async (next) => {
       const key = await getWorkspaceKey(workspaceId);
@@ -126,14 +124,14 @@ export function ProjectDescriptionEditor({
         workspaceId,
         key,
         current,
-        projectPlaintextFrom(current, { description: next.description }),
+        projectPlaintextFrom(current, { description: next }),
       );
       onProjectChange(saved);
-      return { description: saved.description };
+      return saved.description;
     },
     onError: (message) => onError?.(message),
     onSaved: (canonical) => {
-      setDescription(canonical.description);
+      setDescription(canonical);
       onError?.(null);
     },
   });

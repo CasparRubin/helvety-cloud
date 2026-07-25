@@ -6,7 +6,6 @@ import { cn } from "@/lib/utils";
 
 type EntityListShellProps = {
   title: ReactNode;
-  /** Rendered immediately under the title block. */
   belowTitle?: ReactNode;
   actions?: ReactNode;
   createForm?: ReactNode;
@@ -15,7 +14,6 @@ type EntityListShellProps = {
   loadingLabel?: string;
   empty?: boolean;
   emptyLabel?: ReactNode;
-  /** When true, skip the default vertical list wrapper (e.g. custom board layout). */
   bareChildren?: boolean;
   children?: ReactNode;
 };
@@ -35,20 +33,22 @@ export function EntityListShell({
 }: EntityListShellProps) {
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
-          {typeof title === "string" || typeof title === "number" ? (
-            <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-          ) : (
-            title
-          )}
+      <div className="flex flex-col gap-1">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            {typeof title === "string" || typeof title === "number" ? (
+              <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+            ) : (
+              title
+            )}
+          </div>
+          {actions ? (
+            <div className="flex shrink-0 items-center gap-2">{actions}</div>
+          ) : null}
         </div>
-        {actions ? (
-          <div className="flex shrink-0 items-center gap-2">{actions}</div>
-        ) : null}
-      </div>
 
-      {belowTitle}
+        {belowTitle}
+      </div>
 
       {createForm}
 

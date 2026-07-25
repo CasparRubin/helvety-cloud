@@ -251,7 +251,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
               placeholder="Untitled note"
               disabled={deleting}
               maxLength={500}
-              aria-label="Title"
               className="min-w-0 flex-1"
             />
             <DeleteButton

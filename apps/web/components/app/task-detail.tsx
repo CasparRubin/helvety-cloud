@@ -1,6 +1,5 @@
 "use client";
 
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
@@ -12,7 +11,6 @@ import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { InlineTitle } from "@/components/app/inline-title";
 import { MilestonePicker } from "@/components/app/milestone-picker";
 import { SaveStatus } from "@/components/app/save-status";
-import { Button } from "@/components/ui/button";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -277,26 +275,15 @@ export function TaskDetail({
               placeholder="Untitled task"
               disabled={deleting}
               maxLength={500}
-              aria-label="Title"
               className="min-w-0 flex-1"
             />
-            <div className="flex shrink-0 items-center gap-2">
-              <DeleteButton
-                disabled={deleting}
-                busy={deleting}
-                dialogTitle="Delete this task?"
-                dialogDescription="This permanently deletes the task. This cannot be undone."
-                onConfirm={onDelete}
-              />
-              <Button
-                variant="outline"
-                size="sm"
-                render={<Link href={`/app/w/${workspaceId}/p/${projectId}`} />}
-                nativeButton={false}
-              >
-                Back
-              </Button>
-            </div>
+            <DeleteButton
+              disabled={deleting}
+              busy={deleting}
+              dialogTitle="Delete this task?"
+              dialogDescription="This permanently deletes the task. This cannot be undone."
+              onConfirm={onDelete}
+            />
           </div>
 
           {categorizations ? (

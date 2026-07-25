@@ -1,50 +1,32 @@
 "use client";
 
 import type { AutosaveStatus } from "@/lib/hooks/use-autosave";
-import { cn } from "@/lib/utils";
 
 type SaveStatusProps = {
   status: AutosaveStatus;
   savedAt: string | null;
   onRetry?: () => void;
-  className?: string;
 };
 
-export function SaveStatus({
-  status,
-  savedAt,
-  onRetry,
-  className,
-}: SaveStatusProps) {
+export function SaveStatus({ status, savedAt, onRetry }: SaveStatusProps) {
   switch (status) {
     case "idle":
       return null;
     case "dirty":
       return (
-        <span className={cn("text-xs text-muted-foreground", className)}>
-          Unsaved changes
-        </span>
+        <span className="text-xs text-muted-foreground">Unsaved changes</span>
       );
     case "saving":
-      return (
-        <span className={cn("text-xs text-muted-foreground", className)}>
-          Saving…
-        </span>
-      );
+      return <span className="text-xs text-muted-foreground">Saving…</span>;
     case "saved":
       return (
-        <span className={cn("text-xs text-muted-foreground", className)}>
+        <span className="text-xs text-muted-foreground">
           {savedAt ? `Saved ${savedAt}` : "Saved"}
         </span>
       );
     case "error":
       return (
-        <span
-          className={cn(
-            "inline-flex items-center gap-2 text-xs text-destructive",
-            className,
-          )}
-        >
+        <span className="inline-flex items-center gap-2 text-xs text-destructive">
           Save failed
           {onRetry ? (
             <button

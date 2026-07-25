@@ -15,7 +15,6 @@ type InlineTitleProps = Omit<
 export function InlineTitle({
   value,
   onChange,
-  onBlur,
   onKeyDown,
   className,
   placeholder = "Untitled",
@@ -29,6 +28,7 @@ export function InlineTitle({
       className={cn(
         "grid w-full after:invisible after:whitespace-pre-wrap after:content-[attr(data-value)] after:[grid-area:1/1/2/2]",
         "text-2xl font-semibold tracking-tight after:break-words",
+        "after:px-1.5 after:py-1",
         className,
       )}
       data-value={value || " "}
@@ -50,12 +50,11 @@ export function InlineTitle({
             e.currentTarget.blur();
           }
         }}
-        onBlur={onBlur}
         className={cn(
-          "w-full resize-none overflow-hidden border-0 bg-transparent p-0",
+          "w-full resize-none overflow-hidden rounded-md border-0 bg-transparent px-1.5 py-1",
           "break-words font-[inherit] text-[length:inherit] leading-[inherit] tracking-[inherit]",
-          "outline-none placeholder:text-muted-foreground/60",
-          "focus-visible:rounded-sm focus-visible:ring-1 focus-visible:ring-ring/40",
+          "outline-none transition-colors placeholder:text-muted-foreground/60",
+          "hover:bg-muted/40 focus-visible:bg-muted/40",
           "disabled:cursor-not-allowed disabled:opacity-50",
           "[grid-area:1/1/2/2]",
         )}

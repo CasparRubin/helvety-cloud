@@ -10,14 +10,12 @@ function snapshotOf<T>(value: T): string {
   return JSON.stringify(value);
 }
 
-/** Debounced autosave with dirty-diff, coalesce-while-saving, and pagehide flush. */
 export function useAutosave<T>(opts: {
   draft: T;
   enabled: boolean;
   save: (draft: T) => Promise<T | void>;
   delayMs?: number;
   onError?: (message: string) => void;
-  /** Called with the canonical draft only when the live draft still matches what was saved. */
   onSaved?: (canonical: T) => void;
 }): {
   status: AutosaveStatus;

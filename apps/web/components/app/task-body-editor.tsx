@@ -62,8 +62,6 @@ export function TaskBodyEditor({
   const [showLinkPicker, setShowLinkPicker] = useState(false);
   const [busy, setBusy] = useState(false);
   const [uploading, setUploading] = useState(false);
-  const [focused, setFocused] = useState(false);
-  const [hovered, setHovered] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const fileAttachmentsRef = useRef<FileAttachmentsConfig | undefined>(
     fileAttachments,
@@ -108,7 +106,7 @@ export function TaskBodyEditor({
       attributes: {
         class: cn(
           compact ? "min-h-[96px]" : "min-h-[240px]",
-          "px-0 py-1 text-sm outline-none",
+          "px-1.5 pt-1 pb-2 text-sm outline-none",
           "prose prose-sm max-w-none dark:prose-invert",
           "[&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-base [&_h2]:font-semibold",
           "[&_h3]:mt-2 [&_h3]:mb-1 [&_h3]:text-sm [&_h3]:font-semibold",
@@ -151,8 +149,6 @@ export function TaskBodyEditor({
     onUpdate: ({ editor: ed }) => {
       onChange(ed.getJSON() as TaskBodyDoc);
     },
-    onFocus: () => setFocused(true),
-    onBlur: () => setFocused(false),
   });
 
   useEffect(() => {
@@ -227,8 +223,7 @@ export function TaskBodyEditor({
     return (
       <div
         className={cn(
-          compact ? "min-h-[128px]" : "min-h-[280px]",
-          "bg-transparent",
+          compact ? "min-h-[96px]" : "min-h-[240px]",
           className,
         )}
       />
@@ -240,20 +235,20 @@ export function TaskBodyEditor({
     return c.label.toLowerCase().includes(linkQuery.trim().toLowerCase());
   });
 
-  const toolbarVisible = focused || hovered || uploading;
-
   return (
     <div
-      className={cn("overflow-hidden bg-transparent", disabled && "opacity-50", className)}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      className={cn(
+        "relative group bg-transparent",
+        disabled && "opacity-50",
+        className,
+      )}
     >
       <div
         className={cn(
-          "flex flex-wrap gap-0.5 py-1 transition-opacity",
-          toolbarVisible
-            ? "opacity-100"
-            : "pointer-events-none opacity-0",
+          "absolute top-0 right-0 z-10 flex max-w-full flex-wrap justify-end gap-0.5",
+          "rounded-lg border border-border bg-popover p-1 shadow-sm transition-opacity",
+          "pointer-events-none opacity-0 group-focus-within:pointer-events-auto group-focus-within:opacity-100",
+          uploading && "pointer-events-auto opacity-100",
         )}
         onMouseDown={(e) => {
           // Keep document focus so toolbar clicks don't hide the row mid-press.
