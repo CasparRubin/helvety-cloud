@@ -7,6 +7,7 @@ import {
 import type { NoteResponse } from "@helvety-cloud/api-contract";
 
 import {
+  deleteNote as deleteNoteApi,
   getNote,
   listNotes,
   putNote,
@@ -181,16 +182,9 @@ export async function saveNote(
   return toDecrypted(workspaceKey, row);
 }
 
-export async function softDeleteNote(
+export async function deleteNote(
   workspaceId: string,
   note: DecryptedNote,
 ): Promise<void> {
-  const existing = await getNote(workspaceId, note.id);
-  await putNote(workspaceId, note.id, {
-    encryptedBlob: existing.encryptedBlob,
-    sortOrder: existing.sortOrder,
-    deletedAt: new Date().toISOString(),
-    projectId: existing.projectId,
-    issueId: existing.issueId,
-  });
+  await deleteNoteApi(workspaceId, note.id);
 }

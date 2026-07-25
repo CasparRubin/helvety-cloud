@@ -7,7 +7,7 @@ import {
 import type { ProjectResponse } from "@helvety-cloud/api-contract";
 
 import {
-  getProject,
+  deleteProject as deleteProjectApi,
   listProjects,
   putProject,
   type ListParams,
@@ -185,15 +185,9 @@ export async function reorderProjects(
   return next;
 }
 
-export async function softDeleteProject(
+export async function deleteProject(
   workspaceId: string,
-  _workspaceKey: Uint8Array,
   project: DecryptedProject,
 ): Promise<void> {
-  const existing = await getProject(workspaceId, project.id);
-  await putProject(workspaceId, project.id, {
-    encryptedBlob: existing.encryptedBlob,
-    sortOrder: existing.sortOrder,
-    deletedAt: new Date().toISOString(),
-  });
+  await deleteProjectApi(workspaceId, project.id);
 }

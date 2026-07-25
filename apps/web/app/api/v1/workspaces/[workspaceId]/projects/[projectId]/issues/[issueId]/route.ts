@@ -158,3 +158,46 @@ export async function PUT(request: Request, context: RouteContext) {
     }),
   );
 }
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const auth = await requireUser(request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase } = auth;
+  const { workspaceId, projectId, issueId } = await context.params;
+
+  const { data: project, error: projectError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (projectError) {
+    return apiError("internal", projectError.message, 500);
+  }
+  if (!project) {
+    return apiError("not_found", "Project not found", 404);
+  }
+
+  const { data, error } = await supabase
+    .from("issues")
+    .delete()
+    .eq("id", issueId)
+    .eq("project_id", projectId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === "42501") {
+      return apiError("forbidden", "Not a workspace member", 403);
+    }
+    return apiError("internal", error.message, 500);
+  }
+  if (!data) {
+    return apiError("not_found", "Issue not found", 404);
+  }
+
+  return new Response(null, { status: 204 });
+}

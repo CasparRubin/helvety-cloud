@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { getProject } from "@/lib/api/v1-client";
 import {
@@ -13,7 +14,7 @@ import {
   loadDecryptedIssues,
   type DecryptedIssue,
 } from "@/lib/vault/issues";
-import { decryptProjectName } from "@/lib/vault/projects";
+import { decryptProjectName, deleteProject } from "@/lib/vault/projects";
 
 type IssueListProps = {
   workspaceId: string;
@@ -93,23 +94,53 @@ export function IssueList({ workspaceId, projectId }: IssueListProps) {
     }
   }
 
+  async function onDeleteProject() {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      await deleteProject(workspaceId, {
+        id: projectId,
+        workspaceId,
+        name: projectName,
+        sortOrder: 0,
+        updatedAt: "",
+        deletedAt: null,
+      });
+      window.dispatchEvent(new Event("helvety:projects-changed"));
+      router.push(`/app/w/${workspaceId}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+      setBusy(false);
+    }
+  }
+
   if (!vault) return null;
 
   return (
     <div className="flex h-full flex-col gap-4 p-6">
-      <div>
-        <Link
-          href={`/app/w/${workspaceId}`}
-          className="text-xs text-muted-foreground hover:underline"
-        >
-          ← Projects
-        </Link>
-        <h1 className="mt-1 text-lg font-semibold tracking-tight">
-          {projectName}
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Issue titles and bodies are encrypted end-to-end.
-        </p>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <Link
+            href={`/app/w/${workspaceId}`}
+            className="text-xs text-muted-foreground hover:underline"
+          >
+            ← Projects
+          </Link>
+          <h1 className="mt-1 text-lg font-semibold tracking-tight">
+            {projectName}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Issue titles and bodies are encrypted end-to-end.
+          </p>
+        </div>
+        <DeleteButton
+          disabled={busy || loading}
+          busy={busy}
+          dialogTitle={`Delete project “${projectName}”?`}
+          dialogDescription="This permanently deletes the project and all of its issues. This cannot be undone."
+          onConfirm={onDeleteProject}
+        />
       </div>
 
       <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import type {
   GetWorkspaceBillingResponse,
   WorkspaceInvitation,
@@ -8,15 +9,8 @@ import type {
   WorkspaceMember,
 } from "@helvety-cloud/api-contract";
 
+import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
@@ -36,13 +30,8 @@ import {
   invitationMailto,
 } from "@/lib/vault/workspaces";
 
-type WorkspaceSharingDialogProps = {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
+type WorkspaceSettingsProps = {
   workspaceId: string;
-  workspaceName: string;
-  canManage: boolean;
-  isOwner: boolean;
 };
 
 function statusLabel(status: WorkspaceInvitation["status"]): string {
@@ -64,15 +53,32 @@ function statusLabel(status: WorkspaceInvitation["status"]): string {
   }
 }
 
-export function WorkspaceSharingDialog({
-  open,
-  onOpenChange,
-  workspaceId,
-  workspaceName,
-  canManage,
-  isOwner,
-}: WorkspaceSharingDialogProps) {
-  const { vault, getWorkspaceKey } = useVaultSession();
+const BLOCKING_SUB_STATUSES = new Set([
+  "active",
+  "trialing",
+  "past_due",
+  "unpaid",
+  "paused",
+]);
+
+export function WorkspaceSettings({ workspaceId }: WorkspaceSettingsProps) {
+  const router = useRouter();
+  const {
+    vault,
+    workspaces,
+    getWorkspaceKey,
+    renameWorkspace,
+    removeWorkspace,
+  } = useVaultSession();
+
+  const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
+  const canManage =
+    workspace?.role === "owner" || workspace?.role === "admin";
+  const isOwner = workspace?.role === "owner";
+  const isPersonal = workspace?.kind === "personal";
+
+  const [nameDraft, setNameDraft] = useState<string | null>(null);
+  const name = nameDraft ?? workspace?.name ?? "";
   const [email, setEmail] = useState("");
   const [role, setRole] = useState<WorkspaceInviteRole>("member");
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
@@ -81,10 +87,12 @@ export function WorkspaceSharingDialog({
     null,
   );
   const [pending, setPending] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [seatLimitHit, setSeatLimitHit] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
   const refresh = useCallback(async () => {
     setError(null);
@@ -100,16 +108,16 @@ export function WorkspaceSharingDialog({
       setMembers(mem.members);
       setBilling(bill);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load sharing");
+      setError(err instanceof Error ? err.message : "Failed to load settings");
     } finally {
       setLoading(false);
     }
   }, [workspaceId, canManage]);
 
   useEffect(() => {
-    if (!open) return;
     let cancelled = false;
     void (async () => {
+      setLoading(true);
       try {
         const [inv, mem, bill] = await Promise.all([
           canManage
@@ -125,7 +133,9 @@ export function WorkspaceSharingDialog({
         setError(null);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : "Failed to load sharing");
+        setError(
+          err instanceof Error ? err.message : "Failed to load settings",
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -133,7 +143,22 @@ export function WorkspaceSharingDialog({
     return () => {
       cancelled = true;
     };
-  }, [open, workspaceId, canManage]);
+  }, [workspaceId, canManage]);
+
+  async function onSaveName() {
+    const trimmed = name.trim();
+    if (!trimmed || !workspace || trimmed === workspace.name) return;
+    setPending(true);
+    setError(null);
+    try {
+      await renameWorkspace(workspaceId, trimmed);
+      setNameDraft(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Rename failed");
+    } finally {
+      setPending(false);
+    }
+  }
 
   async function onUpgrade() {
     setPending(true);
@@ -162,7 +187,7 @@ export function WorkspaceSharingDialog({
   }
 
   async function onInvite() {
-    if (!canManage) return;
+    if (!canManage || !workspace) return;
     const trimmed = email.trim();
     if (!trimmed) return;
     setPending(true);
@@ -178,7 +203,7 @@ export function WorkspaceSharingDialog({
       setInvitations((prev) => [created, ...prev]);
       const mail = invitationMailto({
         email: created.email,
-        workspaceName,
+        workspaceName: workspace.name,
         appOrigin: window.location.origin,
       });
       window.open(mail.href, "_blank", "noopener,noreferrer");
@@ -233,9 +258,10 @@ export function WorkspaceSharingDialog({
   }
 
   async function onCopyInvite(invitation: WorkspaceInvitation) {
+    if (!workspace) return;
     const mail = invitationMailto({
       email: invitation.email,
-      workspaceName,
+      workspaceName: workspace.name,
       appOrigin: window.location.origin,
     });
     try {
@@ -247,21 +273,98 @@ export function WorkspaceSharingDialog({
     }
   }
 
+  async function onDeleteWorkspace() {
+    setPending(true);
+    setError(null);
+    try {
+      await removeWorkspace(workspaceId);
+      router.push("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Delete failed");
+      setPending(false);
+      throw err;
+    }
+  }
+
   const activeInvites = invitations.filter(
     (i) => i.status !== "cancelled" && i.status !== "accepted",
   );
 
+  const needsBillingCancel =
+    isOwner &&
+    !isPersonal &&
+    Boolean(
+      billing &&
+        BLOCKING_SUB_STATUSES.has(billing.status) &&
+        !billing.cancelAtPeriodEnd,
+    );
+
+  if (!vault) return null;
+
+  if (!workspace) {
+    return (
+      <div className="p-6 text-sm text-muted-foreground">
+        Workspace not found.
+      </div>
+    );
+  }
+
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] overflow-y-auto sm:max-w-lg">
-        <DialogHeader>
-          <DialogTitle>Share workspace</DialogTitle>
-          <DialogDescription>
-            Invite by email. After they sign in and set up their vault, complete
-            key handoff on an unlocked device. Helvety never sees the workspace
-            key or vault content.
-          </DialogDescription>
-        </DialogHeader>
+    <div className="mx-auto flex w-full max-w-xl flex-col gap-8 p-6">
+      <div>
+        <h1 className="text-lg font-semibold tracking-tight">
+          Workspace settings
+        </h1>
+        <p className="text-sm text-muted-foreground">
+          Manage name, members, billing, and deletion for{" "}
+          <span className="font-medium text-foreground">{workspace.name}</span>.
+        </p>
+      </div>
+
+      {error ? (
+        <p className="text-sm text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium">General</h2>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="ws-settings-name">Name</Label>
+          <div className="flex gap-2">
+            <Input
+              id="ws-settings-name"
+              value={name}
+              onChange={(e) => setNameDraft(e.target.value)}
+              maxLength={120}
+              disabled={pending}
+            />
+            <Button
+              type="button"
+              size="sm"
+              disabled={
+                pending || !name.trim() || name.trim() === workspace.name
+              }
+              onClick={() => void onSaveName()}
+            >
+              Save
+            </Button>
+          </div>
+          {isPersonal ? (
+            <p className="text-xs text-muted-foreground">
+              Personal workspace — cannot be deleted.
+            </p>
+          ) : null}
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium">Members & invitations</h2>
+        <p className="text-xs text-muted-foreground">
+          Invite by email. After they sign in and set up their vault, complete
+          key handoff on an unlocked device. Helvety never sees the workspace
+          key or vault content.
+        </p>
 
         {canManage ? (
           <div className="flex flex-col gap-2">
@@ -310,12 +413,6 @@ export function WorkspaceSharingDialog({
           </p>
         )}
 
-        {error ? (
-          <p className="text-xs text-destructive" role="alert">
-            {error}
-          </p>
-        ) : null}
-
         {seatLimitHit && isOwner && billing?.plan === "free" ? (
           <div className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5">
             <p className="text-xs text-muted-foreground">
@@ -330,41 +427,6 @@ export function WorkspaceSharingDialog({
             >
               Upgrade to Pro
             </Button>
-          </div>
-        ) : null}
-
-        {billing ? (
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              Plan: <span className="uppercase">{billing.plan}</span>
-              {" · "}
-              Seats {billing.usage.members + billing.usage.pendingInvitations}/
-              {billing.limits.members}
-              {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
-            </p>
-            {isOwner ? (
-              billing.plan === "free" && !seatLimitHit ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={pending}
-                  onClick={() => void onUpgrade()}
-                >
-                  Upgrade to Pro
-                </Button>
-              ) : billing.hasStripeCustomer ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={pending}
-                  onClick={() => void onManageBilling()}
-                >
-                  Manage billing
-                </Button>
-              ) : null
-            ) : null}
           </div>
         ) : null}
 
@@ -405,13 +467,11 @@ export function WorkspaceSharingDialog({
                     key={invitation.id}
                     className="flex flex-col gap-1.5 rounded-md border border-border px-2 py-2"
                   >
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm">{invitation.email}</p>
-                        <p className="text-[11px] text-muted-foreground">
-                          {statusLabel(invitation.status)} · {invitation.role}
-                        </p>
-                      </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-sm">{invitation.email}</p>
+                      <p className="text-[11px] text-muted-foreground">
+                        {statusLabel(invitation.status)} · {invitation.role}
+                      </p>
                     </div>
                     <div className="flex flex-wrap gap-1">
                       <Button
@@ -449,17 +509,113 @@ export function WorkspaceSharingDialog({
             )}
           </div>
         ) : null}
+      </section>
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-          >
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+      <section className="flex flex-col gap-3">
+        <h2 className="text-sm font-medium">Billing</h2>
+        {billing ? (
+          <div className="flex items-center justify-between gap-2 rounded-md border border-border px-3 py-2">
+            <p className="text-xs text-muted-foreground">
+              Plan: <span className="uppercase">{billing.plan}</span>
+              {" · "}
+              Seats {billing.usage.members + billing.usage.pendingInvitations}/
+              {billing.limits.members}
+              {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
+            </p>
+            {isOwner ? (
+              billing.plan === "free" ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void onUpgrade()}
+                >
+                  Upgrade to Pro
+                </Button>
+              ) : billing.hasStripeCustomer ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void onManageBilling()}
+                >
+                  Manage billing
+                </Button>
+              ) : null
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Only the owner can manage billing.
+              </p>
+            )}
+          </div>
+        ) : (
+          <p className="text-xs text-muted-foreground">Loading billing…</p>
+        )}
+      </section>
+
+      {isOwner ? (
+        <section className="flex flex-col gap-3 rounded-lg border border-destructive/30 p-4">
+          <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
+          {isPersonal ? (
+            <p className="text-xs text-muted-foreground">
+              Your personal workspace cannot be deleted. It is created with your
+              vault and anchors your account.
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-muted-foreground">
+                Permanently delete this workspace and all projects, issues,
+                notes, contacts, and invitations. This cannot be undone. Helvety
+                cannot recover deleted vault data.
+              </p>
+              {needsBillingCancel ? (
+                <p className="text-xs text-muted-foreground">
+                  Cancel the Pro subscription in Manage billing before deleting
+                  this workspace.
+                </p>
+              ) : null}
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
+                <div className="flex flex-1 flex-col gap-1">
+                  <Label htmlFor="ws-delete-confirm" className="text-xs">
+                    Type <span className="font-medium">{workspace.name}</span> to
+                    confirm
+                  </Label>
+                  <Input
+                    id="ws-delete-confirm"
+                    value={deleteConfirmName}
+                    onChange={(e) => setDeleteConfirmName(e.target.value)}
+                    disabled={pending}
+                    autoComplete="off"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="destructive"
+                  size="sm"
+                  disabled={
+                    pending ||
+                    deleteConfirmName !== workspace.name ||
+                    needsBillingCancel
+                  }
+                  onClick={() => setDeleteOpen(true)}
+                >
+                  Delete workspace
+                </Button>
+              </div>
+              <ConfirmDeleteDialog
+                open={deleteOpen}
+                onOpenChange={setDeleteOpen}
+                title={`Delete workspace “${workspace.name}”?`}
+                description="This permanently deletes the workspace and everything in it. This cannot be undone."
+                busy={pending}
+                onConfirm={onDeleteWorkspace}
+              />
+            </>
+          )}
+        </section>
+      ) : null}
+    </div>
   );
 }

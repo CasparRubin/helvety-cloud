@@ -7,6 +7,7 @@ import {
 import type { ContactResponse } from "@helvety-cloud/api-contract";
 
 import {
+  deleteContact as deleteContactApi,
   getContact,
   listContacts,
   putContact,
@@ -169,14 +170,9 @@ export async function saveContact(
   return toDecrypted(workspaceKey, row);
 }
 
-export async function softDeleteContact(
+export async function deleteContact(
   workspaceId: string,
   contact: DecryptedContact,
 ): Promise<void> {
-  const existing = await getContact(workspaceId, contact.id);
-  await putContact(workspaceId, contact.id, {
-    encryptedBlob: existing.encryptedBlob,
-    sortOrder: existing.sortOrder,
-    deletedAt: new Date().toISOString(),
-  });
+  await deleteContactApi(workspaceId, contact.id);
 }

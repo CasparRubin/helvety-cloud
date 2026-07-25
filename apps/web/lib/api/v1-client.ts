@@ -129,6 +129,41 @@ async function apiFetch<T>(
   return schema.parse(body);
 }
 
+async function apiFetchNoContent(
+  path: string,
+  init?: RequestInit,
+): Promise<void> {
+  const token = await accessToken();
+  const response = await fetch(path, {
+    ...init,
+    headers: {
+      Accept: "application/json",
+      Authorization: `Bearer ${token}`,
+      ...(init?.body ? { "Content-Type": "application/json" } : {}),
+      ...init?.headers,
+    },
+  });
+
+  if (response.ok) {
+    return;
+  }
+
+  const body: unknown = await response.json().catch(() => null);
+  const parsed = apiErrorSchema.safeParse(body);
+  if (parsed.success) {
+    throw new ApiClientError(
+      parsed.data.error.code,
+      parsed.data.error.message,
+      response.status,
+    );
+  }
+  throw new ApiClientError(
+    "internal",
+    `Request failed (${response.status})`,
+    response.status,
+  );
+}
+
 export async function getMeCrypto(): Promise<GetMeCryptoResponse> {
   return apiFetch("/api/v1/me/crypto", getMeCryptoResponseSchema);
 }
@@ -198,6 +233,12 @@ export async function patchWorkspace(
   );
 }
 
+export async function deleteWorkspace(workspaceId: string): Promise<void> {
+  await apiFetchNoContent(`/api/v1/workspaces/${workspaceId}`, {
+    method: "DELETE",
+  });
+}
+
 export type ListParams = {
   limit?: number;
   cursor?: string | null;
@@ -248,6 +289,16 @@ export async function putProject(
   );
 }
 
+export async function deleteProject(
+  workspaceId: string,
+  projectId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}`,
+    { method: "DELETE" },
+  );
+}
+
 export async function listIssues(
   workspaceId: string,
   projectId: string,
@@ -283,6 +334,17 @@ export async function getIssue(
   return apiFetch(
     `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues/${issueId}`,
     issueResponseSchema,
+  );
+}
+
+export async function deleteIssue(
+  workspaceId: string,
+  projectId: string,
+  issueId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/projects/${projectId}/issues/${issueId}`,
+    { method: "DELETE" },
   );
 }
 
@@ -337,6 +399,16 @@ export async function putNote(
   );
 }
 
+export async function deleteNote(
+  workspaceId: string,
+  noteId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/notes/${noteId}`,
+    { method: "DELETE" },
+  );
+}
+
 export async function listContacts(
   workspaceId: string,
   params?: ListParams,
@@ -369,6 +441,16 @@ export async function putContact(
       method: "PUT",
       body: JSON.stringify(putContactRequestSchema.parse(body)),
     },
+  );
+}
+
+export async function deleteContact(
+  workspaceId: string,
+  contactId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/contacts/${contactId}`,
+    { method: "DELETE" },
   );
 }
 

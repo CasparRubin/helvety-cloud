@@ -11,6 +11,7 @@ import {
 import type { WorkspaceListItem } from "@helvety-cloud/api-contract";
 
 import {
+  deleteWorkspace,
   listWorkspaces,
   patchWorkspace,
   getMeCrypto,
@@ -44,6 +45,7 @@ type VaultSessionValue = {
   refreshWorkspaces: () => Promise<WorkspaceListItem[]>;
   createWorkspace: (name: string) => Promise<WorkspaceListItem>;
   renameWorkspace: (workspaceId: string, name: string) => Promise<void>;
+  removeWorkspace: (workspaceId: string) => Promise<void>;
   getWorkspaceKey: (workspaceId: string) => Promise<Uint8Array>;
 };
 
@@ -146,6 +148,16 @@ export function VaultSessionProvider({ children }: { children: ReactNode }) {
     [refreshWorkspaces],
   );
 
+  const removeWorkspace = useCallback(async (workspaceId: string) => {
+    await deleteWorkspace(workspaceId);
+    setWorkspaces((prev) => prev.filter((w) => w.id !== workspaceId));
+    setWorkspaceKeys((prev) => {
+      const next = new Map(prev);
+      next.delete(workspaceId);
+      return next;
+    });
+  }, []);
+
   const getWorkspaceKey = useCallback(
     async (workspaceId: string) => {
       if (!vault) {
@@ -177,6 +189,7 @@ export function VaultSessionProvider({ children }: { children: ReactNode }) {
       refreshWorkspaces,
       createWorkspace,
       renameWorkspace,
+      removeWorkspace,
       getWorkspaceKey,
     }),
     [
@@ -191,6 +204,7 @@ export function VaultSessionProvider({ children }: { children: ReactNode }) {
       refreshWorkspaces,
       createWorkspace,
       renameWorkspace,
+      removeWorkspace,
       getWorkspaceKey,
     ],
   );

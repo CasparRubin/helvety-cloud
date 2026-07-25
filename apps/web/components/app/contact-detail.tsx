@@ -6,11 +6,12 @@ import { useEffect, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
+  deleteContact,
   loadDecryptedContact,
   saveContact,
-  softDeleteContact,
   toContactPlaintext,
   type DecryptedContact,
 } from "@/lib/vault/contacts";
@@ -225,11 +226,10 @@ export function ContactDetail({
 
   async function onDelete() {
     if (!contact || deleting || savingRef.current) return;
-    if (!window.confirm("Delete this contact?")) return;
     setDeleting(true);
     setError(null);
     try {
-      await softDeleteContact(workspaceId, contact);
+      await deleteContact(workspaceId, contact);
       router.push(`/app/w/${workspaceId}/contacts`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -299,15 +299,13 @@ export function ContactDetail({
             >
               Save now
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <DeleteButton
               disabled={deleting}
-              onClick={() => void onDelete()}
-            >
-              Delete
-            </Button>
+              busy={deleting}
+              dialogTitle="Delete this contact?"
+              dialogDescription="This permanently deletes the contact. This cannot be undone."
+              onConfirm={onDelete}
+            />
             <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
           </div>
         </div>

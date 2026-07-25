@@ -124,3 +124,32 @@ export async function PUT(request: Request, context: RouteContext) {
     }),
   );
 }
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const auth = await requireUser(request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase } = auth;
+  const { workspaceId, projectId } = await context.params;
+
+  const { data, error } = await supabase
+    .from("projects")
+    .delete()
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === "42501") {
+      return apiError("forbidden", "Not a workspace member", 403);
+    }
+    return apiError("internal", error.message, 500);
+  }
+  if (!data) {
+    return apiError("not_found", "Project not found", 404);
+  }
+
+  return new Response(null, { status: 204 });
+}

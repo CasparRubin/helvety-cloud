@@ -4,7 +4,6 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "lucide-react";
 
-import { WorkspaceSharingDialog } from "@/components/app/workspace-sharing-dialog";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -41,14 +40,12 @@ export function WorkspaceSwitcher({
   const { workspaces, createWorkspace, renameWorkspace } = useVaultSession();
   const [createOpen, setCreateOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
   const [name, setName] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const active =
     workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0] ?? null;
-  const canManage = active?.role === "owner" || active?.role === "admin";
 
   function selectWorkspace(id: string) {
     storeLastWorkspaceId(userId, id);
@@ -151,12 +148,9 @@ export function WorkspaceSwitcher({
           ) : null}
           {active ? (
             <DropdownMenuItem
-              onClick={() => {
-                setError(null);
-                setShareOpen(true);
-              }}
+              onClick={() => router.push(`/app/w/${active.id}/settings`)}
             >
-              Share…
+              Workspace settings
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -254,17 +248,6 @@ export function WorkspaceSwitcher({
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {active ? (
-        <WorkspaceSharingDialog
-          open={shareOpen}
-          onOpenChange={setShareOpen}
-          workspaceId={active.id}
-          workspaceName={active.name}
-          canManage={Boolean(canManage)}
-          isOwner={active.role === "owner"}
-        />
-      ) : null}
     </>
   );
 }

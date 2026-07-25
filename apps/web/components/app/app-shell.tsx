@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
+  SettingsIcon,
   StickyNoteIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -82,6 +83,9 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   );
   const contactsActive = Boolean(
     workspaceBase && pathname.startsWith(`${workspaceBase}/contacts`),
+  );
+  const settingsActive = Boolean(
+    workspaceBase && pathname.startsWith(`${workspaceBase}/settings`),
   );
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
@@ -167,6 +171,14 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                   icon={ContactIcon}
                 >
                   Contacts
+                </SidebarLink>
+                <div className="my-1 border-t border-sidebar-border" />
+                <SidebarLink
+                  href={`${workspaceBase}/settings`}
+                  active={settingsActive}
+                  icon={SettingsIcon}
+                >
+                  Settings
                 </SidebarLink>
               </>
             ) : (

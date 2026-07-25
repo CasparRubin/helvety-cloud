@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { IssueBodyEditor } from "@/components/app/issue-body-editor";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -14,9 +15,9 @@ import {
   type IssueBodyDoc,
 } from "@/lib/vault/issue-plaintext";
 import {
+  deleteIssue,
   loadDecryptedIssue,
   saveIssue,
-  softDeleteIssue,
   type DecryptedIssue,
 } from "@/lib/vault/issues";
 
@@ -196,11 +197,10 @@ export function IssueDetail({
 
   async function onDelete() {
     if (!issue || deleting || savingRef.current) return;
-    if (!window.confirm("Delete this issue?")) return;
     setDeleting(true);
     setError(null);
     try {
-      await softDeleteIssue(workspaceId, projectId, issue);
+      await deleteIssue(workspaceId, projectId, issue);
       router.push(`/app/w/${workspaceId}/p/${projectId}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -252,15 +252,13 @@ export function IssueDetail({
             >
               Save now
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <DeleteButton
               disabled={deleting}
-              onClick={() => void onDelete()}
-            >
-              Delete
-            </Button>
+              busy={deleting}
+              dialogTitle="Delete this issue?"
+              dialogDescription="This permanently deletes the issue. This cannot be undone."
+              onConfirm={onDelete}
+            />
             <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
           </div>
         </div>

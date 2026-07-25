@@ -5,12 +5,13 @@ import { useCallback, useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   createProject,
+  deleteProject,
   loadDecryptedProjects,
   reorderProjects,
-  softDeleteProject,
   type DecryptedProject,
 } from "@/lib/vault/projects";
 
@@ -108,12 +109,10 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
 
   async function onDelete(project: DecryptedProject) {
     if (busy) return;
-    if (!window.confirm(`Delete project “${project.name}”?`)) return;
     setBusy(true);
     setError(null);
     try {
-      const key = await getWorkspaceKey(workspaceId);
-      await softDeleteProject(workspaceId, key, project);
+      await deleteProject(workspaceId, project);
       await refresh();
       window.dispatchEvent(new Event("helvety:projects-changed"));
     } catch (err) {
@@ -196,15 +195,13 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                 >
                   ↓
                 </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
+                <DeleteButton
                   disabled={busy}
-                  onClick={() => void onDelete(project)}
-                >
-                  Delete
-                </Button>
+                  busy={busy}
+                  dialogTitle={`Delete project “${project.name}”?`}
+                  dialogDescription="This permanently deletes the project and all of its issues. This cannot be undone."
+                  onConfirm={() => onDelete(project)}
+                />
               </div>
             </li>
           ))}

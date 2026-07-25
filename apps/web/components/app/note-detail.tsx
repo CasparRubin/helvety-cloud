@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
 import { IssueBodyEditor } from "@/components/app/issue-body-editor";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -14,9 +15,9 @@ import {
   type IssueBodyDoc,
 } from "@/lib/vault/note-plaintext";
 import {
+  deleteNote,
   loadDecryptedNote,
   saveNote,
-  softDeleteNote,
   type DecryptedNote,
 } from "@/lib/vault/notes";
 import {
@@ -279,11 +280,10 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
   async function onDelete() {
     if (!note || deleting || savingRef.current) return;
-    if (!window.confirm("Delete this note?")) return;
     setDeleting(true);
     setError(null);
     try {
-      await softDeleteNote(workspaceId, note);
+      await deleteNote(workspaceId, note);
       router.push(`/app/w/${workspaceId}/notes`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -381,15 +381,13 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
             >
               Save now
             </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
+            <DeleteButton
               disabled={deleting}
-              onClick={() => void onDelete()}
-            >
-              Delete
-            </Button>
+              busy={deleting}
+              dialogTitle="Delete this note?"
+              dialogDescription="This permanently deletes the note. This cannot be undone."
+              onConfirm={onDelete}
+            />
             <SaveStatusLabel status={saveStatus} savedAt={savedAt} />
           </div>
         </div>

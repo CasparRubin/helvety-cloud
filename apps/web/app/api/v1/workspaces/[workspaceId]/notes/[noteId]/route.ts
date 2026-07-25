@@ -195,3 +195,32 @@ export async function PUT(request: Request, context: RouteContext) {
 
   return jsonOk(toNoteResponse(row));
 }
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const auth = await requireUser(request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase } = auth;
+  const { workspaceId, noteId } = await context.params;
+
+  const { data, error } = await supabase
+    .from("notes")
+    .delete()
+    .eq("id", noteId)
+    .eq("workspace_id", workspaceId)
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    if (error.code === "42501") {
+      return apiError("forbidden", "Not a workspace member", 403);
+    }
+    return apiError("internal", error.message, 500);
+  }
+  if (!data) {
+    return apiError("not_found", "Note not found", 404);
+  }
+
+  return new Response(null, { status: 204 });
+}

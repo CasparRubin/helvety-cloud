@@ -114,3 +114,38 @@ export async function PATCH(request: Request, context: RouteContext) {
     }),
   );
 }
+
+export async function DELETE(request: Request, context: RouteContext) {
+  const auth = await requireUser(request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase } = auth;
+  const { workspaceId } = await context.params;
+
+  const { error } = await supabase.rpc("delete_workspace", {
+    ws_id: workspaceId,
+  });
+
+  if (error) {
+    const message = error.message.toLowerCase();
+    if (message.includes("workspace not found")) {
+      return apiError("not_found", "Workspace not found", 404);
+    }
+    if (message.includes("not authenticated")) {
+      return apiError("unauthorized", "Not authenticated", 401);
+    }
+    if (message.includes("not workspace owner")) {
+      return apiError("forbidden", "Only the workspace owner can delete it", 403);
+    }
+    if (
+      message.includes("cannot delete personal") ||
+      message.includes("active subscription")
+    ) {
+      return apiError("conflict", error.message, 409);
+    }
+    return apiError("internal", error.message, 500);
+  }
+
+  return new Response(null, { status: 204 });
+}

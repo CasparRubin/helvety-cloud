@@ -7,6 +7,7 @@ import {
 import type { IssueResponse } from "@helvety-cloud/api-contract";
 
 import {
+  deleteIssue as deleteIssueApi,
   getIssue,
   listIssues,
   putIssue,
@@ -164,15 +165,10 @@ export async function saveIssue(
   return toDecrypted(workspaceKey, row);
 }
 
-export async function softDeleteIssue(
+export async function deleteIssue(
   workspaceId: string,
   projectId: string,
   issue: DecryptedIssue,
 ): Promise<void> {
-  const existing = await getIssue(workspaceId, projectId, issue.id);
-  await putIssue(workspaceId, projectId, issue.id, {
-    encryptedBlob: existing.encryptedBlob,
-    sortOrder: existing.sortOrder,
-    deletedAt: new Date().toISOString(),
-  });
+  await deleteIssueApi(workspaceId, projectId, issue.id);
 }
