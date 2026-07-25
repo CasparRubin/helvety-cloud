@@ -1,23 +1,30 @@
-/**
- * Stripe webhook (P6f). The ONLY place the Supabase service role is used —
- * and only to upsert plaintext billing rows (subscriptions / billing_events).
- * It never reads vault tables and can never decrypt anything (BILLING.md).
- */
+import type { Database } from "@helvety-cloud/db";
 import type Stripe from "stripe";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
-import { getStripe, getStripeWebhookSecret } from "@/lib/stripe";
+import { normalizeAddonQuantities } from "@/lib/billing/entitlements";
+import {
+  addonQuantitiesFromSubscription,
+  getStripe,
+  getStripeWebhookSecret,
+} from "@/lib/stripe";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
+
+type ServiceApi = SupabaseClient<Database>;
 
 type SubscriptionRow = {
   workspace_id: string;
   plan: string;
   status: string;
+  billing_source: "stripe";
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
+  addon_quantities: Record<string, number>;
+  unmetered: false;
 };
 
 function stripeId(
@@ -42,6 +49,7 @@ function subscriptionRowFromStripe(
     workspace_id: workspaceId,
     plan: isEnded ? "free" : "pro",
     status: subscription.status,
+    billing_source: "stripe",
     stripe_customer_id: stripeId(subscription.customer),
     stripe_subscription_id: subscription.id,
     stripe_price_id: item?.price?.id ?? null,
@@ -49,6 +57,10 @@ function subscriptionRowFromStripe(
       ? new Date(periodEnd * 1000).toISOString()
       : null,
     cancel_at_period_end: subscription.cancel_at_period_end,
+    addon_quantities: normalizeAddonQuantities(
+      addonQuantitiesFromSubscription(subscription),
+    ),
+    unmetered: false,
   };
 }
 
@@ -56,6 +68,36 @@ function workspaceIdFromSubscription(
   subscription: Stripe.Subscription,
 ): string | null {
   return subscription.metadata?.workspace_id ?? null;
+}
+
+async function upsertStripeSubscription(
+  supabase: ServiceApi,
+  row: SubscriptionRow,
+): Promise<void> {
+  const { data: existing } = await supabase
+    .from("subscriptions")
+    .select(
+      "billing_source, discount_code_id, discount_percent_off, stripe_coupon_id",
+    )
+    .eq("workspace_id", row.workspace_id)
+    .maybeSingle();
+
+  if (existing?.billing_source === "comp") {
+    return;
+  }
+
+  const { error } = await supabase.from("subscriptions").upsert(
+    {
+      ...row,
+      discount_code_id: existing?.discount_code_id ?? null,
+      discount_percent_off: existing?.discount_percent_off ?? null,
+      stripe_coupon_id: existing?.stripe_coupon_id ?? null,
+    },
+    { onConflict: "workspace_id" },
+  );
+  if (error) {
+    throw new Error(error.message);
+  }
 }
 
 export async function POST(request: Request) {
@@ -80,7 +122,6 @@ export async function POST(request: Request) {
 
   const supabase = createServiceRoleClient();
 
-  // Idempotency: Stripe redelivers events; skip ones we already recorded.
   const { data: seen, error: seenError } = await supabase
     .from("billing_events")
     .select("id")
@@ -106,12 +147,7 @@ export async function POST(request: Request) {
           const subscription =
             await stripe.subscriptions.retrieve(subscriptionId);
           const row = subscriptionRowFromStripe(subscription, workspaceId);
-          const { error } = await supabase
-            .from("subscriptions")
-            .upsert(row, { onConflict: "workspace_id" });
-          if (error) {
-            throw new Error(error.message);
-          }
+          await upsertStripeSubscription(supabase, row);
         }
         break;
       }
@@ -125,13 +161,9 @@ export async function POST(request: Request) {
           if (event.type === "customer.subscription.deleted") {
             row.plan = "free";
             row.status = "canceled";
+            row.addon_quantities = {};
           }
-          const { error } = await supabase
-            .from("subscriptions")
-            .upsert(row, { onConflict: "workspace_id" });
-          if (error) {
-            throw new Error(error.message);
-          }
+          await upsertStripeSubscription(supabase, row);
         }
         break;
       }
@@ -141,13 +173,13 @@ export async function POST(request: Request) {
         if (customerId) {
           const { data: existing, error: lookupError } = await supabase
             .from("subscriptions")
-            .select("workspace_id")
+            .select("workspace_id, billing_source")
             .eq("stripe_customer_id", customerId)
             .maybeSingle();
           if (lookupError) {
             throw new Error(lookupError.message);
           }
-          if (existing) {
+          if (existing && existing.billing_source !== "comp") {
             workspaceId = existing.workspace_id;
             const { error } = await supabase
               .from("subscriptions")
@@ -161,11 +193,9 @@ export async function POST(request: Request) {
         break;
       }
       default:
-        // Unhandled event types are recorded below and acknowledged.
         break;
     }
   } catch {
-    // Not recorded in billing_events yet, so Stripe retries reprocess fully.
     return NextResponse.json({ error: "Processing failed" }, { status: 500 });
   }
 
@@ -175,7 +205,6 @@ export async function POST(request: Request) {
     workspace_id: workspaceId,
     payload: JSON.parse(payload),
   });
-  // 23505 = duplicate delivery raced us; processing is idempotent upserts.
   if (insertError && insertError.code !== "23505") {
     return NextResponse.json({ error: "Storage error" }, { status: 500 });
   }

@@ -1,16 +1,19 @@
-# Billing (P6f — implemented)
+# Billing (P6f + P12)
 
-Stripe workspace subscriptions with plaintext entitlements. Implemented in
-P6f; charges only happen when a workspace owner completes Stripe Checkout.
+Stripe workspace subscriptions with plaintext entitlements, à-la-carte addons,
+and admin discount / complimentary codes. Charges only happen when a workspace
+owner completes Stripe Checkout (unless a **100%** code grants Pro with no card).
 
 ## Principles (unchanged)
 
-- Billing never touches vault keys or content.  
-- Meter **plaintext counts** only: workspaces, projects, members, row counts.  
-- Subscription belongs to the **workspace** (owner pays).  
-- **Stripe** Checkout + Customer Portal + webhooks → `subscriptions` table.  
-- Free plan = entitlements in code; no Stripe customer until upgrade.  
-- Webhook uses service role only to upsert billing rows — never to decrypt.
+- Billing never touches vault keys or content.
+- Meter **plaintext counts** only: workspaces, projects, members, row counts,
+  ciphertext byte sizes, attachment link counts.
+- Subscription belongs to the **workspace** (owner pays).
+- **Stripe** Checkout + Customer Portal + webhooks → `subscriptions`.
+- Free plan = entitlements in code; no Stripe customer until upgrade.
+- **100% discount codes** = DB comp grants (`billing_source=comp`); no Stripe.
+- Webhook / redeem API use service role only for billing rows — never to decrypt.
 
 ## Stack
 
@@ -19,42 +22,73 @@ P6f; charges only happen when a workspace owner completes Stripe Checkout.
 | Processor | Stripe (no monthly fee; % when paid) |
 | Auth | Supabase Auth (no Clerk) |
 | Entitlements | Gated in `/api/v1` create mutations, server-side |
+| Limit catalog | `apps/web/lib/billing/entitlements.ts` (tune + redeploy) |
+| Discount codes | `discount_codes` table (Dashboard / SQL admin) |
 
 ## Implementation map
 
 | Piece | Where |
 |-------|-------|
-| Tables | `subscriptions` (PK `workspace_id`, plan/status/Stripe ids), `billing_events` (webhook audit + idempotency) — `supabase/schemas/16_billing.sql` |
-| Plans/limits in code | `apps/web/lib/billing/entitlements.ts` |
-| API gates | `apps/web/lib/api/entitlements.ts` + create paths in `/api/v1` routes |
-| Seat gate RPC | `public.workspace_seat_usage` (SECURITY DEFINER; members + active invitees; counts only) |
-| Billing endpoints | `GET /api/v1/workspaces/:id/billing` (member), `POST …/billing/checkout` and `POST …/billing/portal` (owner only) |
-| Webhook | `POST /api/webhooks/stripe` — signature-verified; the **only** service-role consumer (`apps/web/lib/supabase/service-role.ts`) |
-| Upgrade UX | Workspace sharing dialog (plan, seats, Upgrade / Manage billing) |
+| Tables | `subscriptions`, `billing_events`, `discount_codes` — `supabase/schemas/16_billing.sql` |
+| Plans/limits/addons | `apps/web/lib/billing/entitlements.ts` |
+| Discount redeem | `apps/web/lib/billing/discount-codes.ts` + `POST …/billing/discount` |
+| API gates | `apps/web/lib/api/entitlements.ts` + create paths in `/api/v1` |
+| Seat gate RPC | `public.workspace_seat_usage` |
+| Billing endpoints | `GET …/billing`, `POST …/checkout`, `POST …/portal`, `POST …/discount`, `PUT …/addons` |
+| Webhook | `POST /api/webhooks/stripe` — never overwrites `billing_source=comp` |
 
 ## Plans and limits (tune in code)
 
-| Per workspace | Free | Pro |
-|---------------|------|-----|
-| Owned workspaces (per user) | 2 | 10 |
-| Projects | 5 | 100 |
+Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing rows — create gates only):
+
+| Meter | Free | Pro base |
+|-------|-----:|---------:|
+| Owned free-tier workspaces / user | 2 | — |
+| Soft owned Pro ceiling / user | — | 50 |
+| Projects / workspace | 1 | 25 |
 | Members (incl. pending invites) | 2 | 25 |
-| Tasks | 100 | 10,000 |
-| Notes | 50 | 5,000 |
-| Contacts | 50 | 5,000 |
-| File storage (ciphertext bytes) | **0** (no uploads) | 5 GB |
-| Max upload size | **0** | 25 MB |
+| Tasks / **project** | 50 | 500 |
+| Notes / workspace | 50 | 500 |
+| Contacts / workspace | 50 | 500 |
+| Files / task | 0 | 5 |
+| File storage (ciphertext bytes) | 0 | 5 GiB |
+| Max upload size | 0 | 25 MiB |
 
-Gates apply to **creates only** (net-new rows / invites / accepts) and return
-`limit_exceeded` (403). Updates, soft-deletes, reads, seal/cancel are never
-gated. Missing `subscriptions` row or any non-`active`/`trialing` status
-(`past_due`, `canceled`, `unpaid`, …) resolves to free — no silent paid plan.
+**3rd+ owned workspace:** only by creating/upgrading that workspace to Pro (Checkout) or redeeming a 100% code / admin comp. Each paid (or gifted) workspace stands alone — owning one Pro does not silently raise free slots.
 
-## Stripe data hygiene
+**Addons (Pro + Stripe only):** pack quantities on the same subscription. Effective limit =
 
-Stripe receives only: billing email, `workspace_id` in metadata /
-`client_reference_id`, and subscription objects. Never vault keys,
-ciphertext, titles, or any vault content.
+```text
+catalog[plan][meter] + sum(quantity × packSize)
+```
+
+Complimentary (`unmetered`) workspaces skip countable caps (upload max size still uses Pro catalog).
+
+## Discount codes
+
+Admin inserts rows into `discount_codes` (service role / Dashboard only — no client SELECT of the catalog):
+
+| Column | Meaning |
+|--------|---------|
+| `code` | Uppercase unique token (long / unguessable) |
+| `percent_off` | 1–100 |
+| `active` / `expires_at` / `max_redemptions` | Validity |
+| `note` | Admin memo |
+| `stripe_coupon_id` | Cached Stripe Coupon for 1–99% |
+
+**Redeem** (`POST …/billing/discount`, owner-only):
+
+- **1–99%** — snapshot percent onto `subscriptions`, ensure Stripe Coupon, start Checkout with discount (Pro + future addon line items inherit subscription coupon).
+- **100%** — upsert `plan=pro`, `status=active`, `billing_source=comp`, `unmetered=true`, Stripe ids null. No card.
+
+One code per workspace via the API; admins may also gift by editing `subscriptions` in SQL.
+
+## Stripe shape
+
+- One subscription per workspace.
+- Line items: Pro base (qty 1) + zero or more addon Prices (qty ≥ 1).
+- Prefer `STRIPE_PRICE_PRO_YEARLY` (falls back to `STRIPE_PRICE_PRO_MONTHLY`).
+- Addon env vars: `STRIPE_PRICE_ADDON_PROJECTS`, `_TASKS`, `_NOTES`, `_CONTACTS`, `_MEMBERS`, `_STORAGE`, `_FILES_PER_TASK`.
 
 ## Environment (server-only unless NEXT_PUBLIC_)
 
@@ -62,20 +96,30 @@ ciphertext, titles, or any vault content.
 |-----|-----|
 | `STRIPE_SECRET_KEY` | Server Stripe client |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signature verification |
-| `STRIPE_PRICE_PRO_MONTHLY` | Price ID of the "Helvety Pro" monthly price |
-| `SUPABASE_SERVICE_ROLE_KEY` | Webhook billing upserts ONLY |
+| `STRIPE_PRICE_PRO_YEARLY` | Preferred Pro price |
+| `STRIPE_PRICE_PRO_MONTHLY` | Legacy fallback |
+| `STRIPE_PRICE_ADDON_*` | Addon pack Prices |
+| `SUPABASE_SERVICE_ROLE_KEY` | Webhook + redeem writes ONLY |
 | `NEXT_PUBLIC_APP_URL` | Checkout success/cancel + portal return URLs |
 
 ## Ops checklist
 
-1. Stripe Dashboard (test mode first): create Product "Helvety Pro" + monthly Price → set `STRIPE_PRICE_PRO_MONTHLY`.
-2. Dev webhooks: `stripe listen --forward-to localhost:3000/api/webhooks/stripe`; prod: Dashboard endpoint for `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed` → set `STRIPE_WEBHOOK_SECRET`.
-3. Enable the Customer Portal (cancel + payment method update) in Stripe Dashboard.
-4. Set all env vars on Vercel; keep service role + Stripe keys out of the client bundle.
+1. Stripe Dashboard: Product “Helvety Pro” + **yearly** Price → `STRIPE_PRICE_PRO_YEARLY`.
+2. Create addon Prices (recurring, same interval as Pro) → set each `STRIPE_PRICE_ADDON_*`.
+3. Webhooks: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed`.
+4. Enable Customer Portal (cancel + payment method).
+5. Create discount codes in Supabase SQL, e.g.
+
+```sql
+insert into public.discount_codes (code, percent_off, note)
+values ('JDKFLJK3LJE2JKL', 20, 'Pilot 20%');
+
+insert into public.discount_codes (code, percent_off, note)
+values ('COMPANION100GIFT', 100, 'Full complimentary Pro');
+```
 
 ## Docs / UX
 
 Free limits are stated in the product before a gate blocks an action and in
-`/legal/billing`. No dark patterns: cancel is one click in the Portal.
-Consumer withdrawal rules → Swiss counsel (see
-[`LEGAL_REQUIREMENTS.md`](LEGAL_REQUIREMENTS.md)).
+`/legal/billing`. Complimentary workspaces show as Pro without a Stripe portal.
+Cancel is one click in the Portal for paid subs. No dark patterns.

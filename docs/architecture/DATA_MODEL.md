@@ -38,7 +38,8 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `entity_links` (P8a) | UUID graph edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. **Intentional metadata** — Helvety sees which ids are linked, never titles/colors. Used for reverse lookup without decrypting all notes. |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
-| `subscriptions` (P6f) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `stripe_customer_id` / `stripe_subscription_id` / `stripe_price_id`, `current_period_end`, `cancel_at_period_end`. Members SELECT only; writes via service-role webhook |
+| `subscriptions` (P6f/P12) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `billing_source` (`stripe`\|`comp`), discount snapshot + `unmetered`, `addon_quantities` jsonb, Stripe ids, period fields. Members SELECT only; writes via service-role webhook / redeem |
+| `discount_codes` (P12) | Admin catalog: `code`, `percent_off` (1–100), validity, `redemption_count`, optional `stripe_coupon_id`. No client grants |
 | `billing_events` (P6f) | Webhook audit + idempotency: unique `stripe_event_id`, `type`, nullable `workspace_id`, raw event `payload` (billing metadata only). No client grants; service-role only |
 | `attachments` (P11) | Workspace-scoped file ciphertext in Storage: plaintext `byte_size`, `storage_path`, `status` (`pending`\|`ready`\|`failed`), timestamps, tombstone; ciphertext `encrypted_meta` + `wrapped_dek` envelopes |
 | `attachment_links` (P11) | Plaintext junction: `parent_kind`/`parent_id` (`note`\|`task`\|`contact`) → `attachment_id` for reverse lookup + cascade cleanup without decrypting TipTap bodies |

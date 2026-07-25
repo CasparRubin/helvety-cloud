@@ -3,30 +3,33 @@ import type { LegalDocument } from "./types";
 export const billingDoc: LegalDocument = {
   slug: "billing",
   title: "Billing terms",
-  versionLabel: "2026-07-25-v2",
+  versionLabel: "2026-07-25-v3",
   sections: [
     {
       heading: "Status",
       paragraphs: [
-        "Helvety Cloud offers a free plan and a paid Pro plan per workspace, processed through Stripe. Nothing is charged unless a workspace owner explicitly starts a Pro subscription at checkout, where the price is shown before any charge.",
+        "Helvety Cloud offers a free plan and a paid Pro plan per workspace, processed through Stripe, plus optional paid add-ons that raise specific limits. Nothing is charged unless a workspace owner explicitly starts Checkout (where the price is shown before any charge) or changes paid add-ons.",
+        "Workspace owners may redeem a discount or complimentary code issued by Helvety. A 100% complimentary code grants Pro access for that workspace without collecting a payment method. Partial discount codes reduce the price of Pro and paid add-ons for that workspace when Checkout or billing updates run through Stripe.",
         "These terms do not themselves create an obligation to purchase. The free plan remains usable within its stated limits without a payment method.",
       ],
     },
     {
       heading: "Free plan",
       paragraphs: [
-        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks, notes, and contacts). File uploads and document storage are not available on the free plan — including in free Personal workspaces. Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
-        "Helvety may change free limits with notice in the product. Continued use after a change means you accept the updated limits.",
+        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks per project, notes, and contacts). File uploads and document storage are not available on the free plan — including in free Personal workspaces. Current limits are shown in the product where they apply — before a limit blocks an action, not after payment.",
+        "Each account may own two free-tier workspaces (including the Personal workspace). Additional owned workspaces require Pro (paid or complimentary) for that workspace.",
+        "Helvety may change free limits with notice in the product. Continued use after a change means you accept the updated limits. Lowered caps do not delete your vault data; new creates may be blocked until you are under the new cap or upgrade.",
       ],
     },
     {
-      heading: "Paid plans",
+      heading: "Paid plans and add-ons",
       paragraphs: [
-        "Subscriptions are workspace-scoped: the workspace owner pays for that workspace’s Pro plan.",
-        "Pro includes encrypted file and document storage for that workspace, within the storage and per-file size limits shown in the product. Uploaded files are end-to-end encrypted on your device; Helvety stores ciphertext and operational size meters only and cannot decrypt file contents.",
-        "Prices, billing intervals, renewals, and taxes are shown at Stripe Checkout. Unless stated otherwise, subscriptions renew automatically until cancelled.",
-        "You may cancel renewal at any time in the Stripe billing portal (available from the workspace sharing dialog); access to Pro limits continues through the paid period already purchased unless stated otherwise. No cancellation fees, no retention tricks.",
-        "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs vault plaintext or raw vault keys for billing. Meters use plaintext operational counts and ciphertext byte sizes only (for example workspace, project, or storage counters).",
+        "Subscriptions are workspace-scoped: the workspace owner pays for that workspace’s Pro plan and any add-ons on that workspace.",
+        "Pro includes higher operational limits and encrypted file and document storage for that workspace, within the storage, per-file size, and per-task file limits shown in the product. Uploaded files are end-to-end encrypted on your device; Helvety stores ciphertext and operational size meters only and cannot decrypt file contents.",
+        "Add-ons let you buy extra capacity for individual meters (for example more projects) without raising unrelated limits. Add-ons require an active paid Pro subscription on that workspace; complimentary workspaces already receive unmetered operational caps as shown in the product.",
+        "Prices, billing intervals (including annual Pro billing when offered), renewals, taxes, and any applied discount percentage are shown at Stripe Checkout or in the billing portal. Unless stated otherwise, subscriptions renew automatically until cancelled.",
+        "You may cancel renewal at any time in the Stripe billing portal (available from workspace billing settings); access to paid limits continues through the paid period already purchased unless stated otherwise. No cancellation fees, no retention tricks. Complimentary access may be revoked by Helvety; vault ciphertext is not deleted solely because a complimentary grant ends — create gates may then apply free limits.",
+        "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs vault plaintext or raw vault keys for billing. Meters use plaintext operational counts and ciphertext byte sizes only.",
       ],
     },
     {

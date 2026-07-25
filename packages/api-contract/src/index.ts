@@ -9,6 +9,7 @@ export const apiErrorCodes = [
   "invalid_body",
   "invalid_ciphertext",
   "limit_exceeded",
+  "rate_limited",
   "internal",
 ] as const;
 
@@ -494,9 +495,23 @@ export type ListWorkspaceMembersResponse = z.infer<
   typeof listWorkspaceMembersResponseSchema
 >;
 
-/** P6f billing — plaintext entitlements only; never vault keys or content. */
+/** P6f / P12 billing — plaintext entitlements only; never vault keys or content. */
 export const planIdSchema = z.enum(["free", "pro"]);
 export type PlanId = z.infer<typeof planIdSchema>;
+
+export const billingSourceSchema = z.enum(["stripe", "comp"]);
+export type BillingSource = z.infer<typeof billingSourceSchema>;
+
+export const addonMeterSchema = z.enum([
+  "projects",
+  "tasksPerProject",
+  "notes",
+  "contacts",
+  "members",
+  "storageBytes",
+  "filesPerTask",
+]);
+export type AddonMeterId = z.infer<typeof addonMeterSchema>;
 
 export const subscriptionStatusSchema = z.enum([
   "active",
@@ -510,14 +525,16 @@ export const subscriptionStatusSchema = z.enum([
 ]);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
+/** null = unlimited (complimentary / unmetered). */
 export const workspaceLimitsSchema = z.object({
-  projects: z.number().int().positive(),
-  members: z.number().int().positive(),
-  tasks: z.number().int().positive(),
-  notes: z.number().int().positive(),
-  contacts: z.number().int().positive(),
+  projects: z.number().int().positive().nullable(),
+  members: z.number().int().positive().nullable(),
+  tasks: z.number().int().positive().nullable(),
+  notes: z.number().int().positive().nullable(),
+  contacts: z.number().int().positive().nullable(),
+  filesPerTask: z.number().int().nonnegative().nullable(),
   /** Ciphertext bytes; free plan is 0 (no uploads). */
-  storageBytes: z.number().int().nonnegative(),
+  storageBytes: z.number().int().nonnegative().nullable(),
   /** Max ciphertext bytes per file; free plan is 0. */
   maxUploadBytes: z.number().int().nonnegative(),
 });
@@ -535,15 +552,27 @@ export const workspaceUsageSchema = z.object({
 });
 export type WorkspaceUsage = z.infer<typeof workspaceUsageSchema>;
 
+export const billingAddonSchema = z.object({
+  meter: addonMeterSchema,
+  quantity: z.number().int().nonnegative(),
+  packSize: z.number().int().positive(),
+  label: z.string().min(1),
+});
+export type BillingAddon = z.infer<typeof billingAddonSchema>;
+
 export const getWorkspaceBillingResponseSchema = z.object({
   workspaceId: uuidSchema,
   plan: planIdSchema,
   status: subscriptionStatusSchema,
+  billingSource: billingSourceSchema,
+  unmetered: z.boolean(),
+  discountPercentOff: z.number().int().min(1).max(100).nullable(),
   cancelAtPeriodEnd: z.boolean(),
   currentPeriodEnd: z.string().nullable(),
   hasStripeCustomer: z.boolean(),
   limits: workspaceLimitsSchema,
   usage: workspaceUsageSchema,
+  addons: z.array(billingAddonSchema),
 });
 export type GetWorkspaceBillingResponse = z.infer<
   typeof getWorkspaceBillingResponseSchema
@@ -554,6 +583,35 @@ export const billingRedirectResponseSchema = z.object({
 });
 export type BillingRedirectResponse = z.infer<
   typeof billingRedirectResponseSchema
+>;
+
+export const redeemDiscountRequestSchema = z.object({
+  code: z.string().min(8).max(64),
+});
+export type RedeemDiscountRequest = z.infer<typeof redeemDiscountRequestSchema>;
+
+export const redeemDiscountResponseSchema = z.object({
+  kind: z.enum(["comp", "percent_off"]),
+  percentOff: z.number().int().min(1).max(100),
+  /** Present when kind=percent_off and Checkout should follow. */
+  checkoutUrl: z.string().url().optional(),
+});
+export type RedeemDiscountResponse = z.infer<
+  typeof redeemDiscountResponseSchema
+>;
+
+export const updateBillingAddonsRequestSchema = z.object({
+  quantities: z.record(addonMeterSchema, z.number().int().min(0).max(100)),
+});
+export type UpdateBillingAddonsRequest = z.infer<
+  typeof updateBillingAddonsRequestSchema
+>;
+
+export const updateBillingAddonsResponseSchema = z.object({
+  addons: z.array(billingAddonSchema),
+});
+export type UpdateBillingAddonsResponse = z.infer<
+  typeof updateBillingAddonsResponseSchema
 >;
 
 /** P11 attachments — ciphertext-opaque metadata + signed URL handoff. */

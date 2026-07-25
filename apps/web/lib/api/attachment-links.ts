@@ -6,6 +6,14 @@ import type { AttachmentParentKind } from "@helvety-cloud/api-contract";
 import type { Database } from "@helvety-cloud/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { getWorkspaceSubscription } from "@/lib/api/entitlements";
+import {
+  effectiveLimits,
+  filesPerTaskLimitMessage,
+  isUnlimited,
+  resolvePlan,
+} from "@/lib/billing/entitlements";
+
 type Db = SupabaseClient<Database>;
 
 function dedupeIds(ids: string[]): string[] {
@@ -21,6 +29,15 @@ export async function replaceAttachmentLinks(
   attachmentIds: string[],
 ): Promise<string[]> {
   const deduped = dedupeIds(attachmentIds);
+
+  if (parentKind === "task") {
+    const subscription = await getWorkspaceSubscription(supabase, workspaceId);
+    const plan = resolvePlan(subscription);
+    const limit = effectiveLimits(subscription).filesPerTask;
+    if (!isUnlimited(limit) && deduped.length > limit) {
+      throw new Error(filesPerTaskLimitMessage(plan, limit));
+    }
+  }
 
   if (deduped.length > 0) {
     const { data: rows, error } = await supabase

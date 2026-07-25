@@ -8,15 +8,18 @@ import type { NextResponse } from "next/server";
 
 import { apiError } from "@/lib/api/errors";
 import {
+  effectiveLimits,
+  isUnlimited,
   limitMessage,
-  limitsForPlan,
   maxUploadLimitMessage,
+  normalizeAddonQuantities,
   ownedWorkspacesLimitMessage,
   resolvePlan,
   seatLimitMessage,
   storageLimitMessage,
   workspaceMeterLimit,
   type Plan,
+  type SubscriptionLike,
   type WorkspaceMeter,
 } from "@/lib/billing/entitlements";
 
@@ -31,6 +34,25 @@ export type WorkspaceUsageCounts = {
   contacts: number;
   storageBytes: number;
 };
+
+function subscriptionLikeFromRow(
+  row: {
+    plan: string;
+    status: string;
+    billing_source?: string | null;
+    unmetered?: boolean | null;
+    addon_quantities?: unknown;
+  } | null,
+): SubscriptionLike {
+  if (!row) return null;
+  return {
+    plan: row.plan,
+    status: row.status,
+    billing_source: row.billing_source,
+    unmetered: row.unmetered,
+    addon_quantities: normalizeAddonQuantities(row.addon_quantities),
+  };
+}
 
 /**
  * Plaintext usage counts for the billing endpoint. Pending invitations are
@@ -116,31 +138,39 @@ export async function isWorkspaceOwner(
   return data?.role === "owner";
 }
 
+export async function getWorkspaceSubscription(
+  supabase: Api,
+  workspaceId: string,
+): Promise<SubscriptionLike> {
+  const { data } = await supabase
+    .from("subscriptions")
+    .select("plan, status, billing_source, unmetered, addon_quantities")
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+  return subscriptionLikeFromRow(data);
+}
+
 export async function getWorkspacePlan(
   supabase: Api,
   workspaceId: string,
 ): Promise<Plan> {
-  const { data } = await supabase
-    .from("subscriptions")
-    .select("plan, status")
-    .eq("workspace_id", workspaceId)
-    .maybeSingle();
-  return resolvePlan(data ?? null);
+  return resolvePlan(await getWorkspaceSubscription(supabase, workspaceId));
 }
 
 async function countMeter(
   supabase: Api,
   workspaceId: string,
   meter: WorkspaceMeter,
+  projectId?: string,
 ): Promise<number | null> {
   if (meter === "tasks") {
+    if (!projectId) {
+      return null;
+    }
     const { count, error } = await supabase
       .from("tasks")
-      .select("id, projects!inner(workspace_id)", {
-        count: "exact",
-        head: true,
-      })
-      .eq("projects.workspace_id", workspaceId)
+      .select("id", { count: "exact", head: true })
+      .eq("project_id", projectId)
       .is("deleted_at", null);
     return error ? null : (count ?? 0);
   }
@@ -155,17 +185,29 @@ async function countMeter(
 
 /**
  * Gate a net-new row in a workspace-scoped vault table.
+ * For tasks, pass projectId — limits are per project.
  * Returns an error response to short-circuit with, or null when allowed.
  */
 export async function assertWorkspaceCreateAllowed(
   supabase: Api,
   workspaceId: string,
   meter: WorkspaceMeter,
+  options?: { projectId?: string },
 ): Promise<NextResponse | null> {
-  const plan = await getWorkspacePlan(supabase, workspaceId);
-  const limit = workspaceMeterLimit(plan, meter);
+  const subscription = await getWorkspaceSubscription(supabase, workspaceId);
+  const plan = resolvePlan(subscription);
+  const limit = workspaceMeterLimit(subscription, meter);
 
-  const current = await countMeter(supabase, workspaceId, meter);
+  if (isUnlimited(limit)) {
+    return null;
+  }
+
+  const current = await countMeter(
+    supabase,
+    workspaceId,
+    meter,
+    options?.projectId,
+  );
   if (current === null) {
     // Count failed (e.g. RLS): let the write itself surface the real error.
     return null;
@@ -184,8 +226,12 @@ export async function assertInviteSeatAllowed(
   supabase: Api,
   workspaceId: string,
 ): Promise<NextResponse | null> {
-  const plan = await getWorkspacePlan(supabase, workspaceId);
-  const limit = limitsForPlan(plan).membersPerWorkspace;
+  const subscription = await getWorkspaceSubscription(supabase, workspaceId);
+  const plan = resolvePlan(subscription);
+  const limit = effectiveLimits(subscription).membersPerWorkspace;
+  if (isUnlimited(limit)) {
+    return null;
+  }
 
   const [membersResult, invitesResult] = await Promise.all([
     supabase
@@ -226,8 +272,18 @@ export async function assertAcceptSeatAllowed(
     return null;
   }
   const usage = data[0];
-  const plan = resolvePlan({ plan: usage.plan, status: usage.status });
-  const limit = limitsForPlan(plan).membersPerWorkspace;
+  const subscription = subscriptionLikeFromRow({
+    plan: usage.plan,
+    status: usage.status,
+    billing_source: usage.billing_source,
+    unmetered: usage.unmetered,
+    addon_quantities: usage.addon_quantities,
+  });
+  const plan = resolvePlan(subscription);
+  const limit = effectiveLimits(subscription).membersPerWorkspace;
+  if (isUnlimited(limit)) {
+    return null;
+  }
   if (usage.member_count >= limit) {
     return apiError("limit_exceeded", seatLimitMessage(plan, limit), 403);
   }
@@ -237,7 +293,6 @@ export async function assertAcceptSeatAllowed(
 /**
  * Gate a file upload: free workspaces get 0 bytes (no uploads);
  * Pro workspaces must stay under storage + per-file caps.
- * Returns an error response to short-circuit with, or null when allowed.
  */
 export async function assertWorkspaceStorageAllowed(
   supabase: Api,
@@ -248,8 +303,9 @@ export async function assertWorkspaceStorageAllowed(
     return apiError("invalid_body", "byteSize must be a non-negative number", 400);
   }
 
-  const plan = await getWorkspacePlan(supabase, workspaceId);
-  const limits = limitsForPlan(plan);
+  const subscription = await getWorkspaceSubscription(supabase, workspaceId);
+  const plan = resolvePlan(subscription);
+  const limits = effectiveLimits(subscription);
 
   if (limits.maxUploadBytes <= 0 || limits.storageBytesPerWorkspace <= 0) {
     return apiError(
@@ -259,12 +315,19 @@ export async function assertWorkspaceStorageAllowed(
     );
   }
 
-  if (incomingBytes > limits.maxUploadBytes) {
+  if (
+    !isUnlimited(limits.maxUploadBytes) &&
+    incomingBytes > limits.maxUploadBytes
+  ) {
     return apiError(
       "limit_exceeded",
       maxUploadLimitMessage(plan, limits.maxUploadBytes),
       403,
     );
+  }
+
+  if (isUnlimited(limits.storageBytesPerWorkspace)) {
+    return null;
   }
 
   const { data: rows, error } = await supabase
@@ -274,7 +337,6 @@ export async function assertWorkspaceStorageAllowed(
     .is("deleted_at", null)
     .in("status", ["ready", "pending"]);
   if (error) {
-    // Count failed (e.g. RLS): let the write itself surface the real error.
     return null;
   }
   const used = (rows ?? []).reduce((sum, row) => sum + (row.byte_size ?? 0), 0);
@@ -289,13 +351,15 @@ export async function assertWorkspaceStorageAllowed(
 }
 
 /**
- * Gate creating a new workspace: a user may own up to the free cap of
- * workspaces; owning at least one Pro workspace raises the cap to the Pro
- * tier (subscriptions are workspace-scoped, so there is no per-user plan).
+ * Gate creating a new workspace.
+ * Free: up to PLAN_LIMITS.free.ownedWorkspaces non-Pro owned workspaces.
+ * Beyond that: only allowed when creating as Pro (checkout/comp) and there is
+ * at most one unpaid overflow workspace already.
  */
 export async function assertOwnedWorkspaceAllowed(
   supabase: Api,
   userId: string,
+  options?: { asPro?: boolean },
 ): Promise<NextResponse | null> {
   const { data: owned, error } = await supabase
     .from("workspace_members")
@@ -307,26 +371,56 @@ export async function assertOwnedWorkspaceAllowed(
   }
 
   const ownedIds = (owned ?? []).map((row) => row.workspace_id);
-  const freeLimit = limitsForPlan("free").ownedWorkspaces;
-  if (ownedIds.length < freeLimit) {
+  const freeSlots = effectiveLimits(null).ownedWorkspaces;
+  if (ownedIds.length === 0) {
     return null;
   }
 
   const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
-    .select("plan, status")
+    .select(
+      "workspace_id, plan, status, billing_source, unmetered, addon_quantities",
+    )
     .in("workspace_id", ownedIds);
   if (subsError) {
     return null;
   }
-  const hasPro = (subs ?? []).some((sub) => resolvePlan(sub) === "pro");
-  const plan: Plan = hasPro ? "pro" : "free";
-  const limit = limitsForPlan(plan).ownedWorkspaces;
 
-  if (ownedIds.length >= limit) {
+  const entitled = new Set(
+    (subs ?? [])
+      .filter((sub) => resolvePlan(subscriptionLikeFromRow(sub)) === "pro")
+      .map((sub) => sub.workspace_id),
+  );
+  const nonProCount = ownedIds.filter((id) => !entitled.has(id)).length;
+  const overflow = Math.max(0, nonProCount - freeSlots);
+
+  if (!options?.asPro) {
+    if (nonProCount >= freeSlots) {
+      return apiError(
+        "limit_exceeded",
+        ownedWorkspacesLimitMessage("free", freeSlots),
+        403,
+      );
+    }
+    return null;
+  }
+
+  if (overflow >= 1) {
     return apiError(
       "limit_exceeded",
-      ownedWorkspacesLimitMessage(plan, limit),
+      "Complete Pro checkout (or redeem a complimentary code) on your pending workspace before creating another.",
+      403,
+    );
+  }
+
+  const proCeiling = effectiveLimits({
+    plan: "pro",
+    status: "active",
+  }).ownedWorkspaces;
+  if (!isUnlimited(proCeiling) && ownedIds.length >= proCeiling) {
+    return apiError(
+      "limit_exceeded",
+      ownedWorkspacesLimitMessage("pro", proCeiling),
       403,
     );
   }

@@ -5,7 +5,7 @@ import { apiError, jsonOk } from "@/lib/api/errors";
 import { resolvePlan } from "@/lib/billing/entitlements";
 import {
   getAppUrl,
-  getProMonthlyPriceId,
+  getProPriceId,
   getStripe,
   isStripeConfigured,
 } from "@/lib/stripe";
@@ -17,7 +17,7 @@ type RouteContext = {
 
 /**
  * Owner-only: start a Stripe Checkout session to upgrade this workspace to
- * Pro. Only billing metadata leaves the server — never vault keys or content.
+ * Pro (annual price). Only billing metadata leaves the server.
  */
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -38,31 +38,40 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .select("plan, status, stripe_customer_id")
+    .select(
+      "plan, status, billing_source, stripe_customer_id, stripe_coupon_id",
+    )
     .eq("workspace_id", workspaceId)
     .maybeSingle();
   if (subscriptionError) {
     return apiError("internal", subscriptionError.message, 500);
   }
   if (resolvePlan(subscription ?? null) === "pro") {
+    if (subscription?.billing_source === "comp") {
+      return apiError(
+        "conflict",
+        "Workspace already has complimentary Pro access",
+        409,
+      );
+    }
     return apiError("conflict", "Workspace is already on the Pro plan", 409);
   }
 
   const stripe = getStripe();
   const appUrl = getAppUrl();
+  const couponId = subscription?.stripe_coupon_id ?? null;
 
   try {
     const session = await stripe.checkout.sessions.create({
       mode: "subscription",
-      line_items: [{ price: getProMonthlyPriceId(), quantity: 1 }],
-      // Reuse the existing Stripe customer (e.g. lapsed subscription);
-      // otherwise Checkout creates one from the billing email.
+      line_items: [{ price: getProPriceId(), quantity: 1 }],
       ...(subscription?.stripe_customer_id
         ? { customer: subscription.stripe_customer_id }
         : { customer_email: user.email }),
       client_reference_id: workspaceId,
       metadata: { workspace_id: workspaceId },
       subscription_data: { metadata: { workspace_id: workspaceId } },
+      ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
       success_url: `${appUrl}/app?billing=success`,
       cancel_url: `${appUrl}/app?billing=cancelled`,
     });

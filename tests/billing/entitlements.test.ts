@@ -1,13 +1,17 @@
 /**
- * P6f entitlements: plans/limits live in code; inactive Stripe statuses never
- * grant paid entitlements; limit copy is honest (no vault data involved).
+ * P12 entitlements: Free/Pro catalog, effective limits + addons, unmetered comps.
  */
 import { describe, expect, it } from "vitest";
 
 import {
+  ADDON_PACKS,
   ENTITLED_STATUSES,
   PLAN_LIMITS,
+  effectiveLimits,
+  isUnmetered,
+  isUnlimited,
   limitMessage,
+  limitToApi,
   limitsForPlan,
   ownedWorkspacesLimitMessage,
   resolvePlan,
@@ -55,9 +59,10 @@ describe("plan limits", () => {
     expect(pro.ownedWorkspaces).toBeGreaterThan(free.ownedWorkspaces);
     expect(pro.projectsPerWorkspace).toBeGreaterThan(free.projectsPerWorkspace);
     expect(pro.membersPerWorkspace).toBeGreaterThan(free.membersPerWorkspace);
-    expect(pro.tasksPerWorkspace).toBeGreaterThan(free.tasksPerWorkspace);
+    expect(pro.tasksPerProject).toBeGreaterThan(free.tasksPerProject);
     expect(pro.notesPerWorkspace).toBeGreaterThan(free.notesPerWorkspace);
     expect(pro.contactsPerWorkspace).toBeGreaterThan(free.contactsPerWorkspace);
+    expect(pro.filesPerTask).toBeGreaterThan(free.filesPerTask);
     expect(pro.storageBytesPerWorkspace).toBeGreaterThan(
       free.storageBytesPerWorkspace,
     );
@@ -67,6 +72,7 @@ describe("plan limits", () => {
   it("free plan blocks all file uploads (zero storage)", () => {
     expect(PLAN_LIMITS.free.storageBytesPerWorkspace).toBe(0);
     expect(PLAN_LIMITS.free.maxUploadBytes).toBe(0);
+    expect(PLAN_LIMITS.free.filesPerTask).toBe(0);
     expect(PLAN_LIMITS.pro.storageBytesPerWorkspace).toBeGreaterThan(0);
     expect(PLAN_LIMITS.pro.maxUploadBytes).toBeGreaterThan(0);
   });
@@ -74,29 +80,74 @@ describe("plan limits", () => {
   it("free plan keeps at least the Personal workspace plus one", () => {
     expect(PLAN_LIMITS.free.ownedWorkspaces).toBeGreaterThanOrEqual(2);
     expect(PLAN_LIMITS.free.membersPerWorkspace).toBeGreaterThanOrEqual(1);
+    expect(PLAN_LIMITS.free.projectsPerWorkspace).toBe(1);
   });
 
   it("maps every workspace meter to its plan cap", () => {
     const meters: WorkspaceMeter[] = ["projects", "tasks", "notes", "contacts"];
     for (const meter of meters) {
-      expect(workspaceMeterLimit("free", meter)).toBeGreaterThan(0);
-      expect(workspaceMeterLimit("pro", meter)).toBeGreaterThan(
-        workspaceMeterLimit("free", meter),
-      );
+      expect(workspaceMeterLimit(null, meter)).toBeGreaterThan(0);
+      expect(
+        workspaceMeterLimit({ plan: "pro", status: "active" }, meter),
+      ).toBeGreaterThan(workspaceMeterLimit(null, meter));
     }
+  });
+});
+
+describe("effective limits + addons", () => {
+  it("adds pack quantities onto Pro base", () => {
+    const projectsPack = ADDON_PACKS.find((p) => p.meter === "projects");
+    expect(projectsPack).toBeTruthy();
+    const limits = effectiveLimits({
+      plan: "pro",
+      status: "active",
+      addon_quantities: { projects: 2 },
+    });
+    expect(limits.projectsPerWorkspace).toBe(
+      PLAN_LIMITS.pro.projectsPerWorkspace + 2 * (projectsPack?.packSize ?? 0),
+    );
+  });
+
+  it("ignores addons on free", () => {
+    const limits = effectiveLimits({
+      plan: "free",
+      status: "active",
+      addon_quantities: { projects: 99 },
+    });
+    expect(limits.projectsPerWorkspace).toBe(
+      PLAN_LIMITS.free.projectsPerWorkspace,
+    );
+  });
+
+  it("unmetered comps unlock countable meters", () => {
+    const sub = {
+      plan: "pro" as const,
+      status: "active",
+      billing_source: "comp",
+      unmetered: true,
+    };
+    expect(isUnmetered(sub)).toBe(true);
+    const limits = effectiveLimits(sub);
+    expect(isUnlimited(limits.projectsPerWorkspace)).toBe(true);
+    expect(limitToApi(limits.projectsPerWorkspace)).toBeNull();
+    expect(limits.maxUploadBytes).toBe(PLAN_LIMITS.pro.maxUploadBytes);
   });
 });
 
 describe("limit copy", () => {
   it("states plan and cap, and only suggests upgrading from free", () => {
-    const freeMsg = limitMessage("free", "projects", 5);
+    const freeMsg = limitMessage("free", "projects", 1);
     expect(freeMsg).toContain("free plan");
-    expect(freeMsg).toContain("5");
+    expect(freeMsg).toContain("1");
     expect(freeMsg).toContain("Upgrade");
 
-    const proMsg = limitMessage("pro", "projects", 100);
+    const proMsg = limitMessage("pro", "projects", 25);
     expect(proMsg).toContain("pro plan");
     expect(proMsg).not.toContain("Upgrade");
+  });
+
+  it("task copy is per project", () => {
+    expect(limitMessage("pro", "tasks", 500)).toContain("per project");
   });
 
   it("seat copy counts pending invitations honestly", () => {

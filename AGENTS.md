@@ -21,7 +21,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | Runtime | Bun + Next.js → Vercel Hobby |
 | DB/Auth | Supabase project **helvety-cloud** · ref **`qnoeiurmyyyuawkcifmw`** · Zurich |
 | Forbidden DB | Old `helvety` project `bkdzeihxzvrkndjvyzye` |
-| Billing | Stripe in **P6f** only; no Clerk in foundation |
+| Billing | Stripe workspace subscriptions (**P6f** / **P12**); no Clerk in foundation |
 | UI | shadcn/ui with **Base UI** primitives (`npx shadcn init` default). Do **not** init with `-b radix` |
 
 ## Phases
@@ -51,6 +51,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P9 | Task stage board (DnD between stages) | **Done** |
 | P10 | Project descriptions + milestones | **Done** |
 | P11 | E2EE files & documents | **Done** |
+| P12 | Billing Free / Pro / addons / discounts | **Done** |
 
 ## Tooling
 

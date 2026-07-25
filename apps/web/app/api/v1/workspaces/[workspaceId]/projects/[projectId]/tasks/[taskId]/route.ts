@@ -162,6 +162,7 @@ export async function PUT(request: Request, context: RouteContext) {
       supabase,
       workspaceId,
       "tasks",
+      { projectId },
     );
     if (limitResponse) {
       return limitResponse;

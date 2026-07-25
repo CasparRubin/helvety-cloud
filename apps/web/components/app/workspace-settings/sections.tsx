@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import {
@@ -13,6 +13,10 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { formatBytes } from "@/lib/billing/entitlements";
+
+function formatLimit(value: number | null): string {
+  return value === null ? "∞" : String(value);
+}
 
 function SettingsError({ error }: { error: string | null }) {
   if (!error) return null;
@@ -165,7 +169,8 @@ export function WorkspaceMembersSettings() {
       {seatLimitHit && isOwner && billing?.plan === "free" ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5">
           <p className="text-xs text-muted-foreground">
-            The free plan includes {billing.limits.members} seats per workspace.
+            The free plan includes {formatLimit(billing.limits.members)} seats
+            per workspace.
           </p>
           <Button
             type="button"
@@ -272,7 +277,9 @@ export function WorkspaceBillingSettings() {
     ensureBillingLoaded,
     onUpgrade,
     onManageBilling,
+    onRedeemDiscount,
   } = useWorkspaceSettings();
+  const [discountCode, setDiscountCode] = useState("");
 
   useEffect(() => {
     void ensureBillingLoaded();
@@ -284,49 +291,101 @@ export function WorkspaceBillingSettings() {
       {billingLoading && !billing ? (
         <p className="text-xs text-muted-foreground">Loading billing…</p>
       ) : billing ? (
-        <div className="flex flex-col gap-2 rounded-md border border-border px-3 py-2">
-          <div className="flex items-center justify-between gap-2">
-            <p className="text-xs text-muted-foreground">
-              Plan: <span className="uppercase">{billing.plan}</span>
-              {" · "}
-              Seats {billing.usage.members + billing.usage.pendingInvitations}/
-              {billing.limits.members}
-              {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
-            </p>
-            {isOwner ? (
-              billing.plan === "free" ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={pending}
-                  onClick={() => void onUpgrade()}
-                >
-                  Upgrade to Pro
-                </Button>
-              ) : billing.hasStripeCustomer ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="outline"
-                  disabled={pending}
-                  onClick={() => void onManageBilling()}
-                >
-                  Manage billing
-                </Button>
-              ) : null
-            ) : (
+        <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-2 rounded-md border border-border px-3 py-2">
+            <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
-                Only the owner can manage billing.
+                Plan: <span className="uppercase">{billing.plan}</span>
+                {billing.unmetered ? " · complimentary" : ""}
+                {billing.discountPercentOff
+                  ? ` · ${billing.discountPercentOff}% off`
+                  : ""}
+                {" · "}
+                Seats {billing.usage.members + billing.usage.pendingInvitations}/
+                {formatLimit(billing.limits.members)}
+                {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
               </p>
-            )}
+              {isOwner ? (
+                billing.plan === "free" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void onUpgrade()}
+                  >
+                    Upgrade to Pro
+                  </Button>
+                ) : billing.billingSource === "stripe" &&
+                  billing.hasStripeCustomer ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void onManageBilling()}
+                  >
+                    Manage billing
+                  </Button>
+                ) : null
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Only the owner can manage billing.
+                </p>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Projects {billing.usage.projects}/
+              {formatLimit(billing.limits.projects)}
+              {" · "}
+              Notes {billing.usage.notes}/{formatLimit(billing.limits.notes)}
+              {" · "}
+              Contacts {billing.usage.contacts}/
+              {formatLimit(billing.limits.contacts)}
+              {" · "}
+              Tasks/project cap {formatLimit(billing.limits.tasks)}
+            </p>
+            <p className="text-xs text-muted-foreground">
+              File storage:{" "}
+              {billing.limits.storageBytes === 0
+                ? "not included on Free — upgrade to attach files"
+                : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes ?? Number.POSITIVE_INFINITY)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file; ${formatLimit(billing.limits.filesPerTask)} files/task)`}
+            </p>
           </div>
-          <p className="text-xs text-muted-foreground">
-            File storage:{" "}
-            {billing.limits.storageBytes === 0
-              ? "not included on Free — upgrade to attach files"
-              : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file)`}
-          </p>
+          {isOwner && !billing.discountPercentOff ? (
+            <form
+              className="flex flex-col gap-2"
+              onSubmit={(event) => {
+                event.preventDefault();
+                const code = discountCode.trim();
+                if (!code) return;
+                void onRedeemDiscount(code);
+              }}
+            >
+              <Label htmlFor="discount-code" className="text-xs">
+                Discount or complimentary code
+              </Label>
+              <div className="flex gap-2">
+                <Input
+                  id="discount-code"
+                  value={discountCode}
+                  onChange={(event) => setDiscountCode(event.target.value)}
+                  placeholder="Enter code"
+                  disabled={pending}
+                  autoComplete="off"
+                  className="font-mono text-xs"
+                />
+                <Button
+                  type="submit"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending || discountCode.trim().length < 8}
+                >
+                  Apply
+                </Button>
+              </div>
+            </form>
+          ) : null}
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
