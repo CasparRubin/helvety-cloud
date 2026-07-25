@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 type EntityListShellProps = {
   title: ReactNode;
   subtitle?: ReactNode;
+  /** Rendered immediately under the title/subtitle block. */
+  belowTitle?: ReactNode;
   actions?: ReactNode;
   createForm?: ReactNode;
   error?: string | null;
@@ -22,6 +24,7 @@ type EntityListShellProps = {
 export function EntityListShell({
   title,
   subtitle,
+  belowTitle,
   actions,
   createForm,
   error,
@@ -46,6 +49,8 @@ export function EntityListShell({
         ) : null}
       </div>
 
+      {belowTitle}
+
       {createForm}
 
       {error ? (
@@ -59,7 +64,7 @@ export function EntityListShell({
       ) : empty ? (
         <EntityListEmpty>{emptyLabel}</EntityListEmpty>
       ) : bareChildren ? (
-        children
+        <div className="flex min-h-0 flex-1 flex-col">{children}</div>
       ) : (
         <ul className="flex flex-col gap-1">{children}</ul>
       )}

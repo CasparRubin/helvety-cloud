@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   EMPTY_TASK_BODY,
   parseTaskPlaintext,
+  taskBodyPlainText,
   textToTaskBody,
   toTaskPlaintext,
 } from "../../apps/web/lib/vault/task-plaintext";
@@ -57,5 +58,24 @@ describe("task plaintext v1", () => {
       title: "Hi",
       body: EMPTY_TASK_BODY,
     });
+  });
+
+  it("taskBodyPlainText flattens TipTap docs", () => {
+    expect(taskBodyPlainText(EMPTY_TASK_BODY)).toBe("");
+    expect(
+      taskBodyPlainText({
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "Hello" }],
+          },
+          {
+            type: "paragraph",
+            content: [{ type: "text", text: "world" }],
+          },
+        ],
+      }),
+    ).toBe("Hello world");
   });
 });

@@ -93,3 +93,29 @@ export function toTaskPlaintext(
     body: isTaskBodyDoc(body) ? body : EMPTY_TASK_BODY,
   };
 }
+
+/** Flatten TipTap JSON to plain text for list previews. */
+export function taskBodyPlainText(doc: TaskBodyDoc): string {
+  const parts: string[] = [];
+
+  function walk(nodes: TaskBodyNode[] | undefined) {
+    if (!nodes) return;
+    for (const node of nodes) {
+      if (node.type === "text" && typeof node.text === "string") {
+        parts.push(node.text);
+      }
+      if (node.content) walk(node.content);
+      if (
+        node.type === "paragraph" ||
+        node.type === "heading" ||
+        node.type === "listItem" ||
+        node.type === "blockquote"
+      ) {
+        parts.push("\n");
+      }
+    }
+  }
+
+  walk(doc.content);
+  return parts.join("").replace(/\n+/g, " ").trim();
+}

@@ -32,7 +32,11 @@ import {
   EntityListEmpty,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
-import { ProjectOverview } from "@/components/app/project-overview";
+import {
+  ProjectDescriptionEditor,
+  ProjectMilestonesPanel,
+  type MilestoneFilter,
+} from "@/components/app/project-overview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -60,8 +64,6 @@ import {
   type DecryptedProject,
 } from "@/lib/vault/projects";
 import { cn } from "@/lib/utils";
-
-type MilestoneFilter = "all" | "none" | string;
 
 type TaskListProps = {
   workspaceId: string;
@@ -264,6 +266,17 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     <EntityListShell
       title={project?.name ?? "Project"}
       subtitle="Task titles and bodies are encrypted end-to-end."
+      belowTitle={
+        !loading && project ? (
+          <ProjectDescriptionEditor
+            key={`${project.id}:${project.updatedAt}`}
+            workspaceId={workspaceId}
+            project={project}
+            onProjectChange={setProject}
+            onError={setError}
+          />
+        ) : null
+      }
       actions={
         <>
           <Button
@@ -280,108 +293,92 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           </Button>
         </>
       }
-      createForm={
-        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="New task title"
-            disabled={busy}
-            maxLength={500}
-            aria-label="Task title"
-          />
-          <Button type="submit" disabled={busy || !title.trim()}>
-            Create
-          </Button>
-        </form>
-      }
       error={error}
       loading={loading}
       loadingLabel="Loading tasks…"
       bareChildren
     >
       {!loading && project ? (
-        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-y-auto pb-2">
-          <ProjectOverview
-            workspaceId={workspaceId}
-            project={project}
-            milestones={milestones}
-            onProjectChange={setProject}
-            onMilestonesChange={(next) => {
-              setMilestones(next);
-              const ids = new Set(next.map((m) => m.id));
-              if (
-                milestoneFilter !== "all" &&
-                milestoneFilter !== "none" &&
-                !ids.has(milestoneFilter)
-              ) {
-                setMilestoneFilter("all");
-              }
-            }}
-          />
+        <div className="flex min-h-0 flex-1 gap-4">
+          <div className="flex min-h-0 min-w-0 flex-[3] flex-col gap-3 overflow-y-auto pb-2">
+            <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
+              <Input
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                placeholder="New task title"
+                disabled={busy}
+                maxLength={500}
+                aria-label="Task title"
+              />
+              <Button type="submit" disabled={busy || !title.trim()}>
+                Create
+              </Button>
+            </form>
 
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="text-xs text-muted-foreground">Milestone</span>
-            <select
-              className="h-8 rounded-md border border-input bg-background px-2 text-xs"
-              value={milestoneFilter}
-              aria-label="Filter by milestone"
-              onChange={(e) =>
-                setMilestoneFilter(e.target.value as MilestoneFilter)
-              }
+            <DndContext
+              sensors={sensors}
+              collisionDetection={closestCorners}
+              onDragStart={onDragStart}
+              onDragEnd={onDragEnd}
+              onDragCancel={() => setActiveTaskId(null)}
             >
-              <option value="all">All</option>
-              <option value="none">Unassigned</option>
-              {milestones.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.title}
-                </option>
-              ))}
-            </select>
+              <div className="flex flex-col gap-3">
+                {columns.map((col, index) => (
+                  <StageRow
+                    key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
+                    stage={col.stage}
+                    prevStage={columns[index - 1]?.stage ?? null}
+                    nextStage={columns[index + 1]?.stage ?? null}
+                    tasks={col.tasks}
+                    cats={project.categorizations}
+                    milestoneById={milestoneById}
+                    workspaceId={workspaceId}
+                    projectId={projectId}
+                    busy={busy}
+                    savingTaskId={savingTaskId}
+                    onUpdateIds={updateTaskIds}
+                  />
+                ))}
+              </div>
+              <DragOverlay dropAnimation={null}>
+                {activeTask && project ? (
+                  <TaskCardContent
+                    task={activeTask}
+                    cats={project.categorizations}
+                    milestone={
+                      activeTask.milestoneId
+                        ? (milestoneById.get(activeTask.milestoneId) ?? null)
+                        : null
+                    }
+                    workspaceId={workspaceId}
+                    projectId={projectId}
+                    overlay
+                  />
+                ) : null}
+              </DragOverlay>
+            </DndContext>
           </div>
 
-          <DndContext
-            sensors={sensors}
-            collisionDetection={closestCorners}
-            onDragStart={onDragStart}
-            onDragEnd={onDragEnd}
-            onDragCancel={() => setActiveTaskId(null)}
-          >
-            <div className="flex flex-col gap-3">
-              {columns.map((col, index) => (
-                <StageRow
-                  key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
-                  stage={col.stage}
-                  prevStage={columns[index - 1]?.stage ?? null}
-                  nextStage={columns[index + 1]?.stage ?? null}
-                  tasks={col.tasks}
-                  cats={project.categorizations}
-                  milestoneById={milestoneById}
-                  workspaceId={workspaceId}
-                  projectId={projectId}
-                  busy={busy}
-                  savingTaskId={savingTaskId}
-                  onUpdateIds={updateTaskIds}
-                />
-              ))}
-            </div>
-            <DragOverlay dropAnimation={null}>
-              {activeTask && project ? (
-                <TaskCardContent
-                  task={activeTask}
-                  cats={project.categorizations}
-                  milestone={
-                    activeTask.milestoneId
-                      ? (milestoneById.get(activeTask.milestoneId) ?? null)
-                      : null
-                  }
-                  workspaceId={workspaceId}
-                  projectId={projectId}
-                  overlay
-                />
-              ) : null}
-            </DragOverlay>
-          </DndContext>
+          <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-y-auto border-l border-border/60 pl-4">
+            <ProjectMilestonesPanel
+              workspaceId={workspaceId}
+              projectId={projectId}
+              milestones={milestones}
+              selectedFilter={milestoneFilter}
+              onSelectFilter={setMilestoneFilter}
+              onMilestonesChange={(next) => {
+                setMilestones(next);
+                const ids = new Set(next.map((m) => m.id));
+                if (
+                  milestoneFilter !== "all" &&
+                  milestoneFilter !== "none" &&
+                  !ids.has(milestoneFilter)
+                ) {
+                  setMilestoneFilter("all");
+                }
+              }}
+            />
+          </aside>
         </div>
       ) : null}
     </EntityListShell>
