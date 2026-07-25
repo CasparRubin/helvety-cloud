@@ -3,6 +3,7 @@ import {
   removeOption,
   remapTaskIdsByName,
   setDefaultOption,
+  type CategorizationIcon,
   type CategorizationKind,
   type CategorizationOption,
   type ProjectCategorizations,
@@ -116,6 +117,33 @@ export async function setCategorizationOptionColor(
       const next = { ...o };
       if (color) next.color = color;
       else delete next.color;
+      return next;
+    }),
+  };
+  return updateProjectCategorizations(
+    workspaceId,
+    workspaceKey,
+    project,
+    categorizations,
+  );
+}
+
+/** Set or clear an option icon (labels, stages, priorities). */
+export async function setCategorizationOptionIcon(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  project: DecryptedProject,
+  kind: CategorizationKind,
+  optionId: string,
+  icon: CategorizationIcon | null,
+): Promise<DecryptedProject> {
+  const categorizations: ProjectCategorizations = {
+    ...project.categorizations,
+    [kind]: project.categorizations[kind].map((o) => {
+      if (o.id !== optionId) return o;
+      const next = { ...o };
+      if (icon) next.icon = icon;
+      else delete next.icon;
       return next;
     }),
   };

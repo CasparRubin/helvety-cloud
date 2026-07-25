@@ -7,6 +7,7 @@ import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
+import { CategorizationPicker } from "@/components/app/categorization-picker";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -360,9 +361,6 @@ export function TaskDetail({
 
   if (!vault) return null;
 
-  const selectClass =
-    "h-8 min-w-[8rem] rounded-md border border-input bg-transparent px-2 text-sm";
-
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div className="flex items-start justify-between gap-3">
@@ -395,69 +393,42 @@ export function TaskDetail({
           />
 
           {categorizations ? (
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-end gap-3">
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Label
-                <select
-                  className={selectClass}
-                  value={labelId ?? ""}
+                <CategorizationPicker
+                  options={categorizations.labels}
+                  value={labelId}
+                  allowNone
                   disabled={deleting}
-                  onChange={(e) =>
-                    setLabelId(e.target.value === "" ? null : e.target.value)
-                  }
-                >
-                  <option value="">None</option>
-                  {[...categorizations.labels]
-                    .sort(
-                      (a, b) =>
-                        a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
-                    )
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                </select>
+                  aria-label="Label"
+                  onChange={setLabelId}
+                />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Stage
-                <select
-                  className={selectClass}
+                <CategorizationPicker
+                  options={categorizations.stages}
                   value={stageId}
+                  useStageColor
                   disabled={deleting}
-                  onChange={(e) => setStageId(e.target.value)}
-                >
-                  {[...categorizations.stages]
-                    .sort(
-                      (a, b) =>
-                        a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
-                    )
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                </select>
+                  aria-label="Stage"
+                  onChange={(id) => {
+                    if (id) setStageId(id);
+                  }}
+                />
               </label>
               <label className="flex flex-col gap-1 text-xs text-muted-foreground">
                 Priority
-                <select
-                  className={selectClass}
+                <CategorizationPicker
+                  options={categorizations.priorities}
                   value={priorityId}
                   disabled={deleting}
-                  onChange={(e) => setPriorityId(e.target.value)}
-                >
-                  {[...categorizations.priorities]
-                    .sort(
-                      (a, b) =>
-                        a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
-                    )
-                    .map((o) => (
-                      <option key={o.id} value={o.id}>
-                        {o.name}
-                      </option>
-                    ))}
-                </select>
+                  aria-label="Priority"
+                  onChange={(id) => {
+                    if (id) setPriorityId(id);
+                  }}
+                />
               </label>
             </div>
           ) : null}

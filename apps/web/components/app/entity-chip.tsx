@@ -5,6 +5,7 @@ import { useMemo } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 
 import { useOptionalVaultEntityCache } from "@/components/vault/vault-entity-cache";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
   ENTITY_COLOR_CLASSES,
   KIND_FALLBACK_COLOR,
@@ -54,6 +55,7 @@ export function EntityChip({
       deleted: false,
       done: false,
       badges: undefined as string[] | undefined,
+      icon: undefined,
     };
   }, [cache, kind, id]);
 
@@ -61,6 +63,9 @@ export function EntityChip({
   const classes = ENTITY_COLOR_CLASSES[color];
   const href = resolved.href;
   const muted = resolved.deleted || resolved.done;
+  const Icon = resolved.icon
+    ? CATEGORIZATION_ICON_COMPONENTS[resolved.icon]
+    : null;
 
   const title = [kindLabel(resolved.kind), resolved.label]
     .concat(resolved.badges ?? [])
@@ -78,7 +83,11 @@ export function EntityChip({
       )}
       title={title}
     >
-      <span className={cn("size-1.5 shrink-0 rounded-full", classes.dot)} />
+      {Icon ? (
+        <Icon className="size-3 shrink-0" aria-hidden />
+      ) : (
+        <span className={cn("size-1.5 shrink-0 rounded-full", classes.dot)} />
+      )}
       <span className="truncate">{resolved.label}</span>
     </span>
   );

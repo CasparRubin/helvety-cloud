@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only” (or use `docs/architecture/prompts/P\<n\>.md`).  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8d** entity linking. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish. Stripe billing landed in **P6f** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -36,7 +36,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Product wave (P6a→P6f, one phase per chat):** app shell + Personal workspace → projects/tasks CRUD → TipTap → notes/contacts → workspace sharing → Stripe entitlements. See §4.
 
-**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8d**.)
+**Out of this wave:** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps. (Task categorizations: **P7**. Entity linking: **P8a–P8d**. Categorization icons + pickers: **P8e**.)
 
 ---
 
@@ -552,6 +552,28 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P8e — Categorization icons + polished task pickers
+
+**Status:** **Done**
+
+**Goal:** Default Lucide icons on labels/stages/priorities; user-editable icons in project settings; chip-style popover pickers on the tasks screen (detail + list inline edit).
+
+**Do:**
+
+- Optional `icon` allowlisted Lucide token on categorization options (ciphertext); seed defaults for default option names.  
+- Project settings: icon picker on labels, stages, and priorities (stages keep color picker).  
+- Shared chip popover picker (icon + name; stages tinted by stage color); replace native selects on task detail.  
+- Task list: stage filter + per-row inline label/stage/priority pickers (title still navigates).  
+- Task entity chips may show stage icon.
+
+**Don’t:** Full Lucide catalog search; kanban board; colors on labels/priorities; plaintext icon columns; AI.
+
+**Done when:** Defaults have icons; settings can set/clear; task detail/list use chip popovers; icons stay in project ciphertext.
+
+**Paste prompt:** [`docs/architecture/prompts/P8e.md`](./prompts/P8e.md)
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -633,4 +655,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

@@ -1,14 +1,23 @@
 /** Project-scoped task categorization option definitions (encrypted in project blob). */
 
 import {
+  DEFAULT_OPTION_ICONS,
+  isCategorizationIcon,
+  type CategorizationIcon,
+} from "@/lib/vault/categorization-icons";
+import {
   isEntityColor,
   type EntityColor,
 } from "@/lib/vault/entity-colors";
+
+export type { CategorizationIcon };
 
 export type CategorizationOption = {
   id: string;
   name: string;
   color?: EntityColor;
+  /** Allowlisted Lucide icon token (ciphertext). */
+  icon?: CategorizationIcon;
   sortOrder: number;
   /** Stages and priorities only; exactly one default per kind. */
   isDefault?: boolean;
@@ -64,7 +73,11 @@ export function resolveStageColor(
 function option(
   name: string,
   sortOrder: number,
-  opts?: { isDefault?: boolean; color?: EntityColor },
+  opts?: {
+    isDefault?: boolean;
+    color?: EntityColor;
+    icon?: CategorizationIcon;
+  },
 ): CategorizationOption {
   const o: CategorizationOption = {
     id: crypto.randomUUID(),
@@ -73,21 +86,28 @@ function option(
   };
   if (opts?.isDefault) o.isDefault = true;
   if (opts?.color) o.color = opts.color;
+  if (opts?.icon) o.icon = opts.icon;
   return o;
 }
 
 /** Seed defaults for a new project (fresh UUIDs each call). */
 export function defaultCategorizations(): ProjectCategorizations {
   return {
-    labels: LABEL_NAMES.map((name, i) => option(name, i)),
+    labels: LABEL_NAMES.map((name, i) =>
+      option(name, i, { icon: DEFAULT_OPTION_ICONS[name] }),
+    ),
     stages: STAGE_NAMES.map((name, i) =>
       option(name, i, {
         isDefault: name === "backlog",
         color: DEFAULT_STAGE_COLORS[name],
+        icon: DEFAULT_OPTION_ICONS[name],
       }),
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
-      option(name, i, { isDefault: name === "normal" }),
+      option(name, i, {
+        isDefault: name === "normal",
+        icon: DEFAULT_OPTION_ICONS[name],
+      }),
     ),
   };
 }
@@ -108,9 +128,12 @@ function normalizeOption(item: unknown): CategorizationOption | null {
     sortOrder: o.sortOrder,
   };
   if (o.isDefault === true) next.isDefault = true;
-  // Ignore invalid color tokens rather than rejecting the whole option.
+  // Ignore invalid color/icon tokens rather than rejecting the whole option.
   if (o.color !== undefined && isEntityColor(o.color)) {
     next.color = o.color;
+  }
+  if (o.icon !== undefined && isCategorizationIcon(o.icon)) {
+    next.icon = o.icon;
   }
   return next;
 }
@@ -170,6 +193,7 @@ export function cloneCategorizations(
         sortOrder: o.sortOrder,
       };
       if (o.color !== undefined) next.color = o.color;
+      if (o.icon !== undefined) next.icon = o.icon;
       if (o.isDefault) next.isDefault = true;
       return next;
     });

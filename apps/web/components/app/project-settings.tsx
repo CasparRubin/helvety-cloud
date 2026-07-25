@@ -6,6 +6,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
@@ -16,8 +17,10 @@ import {
   reorderCategorizationOption,
   setCategorizationDefault,
   setCategorizationOptionColor,
+  setCategorizationOptionIcon,
 } from "@/lib/vault/categorization-ops";
 import type {
+  CategorizationIcon,
   CategorizationKind,
   CategorizationOption,
 } from "@/lib/vault/categorizations";
@@ -261,6 +264,21 @@ export function ProjectSettings({
                 );
               })
             }
+            onSetIcon={(id, icon) =>
+              withBusy(async () => {
+                const key = await getWorkspaceKey(workspaceId);
+                setProject(
+                  await setCategorizationOptionIcon(
+                    workspaceId,
+                    key,
+                    project,
+                    "labels",
+                    id,
+                    icon ?? null,
+                  ),
+                );
+              })
+            }
           />
 
           <OptionList
@@ -357,6 +375,21 @@ export function ProjectSettings({
                 );
               })
             }
+            onSetIcon={(id, icon) =>
+              withBusy(async () => {
+                const key = await getWorkspaceKey(workspaceId);
+                setProject(
+                  await setCategorizationOptionIcon(
+                    workspaceId,
+                    key,
+                    project,
+                    "stages",
+                    id,
+                    icon ?? null,
+                  ),
+                );
+              })
+            }
           />
 
           <OptionList
@@ -438,6 +471,21 @@ export function ProjectSettings({
                 );
               })
             }
+            onSetIcon={(id, icon) =>
+              withBusy(async () => {
+                const key = await getWorkspaceKey(workspaceId);
+                setProject(
+                  await setCategorizationOptionIcon(
+                    workspaceId,
+                    key,
+                    project,
+                    "priorities",
+                    id,
+                    icon ?? null,
+                  ),
+                );
+              })
+            }
           />
 
           <section className="flex max-w-lg flex-col gap-3">
@@ -499,6 +547,7 @@ function OptionList({
   onReorder,
   onSetDefault,
   onSetColor,
+  onSetIcon,
 }: {
   title: string;
   description: string;
@@ -512,6 +561,7 @@ function OptionList({
   onReorder: (id: string, direction: "up" | "down") => Promise<void>;
   onSetDefault?: (id: string) => Promise<void>;
   onSetColor?: (id: string, color: EntityColor | undefined) => Promise<void>;
+  onSetIcon?: (id: string, icon: CategorizationIcon | undefined) => Promise<void>;
 }) {
   const [newName, setNewName] = useState("");
   const sorted = [...options].sort(
@@ -552,6 +602,14 @@ function OptionList({
                 }
               }}
             />
+            {onSetIcon ? (
+              <CategorizationIconPicker
+                compact
+                value={opt.icon}
+                disabled={busy}
+                onChange={(icon) => void onSetIcon(opt.id, icon)}
+              />
+            ) : null}
             {onSetColor ? (
               <EntityColorPicker
                 compact

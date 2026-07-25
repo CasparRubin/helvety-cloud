@@ -13,6 +13,7 @@ import {
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 
 import { useVaultSession } from "@/components/vault/vault-session-provider";
+import type { CategorizationIcon } from "@/lib/vault/categorization-icons";
 import {
   findOption,
   resolveStageColor,
@@ -39,6 +40,8 @@ export type ResolvedEntity = {
   deleted: boolean;
   done: boolean;
   badges?: string[];
+  /** Task chips: stage icon when resolvable. */
+  icon?: CategorizationIcon;
 };
 
 type VaultEntityCacheValue = {
@@ -212,6 +215,7 @@ export function VaultEntityCacheProvider({
             deleted: Boolean(task?.deletedAt),
             done,
             badges: badges.length > 0 ? badges : undefined,
+            icon: stage?.icon,
           };
         }
         default: {
