@@ -1,8 +1,8 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState } from "react";
-import { ChevronsUpDownIcon, CircleDashedIcon } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
+import { ChevronsUpDownIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -19,8 +19,6 @@ import {
 } from "@/components/ui/popover";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { loadDecryptedTasks, type DecryptedTask } from "@/lib/vault/tasks";
-
-const LOAD_LIMIT = 100;
 
 type TaskJumpSwitcherProps = {
   workspaceId: string;
@@ -42,7 +40,7 @@ export function TaskJumpSwitcher({
   const refresh = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
     const page = await loadDecryptedTasks(workspaceId, projectId, key, {
-      limit: LOAD_LIMIT,
+      limit: 100,
     });
     setTasks(page.tasks);
   }, [getWorkspaceKey, workspaceId, projectId]);
@@ -55,13 +53,12 @@ export function TaskJumpSwitcher({
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
         const page = await loadDecryptedTasks(workspaceId, projectId, key, {
-          limit: LOAD_LIMIT,
+          limit: 100,
         });
         if (cancelled) return;
         setTasks(page.tasks);
       } catch {
-        if (cancelled) return;
-        setTasks([]);
+        if (!cancelled) setTasks([]);
       }
     })();
     return () => {
@@ -75,38 +72,21 @@ export function TaskJumpSwitcher({
       void refresh().catch(() => undefined);
     };
     window.addEventListener("helvety:tasks-changed", onChange);
-    window.addEventListener("focus", onChange);
     return () => {
       window.removeEventListener("helvety:tasks-changed", onChange);
-      window.removeEventListener("focus", onChange);
     };
   }, [vault, refresh]);
 
-  const entries = useMemo(
-    () =>
-      tasks.map((task) => ({
-        id: task.id,
-        name: task.title || "Untitled task",
-        href: `/app/w/${workspaceId}/p/${projectId}/t/${task.id}`,
-      })),
-    [tasks, workspaceId, projectId],
-  );
-
-  const activeEntry = useMemo(
-    () => entries.find((entry) => entry.id === taskId) ?? null,
-    [entries, taskId],
-  );
-
+  const active = tasks.find((task) => task.id === taskId);
+  const activeName = active ? active.title || "Untitled task" : "…";
   const normalizedQuery = query.trim().toLowerCase();
-  const filtered = useMemo(
-    () =>
-      normalizedQuery
-        ? entries.filter((entry) =>
-            entry.name.toLowerCase().includes(normalizedQuery),
-          )
-        : entries,
-    [entries, normalizedQuery],
-  );
+  const filtered = normalizedQuery
+    ? tasks.filter((task) =>
+        (task.title || "Untitled task")
+          .toLowerCase()
+          .includes(normalizedQuery),
+      )
+    : tasks;
 
   return (
     <Popover
@@ -128,9 +108,7 @@ export function TaskJumpSwitcher({
           />
         }
       >
-        <span className="truncate text-left text-sm">
-          {activeEntry?.name ?? "…"}
-        </span>
+        <span className="truncate text-left text-sm">{activeName}</span>
         <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-60" />
       </PopoverTrigger>
       <PopoverContent className="w-72 p-0" align="start">
@@ -144,19 +122,22 @@ export function TaskJumpSwitcher({
             {filtered.length === 0 ? (
               <CommandEmpty>No matches.</CommandEmpty>
             ) : null}
-            {filtered.map((entry) => (
+            {filtered.map((task) => (
               <CommandItem
-                key={entry.id}
-                value={entry.id}
-                data-checked={entry.id === taskId}
+                key={task.id}
+                value={task.id}
+                data-checked={task.id === taskId}
                 onSelect={() => {
                   setOpen(false);
                   setQuery("");
-                  router.push(entry.href);
+                  router.push(
+                    `/app/w/${workspaceId}/p/${projectId}/t/${task.id}`,
+                  );
                 }}
               >
-                <CircleDashedIcon className="size-4 shrink-0 opacity-60" />
-                <span className="truncate">{entry.name}</span>
+                <span className="truncate">
+                  {task.title || "Untitled task"}
+                </span>
               </CommandItem>
             ))}
           </CommandList>

@@ -56,16 +56,22 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
   const [vaultReadyStep, setVaultReadyStep] = useState<"locked" | "needs_setup">(
     "needs_setup",
   );
+  const [hasAuthPasskey, setHasAuthPasskey] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const [policyStatus, exists] = await Promise.all([
+        const supabase = createClient();
+        const [policyStatus, exists, passkeyList] = await Promise.all([
           getMePolicyAcceptances(),
           hasUserCrypto(),
+          supabase.auth.passkey.list(),
         ]);
         if (cancelled) return;
+        if (!passkeyList.error) {
+          setHasAuthPasskey((passkeyList.data?.length ?? 0) > 0);
+        }
         const nextVaultStep = exists ? "locked" : "needs_setup";
         setVaultReadyStep(nextVaultStep);
         if (!policyStatus.allCurrentAccepted) {
@@ -97,6 +103,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
       setError(registerError.message);
       return;
     }
+    setHasAuthPasskey(true);
     setMessage("Auth passkey registered. You can use it to sign in next time.");
   }
 
@@ -168,8 +175,8 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
           <AlertTitle>Zero knowledge — no recovery by Helvety</AlertTitle>
           <AlertDescription>
             Helvety cannot decrypt or restore vault content. If you lose your
-            unlock methods (PRF passkey and offline recovery key + wrap), your
-            data is gone permanently.
+            unlock methods (unlock passkey and offline recovery key + wrap),
+            your data is gone permanently.
           </AlertDescription>
         </Alert>
 
@@ -205,7 +212,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
             <p className="text-sm font-medium">Recovery material (shown once)</p>
             <p className="text-sm text-muted-foreground">
               Store both the recovery key and the recovery wrap offline. Neither
-              is logged or sent to Helvety. Losing these with your PRF passkey
+              is logged or sent to Helvety. Losing these with your unlock passkey
               means permanent data loss.
             </p>
             <p className="text-xs font-medium text-muted-foreground">
@@ -270,7 +277,7 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
               onClick={() => void onSetup()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              Set up vault (PRF)
+              Set up vault via passkey
             </Button>
           ) : null}
 
@@ -281,21 +288,23 @@ export function UnlockGate({ email, userId, onUnlocked }: UnlockGateProps) {
               onClick={() => void onUnlock()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              Unlock vault (PRF)
+              Unlock via passkey
             </Button>
           ) : null}
 
           {!showRecovery ? (
             <>
-              <Button
-                type="button"
-                variant="outline"
-                disabled={pending}
-                onClick={() => void registerPasskey()}
-              >
-                {pending ? <Spinner data-icon="inline-start" /> : null}
-                Register auth passkey
-              </Button>
+              {!hasAuthPasskey ? (
+                <Button
+                  type="button"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void registerPasskey()}
+                >
+                  {pending ? <Spinner data-icon="inline-start" /> : null}
+                  Register auth passkey
+                </Button>
+              ) : null}
               <Button
                 type="button"
                 variant="outline"

@@ -5,19 +5,15 @@ import { ChevronLeftIcon, SlashIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
-export type AppNavSection = "projects" | "notes" | "contacts" | "settings";
-
-export type AppNavEntityKind = "project" | "note" | "contact";
-
 export type AppNavEntity = {
-  kind: AppNavEntityKind;
+  kind: "project" | "note" | "contact";
   id: string;
 };
 
-export type AppNavLocation = {
+type AppNavLocation = {
   workspaceId: string;
   workspaceBase: string;
-  section: AppNavSection | null;
+  section: "projects" | "notes" | "contacts" | "settings" | null;
   entity: AppNavEntity | null;
   taskId: string | null;
 };
