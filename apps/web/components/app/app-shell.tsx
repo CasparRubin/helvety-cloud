@@ -310,7 +310,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             <AccountFooter email={email} />
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
-            <div className="sticky top-12 z-30 border-b bg-muted/40">
+            <div className="sticky top-12 z-30 border-b bg-background">
               {workspaceBase ? (
                 <nav
                   aria-label="Workspace sections"
