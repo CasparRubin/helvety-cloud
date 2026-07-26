@@ -138,6 +138,12 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   });
   const activeSection = location?.section ?? null;
   const sections = workspaceBase ? workspaceSections(workspaceBase) : [];
+  let nonWorkspaceSidebarLabel = "Select a workspace";
+  if (pathname.startsWith("/app/account")) {
+    nonWorkspaceSidebarLabel = "Account";
+  } else if (pathname.startsWith("/app/invitations")) {
+    nonWorkspaceSidebarLabel = "Invitations";
+  }
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
   const shouldRedirectToWorkspace =
@@ -255,7 +261,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 </>
               ) : (
                 <p className="px-2 py-1 text-xs text-muted-foreground">
-                  Select a workspace
+                  {nonWorkspaceSidebarLabel}
                 </p>
               )}
             </nav>

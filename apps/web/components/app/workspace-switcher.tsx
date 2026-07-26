@@ -45,7 +45,7 @@ export function WorkspaceSwitcher({
   const [error, setError] = useState<string | null>(null);
 
   const active =
-    workspaces.find((w) => w.id === activeWorkspaceId) ?? workspaces[0] ?? null;
+    workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
 
   function selectWorkspace(id: string) {
     storeLastWorkspaceId(userId, id);
@@ -113,7 +113,9 @@ export function WorkspaceSwitcher({
               <CheckIcon
                 className={cn(
                   "size-3.5",
-                  workspace.id === active?.id ? "opacity-100" : "opacity-0",
+                  workspace.id === activeWorkspaceId
+                    ? "opacity-100"
+                    : "opacity-0",
                 )}
               />
               <span className="truncate">{workspace.name}</span>
