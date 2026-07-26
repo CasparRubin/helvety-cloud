@@ -13,8 +13,15 @@ import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import {
+  EntityDetailLayout,
+  EntityDetailShell,
+} from "@/components/app/entity-detail-shell";
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
+import { PageActions } from "@/components/app/page-actions";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
@@ -271,30 +278,28 @@ export function TaskDetail({
   if (!vault) return null;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <InlineTitle
-                value={title}
-                onChange={setTitle}
-                onBlur={flush}
-                placeholder="Untitled task"
-                disabled={deleting}
-                maxLength={500}
-                className="min-w-0 flex-1"
-              />
-              <DeleteButton
-                disabled={deleting}
-                busy={deleting}
-                dialogTitle="Delete this task?"
-                dialogDescription="This permanently deletes the task. This cannot be undone."
-                onConfirm={onDelete}
-              />
-            </div>
+    <EntityDetailShell loading={loading} error={error}>
+      <PageActions>
+        <DeleteButton
+          disabled={deleting}
+          busy={deleting}
+          dialogTitle="Delete this task?"
+          dialogDescription="This permanently deletes the task. This cannot be undone."
+          onConfirm={onDelete}
+        />
+      </PageActions>
+      <EntityDetailLayout
+        main={
+          <>
+            <InlineTitle
+              value={title}
+              onChange={setTitle}
+              onBlur={flush}
+              placeholder="Untitled task"
+              disabled={deleting}
+              maxLength={500}
+              className="min-w-0"
+            />
 
             <TaskBodyEditor
               content={body}
@@ -311,18 +316,20 @@ export function TaskDetail({
               }}
             />
             {storageLimitMessage ? (
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                {storageLimitMessage}
-              </p>
+              <Alert>
+                <AlertTitle>Storage limit</AlertTitle>
+                <AlertDescription>{storageLimitMessage}</AlertDescription>
+              </Alert>
             ) : null}
             <BacklinksPanel
               workspaceId={workspaceId}
               kind="task"
               id={taskId}
             />
-          </div>
-
-          <aside className="flex min-w-0 flex-col gap-3">
+          </>
+        }
+        aside={
+          <>
             {task ? (
               <EntityTimestampsCard
                 createdAt={task.createdAt}
@@ -333,21 +340,23 @@ export function TaskDetail({
               />
             ) : null}
 
-            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
-              <Label
-                htmlFor="task-detail-due-date"
-                className="text-xs text-muted-foreground"
-              >
-                Due date
-              </Label>
-              <Input
-                id="task-detail-due-date"
-                type="date"
-                value={dueDate ?? ""}
-                disabled={deleting}
-                onChange={(e) => setDueDate(e.target.value || null)}
-              />
-            </div>
+            <Card size="sm">
+              <CardContent className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="task-detail-due-date"
+                  className="text-xs text-muted-foreground"
+                >
+                  Due date
+                </Label>
+                <Input
+                  id="task-detail-due-date"
+                  type="date"
+                  value={dueDate ?? ""}
+                  disabled={deleting}
+                  onChange={(e) => setDueDate(e.target.value || null)}
+                />
+              </CardContent>
+            </Card>
 
             {categorizations ? (
               <>
@@ -400,16 +409,10 @@ export function TaskDetail({
                 </RadioSection>
               </>
             ) : null}
-          </aside>
-        </div>
-      )}
-
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-    </div>
+          </>
+        }
+      />
+    </EntityDetailShell>
   );
 }
 
@@ -423,22 +426,25 @@ function RadioSection({
   children: ReactNode;
 }) {
   return (
-    <section className="min-w-0 rounded-lg border border-border p-3">
-      <h2 className="mb-1.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
-        {legend}
-        {required ? (
-          <>
-            <span className="text-destructive" aria-hidden="true">
-              *
-            </span>
-            <span className="sr-only">(required)</span>
-          </>
-        ) : null}
-      </h2>
-      {children}
-    </section>
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-1.5">
+        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+          {legend}
+          {required ? (
+            <>
+              <span className="text-destructive" aria-hidden="true">
+                *
+              </span>
+              <span className="sr-only">(required)</span>
+            </>
+          ) : null}
+        </p>
+        {children}
+      </CardContent>
+    </Card>
   );
 }
+
 
 function CategorizationRadioList({
   name,

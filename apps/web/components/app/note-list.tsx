@@ -10,6 +10,7 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { PageActions } from "@/components/app/page-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -99,9 +100,8 @@ export function NoteList({ workspaceId }: NoteListProps) {
   if (!vault) return null;
 
   return (
-    <EntityListShell
-      title="Notes"
-      createForm={
+    <>
+      <PageActions>
         <CreateEntityDialog
           triggerLabel="Create note"
           dialogTitle="Create note"
@@ -141,28 +141,31 @@ export function NoteList({ workspaceId }: NoteListProps) {
             onChange={setNewColor}
           />
         </CreateEntityDialog>
-      }
-      error={error}
-      loading={loading}
-      loadingLabel="Loading notes…"
-      empty={!loading && notes.length === 0}
-      emptyLabel="No notes yet."
-    >
-      {notes.map((note) => (
-        <EntityListRow key={note.id}>
-          <Link
-            href={`/app/w/${workspaceId}/notes/${note.id}`}
-            className="font-medium"
-          >
-            {note.title || "Untitled"}
-            {note.tags.length > 0 ? (
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {note.tags.join(", ")}
-              </span>
-            ) : null}
-          </Link>
-        </EntityListRow>
-      ))}
-    </EntityListShell>
+      </PageActions>
+      <EntityListShell
+        title="Notes"
+        error={error}
+        loading={loading}
+        loadingLabel="Loading notes…"
+        empty={!loading && notes.length === 0}
+        emptyLabel="No notes yet."
+      >
+        {notes.map((note) => (
+          <EntityListRow key={note.id}>
+            <Link
+              href={`/app/w/${workspaceId}/notes/${note.id}`}
+              className="font-medium"
+            >
+              {note.title || "Untitled"}
+              {note.tags.length > 0 ? (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {note.tags.join(", ")}
+                </span>
+              ) : null}
+            </Link>
+          </EntityListRow>
+        ))}
+      </EntityListShell>
+    </>
   );
 }

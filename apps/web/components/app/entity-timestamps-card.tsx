@@ -1,6 +1,7 @@
 "use client";
 
 import { SaveStatus } from "@/components/app/save-status";
+import { Card, CardContent } from "@/components/ui/card";
 import type { AutosaveStatus } from "@/lib/hooks/use-autosave";
 
 type EntityTimestampsCardProps = {
@@ -19,17 +20,19 @@ export function EntityTimestampsCard({
   onRetry,
 }: EntityTimestampsCardProps) {
   return (
-    <div className="flex flex-col gap-1 rounded-lg border border-border p-3 text-xs text-muted-foreground">
-      <p>
-        <span className="font-medium text-foreground">Created</span>{" "}
-        {formatDateTime(createdAt)}
-      </p>
-      <p>
-        <span className="font-medium text-foreground">Modified</span>{" "}
-        {formatDateTime(updatedAt)}
-      </p>
-      <SaveStatus status={status} savedAt={savedAt} onRetry={onRetry} />
-    </div>
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-1 text-xs text-muted-foreground">
+        <p>
+          <span className="font-medium text-foreground">Created</span>{" "}
+          {formatDateTime(createdAt)}
+        </p>
+        <p>
+          <span className="font-medium text-foreground">Modified</span>{" "}
+          {formatDateTime(updatedAt)}
+        </p>
+        <SaveStatus status={status} savedAt={savedAt} onRetry={onRetry} />
+      </CardContent>
+    </Card>
   );
 }
 

@@ -7,13 +7,27 @@ import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
+import {
+  EntityDetailLayout,
+  EntityDetailShell,
+} from "@/components/app/entity-detail-shell";
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
+import { PageActions } from "@/components/app/page-actions";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
 } from "@/components/app/task-body-editor";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
@@ -242,31 +256,29 @@ export function ContactDetail({
   if (!vault) return null;
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      {loading ? (
-        <p className="text-sm text-muted-foreground">Loading…</p>
-      ) : (
-        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
-          <div className="flex min-w-0 flex-col gap-3">
-            <div className="flex items-start justify-between gap-3">
-              <InlineTitle
-                value={displayName}
-                onChange={setDisplayName}
-                onBlur={flush}
-                placeholder="Display name"
-                disabled={deleting}
-                maxLength={500}
-                aria-label="Display name"
-                className="min-w-0 flex-1"
-              />
-              <DeleteButton
-                disabled={deleting}
-                busy={deleting}
-                dialogTitle="Delete this contact?"
-                dialogDescription="This permanently deletes the contact. This cannot be undone."
-                onConfirm={onDelete}
-              />
-            </div>
+    <EntityDetailShell loading={loading} error={error}>
+      <PageActions>
+        <DeleteButton
+          disabled={deleting}
+          busy={deleting}
+          dialogTitle="Delete this contact?"
+          dialogDescription="This permanently deletes the contact. This cannot be undone."
+          onConfirm={onDelete}
+        />
+      </PageActions>
+      <EntityDetailLayout
+        main={
+          <>
+            <InlineTitle
+              value={displayName}
+              onChange={setDisplayName}
+              onBlur={flush}
+              placeholder="Display name"
+              disabled={deleting}
+              maxLength={500}
+              aria-label="Display name"
+              className="min-w-0"
+            />
 
             <TaskBodyEditor
               content={notes}
@@ -284,18 +296,20 @@ export function ContactDetail({
               }}
             />
             {storageLimitMessage ? (
-              <p className="text-sm text-amber-700 dark:text-amber-400">
-                {storageLimitMessage}
-              </p>
+              <Alert>
+                <AlertTitle>Storage limit</AlertTitle>
+                <AlertDescription>{storageLimitMessage}</AlertDescription>
+              </Alert>
             ) : null}
             <BacklinksPanel
               workspaceId={workspaceId}
               kind="contact"
               id={contactId}
             />
-          </div>
-
-          <aside className="flex min-w-0 flex-col gap-3">
+          </>
+        }
+        aside={
+          <>
             {contact ? (
               <EntityTimestampsCard
                 createdAt={contact.createdAt}
@@ -306,87 +320,93 @@ export function ContactDetail({
               />
             ) : null}
 
-            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
-              <Label
-                htmlFor="contact-detail-emails"
-                className="text-xs text-muted-foreground"
-              >
-                Emails
-              </Label>
-              <Input
-                id="contact-detail-emails"
-                value={emailsText}
-                onChange={(e) => setEmailsText(e.target.value)}
-                onBlur={flush}
-                placeholder="comma-separated"
-                disabled={deleting}
-              />
-            </div>
+            <Card size="sm">
+              <CardContent className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="contact-detail-emails"
+                  className="text-xs text-muted-foreground"
+                >
+                  Emails
+                </Label>
+                <Input
+                  id="contact-detail-emails"
+                  value={emailsText}
+                  onChange={(e) => setEmailsText(e.target.value)}
+                  onBlur={flush}
+                  placeholder="comma-separated"
+                  disabled={deleting}
+                />
+              </CardContent>
+            </Card>
 
-            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
-              <Label
-                htmlFor="contact-detail-phones"
-                className="text-xs text-muted-foreground"
-              >
-                Phones
-              </Label>
-              <Input
-                id="contact-detail-phones"
-                value={phonesText}
-                onChange={(e) => setPhonesText(e.target.value)}
-                onBlur={flush}
-                placeholder="comma-separated"
-                disabled={deleting}
-              />
-            </div>
+            <Card size="sm">
+              <CardContent className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="contact-detail-phones"
+                  className="text-xs text-muted-foreground"
+                >
+                  Phones
+                </Label>
+                <Input
+                  id="contact-detail-phones"
+                  value={phonesText}
+                  onChange={(e) => setPhonesText(e.target.value)}
+                  onBlur={flush}
+                  placeholder="comma-separated"
+                  disabled={deleting}
+                />
+              </CardContent>
+            </Card>
 
-            <div className="rounded-lg border border-border p-3">
-              <EntityColorPicker
-                value={color}
-                disabled={deleting}
-                onChange={setColor}
-              />
-            </div>
-          </aside>
-        </div>
-      )}
+            <Card size="sm">
+              <CardContent>
+                <EntityColorPicker
+                  value={color}
+                  disabled={deleting}
+                  onChange={setColor}
+                />
+              </CardContent>
+            </Card>
+          </>
+        }
+      />
 
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
-
-      {pendingProjectPick ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-sm rounded-lg border border-border bg-background p-4 shadow-lg">
-            <p className="text-sm font-medium">{pendingProjectPick.title}</p>
-            <ul className="mt-3 flex max-h-60 flex-col gap-1 overflow-auto">
-              {cache.projects.map((p) => (
-                <li key={p.id}>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    className="w-full justify-start"
-                    onClick={() => pendingProjectPick.resolve(p.id)}
-                  >
-                    {p.name}
-                  </Button>
-                </li>
-              ))}
-            </ul>
+      <Dialog
+        open={pendingProjectPick != null}
+        onOpenChange={(open) => {
+          if (!open) pendingProjectPick?.resolve(null);
+        }}
+      >
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle>{pendingProjectPick?.title ?? "Choose project"}</DialogTitle>
+          </DialogHeader>
+          <ul className="flex max-h-60 flex-col gap-1 overflow-auto">
+            {cache.projects.map((p) => (
+              <li key={p.id}>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  className="w-full justify-start"
+                  onClick={() => pendingProjectPick?.resolve(p.id)}
+                >
+                  {p.name}
+                </Button>
+              </li>
+            ))}
+          </ul>
+          <DialogFooter>
             <Button
               type="button"
               size="sm"
               variant="outline"
-              className="mt-3"
-              onClick={() => pendingProjectPick.resolve(null)}
+              onClick={() => pendingProjectPick?.resolve(null)}
             >
               Cancel
             </Button>
-          </div>
-        </div>
-      ) : null}
-    </div>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </EntityDetailShell>
   );
 }

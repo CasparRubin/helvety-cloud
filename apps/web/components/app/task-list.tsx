@@ -34,6 +34,7 @@ import {
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { MilestonePicker } from "@/components/app/milestone-picker";
+import { PageActions } from "@/components/app/page-actions";
 import {
   ProjectDescriptionEditor,
   ProjectMilestonesPanel,
@@ -292,212 +293,213 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   if (!vault) return null;
 
   return (
-    <EntityListShell
-      title={
-        !loading && project ? (
-          <ProjectTitleEditor
-            key={project.id}
-            workspaceId={workspaceId}
-            project={project}
-            onProjectChange={setProject}
-            onError={setError}
-          />
-        ) : (
-          (project?.name ?? "Project")
-        )
-      }
-      belowTitle={
-        !loading && project ? (
-          <ProjectDescriptionEditor
-            key={project.id}
-            workspaceId={workspaceId}
-            project={project}
-            onProjectChange={setProject}
-            onError={setError}
-          />
-        ) : null
-      }
-      actions={
-        <>
-          <Button
-            variant="outline"
-            size="sm"
-            render={
-              <Link
-                href={`/app/w/${workspaceId}/p/${projectId}/settings/general`}
-              />
-            }
-            nativeButton={false}
+    <>
+      <PageActions>
+        {!loading && project ? (
+          <CreateEntityDialog
+            triggerLabel="Create task"
+            dialogTitle="Create task"
+            fieldLabel="Title"
+            fieldPlaceholder="New task title"
+            fieldMaxLength={500}
+            disabled={busy || !project}
+            onCreate={onCreate}
+            onOpenChange={(open) => {
+              if (open) resetCreateFields();
+            }}
           >
-            Project settings
-          </Button>
-        </>
-      }
-      error={error}
-      loading={loading}
-      loadingLabel="Loading tasks…"
-      bareChildren
-    >
-      {!loading && project ? (
-        <div className="flex min-h-0 flex-1 gap-4">
-          <div className="flex min-h-0 min-w-0 flex-[3] flex-col gap-3 overflow-y-auto pb-2">
-            <CreateEntityDialog
-              triggerLabel="Create task"
-              dialogTitle="Create task"
-              fieldLabel="Title"
-              fieldPlaceholder="New task title"
-              fieldMaxLength={500}
-              disabled={busy || !project}
-              onCreate={onCreate}
-              onOpenChange={(open) => {
-                if (open) resetCreateFields();
-              }}
-            >
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-task-description">Description</Label>
+              <Textarea
+                id="new-task-description"
+                value={newDescription}
+                onChange={(e) => setNewDescription(e.target.value)}
+                placeholder="Add a description…"
+                disabled={busy}
+                rows={3}
+              />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-2">
-                <Label htmlFor="new-task-description">Description</Label>
-                <Textarea
-                  id="new-task-description"
-                  value={newDescription}
-                  onChange={(e) => setNewDescription(e.target.value)}
-                  placeholder="Add a description…"
+                <Label>Label</Label>
+                <CategorizationPicker
+                  options={project.categorizations.labels}
+                  value={newLabelId}
+                  allowNone
                   disabled={busy}
-                  rows={3}
+                  aria-label="Label"
+                  onChange={setNewLabelId}
                 />
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="flex flex-col gap-2">
-                  <Label>Label</Label>
-                  <CategorizationPicker
-                    options={project.categorizations.labels}
-                    value={newLabelId}
-                    allowNone
-                    disabled={busy}
-                    aria-label="Label"
-                    onChange={setNewLabelId}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label required>Stage</Label>
-                  <CategorizationPicker
-                    options={project.categorizations.stages}
-                    value={newStageId}
-                    useStageColor
-                    disabled={busy}
-                    aria-label="Stage"
-                    onChange={(id) => {
-                      if (id) setNewStageId(id);
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label required>Priority</Label>
-                  <CategorizationPicker
-                    options={project.categorizations.priorities}
-                    value={newPriorityId}
-                    disabled={busy}
-                    aria-label="Priority"
-                    onChange={(id) => {
-                      if (id) setNewPriorityId(id);
-                    }}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label>Milestone</Label>
-                  <MilestonePicker
-                    options={milestones.map((m) => ({
-                      id: m.id,
-                      title: m.title,
-                      startDate: m.startDate,
-                      endDate: m.endDate,
-                    }))}
-                    value={newMilestoneId}
-                    disabled={busy}
-                    aria-label="Milestone"
-                    onChange={setNewMilestoneId}
-                  />
-                </div>
-                <div className="flex flex-col gap-2">
-                  <Label htmlFor="new-task-due-date">Due date</Label>
-                  <Input
-                    id="new-task-due-date"
-                    type="date"
-                    value={newDueDate}
-                    disabled={busy}
-                    onChange={(e) => setNewDueDate(e.target.value)}
-                  />
-                </div>
+              <div className="flex flex-col gap-2">
+                <Label required>Stage</Label>
+                <CategorizationPicker
+                  options={project.categorizations.stages}
+                  value={newStageId}
+                  useStageColor
+                  disabled={busy}
+                  aria-label="Stage"
+                  onChange={(id) => {
+                    if (id) setNewStageId(id);
+                  }}
+                />
               </div>
-            </CreateEntityDialog>
-
-            <DndContext
-              sensors={sensors}
-              collisionDetection={closestCorners}
-              onDragStart={onDragStart}
-              onDragEnd={onDragEnd}
-              onDragCancel={() => setActiveTaskId(null)}
-            >
-              <div className="flex flex-col gap-3">
-                {columns.map((col, index) => (
-                  <StageRow
-                    key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
-                    stage={col.stage}
-                    prevStage={columns[index - 1]?.stage ?? null}
-                    nextStage={columns[index + 1]?.stage ?? null}
-                    tasks={col.tasks}
-                    cats={project.categorizations}
-                    milestoneById={milestoneById}
-                    workspaceId={workspaceId}
-                    projectId={projectId}
-                    busy={busy}
-                    savingTaskId={savingTaskId}
-                    onUpdateIds={updateTaskIds}
-                  />
-                ))}
+              <div className="flex flex-col gap-2">
+                <Label required>Priority</Label>
+                <CategorizationPicker
+                  options={project.categorizations.priorities}
+                  value={newPriorityId}
+                  disabled={busy}
+                  aria-label="Priority"
+                  onChange={(id) => {
+                    if (id) setNewPriorityId(id);
+                  }}
+                />
               </div>
-              <DragOverlay dropAnimation={null}>
-                {activeTask && project ? (
-                  <TaskCardContent
-                    task={activeTask}
-                    cats={project.categorizations}
-                    milestone={
-                      activeTask.milestoneId
-                        ? (milestoneById.get(activeTask.milestoneId) ?? null)
-                        : null
-                    }
-                    workspaceId={workspaceId}
-                    projectId={projectId}
-                    overlay
-                  />
-                ) : null}
-              </DragOverlay>
-            </DndContext>
-          </div>
-
-          <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-y-auto border-l border-border/60 pl-4">
-            <ProjectMilestonesPanel
+              <div className="flex flex-col gap-2">
+                <Label>Milestone</Label>
+                <MilestonePicker
+                  options={milestones.map((m) => ({
+                    id: m.id,
+                    title: m.title,
+                    startDate: m.startDate,
+                    endDate: m.endDate,
+                  }))}
+                  value={newMilestoneId}
+                  disabled={busy}
+                  aria-label="Milestone"
+                  onChange={setNewMilestoneId}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="new-task-due-date">Due date</Label>
+                <Input
+                  id="new-task-due-date"
+                  type="date"
+                  value={newDueDate}
+                  disabled={busy}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                />
+              </div>
+            </div>
+          </CreateEntityDialog>
+        ) : null}
+        <Button
+          variant="outline"
+          size="sm"
+          render={
+            <Link
+              href={`/app/w/${workspaceId}/p/${projectId}/settings/general`}
+            />
+          }
+          nativeButton={false}
+        >
+          Project settings
+        </Button>
+      </PageActions>
+      <EntityListShell
+        title={
+          !loading && project ? (
+            <ProjectTitleEditor
+              key={project.id}
               workspaceId={workspaceId}
-              projectId={projectId}
-              milestones={milestones}
-              selectedFilter={milestoneFilter}
-              onSelectFilter={setMilestoneFilter}
-              onMilestonesChange={(next) => {
-                setMilestones(next);
-                const ids = new Set(next.map((m) => m.id));
-                if (milestoneFilter !== "all" && !ids.has(milestoneFilter)) {
-                  setMilestoneFilter("all");
-                }
-              }}
+              project={project}
+              onProjectChange={setProject}
+              onError={setError}
             />
-            <ProjectProgress
-              tasks={tasks}
-              categorizations={project.categorizations}
-              milestones={milestones}
-              milestoneFilter={milestoneFilter}
+          ) : (
+            (project?.name ?? "Project")
+          )
+        }
+        belowTitle={
+          !loading && project ? (
+            <ProjectDescriptionEditor
+              key={project.id}
+              workspaceId={workspaceId}
+              project={project}
+              onProjectChange={setProject}
+              onError={setError}
             />
-          </aside>
-        </div>
-      ) : null}
-    </EntityListShell>
+          ) : null
+        }
+        error={error}
+        loading={loading}
+        loadingLabel="Loading tasks…"
+        bareChildren
+      >
+        {!loading && project ? (
+          <div className="flex min-h-0 flex-1 gap-4">
+            <div className="flex min-h-0 min-w-0 flex-[3] flex-col gap-3 overflow-y-auto pb-2">
+              <DndContext
+                sensors={sensors}
+                collisionDetection={closestCorners}
+                onDragStart={onDragStart}
+                onDragEnd={onDragEnd}
+                onDragCancel={() => setActiveTaskId(null)}
+              >
+                <div className="flex flex-col gap-3">
+                  {columns.map((col, index) => (
+                    <StageRow
+                      key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
+                      stage={col.stage}
+                      prevStage={columns[index - 1]?.stage ?? null}
+                      nextStage={columns[index + 1]?.stage ?? null}
+                      tasks={col.tasks}
+                      cats={project.categorizations}
+                      milestoneById={milestoneById}
+                      workspaceId={workspaceId}
+                      projectId={projectId}
+                      busy={busy}
+                      savingTaskId={savingTaskId}
+                      onUpdateIds={updateTaskIds}
+                    />
+                  ))}
+                </div>
+                <DragOverlay dropAnimation={null}>
+                  {activeTask && project ? (
+                    <TaskCardContent
+                      task={activeTask}
+                      cats={project.categorizations}
+                      milestone={
+                        activeTask.milestoneId
+                          ? (milestoneById.get(activeTask.milestoneId) ?? null)
+                          : null
+                      }
+                      workspaceId={workspaceId}
+                      projectId={projectId}
+                      overlay
+                    />
+                  ) : null}
+                </DragOverlay>
+              </DndContext>
+            </div>
+
+            <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-y-auto border-l border-border/60 pl-4">
+              <ProjectMilestonesPanel
+                workspaceId={workspaceId}
+                projectId={projectId}
+                milestones={milestones}
+                selectedFilter={milestoneFilter}
+                onSelectFilter={setMilestoneFilter}
+                onMilestonesChange={(next) => {
+                  setMilestones(next);
+                  const ids = new Set(next.map((m) => m.id));
+                  if (milestoneFilter !== "all" && !ids.has(milestoneFilter)) {
+                    setMilestoneFilter("all");
+                  }
+                }}
+              />
+              <ProjectProgress
+                tasks={tasks}
+                categorizations={project.categorizations}
+                milestones={milestones}
+                milestoneFilter={milestoneFilter}
+              />
+            </aside>
+          </div>
+        ) : null}
+      </EntityListShell>
+    </>
   );
 }
 

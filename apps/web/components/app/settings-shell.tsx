@@ -31,8 +31,8 @@ export function SettingsShell({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col gap-6 p-4 sm:p-6">
-      <div>
+    <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
+      <div className="flex flex-col gap-1">
         <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
         {description ? (
           <p className="text-sm text-muted-foreground">{description}</p>

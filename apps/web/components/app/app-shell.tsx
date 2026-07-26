@@ -12,6 +12,10 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import {
+  PageActionsProvider,
+  PageActionsSlot,
+} from "@/components/app/page-actions";
 import { TaskJumpSwitcher } from "@/components/app/task-jump-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
 import { UserMenu } from "@/components/app/user-menu";
@@ -21,8 +25,11 @@ import {
   NavSeparator,
   parentHrefFor,
   parseAppNavPath,
+  resolveNavBackMode,
+  useInAppNavHistory,
 } from "@/components/app/workspace-nav";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
+import { ButtonGroup } from "@/components/ui/button-group";
 import { UnlockGate } from "@/components/vault/unlock-gate";
 import { VaultEntityCacheProvider } from "@/components/vault/vault-entity-cache";
 import {
@@ -129,7 +136,13 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const onWorkspaceHome = Boolean(
     workspaceBase && pathname === workspaceBase,
   );
-  const backHref = location ? parentHrefFor(location) : null;
+  const parentHref = location ? parentHrefFor(location) : null;
+  const { hasInAppPredecessor, noteParentReplace } =
+    useInAppNavHistory(pathname);
+  const backMode = resolveNavBackMode({
+    hasInAppPredecessor,
+    parentHref,
+  });
   const activeSection = location?.section ?? null;
   const sections = workspaceBase ? workspaceSections(workspaceBase) : [];
 
@@ -159,137 +172,151 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   }
 
   return (
-    <div className="flex min-h-svh flex-col bg-background text-foreground">
-      <div className="sticky top-0 z-40 bg-background">
-        <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
-          <Link
-            href="/app"
-            title="Helvety Cloud"
-            className="size-6 shrink-0"
-          >
-            <Image
-              src="/icon.svg"
-              width={24}
-              height={24}
-              alt="Helvety Cloud"
-              className="size-6 rounded-md"
-              priority
-            />
-          </Link>
-          <NavBackButton href={backHref} />
-          <nav
-            aria-label="Breadcrumb"
-            className="flex min-w-0 items-center gap-1.5 overflow-hidden"
-          >
-            <WorkspaceSwitcher
-              userId={userId}
-              activeWorkspaceId={activeWorkspaceId}
-            />
-            {location?.entity ? (
-              <>
-                <NavSeparator />
-                <WorkspaceJumpSwitcher
-                  workspaceId={location.workspaceId}
-                  active={location.entity}
-                />
-              </>
-            ) : null}
-            {location?.entity?.kind === "project" && location.taskId ? (
-              <>
-                <NavSeparator />
-                <TaskJumpSwitcher
-                  workspaceId={location.workspaceId}
-                  projectId={location.entity.id}
-                  taskId={location.taskId}
-                />
-              </>
-            ) : null}
-          </nav>
-          <div className="ml-auto flex shrink-0 items-center gap-1">
-            <ThemeToggle />
-            <UserMenu email={email} />
-          </div>
-        </header>
-        {workspaceBase ? (
-          <nav
-            aria-label="Workspace sections"
-            className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
-          >
-            {sections.map((section) => (
-              <SectionLink
-                key={section.id}
-                href={section.href}
-                active={activeSection === section.id}
-                icon={section.icon}
-                variant="mobile"
-              >
-                {section.label}
-              </SectionLink>
-            ))}
-          </nav>
-        ) : null}
-      </div>
-      <div className="flex min-h-0 flex-1">
-        <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
-          <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">
-            {workspaceBase ? (
-              <>
-                {activeWorkspaceName ? (
-                  <div className="mb-1.5 flex flex-col gap-0.5">
-                    <p className="px-2 text-xs font-medium text-muted-foreground">
-                      Workspace
-                    </p>
-                    <Link
-                      href={workspaceBase}
-                      title={activeWorkspaceName}
-                      aria-current={onWorkspaceHome ? "page" : undefined}
-                      className={cn(
-                        "truncate rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                        onWorkspaceHome &&
-                          "bg-sidebar-accent text-sidebar-accent-foreground",
-                      )}
-                    >
-                      {activeWorkspaceName}
-                    </Link>
-                  </div>
-                ) : null}
-                {sections.map((section) => (
-                  <Fragment key={section.id}>
-                    {section.id === "settings" ? (
-                      <div className="my-1 border-t border-sidebar-border" />
-                    ) : null}
-                    <SectionLink
-                      href={section.href}
-                      active={activeSection === section.id}
-                      icon={section.icon}
-                      variant="sidebar"
-                    >
-                      {section.label}
-                    </SectionLink>
-                  </Fragment>
-                ))}
-              </>
-            ) : (
-              <p className="px-2 py-1 text-xs text-muted-foreground">
-                Select a workspace
-              </p>
-            )}
-          </nav>
-        </aside>
-        <main className="min-w-0 flex-1">
-          {activeWorkspaceId ? (
-            <VaultEntityCacheProvider
-              key={activeWorkspaceId}
-              workspaceId={activeWorkspaceId}
+    <PageActionsProvider>
+      <div className="flex min-h-svh flex-col bg-background text-foreground">
+        <div className="sticky top-0 z-40 bg-background">
+          <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
+            <Link
+              href="/app"
+              title="Helvety Cloud"
+              className="size-6 shrink-0"
             >
-              {children}
-            </VaultEntityCacheProvider>
-          ) : (
-            children
-          )}
-        </main>
+              <Image
+                src="/icon.svg"
+                width={24}
+                height={24}
+                alt="Helvety Cloud"
+                className="size-6 rounded-md"
+                priority
+              />
+            </Link>
+            <nav
+              aria-label="Breadcrumb"
+              className="flex min-w-0 items-center gap-1.5 overflow-hidden"
+            >
+              <WorkspaceSwitcher
+                userId={userId}
+                activeWorkspaceId={activeWorkspaceId}
+              />
+              {location?.entity ? (
+                <>
+                  <NavSeparator />
+                  <WorkspaceJumpSwitcher
+                    workspaceId={location.workspaceId}
+                    active={location.entity}
+                  />
+                </>
+              ) : null}
+              {location?.entity?.kind === "project" && location.taskId ? (
+                <>
+                  <NavSeparator />
+                  <TaskJumpSwitcher
+                    workspaceId={location.workspaceId}
+                    projectId={location.entity.id}
+                    taskId={location.taskId}
+                  />
+                </>
+              ) : null}
+            </nav>
+            <div className="ml-auto flex shrink-0 items-center gap-1">
+              <ThemeToggle />
+              <UserMenu email={email} />
+            </div>
+          </header>
+          {workspaceBase ? (
+            <nav
+              aria-label="Workspace sections"
+              className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
+            >
+              {sections.map((section) => (
+                <SectionLink
+                  key={section.id}
+                  href={section.href}
+                  active={activeSection === section.id}
+                  icon={section.icon}
+                  variant="mobile"
+                >
+                  {section.label}
+                </SectionLink>
+              ))}
+            </nav>
+          ) : null}
+          <div
+            aria-label="Page actions"
+            className="flex h-10 shrink-0 items-center gap-2 border-b px-3"
+          >
+            <ButtonGroup>
+              <NavBackButton
+                mode={backMode}
+                parentHref={parentHref}
+                onParentNavigate={noteParentReplace}
+              />
+            </ButtonGroup>
+            <PageActionsSlot />
+          </div>
+        </div>
+        <div className="flex min-h-0 flex-1">
+          <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+            <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">
+              {workspaceBase ? (
+                <>
+                  {activeWorkspaceName ? (
+                    <div className="mb-1.5 flex flex-col gap-0.5">
+                      <p className="px-2 text-xs font-medium text-muted-foreground">
+                        Workspace
+                      </p>
+                      <Link
+                        href={workspaceBase}
+                        title={activeWorkspaceName}
+                        aria-current={onWorkspaceHome ? "page" : undefined}
+                        className={cn(
+                          "truncate rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                          onWorkspaceHome &&
+                            "bg-sidebar-accent text-sidebar-accent-foreground",
+                        )}
+                      >
+                        {activeWorkspaceName}
+                      </Link>
+                    </div>
+                  ) : null}
+                  {sections.map((section) => (
+                    <Fragment key={section.id}>
+                      {section.id === "settings" ? (
+                        <div className="my-1 border-t border-sidebar-border" />
+                      ) : null}
+                      <SectionLink
+                        href={section.href}
+                        active={activeSection === section.id}
+                        icon={section.icon}
+                        variant="sidebar"
+                      >
+                        {section.label}
+                      </SectionLink>
+                    </Fragment>
+                  ))}
+                </>
+              ) : (
+                <p className="px-2 py-1 text-xs text-muted-foreground">
+                  Select a workspace
+                </p>
+              )}
+            </nav>
+          </aside>
+          <main className="min-w-0 flex-1">
+            {activeWorkspaceId ? (
+              <VaultEntityCacheProvider
+                key={activeWorkspaceId}
+                workspaceId={activeWorkspaceId}
+              >
+                {children}
+              </VaultEntityCacheProvider>
+            ) : (
+              children
+            )}
+          </main>
+        </div>
       </div>
-    </div>
+    </PageActionsProvider>
   );
 }
 

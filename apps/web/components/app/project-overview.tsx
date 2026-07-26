@@ -5,6 +5,7 @@ import { useEffect, useId, useRef, useState } from "react";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { InlineTitle } from "@/components/app/inline-title";
+import { PageActions } from "@/components/app/page-actions";
 import { SaveStatus } from "@/components/app/save-status";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
@@ -259,59 +260,61 @@ export function ProjectMilestonesPanel({
 
   return (
     <div className="flex flex-col gap-3">
-      <CreateEntityDialog
-        triggerLabel="Create milestone"
-        dialogTitle="Create milestone"
-        fieldLabel="Title"
-        fieldPlaceholder="New milestone"
-        fieldMaxLength={200}
-        confirmLabel="Add"
-        disabled={busy}
-        onCreate={onCreateMilestone}
-        onOpenChange={(open) => {
-          if (open) {
-            setNewStartDate("");
-            setNewEndDate("");
-            setNewDescription("");
-          }
-        }}
-      >
-        <div className="grid grid-cols-2 gap-3">
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="milestone-start-date">Start date</Label>
-            <Input
-              id="milestone-start-date"
-              type="date"
-              value={newStartDate}
-              onChange={(e) => setNewStartDate(e.target.value)}
-              disabled={busy}
-              aria-label="Start date"
-            />
+      <PageActions>
+        <CreateEntityDialog
+          triggerLabel="Create milestone"
+          dialogTitle="Create milestone"
+          fieldLabel="Title"
+          fieldPlaceholder="New milestone"
+          fieldMaxLength={200}
+          confirmLabel="Add"
+          disabled={busy}
+          onCreate={onCreateMilestone}
+          onOpenChange={(open) => {
+            if (open) {
+              setNewStartDate("");
+              setNewEndDate("");
+              setNewDescription("");
+            }
+          }}
+        >
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="milestone-start-date">Start date</Label>
+              <Input
+                id="milestone-start-date"
+                type="date"
+                value={newStartDate}
+                onChange={(e) => setNewStartDate(e.target.value)}
+                disabled={busy}
+                aria-label="Start date"
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="milestone-end-date">End date</Label>
+              <Input
+                id="milestone-end-date"
+                type="date"
+                value={newEndDate}
+                onChange={(e) => setNewEndDate(e.target.value)}
+                disabled={busy}
+                aria-label="End date"
+              />
+            </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="milestone-end-date">End date</Label>
-            <Input
-              id="milestone-end-date"
-              type="date"
-              value={newEndDate}
-              onChange={(e) => setNewEndDate(e.target.value)}
+            <Label htmlFor="milestone-description">Description</Label>
+            <Textarea
+              id="milestone-description"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Add a description…"
               disabled={busy}
-              aria-label="End date"
+              rows={3}
             />
           </div>
-        </div>
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="milestone-description">Description</Label>
-          <Textarea
-            id="milestone-description"
-            value={newDescription}
-            onChange={(e) => setNewDescription(e.target.value)}
-            placeholder="Add a description…"
-            disabled={busy}
-            rows={3}
-          />
-        </div>
-      </CreateEntityDialog>
+        </CreateEntityDialog>
+      </PageActions>
 
       {milestones.length === 0 ? (
         <p className="text-sm text-muted-foreground">No milestones yet.</p>

@@ -9,6 +9,7 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { PageActions } from "@/components/app/page-actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -114,9 +115,8 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   if (!vault) return null;
 
   return (
-    <EntityListShell
-      title={workspace?.name ?? "Workspace"}
-      createForm={
+    <>
+      <PageActions>
         <CreateEntityDialog
           triggerLabel="Create project"
           dialogTitle="Create project"
@@ -141,61 +141,64 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
             />
           </div>
         </CreateEntityDialog>
-      }
-      error={error}
-      loading={loading}
-      loadingLabel="Loading projects…"
-      empty={!loading && projects.length === 0}
-      emptyLabel="No projects yet."
-    >
-      {projects.map((project, index) => (
-        <EntityListRow
-          key={project.id}
-          className="flex items-center gap-2"
-        >
-          <Link
-            href={`/app/w/${workspaceId}/p/${project.id}`}
-            className="min-w-0 flex-1 truncate font-medium hover:underline"
+      </PageActions>
+      <EntityListShell
+        title={workspace?.name ?? "Workspace"}
+        error={error}
+        loading={loading}
+        loadingLabel="Loading projects…"
+        empty={!loading && projects.length === 0}
+        emptyLabel="No projects yet."
+      >
+        {projects.map((project, index) => (
+          <EntityListRow
+            key={project.id}
+            className="flex items-center gap-2"
           >
-            {project.name}
-          </Link>
-          <div className="flex shrink-0 gap-1">
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={busy || index === 0}
-              onClick={() => void onReorder(index, "up")}
-              aria-label="Move up"
+            <Link
+              href={`/app/w/${workspaceId}/p/${project.id}`}
+              className="min-w-0 flex-1 truncate font-medium hover:underline"
             >
-              ↑
-            </Button>
-            <Button
-              type="button"
-              variant="ghost"
-              size="sm"
-              disabled={busy || index === projects.length - 1}
-              onClick={() => void onReorder(index, "down")}
-              aria-label="Move down"
-            >
-              ↓
-            </Button>
-            <Button
-              variant="ghost"
-              size="sm"
-              aria-label={`Project settings for ${project.name}`}
-              render={
-                <Link
-                  href={`/app/w/${workspaceId}/p/${project.id}/settings/general`}
-                />
-              }
-              nativeButton={false}
-            >
-              <SettingsIcon className="size-4" aria-hidden="true" />
-            </Button>
-          </div>
-        </EntityListRow>
-      ))}
-    </EntityListShell>
+              {project.name}
+            </Link>
+            <div className="flex shrink-0 gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy || index === 0}
+                onClick={() => void onReorder(index, "up")}
+                aria-label="Move up"
+              >
+                ↑
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy || index === projects.length - 1}
+                onClick={() => void onReorder(index, "down")}
+                aria-label="Move down"
+              >
+                ↓
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                aria-label={`Project settings for ${project.name}`}
+                render={
+                  <Link
+                    href={`/app/w/${workspaceId}/p/${project.id}/settings/general`}
+                  />
+                }
+                nativeButton={false}
+              >
+                <SettingsIcon className="size-4" aria-hidden="true" />
+              </Button>
+            </div>
+          </EntityListRow>
+        ))}
+      </EntityListShell>
+    </>
   );
 }

@@ -10,6 +10,7 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { PageActions } from "@/components/app/page-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -106,9 +107,8 @@ export function ContactList({ workspaceId }: ContactListProps) {
   if (!vault) return null;
 
   return (
-    <EntityListShell
-      title="Contacts"
-      createForm={
+    <>
+      <PageActions>
         <CreateEntityDialog
           triggerLabel="Create contact"
           dialogTitle="Create contact"
@@ -160,28 +160,31 @@ export function ContactList({ workspaceId }: ContactListProps) {
             onChange={setNewColor}
           />
         </CreateEntityDialog>
-      }
-      error={error}
-      loading={loading}
-      loadingLabel="Loading contacts…"
-      empty={!loading && contacts.length === 0}
-      emptyLabel="No contacts yet."
-    >
-      {contacts.map((contact) => (
-        <EntityListRow key={contact.id}>
-          <Link
-            href={`/app/w/${workspaceId}/contacts/${contact.id}`}
-            className="font-medium"
-          >
-            {contact.displayName || "Untitled"}
-            {contact.emails[0] ? (
-              <span className="ml-2 text-xs font-normal text-muted-foreground">
-                {contact.emails[0]}
-              </span>
-            ) : null}
-          </Link>
-        </EntityListRow>
-      ))}
-    </EntityListShell>
+      </PageActions>
+      <EntityListShell
+        title="Contacts"
+        error={error}
+        loading={loading}
+        loadingLabel="Loading contacts…"
+        empty={!loading && contacts.length === 0}
+        emptyLabel="No contacts yet."
+      >
+        {contacts.map((contact) => (
+          <EntityListRow key={contact.id}>
+            <Link
+              href={`/app/w/${workspaceId}/contacts/${contact.id}`}
+              className="font-medium"
+            >
+              {contact.displayName || "Untitled"}
+              {contact.emails[0] ? (
+                <span className="ml-2 text-xs font-normal text-muted-foreground">
+                  {contact.emails[0]}
+                </span>
+              ) : null}
+            </Link>
+          </EntityListRow>
+        ))}
+      </EntityListShell>
+    </>
   );
 }

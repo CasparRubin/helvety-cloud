@@ -2,8 +2,10 @@ import { describe, expect, it } from "vitest";
 
 import { workspaceSettingsNavItems } from "../../apps/web/components/app/settings-shell";
 import {
+  isInAppWorkspacePath,
   parentHrefFor,
   parseAppNavPath,
+  resolveNavBackMode,
 } from "../../apps/web/components/app/workspace-nav";
 
 describe("settings nav items", () => {
@@ -30,5 +32,42 @@ describe("parseAppNavPath settings", () => {
     expect(loc?.entity).toEqual({ kind: "project", id: "p1" });
     expect(loc?.projectSettings).toBe(true);
     expect(parentHrefFor(loc!)).toBe("/app/w/ws1/p/p1");
+  });
+});
+
+describe("resolveNavBackMode", () => {
+  it("prefers in-app history over logical parent", () => {
+    expect(
+      resolveNavBackMode({
+        hasInAppPredecessor: true,
+        parentHref: "/app/w/ws1/p/p1",
+      }),
+    ).toBe("history");
+  });
+
+  it("falls back to logical parent when there is no in-app predecessor", () => {
+    expect(
+      resolveNavBackMode({
+        hasInAppPredecessor: false,
+        parentHref: "/app/w/ws1/notes",
+      }),
+    ).toBe("parent");
+  });
+
+  it("disables when neither history nor parent is available", () => {
+    expect(
+      resolveNavBackMode({
+        hasInAppPredecessor: false,
+        parentHref: null,
+      }),
+    ).toBe("none");
+  });
+});
+
+describe("isInAppWorkspacePath", () => {
+  it("accepts workspace routes and rejects bare /app", () => {
+    expect(isInAppWorkspacePath("/app/w/ws1/notes/n1")).toBe(true);
+    expect(isInAppWorkspacePath("/app")).toBe(false);
+    expect(isInAppWorkspacePath("/login")).toBe(false);
   });
 });
