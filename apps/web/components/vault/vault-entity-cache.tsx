@@ -154,7 +154,7 @@ export function VaultEntityCacheProvider({
             kind,
             id,
             label: note?.title ?? "Note",
-            color: note?.color ?? fallback,
+            color: fallback,
             href: `/app/w/${workspaceId}/notes/${id}`,
             deleted: Boolean(note?.deletedAt),
             done: false,

@@ -5,7 +5,6 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
-import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
@@ -28,12 +27,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
-import type { EntityColor } from "@/lib/vault/entity-colors";
 import { createContact } from "@/lib/vault/contacts";
 import {
   EMPTY_NOTE_BODY,
@@ -56,9 +53,7 @@ type NoteDetailProps = {
 type NoteDraft = {
   title: string;
   body: TaskBodyDoc;
-  tagsText: string;
   projectId: string;
-  color: EntityColor | undefined;
 };
 
 export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
@@ -70,9 +65,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const [note, setNote] = useState<DecryptedNote | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState<TaskBodyDoc>(EMPTY_NOTE_BODY);
-  const [tagsText, setTagsText] = useState("");
   const [projectId, setProjectId] = useState<string>("");
-  const [color, setColor] = useState<EntityColor | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -92,8 +85,8 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   });
 
   const draft = useMemo<NoteDraft>(
-    () => ({ title, body, tagsText, projectId, color }),
-    [title, body, tagsText, projectId, color],
+    () => ({ title, body, projectId }),
+    [title, body, projectId],
   );
 
   const { status, savedAt, flush } = useAutosave({
@@ -103,15 +96,11 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       const current = noteRef.current;
       if (!current) throw new Error("Note not loaded");
       const key = await getWorkspaceKey(workspaceId);
-      const tags = next.tagsText
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
       const saved = await saveNote(
         workspaceId,
         key,
         current,
-        toNotePlaintext(next.title, next.body, tags, next.color),
+        toNotePlaintext(next.title, next.body),
         {
           projectId: next.projectId || null,
         },
@@ -121,18 +110,14 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       return {
         title: saved.title,
         body: saved.body,
-        tagsText: saved.tags.join(", "),
         projectId: saved.projectId ?? "",
-        color: saved.color,
       };
     },
     onError: (message) => setError(message),
     onSaved: (canonical) => {
       setTitle(canonical.title);
       setBody(canonical.body);
-      setTagsText(canonical.tagsText);
       setProjectId(canonical.projectId);
-      setColor(canonical.color);
       setError(null);
     },
   });
@@ -149,9 +134,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         setNote(loaded);
         setTitle(loaded.title);
         setBody(loaded.body);
-        setTagsText(loaded.tags.join(", "));
         setProjectId(loaded.projectId ?? "");
-        setColor(loaded.color);
         setError(null);
         upsertNote(loaded);
       } catch (e) {
@@ -308,25 +291,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
             <Card size="sm">
               <CardContent className="flex flex-col gap-1.5">
                 <Label
-                  htmlFor="note-detail-tags"
-                  className="text-xs text-muted-foreground"
-                >
-                  Tags
-                </Label>
-                <Input
-                  id="note-detail-tags"
-                  value={tagsText}
-                  onChange={(e) => setTagsText(e.target.value)}
-                  onBlur={flush}
-                  placeholder="comma-separated"
-                  disabled={deleting}
-                />
-              </CardContent>
-            </Card>
-
-            <Card size="sm">
-              <CardContent className="flex flex-col gap-1.5">
-                <Label
                   htmlFor="note-detail-project"
                   className="text-xs text-muted-foreground"
                 >
@@ -347,16 +311,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
                     </option>
                   ))}
                 </select>
-              </CardContent>
-            </Card>
-
-            <Card size="sm">
-              <CardContent>
-                <EntityColorPicker
-                  value={color}
-                  disabled={deleting}
-                  onChange={setColor}
-                />
               </CardContent>
             </Card>
           </>

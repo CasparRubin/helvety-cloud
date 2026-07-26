@@ -137,7 +137,6 @@ describe("P6e invitee seal / open", () => {
           },
         ],
       },
-      tags: ["shared"],
     });
     const contactBlob = await encryptContactContent(
       workspaceKey,

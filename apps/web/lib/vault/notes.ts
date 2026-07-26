@@ -23,7 +23,6 @@ import {
   type TaskBodyDoc,
   type NotePlaintext,
 } from "@/lib/vault/note-plaintext";
-import type { EntityColor } from "@/lib/vault/entity-colors";
 import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/vault/entity-refs";
 
 const textDecoder = new TextDecoder();
@@ -35,8 +34,6 @@ export type DecryptedNote = {
   links: EntityLinkTarget[];
   title: string;
   body: TaskBodyDoc;
-  tags: string[];
-  color?: EntityColor;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
@@ -84,8 +81,6 @@ async function toDecrypted(
 ): Promise<DecryptedNote> {
   let title = "Untitled";
   let body: TaskBodyDoc = EMPTY_NOTE_BODY;
-  let tags: string[] = [];
-  let color: EntityColor | undefined;
   try {
     const content = await decryptNoteContent(
       workspaceKey,
@@ -94,8 +89,6 @@ async function toDecrypted(
     );
     title = content.title;
     body = content.body;
-    tags = content.tags;
-    color = content.color;
   } catch {
     title = "Unable to decrypt";
   }
@@ -106,8 +99,6 @@ async function toDecrypted(
     links: row.links,
     title,
     body,
-    tags,
-    color,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
@@ -142,8 +133,6 @@ export async function createNote(
   content: {
     title: string;
     body?: TaskBodyDoc;
-    tags?: string[];
-    color?: EntityColor;
     projectId?: string | null;
     links?: EntityLinkTarget[];
   },
@@ -153,8 +142,6 @@ export async function createNote(
   const plaintext = toNotePlaintext(
     content.title,
     content.body ?? EMPTY_NOTE_BODY,
-    content.tags ?? [],
-    content.color,
   );
   const encryptedBlob = await encryptNoteContent(
     workspaceKey,

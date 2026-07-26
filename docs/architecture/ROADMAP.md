@@ -358,7 +358,7 @@ Workspace  (members + per-member wrapped_keys)
 **Do:**
 
 - Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` on notes for filing.
-- Notes: flexible encrypted JSON (dynamic links/tags/body); can link to project, task, both, or neither.  
+- Notes: encrypted JSON (`title` + TipTap `body`); can link to project, task, both, or neither.  
 - Contacts: encrypted identity fields under **workspace_key**; same person in two workspaces = two rows (no global dedupe). Optional later: copy-to-workspace.  
 - `/api/v1` list/detail + UI in app shell (Personal + team workspaces).  
 - AAD `table:recordId:field`; migrate `qnoeiurmyyyuawkcifmw` only.
@@ -496,7 +496,7 @@ Workspace  (members + per-member wrapped_keys)
 **Do:**
 
 - Stage option `color` as `EntityColor`; seed defaults for default stage names; project settings stage color picker; chip resolve uses stage color (name→default map when unset).  
-- Note/contact keep own accent + kind fallbacks; no per-task accent.  
+- Contact keeps own accent + kind fallback; notes use kind fallback only; no per-task accent.  
 - EntityChip: label + color only; kind / stage / priority / label in `title` hover.  
 - Contact `notes` TipTap body; task + contact PUT `links` + extract EntityRefs on save.
 - Same BubbleMenu create/link UX as notes across task and contact bodies.

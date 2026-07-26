@@ -5,17 +5,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
-import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { PageActions } from "@/components/app/page-actions";
-import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
-import type { EntityColor } from "@/lib/vault/entity-colors";
 import {
   createNote,
   loadDecryptedNotes,
@@ -36,8 +33,6 @@ export function NoteList({ workspaceId }: NoteListProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newBody, setNewBody] = useState("");
-  const [newTags, setNewTags] = useState("");
-  const [newColor, setNewColor] = useState<EntityColor | undefined>();
 
   useEffect(() => {
     if (!vault) return;
@@ -64,8 +59,6 @@ export function NoteList({ workspaceId }: NoteListProps) {
 
   function resetCreateFields() {
     setNewBody("");
-    setNewTags("");
-    setNewColor(undefined);
   }
 
   async function onCreate(title: string) {
@@ -75,18 +68,12 @@ export function NoteList({ workspaceId }: NoteListProps) {
       const nextOrder =
         notes.reduce((max, n) => Math.max(max, n.sortOrder), -1) + 1;
       const body = newBody.trim();
-      const tags = newTags
-        .split(",")
-        .map((t) => t.trim())
-        .filter(Boolean);
       const created = await createNote(
         workspaceId,
         key,
         {
           title,
           body: body ? textToTaskBody(body) : undefined,
-          tags,
-          color: newColor,
         },
         nextOrder,
       );
@@ -125,21 +112,6 @@ export function NoteList({ workspaceId }: NoteListProps) {
               rows={3}
             />
           </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="new-note-tags">Tags</Label>
-            <Input
-              id="new-note-tags"
-              value={newTags}
-              onChange={(e) => setNewTags(e.target.value)}
-              placeholder="comma-separated"
-              disabled={busy}
-            />
-          </div>
-          <EntityColorPicker
-            value={newColor}
-            disabled={busy}
-            onChange={setNewColor}
-          />
         </CreateEntityDialog>
       </PageActions>
       <EntityListShell
@@ -157,11 +129,6 @@ export function NoteList({ workspaceId }: NoteListProps) {
               className="font-medium"
             >
               {note.title || "Untitled"}
-              {note.tags.length > 0 ? (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {note.tags.join(", ")}
-                </span>
-              ) : null}
             </Link>
           </EntityListRow>
         ))}

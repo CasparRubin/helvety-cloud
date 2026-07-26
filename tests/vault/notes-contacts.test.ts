@@ -12,7 +12,7 @@ import {
 } from "../../apps/web/lib/vault/contact-plaintext";
 
 describe("note plaintext v1", () => {
-  it("parses versioned TipTap body and tags", () => {
+  it("parses versioned TipTap body", () => {
     const body = {
       type: "doc" as const,
       content: [
@@ -22,41 +22,25 @@ describe("note plaintext v1", () => {
         },
       ],
     };
-    expect(
-      parseNotePlaintext({ version: 1, title: "T", body, tags: ["a", "b"] }),
-    ).toEqual({ version: 1, title: "T", body, tags: ["a", "b"] });
-  });
-
-  it("defaults missing tags to empty", () => {
-    expect(
-      parseNotePlaintext({
-        version: 1,
-        title: "T",
-        body: EMPTY_NOTE_BODY,
-      }),
-    ).toEqual({
+    expect(parseNotePlaintext({ version: 1, title: "T", body })).toEqual({
       version: 1,
       title: "T",
-      body: EMPTY_NOTE_BODY,
-      tags: [],
+      body,
     });
   });
 
-  it("parses optional color palette token", () => {
+  it("ignores unknown keys", () => {
     expect(
       parseNotePlaintext({
         version: 1,
         title: "T",
         body: EMPTY_NOTE_BODY,
-        tags: [],
-        color: "violet",
+        extra: true,
       }),
     ).toEqual({
       version: 1,
       title: "T",
       body: EMPTY_NOTE_BODY,
-      tags: [],
-      color: "violet",
     });
   });
 
@@ -67,17 +51,15 @@ describe("note plaintext v1", () => {
         version: 1,
         title: "T",
         body: "string",
-        tags: [],
       }),
     ).toThrow("Invalid note plaintext");
   });
 
-  it("toNotePlaintext trims title and tags", () => {
-    expect(toNotePlaintext("  Hi  ", EMPTY_NOTE_BODY, ["  x  ", ""])).toEqual({
+  it("toNotePlaintext trims title", () => {
+    expect(toNotePlaintext("  Hi  ", EMPTY_NOTE_BODY)).toEqual({
       version: 1,
       title: "Hi",
       body: EMPTY_NOTE_BODY,
-      tags: ["x"],
     });
   });
 });
@@ -154,7 +136,7 @@ describe("notes/contacts AAD binding", () => {
   it("round-trips note ciphertext and fails on wrong AAD", async () => {
     const key = randomKeyBytes();
     const noteId = "11111111-1111-4111-8111-111111111111";
-    const plaintext = toNotePlaintext("Title", EMPTY_NOTE_BODY, ["tag"]);
+    const plaintext = toNotePlaintext("Title", EMPTY_NOTE_BODY);
     const envelope = await encrypt({
       key,
       plaintext: encodeUtf8(JSON.stringify(plaintext)),
