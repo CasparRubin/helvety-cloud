@@ -25,27 +25,16 @@ export const LEGAL_DOC_SLUGS = [
 ] as const;
 export type LegalDocSlug = (typeof LEGAL_DOC_SLUGS)[number];
 
+/** Locale-agnostic hrefs and signup mapping. Display titles live in i18n `legalChrome`. */
 export const LEGAL_DOC_META: Record<
   LegalDocSlug,
-  { title: string; href: `/legal/${LegalDocSlug}`; signupPolicy?: SignupPolicyId }
+  { href: `/legal/${LegalDocSlug}`; signupPolicy?: SignupPolicyId }
 > = {
-  impressum: { title: "Impressum", href: "/legal/impressum" },
-  terms: { title: "Terms of Service", href: "/legal/terms", signupPolicy: "tos" },
-  privacy: {
-    title: "Privacy Policy",
-    href: "/legal/privacy",
-    signupPolicy: "privacy",
-  },
-  aup: {
-    title: "Acceptable Use Policy",
-    href: "/legal/aup",
-    signupPolicy: "aup",
-  },
-  e2ee: {
-    title: "E2EE / zero-access notice",
-    href: "/legal/e2ee",
-    signupPolicy: "e2ee",
-  },
-  billing: { title: "Billing terms", href: "/legal/billing" },
-  subprocessors: { title: "Subprocessors", href: "/legal/subprocessors" },
+  impressum: { href: "/legal/impressum" },
+  terms: { href: "/legal/terms", signupPolicy: "tos" },
+  privacy: { href: "/legal/privacy", signupPolicy: "privacy" },
+  aup: { href: "/legal/aup", signupPolicy: "aup" },
+  e2ee: { href: "/legal/e2ee", signupPolicy: "e2ee" },
+  billing: { href: "/legal/billing" },
+  subprocessors: { href: "/legal/subprocessors" },
 };

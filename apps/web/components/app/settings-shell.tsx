@@ -1,15 +1,16 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { useTranslations } from "next-intl";
 
+import { Link, usePathname } from "@/i18n/navigation";
 import { cn } from "@/lib/utils";
+import type { SettingsNavItem } from "@/lib/settings-nav";
 
-type SettingsNavItem = {
-  href: string;
-  label: string;
-  destructive?: boolean;
-};
+export {
+  accountSettingsNavItems,
+  projectSettingsNavItems,
+  workspaceSettingsNavItems,
+} from "@/lib/settings-nav";
 
 type SettingsShellProps = {
   title: string;
@@ -29,6 +30,7 @@ export function SettingsShell({
   children,
 }: SettingsShellProps) {
   const pathname = usePathname();
+  const t = useTranslations("shell");
 
   return (
     <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
@@ -41,7 +43,7 @@ export function SettingsShell({
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 md:flex-row md:gap-8">
         <nav
-          aria-label="Settings sections"
+          aria-label={t("settingsSections")}
           className="flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-2 md:w-44 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:pb-0 md:pr-4"
         >
           {items.map((item) => {
@@ -70,50 +72,4 @@ export function SettingsShell({
       </div>
     </div>
   );
-}
-
-export function projectSettingsNavItems(
-  workspaceId: string,
-  projectId: string,
-): SettingsNavItem[] {
-  const base = `/app/w/${workspaceId}/p/${projectId}/settings`;
-  return [
-    { href: `${base}/general`, label: "General" },
-    { href: `${base}/stages`, label: "Task stages" },
-    { href: `${base}/labels`, label: "Task labels" },
-    { href: `${base}/priorities`, label: "Task priorities" },
-    { href: `${base}/import`, label: "Import" },
-    { href: `${base}/danger`, label: "Danger zone", destructive: true },
-  ];
-}
-
-export function workspaceSettingsNavItems(
-  workspaceId: string,
-  opts?: { showDanger?: boolean },
-): SettingsNavItem[] {
-  const base = `/app/w/${workspaceId}/settings`;
-  const items: SettingsNavItem[] = [
-    { href: `${base}/general`, label: "General" },
-    { href: `${base}/members`, label: "Members" },
-    { href: `${base}/billing`, label: "Billing" },
-  ];
-  if (opts?.showDanger !== false) {
-    items.push({
-      href: `${base}/danger`,
-      label: "Danger zone",
-      destructive: true,
-    });
-  }
-  return items;
-}
-
-export function accountSettingsNavItems(): SettingsNavItem[] {
-  return [
-    { href: "/app/account/general", label: "General" },
-    {
-      href: "/app/account/danger",
-      label: "Danger zone",
-      destructive: true,
-    },
-  ];
 }

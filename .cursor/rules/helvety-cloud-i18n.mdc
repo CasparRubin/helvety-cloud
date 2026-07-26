@@ -1,0 +1,33 @@
+---
+description: Helvety Cloud i18n conventions (next-intl, locales, Swiss German).
+alwaysApply: true
+---
+
+# i18n
+
+## Stack
+
+- Library: `next-intl` with App Router locale routing
+- Locales: `en` (default), `de`, `fr`, `it`
+- `localePrefix: 'as-needed'` (English has no URL prefix)
+- UI catalogs: `apps/web/messages/{locale}.json`
+- Legal bodies: `apps/web/content/legal/{locale}/` (not in message JSON)
+- Navigation: `@/i18n/navigation` (`Link`, `redirect`, `useRouter`, `usePathname`)
+- Server redirects: `redirect({ href, locale })` and `return redirect(...)` for narrowing
+
+## Copy rules (all locales)
+
+- No em dashes (`—`). Prefer period, comma, colon, or parentheses.
+- Keep a clean, modern, concise product tone across languages.
+- Never claim Helvety can decrypt or recover encrypted content.
+
+## German (`de`) only: Swiss High German
+
+- Use Swiss orthography for the double-s sound: always `ss`, never `ß`.
+- Examples: `Strasse`, `gross`, `heiss`, `dass`, `muss`, `Schliessen`.
+- Write standard Swiss High German, not dialect.
+
+## Before finishing i18n text changes
+
+Search `apps/web/messages/` and `apps/web/content/legal/` for `—` and (in German) `ß`.
+Keep policy version IDs in `CURRENT_POLICY_VERSIONS` unchanged for translation-only edits.

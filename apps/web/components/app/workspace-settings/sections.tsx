@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
+import type { WorkspaceInvitation } from "@helvety-cloud/api-contract";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
-import {
-  invitationStatusLabel,
-  useWorkspaceSettings,
-} from "@/components/app/workspace-settings/provider";
+import { useWorkspaceSettings } from "@/components/app/workspace-settings/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -27,7 +26,54 @@ function SettingsError({ error }: { error: string | null }) {
   );
 }
 
+function roleLabel(
+  role: string,
+  t: (key: "owner" | "admin" | "member") => string,
+): string {
+  switch (role) {
+    case "owner":
+      return t("owner");
+    case "admin":
+      return t("admin");
+    case "member":
+      return t("member");
+    default:
+      return role;
+  }
+}
+
+function invitationStatusLabel(
+  status: WorkspaceInvitation["status"],
+  t: (
+    key:
+      | "labelWaitingForRecipient"
+      | "labelWaitingForOwnerSeal"
+      | "labelReadyToAccept"
+      | "labelAccepted"
+      | "labelCancelled",
+  ) => string,
+): string {
+  switch (status) {
+    case "waiting_for_recipient":
+      return t("labelWaitingForRecipient");
+    case "waiting_for_owner_seal":
+      return t("labelWaitingForOwnerSeal");
+    case "ready_to_accept":
+      return t("labelReadyToAccept");
+    case "accepted":
+      return t("labelAccepted");
+    case "cancelled":
+      return t("labelCancelled");
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
+
 export function WorkspaceGeneralSettings() {
+  const t = useTranslations("settings");
+  const tCommon = useTranslations("common");
   const {
     workspace,
     isPersonal,
@@ -40,7 +86,7 @@ export function WorkspaceGeneralSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">{t("workspaceNotFound")}</p>
     );
   }
 
@@ -49,7 +95,7 @@ export function WorkspaceGeneralSettings() {
       <SettingsError error={error} />
       <div className="flex flex-col gap-2">
         <Label htmlFor="ws-settings-name" required>
-          Name
+          {t("name")}
         </Label>
         <div className="flex gap-2">
           <Input
@@ -66,12 +112,12 @@ export function WorkspaceGeneralSettings() {
             }
             onClick={() => void onSaveName()}
           >
-            Save
+            {tCommon("save")}
           </Button>
         </div>
         {isPersonal ? (
           <p className="text-xs text-muted-foreground">
-            Personal workspace. Cannot be deleted.
+            {t("personalWorkspaceHint")}
           </p>
         ) : null}
       </div>
@@ -80,6 +126,9 @@ export function WorkspaceGeneralSettings() {
 }
 
 export function WorkspaceMembersSettings() {
+  const t = useTranslations("settings");
+  const tInvitations = useTranslations("invitations");
+  const tCommon = useTranslations("common");
   const { userKeys } = useCryptoSession();
   const {
     canManage,
@@ -114,21 +163,17 @@ export function WorkspaceMembersSettings() {
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
-      <p className="text-xs text-muted-foreground">
-        Invite by email. After they sign in and set up encryption, complete key
-        handoff on an unlocked device. Helvety never sees the workspace key or
-        your data.
-      </p>
+      <p className="text-xs text-muted-foreground">{t("membersInviteIntro")}</p>
 
       {canManage ? (
         <CreateEntityDialog
-          triggerLabel="Invite member"
-          dialogTitle="Invite member"
-          fieldLabel="Email"
-          fieldPlaceholder="teammate@example.com"
+          triggerLabel={t("inviteMember")}
+          dialogTitle={t("inviteMember")}
+          fieldLabel={t("inviteEmail")}
+          fieldPlaceholder={t("inviteEmailPlaceholder")}
           fieldType="email"
           fieldMaxLength={320}
-          confirmLabel="Invite"
+          confirmLabel={t("invite")}
           disabled={pending}
           onCreate={async (email) => {
             await onInvite({ email, role: inviteRole });
@@ -139,7 +184,7 @@ export function WorkspaceMembersSettings() {
         >
           <div className="flex flex-col gap-2">
             <Label htmlFor="invite-role" required>
-              Role
+              {t("role")}
             </Label>
             <select
               id="invite-role"
@@ -150,22 +195,23 @@ export function WorkspaceMembersSettings() {
                 setInviteRole(e.target.value as "member" | "admin")
               }
             >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
+              <option value="member">{t("member")}</option>
+              <option value="admin">{t("admin")}</option>
             </select>
           </div>
         </CreateEntityDialog>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Only owners and admins can invite members.
+          {t("onlyOwnersAdminsInvite")}
         </p>
       )}
 
       {seatLimitHit && isOwner && billing?.plan === "free" ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5">
           <p className="text-xs text-muted-foreground">
-            The free plan includes {formatLimit(billing.limits.members)} seats
-            per workspace.
+            {t("freePlanSeats", {
+              count: formatLimit(billing.limits.members),
+            })}
           </p>
           <Button
             type="button"
@@ -173,17 +219,17 @@ export function WorkspaceMembersSettings() {
             disabled={pending}
             onClick={() => void onUpgrade()}
           >
-            Upgrade to Pro
+            {t("upgradeToPro")}
           </Button>
         </div>
       ) : null}
 
       <div className="flex flex-col gap-2">
         <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-          Members
+          {t("members")}
         </p>
         {membersLoading ? (
-          <p className="text-xs text-muted-foreground">Loading…</p>
+          <p className="text-xs text-muted-foreground">{tCommon("loading")}</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
             {members.map((m) => (
@@ -194,7 +240,9 @@ export function WorkspaceMembersSettings() {
                 <span className="truncate font-mono text-xs">
                   {m.userId.slice(0, 8)}…
                 </span>
-                <span className="text-xs text-muted-foreground">{m.role}</span>
+                <span className="text-xs text-muted-foreground">
+                  {roleLabel(m.role, t)}
+                </span>
               </li>
             ))}
           </ul>
@@ -204,10 +252,10 @@ export function WorkspaceMembersSettings() {
       {canManage ? (
         <div className="flex flex-col gap-2">
           <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Pending invitations
+            {t("pendingInvitations")}
           </p>
           {activeInvites.length === 0 ? (
-            <p className="text-xs text-muted-foreground">None</p>
+            <p className="text-xs text-muted-foreground">{t("none")}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {activeInvites.map((invitation) => (
@@ -218,8 +266,8 @@ export function WorkspaceMembersSettings() {
                   <div className="min-w-0">
                     <p className="truncate text-sm">{invitation.email}</p>
                     <p className="text-[11px] text-muted-foreground">
-                      {invitationStatusLabel(invitation.status)} ·{" "}
-                      {invitation.role}
+                      {invitationStatusLabel(invitation.status, tInvitations)} ·{" "}
+                      {roleLabel(invitation.role, t)}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-1">
@@ -230,7 +278,9 @@ export function WorkspaceMembersSettings() {
                       disabled={pending}
                       onClick={() => void onCopyInvite(invitation)}
                     >
-                      {copiedId === invitation.id ? "Copied" : "Copy invite"}
+                      {copiedId === invitation.id
+                        ? t("copied")
+                        : t("copyInvite")}
                     </Button>
                     {invitation.status === "waiting_for_owner_seal" ? (
                       <Button
@@ -239,7 +289,7 @@ export function WorkspaceMembersSettings() {
                         disabled={pending || !userKeys}
                         onClick={() => void onSeal(invitation)}
                       >
-                        Complete key handoff
+                        {t("completeKeyHandoff")}
                       </Button>
                     ) : null}
                     <Button
@@ -249,7 +299,7 @@ export function WorkspaceMembersSettings() {
                       disabled={pending}
                       onClick={() => void onCancel(invitation)}
                     >
-                      Cancel
+                      {tCommon("cancel")}
                     </Button>
                   </div>
                 </li>
@@ -263,6 +313,7 @@ export function WorkspaceMembersSettings() {
 }
 
 export function WorkspaceBillingSettings() {
+  const t = useTranslations("settings");
   const {
     isOwner,
     billing,
@@ -290,21 +341,30 @@ export function WorkspaceBillingSettings() {
     <div className="flex max-w-xl flex-col gap-3">
       <SettingsError error={error} />
       {billingLoading && !billing ? (
-        <p className="text-xs text-muted-foreground">Loading billing…</p>
+        <p className="text-xs text-muted-foreground">{t("loadingBilling")}</p>
       ) : billing ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-2 rounded-md border border-border px-3 py-2">
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
-                Plan: <span className="uppercase">{billing.plan}</span>
-                {isComplimentary ? " · complimentary" : ""}
+                {t.rich("planLine", {
+                  plan: () => (
+                    <span className="uppercase">{billing.plan}</span>
+                  ),
+                })}
+                {isComplimentary ? ` · ${t("complimentary")}` : ""}
                 {!isComplimentary && billing.discountPercentOff
-                  ? ` · ${billing.discountPercentOff}% off`
+                  ? ` · ${t("percentOff", { percent: billing.discountPercentOff })}`
                   : ""}
                 {" · "}
-                Seats {billing.usage.members + billing.usage.pendingInvitations}/
-                {formatLimit(billing.limits.members)}
-                {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
+                {t("seatsUsage", {
+                  used:
+                    billing.usage.members + billing.usage.pendingInvitations,
+                  limit: formatLimit(billing.limits.members),
+                })}
+                {billing.cancelAtPeriodEnd
+                  ? ` · ${t("cancelsAtPeriodEnd")}`
+                  : ""}
               </p>
               {isOwner ? (
                 billing.plan === "free" ? (
@@ -315,7 +375,7 @@ export function WorkspaceBillingSettings() {
                     disabled={pending}
                     onClick={() => void onUpgrade()}
                   >
-                    Upgrade to Pro
+                    {t("upgradeToPro")}
                   </Button>
                 ) : billing.billingSource === "stripe" &&
                   billing.hasStripeCustomer ? (
@@ -326,54 +386,69 @@ export function WorkspaceBillingSettings() {
                     disabled={pending}
                     onClick={() => void onManageBilling()}
                   >
-                    Manage billing
+                    {t("manageBilling")}
                   </Button>
                 ) : null
               ) : (
                 <p className="text-xs text-muted-foreground">
-                  Only the owner can manage billing.
+                  {t("onlyOwnerManageBilling")}
                 </p>
               )}
             </div>
             {billing.freeOverflowLocked ? (
               <p className="text-xs text-muted-foreground">
-                New creates are paused because this workspace is over the free
-                allowance (two free workspaces per account). Existing content
-                stays available. Upgrade to Pro, or reduce owned free workspaces
-                to unlock creates again.
+                {t("freeOverflowLocked")}
               </p>
             ) : null}
             {isComplimentary ? (
               <p className="text-xs text-muted-foreground">
-                Unmetered Pro limits. Helvety cannot decrypt or recover your
-                data.
+                {t("unmeteredProLimits")}
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">
-              Projects {billing.usage.projects}/
-              {formatLimit(billing.limits.projects)}
+              {t("usageProjects", {
+                used: billing.usage.projects,
+                limit: formatLimit(billing.limits.projects),
+              })}
               {" · "}
-              Notes {billing.usage.notes}/{formatLimit(billing.limits.notes)}
+              {t("usageNotes", {
+                used: billing.usage.notes,
+                limit: formatLimit(billing.limits.notes),
+              })}
               {" · "}
-              Contacts {billing.usage.contacts}/
-              {formatLimit(billing.limits.contacts)}
+              {t("usageContacts", {
+                used: billing.usage.contacts,
+                limit: formatLimit(billing.limits.contacts),
+              })}
               {" · "}
-              Tasks/project cap {formatLimit(billing.limits.tasks)}
+              {t("usageTasksPerProject", {
+                limit: formatLimit(billing.limits.tasks),
+              })}
             </p>
             <p className="text-xs text-muted-foreground">
-              File storage:{" "}
+              {t("fileStorage")}{" "}
               {billing.limits.storageBytes === null
-                ? `${formatBytes(billing.usage.storageBytes)} used · unmetered (max ${formatBytes(billing.limits.maxUploadBytes)} per file)`
+                ? t("storageUnmetered", {
+                    used: formatBytes(billing.usage.storageBytes),
+                    maxUpload: formatBytes(billing.limits.maxUploadBytes),
+                  })
                 : billing.limits.storageBytes === 0
-                  ? "not included on Free (upgrade to attach files)"
-                  : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file; ${formatLimit(billing.limits.filesPerTask)} files/task)`}
+                  ? t("storageNotIncluded")
+                  : t("storageMetered", {
+                      used: formatBytes(billing.usage.storageBytes),
+                      limit: formatBytes(billing.limits.storageBytes),
+                      maxUpload: formatBytes(billing.limits.maxUploadBytes),
+                      filesPerTask: formatLimit(billing.limits.filesPerTask),
+                    })}
             </p>
             {isOwner && discountApplied ? (
               <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
                 <p className="text-xs text-muted-foreground">
                   {isComplimentary
-                    ? "Complimentary code applied"
-                    : `${billing.discountPercentOff}% discount applied`}
+                    ? t("complimentaryCodeApplied")
+                    : t("discountApplied", {
+                        percent: billing.discountPercentOff ?? 0,
+                      })}
                 </p>
                 <Button
                   type="button"
@@ -382,7 +457,7 @@ export function WorkspaceBillingSettings() {
                   disabled={pending}
                   onClick={() => void onRemoveDiscount()}
                 >
-                  Remove
+                  {t("removeDiscount")}
                 </Button>
               </div>
             ) : null}
@@ -398,14 +473,14 @@ export function WorkspaceBillingSettings() {
               }}
             >
               <Label htmlFor="discount-code" className="text-xs">
-                Discount or complimentary code
+                {t("discountOrCompCode")}
               </Label>
               <div className="flex gap-2">
                 <Input
                   id="discount-code"
                   value={discountCode}
                   onChange={(event) => setDiscountCode(event.target.value)}
-                  placeholder="Enter code"
+                  placeholder={t("enterCode")}
                   disabled={pending}
                   autoComplete="off"
                   className="font-mono text-xs"
@@ -416,7 +491,7 @@ export function WorkspaceBillingSettings() {
                   variant="outline"
                   disabled={pending || discountCode.trim().length < 8}
                 >
-                  Apply
+                  {t("apply")}
                 </Button>
               </div>
             </form>
@@ -424,7 +499,7 @@ export function WorkspaceBillingSettings() {
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Billing information unavailable.
+          {t("billingUnavailable")}
         </p>
       )}
     </div>
@@ -432,6 +507,7 @@ export function WorkspaceBillingSettings() {
 }
 
 export function WorkspaceDangerSettings() {
+  const t = useTranslations("settings");
   const {
     workspace,
     isOwner,
@@ -453,15 +529,13 @@ export function WorkspaceDangerSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">{t("workspaceNotFound")}</p>
     );
   }
 
   if (!isOwner) {
     return (
-      <p className="text-sm text-muted-foreground">
-        Only the workspace owner can access the danger zone.
-      </p>
+      <p className="text-sm text-muted-foreground">{t("onlyOwnerDangerZone")}</p>
     );
   }
 
@@ -470,27 +544,26 @@ export function WorkspaceDangerSettings() {
       <SettingsError error={error} />
       {isPersonal ? (
         <p className="text-xs text-muted-foreground">
-          Your personal workspace cannot be deleted. It is created with your
-          encryption setup and anchors your account.
+          {t("personalCannotDelete")}
         </p>
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
-            Permanently delete this workspace and all projects, tasks, notes,
-            contacts, files, invitations, and sharing. This cannot be undone.
-            Helvety cannot recover deleted data.
+            {t("deleteWorkspaceWarning")}
           </p>
           {needsBillingCancel ? (
             <p className="text-xs text-muted-foreground">
-              Cancel the Pro subscription in Manage billing before deleting this
-              workspace.
+              {t("cancelProBeforeDelete")}
             </p>
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex flex-1 flex-col gap-1">
               <Label htmlFor="ws-delete-confirm" className="text-xs">
-                Type <span className="font-medium">{workspace.name}</span> to
-                confirm
+                {t.rich("typeNameToConfirm", {
+                  name: () => (
+                    <span className="font-medium">{workspace.name}</span>
+                  ),
+                })}
               </Label>
               <Input
                 id="ws-delete-confirm"
@@ -510,14 +583,14 @@ export function WorkspaceDangerSettings() {
               }
               onClick={() => setDeleteOpen(true)}
             >
-              Delete workspace
+              {t("deleteWorkspace")}
             </Button>
           </div>
           <ConfirmDeleteDialog
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
-            title={`Delete workspace “${workspace.name}”?`}
-            description="This permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            title={t("deleteWorkspaceTitle", { name: workspace.name })}
+            description={t("deleteWorkspaceDescription")}
             busy={pending}
             onConfirm={onDeleteWorkspace}
           />

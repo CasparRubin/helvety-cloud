@@ -23,6 +23,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | Forbidden DB | Old `helvety` project `bkdzeihxzvrkndjvyzye` |
 | Billing | Stripe workspace subscriptions (**P6f** / **P12**); no Clerk in foundation |
 | UI | shadcn/ui with **Base UI** primitives (`npx shadcn init` default). Do **not** init with `-b radix` |
+| i18n | `next-intl`; locales `en` (default), `de`, `fr`, `it`; `localePrefix: as-needed` |
 
 ## Phases
 
@@ -54,9 +55,11 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P12 | Billing Free / Pro / addons / discounts | **Done** |
 | P13 | Clean baseline + constrained entity links | **Done** |
 | P14 | Encrypted names + milestone dates + progress chart | **Done** |
+| P15 | i18n (en/de/fr/it) via next-intl | **Done** |
 
 ## Tooling
 
 - Schema: `supabase/schemas` → diff → migrations → MCP `apply_migration` / `db push` → generate types → `get_advisors`
 - Hosting: Vercel MCP/skills, Hobby only
 - Prefer MCP over guessing live DB state
+- i18n: `next-intl`; UI strings in `apps/web/messages/{locale}.json`; legal bodies in `apps/web/content/legal/{locale}/`; German uses Swiss `ss` (never `ß`)

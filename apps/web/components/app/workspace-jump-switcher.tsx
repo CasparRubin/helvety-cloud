@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   ChevronsUpDownIcon,
@@ -36,6 +35,7 @@ import {
   loadDecryptedProjects,
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
+import { useRouter } from "@/i18n/navigation";
 
 type WorkspaceJumpSwitcherProps = {
   workspaceId: string;

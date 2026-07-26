@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 import { CheckIcon, ChevronsUpDownIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,6 +26,7 @@ import { Spinner } from "@/components/ui/spinner";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { storeLastWorkspaceId } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
+import { useRouter } from "@/i18n/navigation";
 
 type WorkspaceSwitcherProps = {
   userId: string;
@@ -36,6 +37,9 @@ export function WorkspaceSwitcher({
   userId,
   activeWorkspaceId,
 }: WorkspaceSwitcherProps) {
+  const t = useTranslations("shell");
+  const tSettings = useTranslations("settings");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const { workspaces, createWorkspace, renameWorkspace } = useCryptoSession();
   const [createOpen, setCreateOpen] = useState(false);
@@ -63,7 +67,7 @@ export function WorkspaceSwitcher({
       setName("");
       selectWorkspace(created.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+      setError(err instanceof Error ? err.message : t("createFailed"));
     } finally {
       setPending(false);
     }
@@ -80,7 +84,7 @@ export function WorkspaceSwitcher({
       setRenameOpen(false);
       setName("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Rename failed");
+      setError(err instanceof Error ? err.message : t("renameFailed"));
     } finally {
       setPending(false);
     }
@@ -99,7 +103,7 @@ export function WorkspaceSwitcher({
           }
         >
           <span className="truncate text-left text-sm">
-            {active?.name ?? "Workspaces"}
+            {active?.name ?? t("workspaces")}
           </span>
           <ChevronsUpDownIcon className="size-3.5 shrink-0 opacity-60" />
         </DropdownMenuTrigger>
@@ -121,7 +125,7 @@ export function WorkspaceSwitcher({
               <span className="truncate">{workspace.name}</span>
               {workspace.kind === "personal" ? (
                 <span className="ml-auto text-[10px] text-muted-foreground">
-                  Personal
+                  {t("personal")}
                 </span>
               ) : null}
             </DropdownMenuItem>
@@ -135,7 +139,7 @@ export function WorkspaceSwitcher({
             }}
           >
             <PlusIcon className="size-3.5" />
-            New workspace
+            {t("newWorkspace")}
           </DropdownMenuItem>
           {active ? (
             <DropdownMenuItem
@@ -145,7 +149,7 @@ export function WorkspaceSwitcher({
                 setRenameOpen(true);
               }}
             >
-              Rename…
+              {t("renameEllipsis")}
             </DropdownMenuItem>
           ) : null}
           {active ? (
@@ -154,7 +158,7 @@ export function WorkspaceSwitcher({
                 router.push(`/app/w/${active.id}/settings/general`)
               }
             >
-              Workspace settings
+              {tSettings("workspaceSettings")}
             </DropdownMenuItem>
           ) : null}
         </DropdownMenuContent>
@@ -163,21 +167,20 @@ export function WorkspaceSwitcher({
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New workspace</DialogTitle>
+            <DialogTitle>{t("newWorkspace")}</DialogTitle>
             <DialogDescription>
-              Creates a new workspace with its own key. The name is encrypted
-              with that key, so Helvety cannot read it.
+              {t("newWorkspaceDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor="ws-create-name" required>
-              Name
+              {tSettings("name")}
             </Label>
             <Input
               id="ws-create-name"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              placeholder="Team workspace"
+              placeholder={t("namePlaceholderTeam")}
               maxLength={120}
               disabled={pending}
               onKeyDown={(e) => {
@@ -195,7 +198,7 @@ export function WorkspaceSwitcher({
               disabled={pending}
               onClick={() => setCreateOpen(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="button"
@@ -203,7 +206,7 @@ export function WorkspaceSwitcher({
               onClick={() => void onCreate()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              Create
+              {tCommon("create")}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -212,15 +215,14 @@ export function WorkspaceSwitcher({
       <Dialog open={renameOpen} onOpenChange={setRenameOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Rename workspace</DialogTitle>
+            <DialogTitle>{t("renameWorkspace")}</DialogTitle>
             <DialogDescription>
-              Updates the display name. Kind (Personal vs standard) cannot
-              change.
+              {t("renameWorkspaceDescription")}
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
             <Label htmlFor="ws-rename-name" required>
-              Name
+              {tSettings("name")}
             </Label>
             <Input
               id="ws-rename-name"
@@ -243,7 +245,7 @@ export function WorkspaceSwitcher({
               disabled={pending}
               onClick={() => setRenameOpen(false)}
             >
-              Cancel
+              {tCommon("cancel")}
             </Button>
             <Button
               type="button"
@@ -251,7 +253,7 @@ export function WorkspaceSwitcher({
               onClick={() => void onRename()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              Save
+              {tCommon("save")}
             </Button>
           </DialogFooter>
         </DialogContent>

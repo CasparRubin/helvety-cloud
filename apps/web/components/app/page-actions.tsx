@@ -1,6 +1,6 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   createContext,
   useCallback,
@@ -11,6 +11,7 @@ import {
 } from "react";
 import { createPortal } from "react-dom";
 import { SettingsIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -103,6 +104,7 @@ export function WorkspaceSettingsAction({
 }: {
   workspaceId: string;
 }) {
+  const t = useTranslations("settings");
   return (
     <PageSettingsActions>
       <Button
@@ -112,7 +114,7 @@ export function WorkspaceSettingsAction({
         nativeButton={false}
       >
         <SettingsIcon />
-        Workspace settings
+        {t("workspaceSettings")}
       </Button>
     </PageSettingsActions>
   );

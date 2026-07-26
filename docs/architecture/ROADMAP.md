@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 + P14 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. **P14** encrypts workspace names, milestone start/end dates, stage completion weights, and the project progress chart. Stripe billing landed in **P6f** and extended in **P12** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 + P14 + P15 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. **P14** encrypts workspace names, milestone start/end dates, stage completion weights, and the project progress chart. **P15** is full-app i18n (en/de/fr/it) via next-intl. Stripe billing landed in **P6f** and extended in **P12** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -639,6 +639,25 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
+### P15: Full-app i18n (en / de / fr / it)
+
+**Status:** **Done**
+
+**Goal:** Localize product UI and legal pack with `next-intl`, language switcher beside theme toggle.
+
+- Locales: `en` (default), `de`, `fr`, `it`; `localePrefix: 'as-needed'`
+- UI catalogs: `apps/web/messages/{locale}.json`
+- Legal bodies: `apps/web/content/legal/{locale}/` (kept out of the UI message bundle)
+- Language switcher + theme toggle in app shell and public chrome (`HeaderControls`)
+- German: Swiss High German orthography (`ss`, never `ß`); no em dashes in any locale
+- Policy version IDs unchanged for translation-only work
+
+**Don’t:** Paid i18n SaaS; locale-specific pathnames (`/rechnung`); RTL; bumping `CURRENT_POLICY_VERSIONS` solely for translations.
+
+**Done when:** Switching language updates chrome + legal for en/de/fr/it; English URLs stay unprefixed; catalogs have no `—` / German has no `ß`.
+
+---
+
 ## 5. Crypto & E2EE (reference)
 
 ```text
@@ -671,7 +690,7 @@ workspace_key / project_key (random)
 
 ## 7. Legal (reference, not legal advice)
 
-**Live pack (P-legal2):** Impressum, ToS, Privacy, AUP, E2EE notice, billing terms, subprocessors under `/legal/*` (`apps/web/content/legal/`).
+**Live pack (P-legal2):** Impressum, ToS, Privacy, AUP, E2EE notice, billing terms, subprocessors under `/legal/*` (`apps/web/content/legal/{locale}/`, English default).
 
 **Signup must accept (log versions):** ToS, Privacy, AUP, E2EE acknowledgment.
 
@@ -720,4 +739,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 + P14 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 + P14 + P15 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

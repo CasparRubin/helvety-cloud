@@ -1,8 +1,8 @@
 "use client";
 
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
@@ -29,6 +29,8 @@ type NoteListProps = {
 };
 
 export function NoteList({ workspaceId }: NoteListProps) {
+  const t = useTranslations("notes");
+  const tCommon = useTranslations("common");
   const router = useRouter();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
 
@@ -51,7 +53,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
         setError(null);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load notes");
+        setError(e instanceof Error ? e.message : t("loadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -59,7 +61,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, workspaceId, getWorkspaceKey]);
+  }, [userKeys, workspaceId, getWorkspaceKey, t]);
 
   function resetCreateFields() {
     setNewBody("");
@@ -94,10 +96,10 @@ export function NoteList({ workspaceId }: NoteListProps) {
     <>
       <PageActions>
         <CreateEntityDialog
-          triggerLabel="Create note"
-          dialogTitle="Create note"
-          fieldLabel="Title"
-          fieldPlaceholder="New note title"
+          triggerLabel={t("createTitle")}
+          dialogTitle={t("createTitle")}
+          fieldLabel={t("titleLabel")}
+          fieldPlaceholder={t("namePlaceholder")}
           fieldMaxLength={500}
           disabled={busy}
           onCreate={onCreate}
@@ -106,12 +108,12 @@ export function NoteList({ workspaceId }: NoteListProps) {
           }}
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-note-body">Note</Label>
+            <Label htmlFor="new-note-body">{t("bodyLabel")}</Label>
             <Textarea
               id="new-note-body"
               value={newBody}
               onChange={(e) => setNewBody(e.target.value)}
-              placeholder="Write a note…"
+              placeholder={t("bodyPlaceholder")}
               disabled={busy}
               rows={3}
             />
@@ -120,12 +122,12 @@ export function NoteList({ workspaceId }: NoteListProps) {
       </PageActions>
       <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
-        title="Notes"
+        title={t("title")}
         error={error}
         loading={loading}
-        loadingLabel="Loading notes…"
+        loadingLabel={t("loading")}
         empty={!loading && notes.length === 0}
-        emptyLabel="No notes yet."
+        emptyLabel={t("empty")}
       >
         {notes.map((note) => (
           <EntityListRow key={note.id}>
@@ -133,11 +135,14 @@ export function NoteList({ workspaceId }: NoteListProps) {
               href={`/app/w/${workspaceId}/notes/${note.id}`}
               className="flex w-full flex-col gap-0.5"
             >
-              <span className="font-medium">{note.title || "Untitled"}</span>
+              <span className="font-medium">
+                {note.title || tCommon("untitled")}
+              </span>
               <span className="text-xs text-muted-foreground">
-                Created {formatDateTime(note.createdAt)}
-                {" · "}
-                Modified {formatDateTime(note.updatedAt)}
+                {t("createdModified", {
+                  created: formatDateTime(note.createdAt),
+                  modified: formatDateTime(note.updatedAt),
+                })}
               </span>
             </Link>
           </EntityListRow>

@@ -7,7 +7,6 @@ import {
   useEffect,
   useState,
 } from "react";
-import { useRouter } from "next/navigation";
 
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
@@ -36,6 +35,7 @@ import {
   projectPlaintextFrom,
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
+import { useRouter } from "@/i18n/navigation";
 
 type ProjectSettingsContextValue = {
   project: DecryptedProject | null;

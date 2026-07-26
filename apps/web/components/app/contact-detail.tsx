@@ -1,6 +1,5 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
@@ -45,6 +44,7 @@ import {
   EMPTY_TASK_BODY,
   type TaskBodyDoc,
 } from "@/lib/client-crypto/task-plaintext";
+import { useRouter } from "@/i18n/navigation";
 
 type ContactDetailProps = {
   workspaceId: string;

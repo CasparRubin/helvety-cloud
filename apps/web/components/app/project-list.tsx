@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link, useRouter } from "@/i18n/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { SettingsIcon } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
@@ -31,6 +31,9 @@ type ProjectListProps = {
 };
 
 export function ProjectList({ workspaceId }: ProjectListProps) {
+  const t = useTranslations("projects");
+  const tShell = useTranslations("shell");
+  const tSettings = useTranslations("settings");
   const router = useRouter();
   const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const workspace = workspaces.find((w) => w.id === workspaceId);
@@ -63,7 +66,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
         setError(null);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : "Failed to load projects");
+        setError(e instanceof Error ? e.message : t("loadFailed"));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -71,7 +74,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, loadProjects]);
+  }, [userKeys, loadProjects, t]);
 
   async function onCreate(name: string) {
     setBusy(true);
@@ -106,7 +109,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       setProjects(next);
       window.dispatchEvent(new Event("helvety:projects-changed"));
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Reorder failed");
+      setError(err instanceof Error ? err.message : t("reorderFailed"));
       try {
         await refresh();
       } catch {
@@ -123,10 +126,10 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     <>
       <PageActions>
         <CreateEntityDialog
-          triggerLabel="Create project"
-          dialogTitle="Create project"
-          fieldLabel="Name"
-          fieldPlaceholder="New project name"
+          triggerLabel={t("createTitle")}
+          dialogTitle={t("createTitle")}
+          fieldLabel={tSettings("name")}
+          fieldPlaceholder={t("namePlaceholder")}
           fieldMaxLength={120}
           disabled={busy}
           onCreate={onCreate}
@@ -135,12 +138,12 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
           }}
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-project-description">Description</Label>
+            <Label htmlFor="new-project-description">{t("description")}</Label>
             <Textarea
               id="new-project-description"
               value={newDescription}
               onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Add a project description…"
+              placeholder={t("descriptionPlaceholder")}
               disabled={busy}
               rows={3}
             />
@@ -149,12 +152,12 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       </PageActions>
       <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
-        title={workspace?.name ?? "Workspace"}
+        title={workspace?.name ?? tShell("workspace")}
         error={error}
         loading={loading}
-        loadingLabel="Loading projects…"
+        loadingLabel={t("loading")}
         empty={!loading && projects.length === 0}
-        emptyLabel="No projects yet."
+        emptyLabel={t("empty")}
       >
         {projects.map((project, index) => (
           <EntityListRow
@@ -174,7 +177,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                 size="sm"
                 disabled={busy || index === 0}
                 onClick={() => void onReorder(index, "up")}
-                aria-label="Move up"
+                aria-label={t("moveUp")}
               >
                 ↑
               </Button>
@@ -184,14 +187,14 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                 size="sm"
                 disabled={busy || index === projects.length - 1}
                 onClick={() => void onReorder(index, "down")}
-                aria-label="Move down"
+                aria-label={t("moveDown")}
               >
                 ↓
               </Button>
               <Button
                 variant="ghost"
                 size="sm"
-                aria-label={`Project settings for ${project.name}`}
+                aria-label={t("projectSettingsFor", { name: project.name })}
                 render={
                   <Link
                     href={`/app/w/${workspaceId}/p/${project.id}/settings/general`}
