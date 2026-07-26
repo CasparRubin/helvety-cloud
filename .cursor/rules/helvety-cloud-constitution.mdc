@@ -17,9 +17,11 @@ Before feature work, read `AGENTS.md` and `docs/architecture/ROADMAP.md`. Implem
 - Supabase project `qnoeiurmyyyuawkcifmw` (helvety-cloud, Zurich) only, never `bkdzeihxzvrkndjvyzye`.
 - Prefer Supabase/Vercel MCP and schema-as-code (`docs/architecture/SCHEMA_WORKFLOW.md`).
 - No misleading E2EE/recovery claims in UI or docs (`docs/architecture/LEGAL_REQUIREMENTS.md`).
+- Keep `docs/assets/icon.af` (Affinity brand icon master). See `docs/assets/README.md`.
 
 ## Must not
 
 - Invent multi-phase roadmaps or ship many unrelated changes in one chat unless the user explicitly expands scope.
 - Add paid SaaS “for best practice” (Stripe for customer billing is fine).
 - Public signup/billing without the live legal pack and acceptance gates (P-legal2). Counsel review is optional for risk, not a product gate.
+- Delete `docs/assets/icon.af` or other files under `docs/assets/` during cleanup (no-code-references is not a reason to remove them).

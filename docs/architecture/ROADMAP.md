@@ -94,6 +94,7 @@ helvety-cloud/
     schemas/                # declarative source of truth
     migrations/
   docs/architecture/        # this file + deep docs
+  docs/assets/              # brand design masters (KEEP icon.af)
   .cursor/rules|skills/
 ```
 
@@ -193,3 +194,4 @@ API hard rules and route table: [`API.md`](./API.md). Later sync batch (`sync/pu
 - Public launch without legal pack  
 - User-global contacts/notes store; notes with `workspace_id = null`  
 - Re-adding next-intl / multi-locale UI after P15 revert  
+- Deleting `docs/assets/icon.af` (brand Affinity master; see [`docs/assets/README.md`](../assets/README.md))  

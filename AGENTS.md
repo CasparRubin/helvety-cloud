@@ -11,6 +11,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) for locked d
 5. **Public API** = `/api/v1` + Bearer JWT. Browser may use Supabase **Auth** SDK; must **not** use PostgREST `from('…')` for encrypted entity tables.
 6. **Honesty.** Never claim Helvety can read or recover encrypted data. Live legal pack + acceptance gates (P-legal2); optional counsel is a business choice.
 7. **Workspace-scoped encryption.** All encrypted entities (projects, tasks, notes, contacts) live in a workspace. **Personal workspace** on first encryption setup. No user-global contacts/notes store; no `workspace_id = null`.
+8. **Keep brand design masters.** Never delete [`docs/assets/icon.af`](docs/assets/icon.af) on cleanup (see [`docs/assets/README.md`](docs/assets/README.md)).
 
 ## Stack (locked)
 
