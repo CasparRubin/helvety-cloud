@@ -404,7 +404,7 @@ export function TaskBodyEditor({
               Link existing…
             </Button>
             {showLinkPicker ? (
-              <div className="w-full min-w-[14rem] space-y-1 border-t border-border pt-1">
+              <div className="w-full min-w-0 space-y-1 border-t border-border pt-1 sm:min-w-[14rem]">
                 <input
                   className="h-8 w-full rounded-lg border border-input bg-background px-2.5 text-xs"
                   placeholder="Search…"

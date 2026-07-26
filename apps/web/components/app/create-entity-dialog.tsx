@@ -107,9 +107,10 @@ export function CreateEntityDialog({
         size="sm"
         disabled={disabled || pending}
         onClick={() => handleOpenChange(true)}
+        aria-label={triggerLabel}
       >
         <PlusIcon />
-        {triggerLabel}
+        <span className="hidden sm:inline">{triggerLabel}</span>
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
@@ -119,7 +120,7 @@ export function CreateEntityDialog({
           </DialogHeader>
           <div className="flex flex-col gap-4">
             {companion != null ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                 {primaryField}
                 {companion}
               </div>

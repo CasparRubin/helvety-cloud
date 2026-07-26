@@ -323,7 +323,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                 rows={3}
               />
             </div>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div className="flex flex-col gap-2">
                 <Label>Label</Label>
                 <CategorizationPicker
@@ -399,9 +399,10 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             />
           }
           nativeButton={false}
+          aria-label="Project settings"
         >
           <SettingsIcon />
-          Project settings
+          <span className="hidden sm:inline">Project settings</span>
         </Button>
       </PageSettingsActions>
       <EntityListShell
@@ -435,8 +436,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         bareChildren
       >
         {!loading && project ? (
-          <div className="flex min-h-0 flex-1 gap-4">
-            <div className="flex min-h-0 min-w-0 flex-[3] flex-col gap-3 overflow-y-auto pb-2">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
+            <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto pb-2 lg:flex-[3]">
               <DndContext
                 sensors={sensors}
                 collisionDetection={closestCorners}
@@ -481,7 +482,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               </DndContext>
             </div>
 
-            <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-y-auto border-l border-border/60 pl-4">
+            <aside className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-t border-border/60 pt-4 lg:flex-[1] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4">
               <ProjectMilestonesPanel
                 workspaceId={workspaceId}
                 projectId={projectId}

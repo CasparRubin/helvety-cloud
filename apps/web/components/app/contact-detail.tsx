@@ -282,7 +282,7 @@ export function ContactDetail({
       <EntityDetailLayout
         main={
           <>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
               <div className="flex min-w-0 flex-col gap-1.5">
                 <Label className="text-xs text-muted-foreground">
                   First name

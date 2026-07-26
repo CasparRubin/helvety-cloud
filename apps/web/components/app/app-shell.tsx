@@ -229,7 +229,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             </Link>
             <nav
               aria-label="Breadcrumb"
-              className="flex min-w-0 items-center gap-1.5 overflow-hidden"
+              className="flex min-w-0 items-center gap-1.5 overflow-x-auto"
             >
               <WorkspaceSwitcher
                 userId={userId}
@@ -331,9 +331,9 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
               ) : null}
               <div
                 aria-label="Page actions"
-                className="flex h-10 shrink-0 items-center gap-2 px-3"
+                className="flex h-10 min-w-0 shrink-0 items-center gap-2 px-3"
               >
-                <ButtonGroup>
+                <ButtonGroup className="shrink-0">
                   <NavBackButton
                     mode={backMode}
                     parentHref={parentHref}
@@ -356,7 +356,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
               )}
             </main>
             <div className="sticky bottom-0 z-30 md:hidden">
-              <AccountFooter email={email} />
+              <AccountFooter email={email} variant="mobile" />
             </div>
           </div>
         </div>

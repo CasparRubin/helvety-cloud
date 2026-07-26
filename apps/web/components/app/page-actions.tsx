@@ -110,9 +110,10 @@ export function WorkspaceSettingsAction({
         size="sm"
         render={<Link href={`/app/w/${workspaceId}/settings/general`} />}
         nativeButton={false}
+        aria-label="Workspace settings"
       >
         <SettingsIcon />
-        Workspace settings
+        <span className="hidden sm:inline">Workspace settings</span>
       </Button>
     </PageSettingsActions>
   );
@@ -121,12 +122,12 @@ export function WorkspaceSettingsAction({
 export function PageActionsSlot() {
   const { setActionsEl, setDangerEl, setSettingsEl } = usePageActionsContext();
   return (
-    <>
-      <ButtonGroup ref={setActionsEl} />
-      <div className="ml-auto flex items-stretch gap-2">
+    <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+      <ButtonGroup ref={setActionsEl} className="shrink-0" />
+      <div className="ml-auto flex shrink-0 items-stretch gap-2">
         <ButtonGroup ref={setDangerEl} />
         <ButtonGroup ref={setSettingsEl} />
       </div>
-    </>
+    </div>
   );
 }
