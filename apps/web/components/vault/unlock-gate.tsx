@@ -130,7 +130,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
   }
 
   return (
-    <Card className="w-full max-w-lg">
+    <Card className="w-full max-w-xl">
       <CardHeader className="justify-items-center text-center">
         <Image
           src="/icon.svg"

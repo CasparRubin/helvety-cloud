@@ -37,7 +37,7 @@ const GATE_LABELS: Record<
     prefix: "I acknowledge the",
     linkText: "E2EE / zero-access notice",
     suffix:
-      ": Helvety cannot decrypt or recover vault content; lost keys mean permanent loss; I am responsible for my content and keys.",
+      "Helvety cannot decrypt or recover vault content; lost keys mean permanent loss; I am responsible for my content and keys.",
     docSlug: "e2ee",
   },
 };
@@ -85,7 +85,7 @@ export function PolicyAcceptanceGate({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-md border border-border p-3">
+    <div className="flex flex-col gap-4 rounded-md border border-border p-4">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">Accept policies to continue</p>
         <p className="text-xs text-muted-foreground">
@@ -94,13 +94,15 @@ export function PolicyAcceptanceGate({
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <div className="flex flex-col gap-4">
         {SIGNUP_POLICY_IDS.map((id) => {
           const meta = GATE_LABELS[id];
           const href = LEGAL_DOC_META[meta.docSlug].href;
           const inputId = `policy-${id}`;
+          const isE2ee = id === "e2ee";
+
           return (
-            <div key={id} className="flex items-start gap-3">
+            <div key={id} className="flex min-w-0 items-start gap-3">
               <Checkbox
                 id={inputId}
                 checked={checked[id]}
@@ -112,7 +114,10 @@ export function PolicyAcceptanceGate({
                   }));
                 }}
               />
-              <Label htmlFor={inputId} className="text-sm leading-snug font-normal">
+              <Label
+                htmlFor={inputId}
+                className="block min-w-0 flex-1 cursor-pointer text-sm leading-relaxed font-normal"
+              >
                 {meta.prefix}{" "}
                 <a
                   href={href}
@@ -121,11 +126,15 @@ export function PolicyAcceptanceGate({
                   className="underline underline-offset-4"
                 >
                   {meta.linkText}
-                </a>
-                {meta.suffix ?? ""}{" "}
+                </a>{" "}
                 <span className="text-muted-foreground">
                   ({CURRENT_POLICY_VERSIONS[id]})
                 </span>
+                {isE2ee && meta.suffix ? (
+                  <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
+                    {meta.suffix}
+                  </span>
+                ) : null}
               </Label>
             </div>
           );
