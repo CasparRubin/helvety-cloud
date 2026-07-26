@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
@@ -11,13 +11,13 @@ import {
   type LucideIcon,
 } from "lucide-react";
 
+import { AccountFooter } from "@/components/app/account-footer";
 import {
   PageActionsProvider,
   PageActionsSlot,
 } from "@/components/app/page-actions";
 import { TaskJumpSwitcher } from "@/components/app/task-jump-switcher";
 import { ThemeToggle } from "@/components/app/theme-toggle";
-import { UserMenu } from "@/components/app/user-menu";
 import { WorkspaceJumpSwitcher } from "@/components/app/workspace-jump-switcher";
 import {
   NavBackButton,
@@ -35,12 +35,25 @@ import {
   useCryptoSession,
   CryptoSessionProvider,
 } from "@/components/unlock/crypto-session-provider";
+import { getWorkspaceBilling } from "@/lib/api/v1-client";
 import {
   loadLastWorkspaceId,
   pickDefaultWorkspaceId,
   storeLastWorkspaceId,
 } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
+
+function workspacePlanLabel(billing: {
+  plan: "free" | "pro";
+  billingSource: "stripe" | "comp";
+  unmetered: boolean;
+}): string {
+  if (billing.plan === "free") return "Free";
+  if (billing.billingSource === "comp" || billing.unmetered) {
+    return "Pro via 100% code";
+  }
+  return "Pro";
+}
 
 type AppShellProps = {
   email: string;
@@ -120,11 +133,19 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { userKeys, recovery, workspaces } = useCryptoSession();
+  const [planByWorkspace, setPlanByWorkspace] = useState<{
+    id: string;
+    label: string;
+  } | null>(null);
 
   const location = parseAppNavPath(pathname);
   const activeWorkspaceId = location?.workspaceId ?? null;
   const activeWorkspaceName =
     workspaces.find((w) => w.id === activeWorkspaceId)?.name ?? null;
+  const planLabel =
+    activeWorkspaceId && planByWorkspace?.id === activeWorkspaceId
+      ? planByWorkspace.label
+      : null;
   const workspaceBase = location?.workspaceBase ?? null;
   const onWorkspaceHome = Boolean(
     workspaceBase && pathname === workspaceBase,
@@ -157,6 +178,23 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
     storeLastWorkspaceId(userId, id);
     router.replace(`/app/w/${id}`);
   }, [shouldRedirectToWorkspace, userId, workspaces, router]);
+
+  useEffect(() => {
+    if (!activeWorkspaceId) return;
+    let cancelled = false;
+    void getWorkspaceBilling(activeWorkspaceId)
+      .then((billing) => {
+        if (cancelled) return;
+        setPlanByWorkspace({
+          id: activeWorkspaceId,
+          label: workspacePlanLabel(billing),
+        });
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [activeWorkspaceId]);
 
   if (!userKeys || recovery) {
     return <UnlockGate email={email} userId={userId} />;
@@ -217,9 +255,8 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 </>
               ) : null}
             </nav>
-            <div className="ml-auto flex shrink-0 items-center gap-1">
+            <div className="ml-auto shrink-0">
               <ThemeToggle />
-              <UserMenu email={email} />
             </div>
           </header>
         </div>
@@ -245,6 +282,11 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                       >
                         {activeWorkspaceName}
                       </Link>
+                      {planLabel ? (
+                        <p className="px-2 text-xs text-muted-foreground">
+                          {planLabel}
+                        </p>
+                      ) : null}
                     </div>
                   ) : null}
                   {sections.map((section) => (
@@ -265,6 +307,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 </p>
               )}
             </nav>
+            <AccountFooter email={email} />
           </aside>
           <div className="flex min-w-0 flex-1 flex-col">
             <div className="sticky top-12 z-30 border-b bg-muted/40">
@@ -312,6 +355,9 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 children
               )}
             </main>
+            <div className="sticky bottom-0 z-30 md:hidden">
+              <AccountFooter email={email} />
+            </div>
           </div>
         </div>
       </div>
