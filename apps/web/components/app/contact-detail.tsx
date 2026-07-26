@@ -229,10 +229,6 @@ export function ContactDetail({
     for (const t of cache.tasks) {
       items.push({ kind: "task", id: t.id, label: t.title });
     }
-    for (const c of cache.contacts) {
-      if (c.id === contactId) continue;
-      items.push({ kind: "contact", id: c.id, label: c.displayName });
-    }
     for (const n of cache.notes) {
       items.push({ kind: "note", id: n.id, label: n.title });
     }
@@ -240,7 +236,7 @@ export function ContactDetail({
       items.push({ kind: "project", id: p.id, label: p.name });
     }
     return items;
-  }, [cache.tasks, cache.contacts, cache.notes, cache.projects, contactId]);
+  }, [cache.tasks, cache.notes, cache.projects]);
 
   if (!vault) return null;
 
@@ -310,6 +306,7 @@ export function ContactDetail({
             disabled={deleting}
             placeholder="Add notes…"
             enableEntityLinks
+            entityLinkSourceKind="contact"
             linkCandidates={linkCandidates}
             onEntityLinkAction={onEntityLinkAction}
             fileAttachments={{

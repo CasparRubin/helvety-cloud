@@ -145,7 +145,7 @@ export async function createContact(
     displayName: string;
     emails?: string[];
     phones?: string[];
-    notes?: TaskBodyDoc | string;
+    notes?: TaskBodyDoc;
     color?: EntityColor;
     links?: EntityLinkTarget[];
   },
@@ -159,7 +159,7 @@ export async function createContact(
     plaintext,
   );
   const links =
-    content.links ?? extractEntityRefsFromDoc(plaintext.notes);
+    content.links ?? extractEntityRefsFromDoc("contact", plaintext.notes);
   const row = await putContact(workspaceId, contactId, {
     encryptedBlob,
     sortOrder,
@@ -187,7 +187,7 @@ export async function saveContact(
   const links =
     options?.links !== undefined
       ? options.links
-      : extractEntityRefsFromDoc(content.notes);
+      : extractEntityRefsFromDoc("contact", content.notes);
   const row = await putContact(workspaceId, contact.id, {
     encryptedBlob,
     sortOrder: contact.sortOrder,

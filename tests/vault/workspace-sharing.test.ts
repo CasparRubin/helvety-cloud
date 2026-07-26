@@ -146,7 +146,7 @@ describe("P6e invitee seal / open", () => {
         displayName: "Ada",
         emails: ["ada@example.com"],
         phones: [],
-        notes: "",
+        notes: { type: "doc", content: [{ type: "paragraph" }] },
       }),
     );
 

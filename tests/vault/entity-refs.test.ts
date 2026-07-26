@@ -31,7 +31,7 @@ describe("extractEntityRefsFromDoc", () => {
         },
       ],
     };
-    expect(extractEntityRefsFromDoc(doc)).toEqual([
+    expect(extractEntityRefsFromDoc("note", doc)).toEqual([
       { kind: "task", id: "11111111-1111-1111-1111-111111111111" },
       { kind: "contact", id: "22222222-2222-2222-2222-222222222222" },
     ]);
@@ -39,10 +39,41 @@ describe("extractEntityRefsFromDoc", () => {
 
   it("returns empty for docs without refs", () => {
     expect(
-      extractEntityRefsFromDoc({
+      extractEntityRefsFromDoc("note", {
         type: "doc",
         content: [{ type: "paragraph" }],
       }),
     ).toEqual([]);
+  });
+
+  it("ignores entity kinds that the source cannot link to", () => {
+    expect(
+      extractEntityRefsFromDoc("note", {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "entityRef",
+                attrs: {
+                  kind: "project",
+                  id: "33333333-3333-3333-3333-333333333333",
+                },
+              },
+              {
+                type: "entityRef",
+                attrs: {
+                  kind: "task",
+                  id: "11111111-1111-1111-1111-111111111111",
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([
+      { kind: "task", id: "11111111-1111-1111-1111-111111111111" },
+    ]);
   });
 });

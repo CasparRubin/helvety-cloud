@@ -1,6 +1,7 @@
-import type {
-  EntityLinkKind,
-  EntityLinkTarget,
+import {
+  isAllowedLinkPair,
+  type EntityLinkKind,
+  type EntityLinkTarget,
 } from "@helvety-cloud/api-contract";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -26,9 +27,16 @@ function dedupeLinkTargets(
 export async function validateLinkTargetsInWorkspace(
   supabase: Db,
   workspaceId: string,
+  sourceKind: EntityLinkKind,
   links: EntityLinkTarget[],
 ): Promise<{ ok: true } | { ok: false; message: string }> {
   for (const link of links) {
+    if (!isAllowedLinkPair(sourceKind, link.kind)) {
+      return {
+        ok: false,
+        message: `${sourceKind} cannot link to ${link.kind}`,
+      };
+    }
     switch (link.kind) {
       case "note": {
         const { data, error } = await supabase

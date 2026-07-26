@@ -47,8 +47,6 @@ export type DecryptedProject = {
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
-  /** True when legacy blob lacked categorizations and needs a persist. */
-  needsCategorizationPersist?: boolean;
 };
 
 export function projectPlaintextFrom(
@@ -78,7 +76,6 @@ function projectAad(projectId: string) {
 }
 
 function parseDescription(value: unknown): TaskBodyDoc {
-  if (value === undefined) return EMPTY_TASK_BODY;
   if (!isTaskBodyDoc(value)) {
     throw new Error("Invalid project description");
   }
@@ -112,13 +109,7 @@ export async function decryptProjectPlaintext(
   workspaceKey: Uint8Array,
   projectId: string,
   envelope: CiphertextEnvelope,
-): Promise<{
-  name: string;
-  description: TaskBodyDoc;
-  categorizations: ProjectCategorizations;
-  color?: EntityColor;
-  migrated: boolean;
-}> {
+): Promise<ProjectPlaintext> {
   const bytes = await decrypt({
     key: workspaceKey,
     envelope,
@@ -139,21 +130,14 @@ export async function decryptProjectPlaintext(
   }
   const description = parseDescription(parsed.description);
   const cats = parseCategorizations(parsed.categorizations);
-  if (cats) {
-    return {
-      name: parsed.name,
-      description,
-      categorizations: cats,
-      ...(color ? { color } : {}),
-      migrated: false,
-    };
+  if (!cats) {
+    throw new Error("Invalid project categorizations");
   }
   return {
     name: parsed.name,
     description,
-    categorizations: defaultCategorizations(),
+    categorizations: cats,
     ...(color ? { color } : {}),
-    migrated: true,
   };
 }
 
@@ -165,7 +149,6 @@ async function toDecrypted(
   let description: TaskBodyDoc = EMPTY_TASK_BODY;
   let categorizations = defaultCategorizations();
   let color: EntityColor | undefined;
-  let needsCategorizationPersist = false;
   try {
     const plain = await decryptProjectPlaintext(
       workspaceKey,
@@ -176,7 +159,6 @@ async function toDecrypted(
     description = plain.description;
     categorizations = plain.categorizations;
     color = plain.color;
-    needsCategorizationPersist = plain.migrated;
   } catch {
     name = "Unable to decrypt";
   }
@@ -190,23 +172,7 @@ async function toDecrypted(
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
-    needsCategorizationPersist,
   };
-}
-
-/** Persist injected defaults for legacy projects (stable option ids). */
-export async function ensureProjectCategorizations(
-  workspaceId: string,
-  workspaceKey: Uint8Array,
-  project: DecryptedProject,
-): Promise<DecryptedProject> {
-  if (!project.needsCategorizationPersist) return project;
-  return saveProjectContent(
-    workspaceId,
-    workspaceKey,
-    project,
-    projectPlaintextFrom(project),
-  );
 }
 
 export async function saveProjectContent(
@@ -225,8 +191,7 @@ export async function saveProjectContent(
     sortOrder: project.sortOrder,
     deletedAt: project.deletedAt,
   });
-  const decrypted = await toDecrypted(workspaceKey, row);
-  return { ...decrypted, needsCategorizationPersist: false };
+  return toDecrypted(workspaceKey, row);
 }
 
 export async function loadDecryptedProjects(
@@ -247,8 +212,7 @@ export async function loadDecryptedProject(
   workspaceKey: Uint8Array,
 ): Promise<DecryptedProject> {
   const row = await getProject(workspaceId, projectId);
-  const project = await toDecrypted(workspaceKey, row);
-  return ensureProjectCategorizations(workspaceId, workspaceKey, project);
+  return toDecrypted(workspaceKey, row);
 }
 
 export async function createProject(

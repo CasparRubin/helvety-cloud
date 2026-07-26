@@ -52,6 +52,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | P10 | Project descriptions + milestones | **Done** |
 | P11 | E2EE files & documents | **Done** |
 | P12 | Billing Free / Pro / addons / discounts | **Done** |
+| P13 | Clean baseline + constrained entity links | **Done** |
 
 ## Tooling
 

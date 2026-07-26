@@ -1,9 +1,15 @@
-import type { EntityLinkKind, EntityLinkTarget } from "@helvety-cloud/api-contract";
+import {
+  entityLinkKindSchema,
+  isAllowedLinkPair,
+  type EntityLinkKind,
+  type EntityLinkTarget,
+} from "@helvety-cloud/api-contract";
 
 import type { TaskBodyDoc } from "@/lib/vault/task-plaintext";
 
-/** Walk a TipTap doc and collect unique entityRef attrs. */
+/** Walk a TipTap doc and collect unique allowed entityRef attrs. */
 export function extractEntityRefsFromDoc(
+  sourceKind: EntityLinkKind,
   doc: TaskBodyDoc | unknown,
 ): EntityLinkTarget[] {
   const seen = new Set<string>();
@@ -21,17 +27,12 @@ export function extractEntityRefsFromDoc(
       typeof n.attrs?.kind === "string" &&
       typeof n.attrs?.id === "string"
     ) {
-      const kind = n.attrs.kind as EntityLinkKind;
-      if (
-        kind === "note" ||
-        kind === "task" ||
-        kind === "contact" ||
-        kind === "project"
-      ) {
-        const key = `${kind}:${n.attrs.id}`;
+      const kindParsed = entityLinkKindSchema.safeParse(n.attrs.kind);
+      if (kindParsed.success && isAllowedLinkPair(sourceKind, kindParsed.data)) {
+        const key = `${kindParsed.data}:${n.attrs.id}`;
         if (!seen.has(key)) {
           seen.add(key);
-          out.push({ kind, id: n.attrs.id });
+          out.push({ kind: kindParsed.data, id: n.attrs.id });
         }
       }
     }

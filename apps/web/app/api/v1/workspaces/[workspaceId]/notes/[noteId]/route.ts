@@ -154,6 +154,7 @@ export async function PUT(request: Request, context: RouteContext) {
     const validated = await validateLinkTargetsInWorkspace(
       supabase,
       workspaceId,
+      "note",
       data.links,
     );
     if (!validated.ok) {

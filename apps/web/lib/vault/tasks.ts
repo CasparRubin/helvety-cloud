@@ -200,7 +200,7 @@ export async function createTask(
     categorizationIds?.priorityId ??
     (categorizations ? defaultPriority(categorizations).id : undefined);
   const links =
-    content.links ?? extractEntityRefsFromDoc(plaintext.body);
+    content.links ?? extractEntityRefsFromDoc("task", plaintext.body);
   const row = await putTask(workspaceId, projectId, taskId, {
     encryptedBlob,
     sortOrder,
@@ -239,7 +239,7 @@ export async function saveTask(
   const links =
     options?.links !== undefined
       ? options.links
-      : extractEntityRefsFromDoc(content.body);
+      : extractEntityRefsFromDoc("task", content.body);
   const row = await putTask(workspaceId, projectId, task.id, {
     encryptedBlob,
     sortOrder: task.sortOrder,

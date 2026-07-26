@@ -69,6 +69,26 @@ export const entityLinkKinds = [
 export const entityLinkKindSchema = z.enum(entityLinkKinds);
 export type EntityLinkKind = z.infer<typeof entityLinkKindSchema>;
 
+const allowedEntityLinkTargets = {
+  note: ["task", "contact"],
+  task: ["note", "contact"],
+  contact: ["note", "project", "task"],
+  project: [],
+} as const satisfies Record<EntityLinkKind, readonly EntityLinkKind[]>;
+
+export function allowedLinkTargetKinds(
+  sourceKind: EntityLinkKind,
+): readonly EntityLinkKind[] {
+  return allowedEntityLinkTargets[sourceKind];
+}
+
+export function isAllowedLinkPair(
+  sourceKind: EntityLinkKind,
+  targetKind: EntityLinkKind,
+): boolean {
+  return allowedLinkTargetKinds(sourceKind).some((kind) => kind === targetKind);
+}
+
 export const entityLinkTargetSchema = z.object({
   kind: entityLinkKindSchema,
   id: uuidSchema,

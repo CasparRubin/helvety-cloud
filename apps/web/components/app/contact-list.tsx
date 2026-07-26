@@ -20,6 +20,7 @@ import {
   type DecryptedContact,
 } from "@/lib/vault/contacts";
 import type { EntityColor } from "@/lib/vault/entity-colors";
+import { textToTaskBody } from "@/lib/vault/task-plaintext";
 
 type ContactListProps = {
   workspaceId: string;
@@ -90,7 +91,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
           displayName,
           emails,
           phones,
-          notes: notes || undefined,
+          notes: notes ? textToTaskBody(notes) : undefined,
           color: newColor,
         },
         nextOrder,

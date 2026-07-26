@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. Product wave (P6a–P6f) complete; **P7** categorizations; **P8a–P8e** entity linking + categorization polish; **P9** stage board; **P10** project descriptions + milestones; **P11** E2EE files & documents; **P12** billing Free/Pro/addons/discounts. Stripe billing landed in **P6f** and extended in **P12** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. **P13** is the clean development baseline + constrained entity-link model. Stripe billing landed in **P6f** and extended in **P12** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -357,7 +357,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` / `task_id` on notes for filters.  
+- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` on notes for filing.
 - Notes: flexible encrypted JSON (dynamic links/tags/body); can link to project, task, both, or neither.  
 - Contacts: encrypted identity fields under **workspace_key**; same person in two workspaces = two rows (no global dedupe). Optional later: copy-to-workspace.  
 - `/api/v1` list/detail + UI in app shell (Personal + team workspaces).  
@@ -478,7 +478,7 @@ Workspace  (members + per-member wrapped_keys)
 
 - Optional `color` palette token in project/note/contact ciphertext; kind-level fallback constants.  
 - Rich chip: task shows live stage/priority/label from decrypted project categorizations; done/tombstoned = strikethrough.  
-- Click chip → navigate to target; backlinks panel on task/note/contact/project detail via `entity_links` reverse lookup.  
+- Click chip → navigate to target; backlinks panel on task/note/contact detail via `entity_links` reverse lookup.
 - Shared client vault cache so chips re-render when targets change.
 
 **Don’t:** Hover preview cards; cross-workspace links; store colors in plaintext columns; AI.
@@ -498,7 +498,7 @@ Workspace  (members + per-member wrapped_keys)
 - Stage option `color` as `EntityColor`; seed defaults for default stage names; project settings stage color picker; chip resolve uses stage color (name→default map when unset).  
 - Note/contact keep own accent + kind fallbacks; no per-task accent.  
 - EntityChip: label + color only; kind / stage / priority / label in `title` hover.  
-- Contact `notes` TipTap body (legacy string upgraded on parse); task + contact PUT `links` + extract EntityRefs on save.  
+- Contact `notes` TipTap body; task + contact PUT `links` + extract EntityRefs on save.
 - Same BubbleMenu create/link UX as notes across task and contact bodies.
 
 **Don’t:** Per-task accent override; project body linking; self-link (same kind+id); plaintext color columns.
@@ -556,7 +556,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- Project ciphertext: optional TipTap `description` (empty doc default; legacy upgrade on decrypt).  
+- Project ciphertext: TipTap `description` (empty doc default on create).
 - `milestones` table under `project_id`; ciphertext `{ version: 1, title, description, targetDate }` (`targetDate` ISO date or null — encrypted).  
 - `tasks.milestone_id` FK → milestones ON DELETE SET NULL + index; API list/get/put/delete milestones; task PUT `milestoneId`.  
 - Project page overview: collapsible description editor + milestones CRUD (sorted by target date).  
@@ -606,6 +606,19 @@ Workspace  (members + per-member wrapped_keys)
 **Don’t:** Per-user (cross-workspace) entitlements; Enterprise SKU; selling addons on Free; putting discount % only on `workspaces`.
 
 **Done when:** Owner can upgrade to Pro, redeem codes, buy addon packs; API enforces effective limits; comps never require Stripe Checkout.
+
+---
+
+### P13 — Clean baseline + constrained entity links
+
+**Status:** **Done**
+
+**Goal:** Reset development data and migration history, remove obsolete ciphertext fallbacks, and make entity relationships explicit.
+
+- One baseline migration generated from `supabase/schemas`.
+- Structural FKs: project → tasks/milestones, milestone → tasks, note → optional single project filing.
+- Cross links: note ↔ task and contact ↔ note/project/task only.
+- Note body selection → create/link task remains supported through encrypted TipTap `entityRef` nodes and plaintext UUID backlinks.
 
 ---
 
@@ -690,4 +703,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

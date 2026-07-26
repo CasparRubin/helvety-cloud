@@ -226,15 +226,8 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     for (const c of cache.contacts) {
       items.push({ kind: "contact", id: c.id, label: c.displayName });
     }
-    for (const n of cache.notes) {
-      if (n.id === noteId) continue;
-      items.push({ kind: "note", id: n.id, label: n.title });
-    }
-    for (const p of cache.projects) {
-      items.push({ kind: "project", id: p.id, label: p.name });
-    }
     return items;
-  }, [cache.tasks, cache.contacts, cache.notes, cache.projects, noteId]);
+  }, [cache.tasks, cache.contacts]);
 
   if (!vault) return null;
 
@@ -309,6 +302,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
             onChange={setBody}
             disabled={deleting}
             enableEntityLinks
+            entityLinkSourceKind="note"
             linkCandidates={linkCandidates}
             onEntityLinkAction={onEntityLinkAction}
             fileAttachments={{

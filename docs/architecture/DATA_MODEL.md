@@ -11,7 +11,7 @@ Workspace  (members + per-member wrapped_keys)
   ├── projects → milestones → tasks
   ├── notes     (required workspace_id; optional project_id filing FK; TipTap body may embed EntityRef + fileAttachment)
   ├── contacts  (workspace address book; no global dedupe)
-  ├── entity_links  (plaintext UUID graph: source ↔ target kinds/ids — intentional metadata)
+  ├── entity_links  (constrained plaintext cross-entity links — intentional metadata)
   └── attachments + attachment_links  (E2EE files in Storage; TipTap fileAttachment atoms)
 ```
 
@@ -19,6 +19,8 @@ Workspace  (members + per-member wrapped_keys)
 - Invite (P6e) = email invitation → invitee claims with vault `public_key` → owner seals `workspace_key` (AAD `wrapped_keys:{workspaceId}:wrapped_key`) → accept inserts membership + wrap. Members decrypt **all** ciphertext in that workspace.
 - Same person in two workspaces ⇒ **two contact rows**. Later softener: copy-to-workspace (client re-encrypts).  
 - **Reject:** user-global contact graph; notes with `workspace_id = null`; project-level key ACLs for contacts.
+- Structural relationships use FKs: project → tasks/milestones, milestone → tasks, and a note’s optional single project filing.
+- Cross-entity links are limited to note ↔ task and contact ↔ note/project/task. Other entity pairs are rejected.
 
 See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
@@ -35,7 +37,7 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `milestones` (P10) | `id`, `project_id`, sort, timestamps, tombstone |
 | `notes` | `id`, `workspace_id`, optional `project_id` (filing), sort, timestamps, tombstone |
 | `contacts` | `id`, `workspace_id`, sort, timestamps, tombstone |
-| `entity_links` (P8a) | UUID graph edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. **Intentional metadata** — Helvety sees which ids are linked, never titles/colors. Used for reverse lookup without decrypting all notes. |
+| `entity_links` | Constrained UUID edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. Allowed pairs are note–task and contact–note/project/task. **Intentional metadata** — Helvety sees which ids are linked, never titles/colors. |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
 | `subscriptions` (P6f/P12) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `billing_source` (`stripe`\|`comp`), discount snapshot + `unmetered`, `addon_quantities` jsonb, Stripe ids, period fields. Members SELECT only; writes via service-role webhook / redeem |
@@ -49,11 +51,11 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
 | Table | Content |
 |-------|---------|
-| `projects` | `encrypted_blob` holds `{ name, description, categorizations, color? }` where `description` is TipTap JSON (empty doc default; legacy blobs without it upgraded on decrypt); `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, icon?, isDefault? }` (names + colors + icons encrypted); stage `color` is an `EntityColor` palette token (P8d — seeds defaults for default stage names); option `icon` is an allowlisted Lucide token (P8e); optional top-level `color` is a palette token (P8c); plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
+| `projects` | `encrypted_blob` holds `{ name, description, categorizations, color? }` where `description` is TipTap JSON; `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, icon?, isDefault? }` (names + colors + icons encrypted); stage `color` is an `EntityColor` palette token; option `icon` is an allowlisted Lucide token; optional top-level `color` is a palette token; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
 | `milestones` (P10) | `encrypted_blob` holds `{ version: 1, title, description, targetDate }` where `description` is TipTap JSON and `targetDate` is `YYYY-MM-DD` or null (encrypted for ZK — Helvety cannot see deadlines); plaintext FKs: `id`, `project_id`, sort, timestamps, tombstone |
-| `tasks` | `encrypted_blob` holds `{ version: 1, title, body }` where `body` is TipTap JSON (`{ type: "doc", content: [...] }`) that may include `entityRef` atoms (P8d); legacy unversioned `{ title, body: string }` is normalized on decrypt; **no per-task accent** — chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. Outgoing `entity_links` replaced on PUT when `links` provided. |
+| `tasks` | `encrypted_blob` holds `{ version: 1, title, body, dueDate }` where `body` is TipTap JSON that may include allowed `entityRef` atoms; **no per-task accent** — chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. |
 | `notes` (P6d/P8) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags, color? }` where `body` is TipTap JSON that may include `entityRef` atoms `{ type: "entityRef", attrs: { kind, id } }` (P8b); `tags` is `string[]`; optional `color` palette token (P8c); optional nullable plaintext `project_id` for filing filters. Task associations live in `entity_links`, not a note column. |
-| `contacts` (P6d/P8d) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; `notes` is TipTap JSON (legacy string notes upgraded on parse); may include `entityRef` atoms; optional `color` palette token; duplicates across workspaces OK. Outgoing `entity_links` replaced on PUT when `links` provided. |
+| `contacts` | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; `notes` is TipTap JSON and may include allowed `entityRef` atoms; optional `color` palette token; duplicates across workspaces OK. |
 | `attachments` (P11) | `encrypted_meta` = `{ filename, mimeType }` envelope; `wrapped_dek` under workspace_key; raw file ciphertext in Storage (`vault-attachments/{workspaceId}/{attachmentId}`) as packed binary AES-GCM. TipTap `fileAttachment` atoms + `attachment_links` junction. |
 | `milestones` (P10) | Project-scoped ciphertext `{ version: 1, title, description, targetDate }` |
 

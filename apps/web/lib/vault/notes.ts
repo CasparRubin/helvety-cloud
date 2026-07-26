@@ -161,7 +161,7 @@ export async function createNote(
   );
   const links =
     content.links ??
-    extractEntityRefsFromDoc(plaintext.body);
+    extractEntityRefsFromDoc("note", plaintext.body);
   const row = await putNote(workspaceId, noteId, {
     encryptedBlob,
     sortOrder,
@@ -191,7 +191,7 @@ export async function saveNote(
   const links =
     options?.links !== undefined
       ? options.links
-      : extractEntityRefsFromDoc(content.body);
+      : extractEntityRefsFromDoc("note", content.body);
   const row = await putNote(workspaceId, note.id, {
     encryptedBlob,
     sortOrder: note.sortOrder,

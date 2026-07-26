@@ -5,7 +5,11 @@ import { EditorContent, useEditor } from "@tiptap/react";
 import { BubbleMenu } from "@tiptap/react/menus";
 import Placeholder from "@tiptap/extension-placeholder";
 import StarterKit from "@tiptap/starter-kit";
-import type { EntityLinkKind, EntityLinkTarget } from "@helvety-cloud/api-contract";
+import {
+  isAllowedLinkPair,
+  type EntityLinkKind,
+  type EntityLinkTarget,
+} from "@helvety-cloud/api-contract";
 import { Paperclip } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -35,6 +39,7 @@ type TaskBodyEditorProps = {
   compact?: boolean;
   placeholder?: string;
   enableEntityLinks?: boolean;
+  entityLinkSourceKind?: EntityLinkKind;
   linkCandidates?: {
     kind: EntityLinkKind;
     id: string;
@@ -54,6 +59,7 @@ export function TaskBodyEditor({
   compact = false,
   placeholder = "Write something…",
   enableEntityLinks = false,
+  entityLinkSourceKind,
   linkCandidates = [],
   onEntityLinkAction,
   fileAttachments,
@@ -231,6 +237,12 @@ export function TaskBodyEditor({
   }
 
   const filteredCandidates = linkCandidates.filter((c) => {
+    if (
+      !entityLinkSourceKind ||
+      !isAllowedLinkPair(entityLinkSourceKind, c.kind)
+    ) {
+      return false;
+    }
     if (!linkQuery.trim()) return true;
     return c.label.toLowerCase().includes(linkQuery.trim().toLowerCase());
   });
@@ -341,39 +353,47 @@ export function TaskBodyEditor({
           }}
         >
           <div className="flex flex-wrap items-center gap-1 rounded-md border border-border bg-popover p-1 shadow-md">
-            <Button
-              type="button"
-              size="xs"
-              variant="secondary"
-              disabled={disabled || busy}
-              onClick={() => {
-                const { from, to } = editor.state.selection;
-                const title = editor.state.doc.textBetween(from, to, " ").trim();
-                if (!title) return;
-                void handleAction({ type: "create-task", title });
-              }}
-            >
-              Create task
-            </Button>
-            <Button
-              type="button"
-              size="xs"
-              variant="secondary"
-              disabled={disabled || busy}
-              onClick={() => {
-                const { from, to } = editor.state.selection;
-                const displayName = editor.state.doc
-                  .textBetween(from, to, " ")
-                  .trim();
-                if (!displayName) return;
-                void handleAction({
-                  type: "create-contact",
-                  displayName,
-                });
-              }}
-            >
-              Create contact
-            </Button>
+            {entityLinkSourceKind &&
+            isAllowedLinkPair(entityLinkSourceKind, "task") ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                disabled={disabled || busy}
+                onClick={() => {
+                  const { from, to } = editor.state.selection;
+                  const title = editor.state.doc
+                    .textBetween(from, to, " ")
+                    .trim();
+                  if (!title) return;
+                  void handleAction({ type: "create-task", title });
+                }}
+              >
+                Create task
+              </Button>
+            ) : null}
+            {entityLinkSourceKind &&
+            isAllowedLinkPair(entityLinkSourceKind, "contact") ? (
+              <Button
+                type="button"
+                size="xs"
+                variant="secondary"
+                disabled={disabled || busy}
+                onClick={() => {
+                  const { from, to } = editor.state.selection;
+                  const displayName = editor.state.doc
+                    .textBetween(from, to, " ")
+                    .trim();
+                  if (!displayName) return;
+                  void handleAction({
+                    type: "create-contact",
+                    displayName,
+                  });
+                }}
+              >
+                Create contact
+              </Button>
+            ) : null}
             <Button
               type="button"
               size="xs"

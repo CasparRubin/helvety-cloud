@@ -60,10 +60,6 @@ export function isTaskBodyDoc(value: unknown): value is TaskBodyDoc {
   return true;
 }
 
-/**
- * Normalize decrypted JSON into TaskPlaintext v1.
- * Legacy P6b blobs: `{ title, body: string }` (no version).
- */
 export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
   if (typeof raw !== "object" || raw === null) {
     throw new Error("Invalid task plaintext");
@@ -92,16 +88,6 @@ export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
         type: "doc",
         content: obj.body.content ?? [{ type: "paragraph" }],
       },
-      dueDate,
-    };
-  }
-
-  // Legacy P6b: unversioned { title, body: string }
-  if (obj.version === undefined && typeof obj.body === "string") {
-    return {
-      version: 1,
-      title: obj.title,
-      body: textToTaskBody(obj.body),
       dueDate,
     };
   }

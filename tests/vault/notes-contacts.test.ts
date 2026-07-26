@@ -83,32 +83,6 @@ describe("note plaintext v1", () => {
 });
 
 describe("contact plaintext v1", () => {
-  it("parses identity fields", () => {
-    expect(
-      parseContactPlaintext({
-        version: 1,
-        displayName: "Ada",
-        emails: ["ada@example.com"],
-        phones: ["+1"],
-        notes: "friend",
-      }),
-    ).toEqual({
-      version: 1,
-      displayName: "Ada",
-      emails: ["ada@example.com"],
-      phones: ["+1"],
-      notes: {
-        type: "doc",
-        content: [
-          {
-            type: "paragraph",
-            content: [{ type: "text", text: "friend" }],
-          },
-        ],
-      },
-    });
-  });
-
   it("parses TipTap notes body", () => {
     expect(
       parseContactPlaintext({
@@ -148,7 +122,15 @@ describe("contact plaintext v1", () => {
         displayName: "  Ada  ",
         emails: ["  a@b.c  ", ""],
         phones: [" 1 "],
-        notes: "n",
+        notes: {
+          type: "doc",
+          content: [
+            {
+              type: "paragraph",
+              content: [{ type: "text", text: "n" }],
+            },
+          ],
+        },
       }),
     ).toEqual({
       version: 1,

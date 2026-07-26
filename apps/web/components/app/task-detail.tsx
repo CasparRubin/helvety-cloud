@@ -250,21 +250,14 @@ export function TaskDetail({
   const linkCandidates = useMemo(() => {
     const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
       [];
-    for (const t of cache.tasks) {
-      if (t.id === taskId) continue;
-      items.push({ kind: "task", id: t.id, label: t.title });
+    for (const n of cache.notes) {
+      items.push({ kind: "note", id: n.id, label: n.title });
     }
     for (const c of cache.contacts) {
       items.push({ kind: "contact", id: c.id, label: c.displayName });
     }
-    for (const n of cache.notes) {
-      items.push({ kind: "note", id: n.id, label: n.title });
-    }
-    for (const p of cache.projects) {
-      items.push({ kind: "project", id: p.id, label: p.name });
-    }
     return items;
-  }, [cache.tasks, cache.contacts, cache.notes, cache.projects, taskId]);
+  }, [cache.notes, cache.contacts]);
 
   if (!vault) return null;
 
@@ -359,6 +352,7 @@ export function TaskDetail({
             onChange={setBody}
             disabled={deleting}
             enableEntityLinks
+            entityLinkSourceKind="task"
             linkCandidates={linkCandidates}
             onEntityLinkAction={onEntityLinkAction}
             fileAttachments={{

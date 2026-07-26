@@ -5,7 +5,6 @@ import {
 import {
   EMPTY_TASK_BODY,
   isTaskBodyDoc,
-  textToTaskBody,
   type TaskBodyDoc,
 } from "@/lib/vault/task-plaintext";
 
@@ -14,7 +13,7 @@ export type ContactPlaintext = {
   displayName: string;
   emails: string[];
   phones: string[];
-  /** TipTap JSON body (legacy string notes are upgraded on parse). */
+  /** TipTap JSON notes body. */
   notes: TaskBodyDoc;
   color?: EntityColor;
 };
@@ -24,9 +23,6 @@ function isStringArray(value: unknown): value is string[] {
 }
 
 function parseNotesField(value: unknown): TaskBodyDoc {
-  if (typeof value === "string") {
-    return textToTaskBody(value);
-  }
   if (isTaskBodyDoc(value)) {
     return {
       type: "doc",
@@ -75,15 +71,10 @@ export function toContactPlaintext(input: {
   displayName: string;
   emails?: string[];
   phones?: string[];
-  notes?: TaskBodyDoc | string;
+  notes?: TaskBodyDoc;
   color?: EntityColor;
 }): ContactPlaintext {
-  const notes =
-    input.notes === undefined
-      ? EMPTY_TASK_BODY
-      : typeof input.notes === "string"
-        ? textToTaskBody(input.notes)
-        : input.notes;
+  const notes = input.notes ?? EMPTY_TASK_BODY;
   return {
     version: 1,
     displayName: input.displayName.trim(),

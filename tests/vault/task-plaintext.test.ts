@@ -4,7 +4,6 @@ import {
   EMPTY_TASK_BODY,
   parseTaskPlaintext,
   taskBodyPlainText,
-  textToTaskBody,
   toTaskPlaintext,
 } from "../../apps/web/lib/vault/task-plaintext";
 
@@ -22,26 +21,6 @@ describe("task plaintext v1", () => {
     expect(
       parseTaskPlaintext({ version: 1, title: "T", body }),
     ).toEqual({ version: 1, title: "T", body, dueDate: null });
-  });
-
-  it("normalizes legacy P6b string body to TipTap doc", () => {
-    expect(
-      parseTaskPlaintext({ title: "Legacy", body: "plain text" }),
-    ).toEqual({
-      version: 1,
-      title: "Legacy",
-      body: textToTaskBody("plain text"),
-      dueDate: null,
-    });
-  });
-
-  it("normalizes empty legacy body to empty doc", () => {
-    expect(parseTaskPlaintext({ title: "Empty", body: "" })).toEqual({
-      version: 1,
-      title: "Empty",
-      body: EMPTY_TASK_BODY,
-      dueDate: null,
-    });
   });
 
   it("round-trips a due date", () => {

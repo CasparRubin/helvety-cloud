@@ -1,5 +1,6 @@
--- entity_links: plaintext UUID graph for reverse lookup without decrypting vault content.
--- Intentional metadata: Helvety sees which ids are linked, never titles or colors.
+-- entity_links: constrained cross-entity links for reverse lookup without
+-- decrypting vault content. Intentional metadata: Helvety sees linked ids,
+-- never titles or colors.
 
 create table public.entity_links (
   id uuid primary key default gen_random_uuid(),
@@ -13,6 +14,14 @@ create table public.entity_links (
   created_at timestamptz not null default now(),
   constraint entity_links_no_self check (
     source_kind <> target_kind or source_id <> target_id
+  ),
+  constraint entity_links_allowed_pair check (
+    (least(source_kind, target_kind), greatest(source_kind, target_kind)) in (
+      ('contact', 'note'),
+      ('contact', 'project'),
+      ('contact', 'task'),
+      ('note', 'task')
+    )
   ),
   constraint entity_links_unique_edge unique (
     workspace_id, source_kind, source_id, target_kind, target_id

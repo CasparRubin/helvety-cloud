@@ -1,5 +1,5 @@
 -- notes: workspace-scoped ciphertext; optional project_id for filing filters.
--- Task (and other) associations live in entity_links (P8a), not a notes.task_id column.
+-- Cross-entity task/contact links live in entity_links.
 
 create table public.notes (
   id uuid primary key,
