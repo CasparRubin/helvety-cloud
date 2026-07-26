@@ -81,7 +81,7 @@ Admin inserts rows into `discount_codes` (service role / Dashboard only — no c
 - **1–99%** — snapshot percent onto `subscriptions`, ensure Stripe Coupon, start Checkout with discount (Pro + future addon line items inherit subscription coupon).
 - **100%** — upsert `plan=pro`, `status=active`, `billing_source=comp`, `unmetered=true`, Stripe ids null. No card.
 
-One code per workspace via the API; admins may also gift by editing `subscriptions` in SQL.
+**Remove** (`DELETE …/billing/discount`, owner-only): clears `discount_code_id` / percent. Complimentary grants return the workspace to Free (unmetered off). Decrements `redemption_count` so the code can be reused. One code at a time per workspace via the API; admins may also gift by editing `subscriptions` in SQL.
 
 ## Stripe shape
 

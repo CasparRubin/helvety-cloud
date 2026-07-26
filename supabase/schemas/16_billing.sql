@@ -34,9 +34,10 @@ create trigger discount_codes_set_updated_at
 alter table public.discount_codes enable row level security;
 alter table public.discount_codes force row level security;
 
--- No client policies/grants: service_role (and Dashboard) only.
+-- No client policies/grants. Auto-expose is off → explicit service_role grants.
 revoke all on table public.discount_codes from anon, public;
 revoke all on table public.discount_codes from authenticated;
+grant select, insert, update, delete on table public.discount_codes to service_role;
 
 create table public.subscriptions (
   workspace_id uuid primary key references public.workspaces (id) on delete cascade,
@@ -98,6 +99,7 @@ revoke all on table public.subscriptions from anon, public;
 grant select on table public.subscriptions to authenticated;
 revoke insert, update, delete, truncate, references, trigger
   on table public.subscriptions from authenticated;
+grant select, insert, update, delete on table public.subscriptions to service_role;
 
 -- Append-only audit of Stripe webhook events (idempotency + debugging).
 -- Payload is the raw Stripe event: billing metadata only, never vault data.
@@ -116,9 +118,10 @@ create index billing_events_type_idx on public.billing_events (type);
 alter table public.billing_events enable row level security;
 alter table public.billing_events force row level security;
 
--- No policies and no grants for clients: service_role only.
+-- No policies/grants for clients. Auto-expose is off → explicit service_role grants.
 revoke all on table public.billing_events from anon, public;
 revoke all on table public.billing_events from authenticated;
+grant select, insert, update, delete on table public.billing_events to service_role;
 
 -- Seat usage for entitlement gates. Members and active invitees may read the
 -- member count + plan (plaintext metadata only); limits stay in app code.
@@ -186,4 +189,4 @@ $$;
 
 revoke all on function public.increment_discount_redemption(uuid) from public;
 revoke all on function public.increment_discount_redemption(uuid) from authenticated;
--- No grant to authenticated: service_role only.
+grant execute on function public.increment_discount_redemption(uuid) to service_role;

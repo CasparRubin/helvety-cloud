@@ -600,6 +600,13 @@ export type RedeemDiscountResponse = z.infer<
   typeof redeemDiscountResponseSchema
 >;
 
+export const removeDiscountResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type RemoveDiscountResponse = z.infer<
+  typeof removeDiscountResponseSchema
+>;
+
 export const updateBillingAddonsRequestSchema = z.object({
   quantities: z.record(addonMeterSchema, z.number().int().min(0).max(100)),
 });

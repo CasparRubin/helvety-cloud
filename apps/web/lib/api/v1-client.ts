@@ -10,6 +10,7 @@ import {
   getMePolicyAcceptancesResponseSchema,
   getWorkspaceBillingResponseSchema,
   redeemDiscountResponseSchema,
+  removeDiscountResponseSchema,
   taskResponseSchema,
   listContactsResponseSchema,
   listTasksResponseSchema,
@@ -53,6 +54,7 @@ import {
   type GetMePolicyAcceptancesResponse,
   type GetWorkspaceBillingResponse,
   type RedeemDiscountResponse,
+  type RemoveDiscountResponse,
   type TaskResponse,
   type ListContactsResponse,
   type ListTasksResponse,
@@ -654,6 +656,16 @@ export async function redeemBillingDiscount(
     `/api/v1/workspaces/${workspaceId}/billing/discount`,
     redeemDiscountResponseSchema,
     { method: "POST", body: JSON.stringify({ code }) },
+  );
+}
+
+export async function removeBillingDiscount(
+  workspaceId: string,
+): Promise<RemoveDiscountResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/billing/discount`,
+    removeDiscountResponseSchema,
+    { method: "DELETE" },
   );
 }
 

@@ -278,12 +278,18 @@ export function WorkspaceBillingSettings() {
     onUpgrade,
     onManageBilling,
     onRedeemDiscount,
+    onRemoveDiscount,
   } = useWorkspaceSettings();
   const [discountCode, setDiscountCode] = useState("");
 
   useEffect(() => {
     void ensureBillingLoaded();
   }, [ensureBillingLoaded]);
+
+  const isComplimentary = Boolean(
+    billing && (billing.unmetered || billing.billingSource === "comp"),
+  );
+  const discountApplied = Boolean(billing?.discountPercentOff);
 
   return (
     <div className="flex max-w-xl flex-col gap-3">
@@ -296,8 +302,8 @@ export function WorkspaceBillingSettings() {
             <div className="flex items-center justify-between gap-2">
               <p className="text-xs text-muted-foreground">
                 Plan: <span className="uppercase">{billing.plan}</span>
-                {billing.unmetered ? " · complimentary" : ""}
-                {billing.discountPercentOff
+                {isComplimentary ? " · complimentary" : ""}
+                {!isComplimentary && billing.discountPercentOff
                   ? ` · ${billing.discountPercentOff}% off`
                   : ""}
                 {" · "}
@@ -334,6 +340,12 @@ export function WorkspaceBillingSettings() {
                 </p>
               )}
             </div>
+            {isComplimentary ? (
+              <p className="text-xs text-muted-foreground">
+                Unmetered Pro limits. Helvety cannot decrypt or recover vault
+                content.
+              </p>
+            ) : null}
             <p className="text-xs text-muted-foreground">
               Projects {billing.usage.projects}/
               {formatLimit(billing.limits.projects)}
@@ -347,19 +359,39 @@ export function WorkspaceBillingSettings() {
             </p>
             <p className="text-xs text-muted-foreground">
               File storage:{" "}
-              {billing.limits.storageBytes === 0
-                ? "not included on Free — upgrade to attach files"
-                : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes ?? Number.POSITIVE_INFINITY)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file; ${formatLimit(billing.limits.filesPerTask)} files/task)`}
+              {billing.limits.storageBytes === null
+                ? `${formatBytes(billing.usage.storageBytes)} used · unmetered (max ${formatBytes(billing.limits.maxUploadBytes)} per file)`
+                : billing.limits.storageBytes === 0
+                  ? "not included on Free — upgrade to attach files"
+                  : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file; ${formatLimit(billing.limits.filesPerTask)} files/task)`}
             </p>
+            {isOwner && discountApplied ? (
+              <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
+                <p className="text-xs text-muted-foreground">
+                  {isComplimentary
+                    ? "Complimentary code applied"
+                    : `${billing.discountPercentOff}% discount applied`}
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="ghost"
+                  disabled={pending}
+                  onClick={() => void onRemoveDiscount()}
+                >
+                  Remove
+                </Button>
+              </div>
+            ) : null}
           </div>
-          {isOwner && !billing.discountPercentOff ? (
+          {isOwner && !discountApplied ? (
             <form
               className="flex flex-col gap-2"
               onSubmit={(event) => {
                 event.preventDefault();
                 const code = discountCode.trim();
                 if (!code) return;
-                void onRedeemDiscount(code);
+                void onRedeemDiscount(code).then(() => setDiscountCode(""));
               }}
             >
               <Label htmlFor="discount-code" className="text-xs">

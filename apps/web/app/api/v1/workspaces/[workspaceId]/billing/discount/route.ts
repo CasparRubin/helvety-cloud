@@ -1,6 +1,7 @@
 import {
   redeemDiscountRequestSchema,
   redeemDiscountResponseSchema,
+  removeDiscountResponseSchema,
 } from "@helvety-cloud/api-contract";
 
 import { isWorkspaceOwner } from "@/lib/api/entitlements";
@@ -11,6 +12,7 @@ import {
   applyPartialDiscount,
   lookupDiscountCode,
   recordDiscountAttempt,
+  removeWorkspaceDiscount,
   tooManyRecentDiscountAttempts,
 } from "@/lib/billing/discount-codes";
 import { resolvePlan } from "@/lib/billing/entitlements";
@@ -161,4 +163,37 @@ export async function POST(request: Request, context: RouteContext) {
   } catch {
     return apiError("internal", "Stripe checkout failed", 500);
   }
+}
+
+/**
+ * Owner-only: remove an applied discount / complimentary code from the workspace.
+ */
+export async function DELETE(_request: Request, context: RouteContext) {
+  const auth = await requireUser(_request);
+  if (!isAuthedApi(auth)) {
+    return auth;
+  }
+  const { supabase, user } = auth;
+  const { workspaceId } = await context.params;
+
+  const owner = await isWorkspaceOwner(supabase, workspaceId, user.id);
+  if (!owner) {
+    return apiError(
+      "forbidden",
+      "Only the workspace owner can remove a discount code",
+      403,
+    );
+  }
+
+  const service = createServiceRoleClient();
+  const result = await removeWorkspaceDiscount({ service, workspaceId });
+  if ("error" in result) {
+    return apiError(
+      result.status === 404 ? "not_found" : "internal",
+      result.error,
+      result.status,
+    );
+  }
+
+  return jsonOk(removeDiscountResponseSchema.parse({ ok: true }));
 }

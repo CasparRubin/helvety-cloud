@@ -252,4 +252,90 @@ export async function applyCompGrant(args: {
   return { ok: true };
 }
 
+/**
+ * Owner clears an applied discount / complimentary grant from the workspace.
+ * Comp → free (unmetered off). Partial → clear discount fields; paid Stripe plan stays.
+ * Decrements redemption_count so the catalog code can be reused.
+ */
+export async function removeWorkspaceDiscount(args: {
+  service: ServiceApi;
+  workspaceId: string;
+}): Promise<{ ok: true } | { error: string; status: 404 | 500 }> {
+  const { service, workspaceId } = args;
+
+  const { data: existing, error: readError } = await service
+    .from("subscriptions")
+    .select("workspace_id, billing_source, discount_code_id")
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+
+  if (readError) {
+    return { error: "Could not remove discount. Try again later.", status: 500 };
+  }
+  if (!existing?.discount_code_id) {
+    return { error: "No discount code is applied to this workspace", status: 404 };
+  }
+
+  const discountCodeId = existing.discount_code_id;
+  const wasComp = existing.billing_source === "comp";
+
+  const patch = wasComp
+    ? {
+        plan: "free" as const,
+        status: "active" as const,
+        billing_source: "stripe" as const,
+        unmetered: false,
+        discount_code_id: null,
+        discount_percent_off: null,
+        stripe_coupon_id: null,
+        stripe_customer_id: null,
+        stripe_subscription_id: null,
+        stripe_price_id: null,
+        current_period_end: null,
+        cancel_at_period_end: false,
+        addon_quantities: {},
+        applied_at: null,
+        applied_by_user_id: null,
+      }
+    : {
+        discount_code_id: null,
+        discount_percent_off: null,
+        stripe_coupon_id: null,
+      };
+
+  const { error: updateError } = await service
+    .from("subscriptions")
+    .update(patch)
+    .eq("workspace_id", workspaceId);
+
+  if (updateError) {
+    return { error: "Could not remove discount. Try again later.", status: 500 };
+  }
+
+  const { data: codeRow } = await service
+    .from("discount_codes")
+    .select("redemption_count")
+    .eq("id", discountCodeId)
+    .maybeSingle();
+
+  if (codeRow && codeRow.redemption_count > 0) {
+    await service
+      .from("discount_codes")
+      .update({ redemption_count: codeRow.redemption_count - 1 })
+      .eq("id", discountCodeId);
+  }
+
+  await service.from("billing_events").insert({
+    stripe_event_id: `discount-removed:${workspaceId}:${crypto.randomUUID()}`,
+    type: "discount.removed",
+    workspace_id: workspaceId,
+    payload: {
+      discount_code_id: discountCodeId,
+      was_comp: wasComp,
+    },
+  });
+
+  return { ok: true };
+}
+
 export { GENERIC_INVALID as DISCOUNT_INVALID_MESSAGE };
