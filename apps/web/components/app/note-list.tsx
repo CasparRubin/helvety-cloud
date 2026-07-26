@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   createNote,
@@ -28,7 +27,6 @@ export function NoteList({ workspaceId }: NoteListProps) {
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,12 +52,8 @@ export function NoteList({ workspaceId }: NoteListProps) {
     };
   }, [vault, workspaceId, getWorkspaceKey]);
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = title.trim();
-    if (!trimmed || busy) return;
+  async function onCreate(title: string) {
     setBusy(true);
-    setError(null);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
@@ -67,14 +61,12 @@ export function NoteList({ workspaceId }: NoteListProps) {
       const created = await createNote(
         workspaceId,
         key,
-        { title: trimmed },
+        { title },
         nextOrder,
       );
-      setTitle("");
       window.dispatchEvent(new Event("helvety:notes-changed"));
       router.push(`/app/w/${workspaceId}/notes/${created.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+    } finally {
       setBusy(false);
     }
   }
@@ -85,19 +77,15 @@ export function NoteList({ workspaceId }: NoteListProps) {
     <EntityListShell
       title="Notes"
       createForm={
-        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-          <Input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="New note title"
-            disabled={busy}
-            maxLength={500}
-            aria-label="Note title"
-          />
-          <Button type="submit" disabled={busy || !title.trim()}>
-            Create
-          </Button>
-        </form>
+        <CreateEntityDialog
+          triggerLabel="Create note"
+          dialogTitle="Create note"
+          fieldLabel="Title"
+          fieldPlaceholder="New note title"
+          fieldMaxLength={500}
+          disabled={busy}
+          onCreate={onCreate}
+        />
       }
       error={error}
       loading={loading}

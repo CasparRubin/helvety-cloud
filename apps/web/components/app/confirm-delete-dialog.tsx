@@ -83,7 +83,7 @@ type DeleteButtonProps = {
   size?: React.ComponentProps<typeof Button>["size"];
 };
 
-/** Ghost delete button that opens ConfirmDeleteDialog. */
+/** Destructive delete button that opens ConfirmDeleteDialog. */
 export function DeleteButton({
   label = "Delete",
   dialogTitle,
@@ -91,7 +91,7 @@ export function DeleteButton({
   disabled,
   busy,
   onConfirm,
-  variant = "ghost",
+  variant = "destructive",
   size = "sm",
 }: DeleteButtonProps) {
   const [open, setOpen] = useState(false);

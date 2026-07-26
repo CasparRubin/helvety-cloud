@@ -4,12 +4,11 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   createContact,
@@ -28,7 +27,6 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [displayName, setDisplayName] = useState("");
   const [busy, setBusy] = useState(false);
 
   useEffect(() => {
@@ -54,12 +52,8 @@ export function ContactList({ workspaceId }: ContactListProps) {
     };
   }, [vault, workspaceId, getWorkspaceKey]);
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = displayName.trim();
-    if (!trimmed || busy) return;
+  async function onCreate(displayName: string) {
     setBusy(true);
-    setError(null);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
@@ -67,14 +61,12 @@ export function ContactList({ workspaceId }: ContactListProps) {
       const created = await createContact(
         workspaceId,
         key,
-        { displayName: trimmed },
+        { displayName },
         nextOrder,
       );
-      setDisplayName("");
       window.dispatchEvent(new Event("helvety:contacts-changed"));
       router.push(`/app/w/${workspaceId}/contacts/${created.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+    } finally {
       setBusy(false);
     }
   }
@@ -85,19 +77,15 @@ export function ContactList({ workspaceId }: ContactListProps) {
     <EntityListShell
       title="Contacts"
       createForm={
-        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-          <Input
-            value={displayName}
-            onChange={(e) => setDisplayName(e.target.value)}
-            placeholder="New contact name"
-            disabled={busy}
-            maxLength={500}
-            aria-label="Contact name"
-          />
-          <Button type="submit" disabled={busy || !displayName.trim()}>
-            Create
-          </Button>
-        </form>
+        <CreateEntityDialog
+          triggerLabel="Create contact"
+          dialogTitle="Create contact"
+          fieldLabel="Name"
+          fieldPlaceholder="New contact name"
+          fieldMaxLength={500}
+          disabled={busy}
+          onCreate={onCreate}
+        />
       }
       error={error}
       loading={loading}

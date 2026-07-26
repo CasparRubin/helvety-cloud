@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
   invitationStatusLabel,
   useWorkspaceSettings,
@@ -10,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Spinner } from "@/components/ui/spinner";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { formatBytes } from "@/lib/billing/entitlements";
 
@@ -82,10 +82,6 @@ export function WorkspaceMembersSettings() {
   const {
     canManage,
     isOwner,
-    email,
-    setEmail,
-    role,
-    setRole,
     members,
     billing,
     pending,
@@ -102,6 +98,8 @@ export function WorkspaceMembersSettings() {
     onCopyInvite,
     onUpgrade,
   } = useWorkspaceSettings();
+
+  const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
 
   useEffect(() => {
     void ensureMembersLoaded();
@@ -121,45 +119,38 @@ export function WorkspaceMembersSettings() {
       </p>
 
       {canManage ? (
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="invite-email">Email</Label>
-          <Input
-            id="invite-email"
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="teammate@example.com"
-            disabled={pending}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") void onInvite();
-            }}
-          />
-          <div className="flex items-center gap-2">
-            <Label htmlFor="invite-role" className="shrink-0 text-xs">
-              Role
-            </Label>
+        <CreateEntityDialog
+          triggerLabel="Invite member"
+          dialogTitle="Invite member"
+          fieldLabel="Email"
+          fieldPlaceholder="teammate@example.com"
+          fieldType="email"
+          fieldMaxLength={320}
+          confirmLabel="Invite"
+          disabled={pending}
+          onCreate={async (email) => {
+            await onInvite({ email, role: inviteRole });
+          }}
+          onOpenChange={(open) => {
+            if (open) setInviteRole("member");
+          }}
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="invite-role">Role</Label>
             <select
               id="invite-role"
-              className="h-8 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm"
-              value={role}
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              value={inviteRole}
               disabled={pending}
               onChange={(e) =>
-                setRole(e.target.value as "member" | "admin")
+                setInviteRole(e.target.value as "member" | "admin")
               }
             >
               <option value="member">Member</option>
               <option value="admin">Admin</option>
             </select>
-            <Button
-              type="button"
-              disabled={pending || !email.trim()}
-              onClick={() => void onInvite()}
-            >
-              {pending ? <Spinner data-icon="inline-start" /> : null}
-              Invite
-            </Button>
           </div>
-        </div>
+        </CreateEntityDialog>
       ) : (
         <p className="text-xs text-muted-foreground">
           Only owners and admins can invite members.
@@ -250,7 +241,7 @@ export function WorkspaceMembersSettings() {
                     <Button
                       type="button"
                       size="sm"
-                      variant="ghost"
+                      variant="destructive"
                       disabled={pending}
                       onClick={() => void onCancel(invitation)}
                     >

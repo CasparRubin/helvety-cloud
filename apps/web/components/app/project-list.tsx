@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
 import { SettingsIcon } from "lucide-react";
 
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   createProject,
@@ -29,7 +29,6 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
 
   const loadProjects = useCallback(async () => {
@@ -64,22 +63,15 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     };
   }, [vault, loadProjects]);
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = name.trim();
-    if (!trimmed || busy) return;
+  async function onCreate(name: string) {
     setBusy(true);
-    setError(null);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
         projects.reduce((max, p) => Math.max(max, p.sortOrder), -1) + 1;
-      await createProject(workspaceId, key, trimmed, nextOrder);
-      setName("");
+      await createProject(workspaceId, key, name, nextOrder);
       await refresh();
       window.dispatchEvent(new Event("helvety:projects-changed"));
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setBusy(false);
     }
@@ -118,19 +110,15 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     <EntityListShell
       title={workspace?.name ?? "Workspace"}
       createForm={
-        <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-          <Input
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="New project name"
-            disabled={busy}
-            maxLength={120}
-            aria-label="Project name"
-          />
-          <Button type="submit" disabled={busy || !name.trim()}>
-            Create
-          </Button>
-        </form>
+        <CreateEntityDialog
+          triggerLabel="Create project"
+          dialogTitle="Create project"
+          fieldLabel="Name"
+          fieldPlaceholder="New project name"
+          fieldMaxLength={120}
+          disabled={busy}
+          onCreate={onCreate}
+        />
       }
       error={error}
       loading={loading}

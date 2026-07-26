@@ -217,8 +217,9 @@ export function ProjectSettingsProvider({
   }
 
   async function onAddOption(kind: CategorizationKind, name: string) {
-    if (!project) return;
-    await withBusy(async () => {
+    if (!project) throw new Error("Project not loaded");
+    setBusy(true);
+    try {
       const key = await getWorkspaceKey(workspaceId);
       setProject(
         await addCategorizationOption(
@@ -229,7 +230,9 @@ export function ProjectSettingsProvider({
           name,
         ),
       );
-    });
+    } finally {
+      setBusy(false);
+    }
   }
 
   async function onRenameOption(

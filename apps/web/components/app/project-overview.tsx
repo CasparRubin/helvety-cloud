@@ -5,16 +5,17 @@ import {
   useMemo,
   useRef,
   useState,
-  type FormEvent,
   type ReactNode,
 } from "react";
 
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { InlineTitle } from "@/components/app/inline-title";
 import { SaveStatus } from "@/components/app/save-status";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
@@ -169,16 +170,11 @@ export function ProjectMilestonesPanel({
   const { getWorkspaceKey } = useVaultSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newTitle, setNewTitle] = useState("");
   const [newDate, setNewDate] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
-  async function onCreateMilestone(e: FormEvent) {
-    e.preventDefault();
-    const trimmed = newTitle.trim();
-    if (!trimmed || busy) return;
+  async function onCreateMilestone(title: string) {
     setBusy(true);
-    setError(null);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
@@ -188,17 +184,14 @@ export function ProjectMilestonesPanel({
         projectId,
         key,
         {
-          title: trimmed,
+          title,
           targetDate: newDate.trim() || null,
         },
         nextOrder,
       );
       onMilestonesChange(sortMilestones([...milestones, created]));
-      setNewTitle("");
       setNewDate("");
       setEditingId(created.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setBusy(false);
     }
@@ -246,32 +239,31 @@ export function ProjectMilestonesPanel({
             Unassigned
           </FilterChip>
         </div>
-        <form
-          onSubmit={(e) => void onCreateMilestone(e)}
-          className="flex flex-col gap-2"
+        <CreateEntityDialog
+          triggerLabel="Create milestone"
+          dialogTitle="Create milestone"
+          fieldLabel="Title"
+          fieldPlaceholder="New milestone"
+          fieldMaxLength={200}
+          confirmLabel="Add"
+          disabled={busy}
+          onCreate={onCreateMilestone}
+          onOpenChange={(open) => {
+            if (open) setNewDate("");
+          }}
         >
-          <Input
-            value={newTitle}
-            onChange={(e) => setNewTitle(e.target.value)}
-            placeholder="New milestone"
-            disabled={busy}
-            maxLength={200}
-            aria-label="Milestone title"
-          />
-          <div className="flex gap-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="milestone-target-date">Target date (optional)</Label>
             <Input
+              id="milestone-target-date"
               type="date"
               value={newDate}
               onChange={(e) => setNewDate(e.target.value)}
               disabled={busy}
               aria-label="Target date"
-              className="min-w-0 flex-1"
             />
-            <Button type="submit" disabled={busy || !newTitle.trim()}>
-              Add
-            </Button>
           </div>
-        </form>
+        </CreateEntityDialog>
       </div>
 
       {milestones.length === 0 ? (

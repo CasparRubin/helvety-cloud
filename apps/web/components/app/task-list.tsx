@@ -28,6 +28,7 @@ import {
 } from "lucide-react";
 
 import { CategorizationPicker } from "@/components/app/categorization-picker";
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
   EntityListEmpty,
   EntityListShell,
@@ -39,7 +40,6 @@ import {
   type MilestoneFilter,
 } from "@/components/app/project-overview";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
@@ -82,7 +82,6 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     useState<MilestoneFilter>("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [title, setTitle] = useState("");
   const [busy, setBusy] = useState(false);
   const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
@@ -145,12 +144,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     ? (tasks.find((t) => t.id === activeTaskId) ?? null)
     : null;
 
-  async function onCreate(e: React.FormEvent) {
-    e.preventDefault();
-    const trimmed = title.trim();
-    if (!trimmed || busy || !project) return;
+  async function onCreate(title: string) {
+    if (busy || !project) return;
     setBusy(true);
-    setError(null);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
@@ -159,15 +155,13 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         workspaceId,
         projectId,
         key,
-        { title: trimmed },
+        { title },
         nextOrder,
         project.categorizations,
       );
-      setTitle("");
       window.dispatchEvent(new Event("helvety:tasks-changed"));
       router.push(`/app/w/${workspaceId}/p/${projectId}/t/${created.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
+    } finally {
       setBusy(false);
     }
   }
@@ -313,19 +307,15 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       {!loading && project ? (
         <div className="flex min-h-0 flex-1 gap-4">
           <div className="flex min-h-0 min-w-0 flex-[3] flex-col gap-3 overflow-y-auto pb-2">
-            <form onSubmit={(e) => void onCreate(e)} className="flex gap-2">
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="New task title"
-                disabled={busy}
-                maxLength={500}
-                aria-label="Task title"
-              />
-              <Button type="submit" disabled={busy || !title.trim()}>
-                Create
-              </Button>
-            </form>
+            <CreateEntityDialog
+              triggerLabel="Create task"
+              dialogTitle="Create task"
+              fieldLabel="Title"
+              fieldPlaceholder="New task title"
+              fieldMaxLength={500}
+              disabled={busy || !project}
+              onCreate={onCreate}
+            />
 
             <DndContext
               sensors={sensors}

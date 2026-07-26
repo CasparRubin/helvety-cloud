@@ -1,12 +1,10 @@
 "use client";
 
-import { useState } from "react";
-
 import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
+import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import {
   MAX_MAX_VISIBLE_TASKS,
   MIN_MAX_VISIBLE_TASKS,
@@ -51,11 +49,11 @@ export function CategorizationOptionList({
   ) => Promise<void>;
   onSetMaxVisibleTasks?: (id: string, maxVisibleTasks: number) => Promise<void>;
 }) {
-  const [newName, setNewName] = useState("");
   const sorted = [...options].sort(
     (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
   );
   const canDelete = kind === "labels" || sorted.length > 1;
+  const singular = title.toLowerCase().replace(/s$/, "");
 
   return (
     <section className="flex max-w-2xl flex-col gap-3">
@@ -179,7 +177,7 @@ export function CategorizationOptionList({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
+                  variant="destructive"
                   disabled={busy || !canDelete}
                   onClick={() => void onDelete(opt.id)}
                 >
@@ -190,30 +188,16 @@ export function CategorizationOptionList({
           </li>
         ))}
       </ul>
-      <form
-        className="flex gap-2"
-        onSubmit={(e) => {
-          e.preventDefault();
-          const trimmed = newName.trim();
-          if (!trimmed) return;
-          void onAdd(trimmed).then(() => setNewName(""));
-        }}
-      >
-        <Label className="sr-only" htmlFor={`add-${kind}`}>
-          Add {title.toLowerCase()}
-        </Label>
-        <Input
-          id={`add-${kind}`}
-          value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          placeholder={`Add ${title.toLowerCase().replace(/s$/, "")}`}
-          disabled={busy}
-          maxLength={80}
-        />
-        <Button type="submit" disabled={busy || !newName.trim()}>
-          Add
-        </Button>
-      </form>
+      <CreateEntityDialog
+        triggerLabel={`Add ${singular}`}
+        dialogTitle={`Add ${singular}`}
+        fieldLabel="Name"
+        fieldPlaceholder={`Add ${singular}`}
+        fieldMaxLength={80}
+        confirmLabel="Add"
+        disabled={busy}
+        onCreate={onAdd}
+      />
     </section>
   );
 }

@@ -195,6 +195,7 @@ export function WorkspaceSwitcher({
             </Button>
             <Button
               type="button"
+              variant="success"
               disabled={pending || !name.trim()}
               onClick={() => void onCreate()}
             >

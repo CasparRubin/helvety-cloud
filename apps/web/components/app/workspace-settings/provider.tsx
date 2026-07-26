@@ -52,10 +52,6 @@ type WorkspaceSettingsContextValue = {
   isPersonal: boolean;
   setNameDraft: (value: string | null) => void;
   name: string;
-  email: string;
-  setEmail: (value: string) => void;
-  role: WorkspaceInviteRole;
-  setRole: (value: WorkspaceInviteRole) => void;
   members: WorkspaceMember[];
   billing: GetWorkspaceBillingResponse | null;
   pending: boolean;
@@ -77,7 +73,10 @@ type WorkspaceSettingsContextValue = {
   onManageBilling: () => Promise<void>;
   onRedeemDiscount: (code: string) => Promise<void>;
   onRemoveDiscount: () => Promise<void>;
-  onInvite: () => Promise<void>;
+  onInvite: (opts: {
+    email: string;
+    role: WorkspaceInviteRole;
+  }) => Promise<void>;
   onSeal: (invitation: WorkspaceInvitation) => Promise<void>;
   onCancel: (invitation: WorkspaceInvitation) => Promise<void>;
   onCopyInvite: (invitation: WorkspaceInvitation) => Promise<void>;
@@ -111,8 +110,6 @@ export function WorkspaceSettingsProvider({
 
   const [nameDraft, setNameDraft] = useState<string | null>(null);
   const name = nameDraft ?? workspace?.name ?? "";
-  const [email, setEmail] = useState("");
-  const [role, setRole] = useState<WorkspaceInviteRole>("member");
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [members, setMembers] = useState<WorkspaceMember[]>([]);
   const [billing, setBilling] = useState<GetWorkspaceBillingResponse | null>(
@@ -268,9 +265,12 @@ export function WorkspaceSettingsProvider({
     }
   }
 
-  async function onInvite() {
+  async function onInvite(opts: {
+    email: string;
+    role: WorkspaceInviteRole;
+  }) {
     if (!canManage || !workspace) return;
-    const trimmed = email.trim();
+    const trimmed = opts.email.trim();
     if (!trimmed) return;
     setPending(true);
     setError(null);
@@ -279,9 +279,8 @@ export function WorkspaceSettingsProvider({
       const created = await createWorkspaceInvitation(workspaceId, {
         id: crypto.randomUUID(),
         email: trimmed,
-        role,
+        role: opts.role,
       });
-      setEmail("");
       setInvitations((prev) => [created, ...prev]);
       const mail = invitationMailto({
         email: created.email,
@@ -294,13 +293,14 @@ export function WorkspaceSettingsProvider({
         setSeatLimitHit(true);
         await ensureBillingLoaded();
       }
-      setError(
+      const message =
         err instanceof ApiClientError
           ? err.message
           : err instanceof Error
             ? err.message
-            : "Invite failed",
-      );
+            : "Invite failed";
+      setError(message);
+      throw err instanceof Error ? err : new Error(message);
     } finally {
       setPending(false);
     }
@@ -393,10 +393,6 @@ export function WorkspaceSettingsProvider({
     isPersonal,
     setNameDraft,
     name,
-    email,
-    setEmail,
-    role,
-    setRole,
     members,
     billing,
     pending,
