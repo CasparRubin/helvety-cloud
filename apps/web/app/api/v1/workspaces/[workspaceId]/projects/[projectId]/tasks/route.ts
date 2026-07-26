@@ -18,7 +18,7 @@ type RouteContext = {
 };
 
 const TASK_SELECT =
-  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, milestone_id, sort_order, updated_at, deleted_at";
+  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, milestone_id, sort_order, created_at, updated_at, deleted_at";
 
 export async function GET(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -132,6 +132,7 @@ export async function GET(request: Request, context: RouteContext) {
       priorityId: row.priority_id,
       milestoneId: row.milestone_id,
       sortOrder: row.sort_order,
+      createdAt: row.created_at,
       updatedAt: row.updated_at,
       deletedAt: row.deleted_at,
       links: linksByTask.get(row.id) ?? [],

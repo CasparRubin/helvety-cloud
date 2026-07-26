@@ -239,6 +239,7 @@ export const taskResponseSchema = z.object({
   priorityId: uuidSchema.nullable(),
   milestoneId: uuidSchema.nullable(),
   sortOrder: z.number().int(),
+  createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
   links: z.array(entityLinkTargetSchema),

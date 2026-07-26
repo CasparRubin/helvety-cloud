@@ -1,26 +1,35 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState } from "react";
+import {
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
-import { CategorizationPicker } from "@/components/app/categorization-picker";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { InlineTitle } from "@/components/app/inline-title";
-import { MilestonePicker } from "@/components/app/milestone-picker";
 import { SaveStatus } from "@/components/app/save-status";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
   defaultPriority,
   defaultStage,
+  resolveStageColor,
+  type CategorizationOption,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
+import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
+import { cn } from "@/lib/utils";
 import { createContact } from "@/lib/vault/contacts";
 import { loadAllDecryptedMilestones } from "@/lib/vault/milestones";
 import { loadDecryptedProject } from "@/lib/vault/projects";
@@ -74,12 +83,7 @@ export function TaskDetail({
   const [priorityId, setPriorityId] = useState("");
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [milestoneOptions, setMilestoneOptions] = useState<
-    {
-      id: string;
-      title: string;
-      startDate: string | null;
-      endDate: string | null;
-    }[]
+    { id: string; title: string }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -181,8 +185,6 @@ export function TaskDetail({
           milestones.map((m) => ({
             id: m.id,
             title: m.title,
-            startDate: m.startDate,
-            endDate: m.endDate,
           })),
         );
         setTitle(loaded.title);
@@ -273,128 +275,140 @@ export function TaskDetail({
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <InlineTitle
-              value={title}
-              onChange={setTitle}
-              onBlur={flush}
-              placeholder="Untitled task"
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <InlineTitle
+                value={title}
+                onChange={setTitle}
+                onBlur={flush}
+                placeholder="Untitled task"
+                disabled={deleting}
+                maxLength={500}
+                className="min-w-0 flex-1"
+              />
+              <DeleteButton
+                disabled={deleting}
+                busy={deleting}
+                dialogTitle="Delete this task?"
+                dialogDescription="This permanently deletes the task. This cannot be undone."
+                onConfirm={onDelete}
+              />
+            </div>
+
+            <TaskBodyEditor
+              content={body}
+              onChange={setBody}
               disabled={deleting}
-              maxLength={500}
-              className="min-w-0 flex-1"
+              enableEntityLinks
+              entityLinkSourceKind="task"
+              linkCandidates={linkCandidates}
+              onEntityLinkAction={onEntityLinkAction}
+              fileAttachments={{
+                workspaceId,
+                getWorkspaceKey: () => getWorkspaceKey(workspaceId),
+                onStorageLimit: (message) => setStorageLimitMessage(message),
+              }}
             />
-            <DeleteButton
-              disabled={deleting}
-              busy={deleting}
-              dialogTitle="Delete this task?"
-              dialogDescription="This permanently deletes the task. This cannot be undone."
-              onConfirm={onDelete}
+            {storageLimitMessage ? (
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                {storageLimitMessage}
+              </p>
+            ) : null}
+            <BacklinksPanel
+              workspaceId={workspaceId}
+              kind="task"
+              id={taskId}
             />
           </div>
 
-          {categorizations ? (
-            <div className="flex flex-wrap items-end gap-3">
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground">Label</Label>
-                <CategorizationPicker
-                  options={categorizations.labels}
-                  value={labelId}
-                  allowNone
-                  disabled={deleting}
-                  aria-label="Label"
-                  onChange={setLabelId}
+          <aside className="flex min-w-0 flex-col gap-3">
+            {task ? (
+              <div className="flex flex-col gap-1 rounded-lg border border-border p-3 text-xs text-muted-foreground">
+                <p>
+                  <span className="font-medium text-foreground">Created</span>{" "}
+                  {formatDateTime(task.createdAt)}
+                </p>
+                <p>
+                  <span className="font-medium text-foreground">Modified</span>{" "}
+                  {formatDateTime(task.updatedAt)}
+                </p>
+                <SaveStatus
+                  status={status}
+                  savedAt={savedAt}
+                  onRetry={flush}
                 />
               </div>
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground" required>
-                  Stage
-                </Label>
-                <CategorizationPicker
-                  options={categorizations.stages}
-                  value={stageId}
-                  useStageColor
-                  disabled={deleting}
-                  aria-label="Stage"
-                  onChange={(id) => {
-                    if (id) setStageId(id);
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground" required>
-                  Priority
-                </Label>
-                <CategorizationPicker
-                  options={categorizations.priorities}
-                  value={priorityId}
-                  disabled={deleting}
-                  aria-label="Priority"
-                  onChange={(id) => {
-                    if (id) setPriorityId(id);
-                  }}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label className="text-xs text-muted-foreground">
-                  Milestone
-                </Label>
-                <MilestonePicker
-                  options={milestoneOptions}
-                  value={milestoneId}
-                  disabled={deleting}
-                  aria-label="Milestone"
-                  onChange={setMilestoneId}
-                />
-              </div>
-              <div className="flex flex-col gap-1">
-                <Label
-                  htmlFor="task-detail-due-date"
-                  className="text-xs text-muted-foreground"
-                >
-                  Due date
-                </Label>
-                <Input
-                  id="task-detail-due-date"
-                  type="date"
-                  className="w-40"
-                  value={dueDate ?? ""}
-                  disabled={deleting}
-                  onChange={(e) => setDueDate(e.target.value || null)}
-                />
-              </div>
-            </div>
-          ) : null}
+            ) : null}
 
-          <TaskBodyEditor
-            content={body}
-            onChange={setBody}
-            disabled={deleting}
-            enableEntityLinks
-            entityLinkSourceKind="task"
-            linkCandidates={linkCandidates}
-            onEntityLinkAction={onEntityLinkAction}
-            fileAttachments={{
-              workspaceId,
-              getWorkspaceKey: () => getWorkspaceKey(workspaceId),
-              onStorageLimit: (message) => setStorageLimitMessage(message),
-            }}
-          />
-          {storageLimitMessage ? (
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              {storageLimitMessage}
-            </p>
-          ) : null}
-          <BacklinksPanel
-            workspaceId={workspaceId}
-            kind="task"
-            id={taskId}
-          />
-          <SaveStatus
-            status={status}
-            savedAt={savedAt}
-            onRetry={flush}
-          />
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+              <Label
+                htmlFor="task-detail-due-date"
+                className="text-xs text-muted-foreground"
+              >
+                Due date
+              </Label>
+              <Input
+                id="task-detail-due-date"
+                type="date"
+                value={dueDate ?? ""}
+                disabled={deleting}
+                onChange={(e) => setDueDate(e.target.value || null)}
+              />
+            </div>
+
+            {categorizations ? (
+              <>
+                <RadioSection legend="Stage" required>
+                  <CategorizationRadioList
+                    name="task-stage"
+                    options={categorizations.stages}
+                    value={stageId}
+                    useStageColor
+                    disabled={deleting}
+                    onChange={(id) => {
+                      if (id) setStageId(id);
+                    }}
+                  />
+                </RadioSection>
+                <RadioSection legend="Priority" required>
+                  <CategorizationRadioList
+                    name="task-priority"
+                    options={categorizations.priorities}
+                    value={priorityId}
+                    disabled={deleting}
+                    onChange={(id) => {
+                      if (id) setPriorityId(id);
+                    }}
+                  />
+                </RadioSection>
+                <RadioSection legend="Label">
+                  <CategorizationRadioList
+                    name="task-label"
+                    options={categorizations.labels}
+                    value={labelId}
+                    allowNone
+                    disabled={deleting}
+                    onChange={setLabelId}
+                  />
+                </RadioSection>
+                <RadioSection legend="Milestone">
+                  <CategorizationRadioList
+                    name="task-milestone"
+                    options={milestoneOptions.map((m) => ({
+                      id: m.id,
+                      name: m.title,
+                      sortOrder: 0,
+                    }))}
+                    value={milestoneId}
+                    allowNone
+                    disabled={deleting}
+                    onChange={setMilestoneId}
+                  />
+                </RadioSection>
+              </>
+            ) : null}
+          </aside>
         </div>
       )}
 
@@ -403,6 +417,113 @@ export function TaskDetail({
           {error}
         </p>
       ) : null}
+    </div>
+  );
+}
+
+function formatDateTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleString(undefined, {
+    dateStyle: "medium",
+    timeStyle: "short",
+  });
+}
+
+function RadioSection({
+  legend,
+  required,
+  children,
+}: {
+  legend: string;
+  required?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <section className="min-w-0 rounded-lg border border-border p-3">
+      <h2 className="mb-1.5 flex items-center gap-1 text-xs font-medium text-muted-foreground">
+        {legend}
+        {required ? (
+          <>
+            <span className="text-destructive" aria-hidden="true">
+              *
+            </span>
+            <span className="sr-only">(required)</span>
+          </>
+        ) : null}
+      </h2>
+      {children}
+    </section>
+  );
+}
+
+function CategorizationRadioList({
+  name,
+  options,
+  value,
+  onChange,
+  allowNone = false,
+  useStageColor = false,
+  disabled = false,
+}: {
+  name: string;
+  options: CategorizationOption[];
+  value: string | null;
+  onChange: (id: string | null) => void;
+  allowNone?: boolean;
+  useStageColor?: boolean;
+  disabled?: boolean;
+}) {
+  const sorted = [...options].sort(
+    (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
+  );
+  return (
+    <div
+      className="flex flex-col gap-1.5"
+      role="radiogroup"
+      aria-label={name}
+    >
+      {allowNone ? (
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="radio"
+            name={name}
+            className="size-3.5 accent-primary"
+            checked={value == null}
+            disabled={disabled}
+            onChange={() => onChange(null)}
+          />
+          <span className="text-muted-foreground">None</span>
+        </label>
+      ) : null}
+      {sorted.map((opt) => {
+        const Icon = opt.icon
+          ? CATEGORIZATION_ICON_COMPONENTS[opt.icon]
+          : null;
+        const color = useStageColor ? resolveStageColor(opt) : opt.color;
+        const tint = color ? ENTITY_COLOR_CLASSES[color] : null;
+        return (
+          <label
+            key={opt.id}
+            className={cn(
+              "flex items-center gap-2 rounded-md px-1.5 py-1 text-sm",
+              tint?.bg,
+              tint?.text,
+            )}
+          >
+            <input
+              type="radio"
+              name={name}
+              className="size-3.5 accent-primary"
+              checked={value === opt.id}
+              disabled={disabled}
+              onChange={() => onChange(opt.id)}
+            />
+            {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden /> : null}
+            <span className="truncate">{opt.name}</span>
+          </label>
+        );
+      })}
     </div>
   );
 }

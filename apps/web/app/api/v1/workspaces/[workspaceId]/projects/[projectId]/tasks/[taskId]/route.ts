@@ -30,7 +30,7 @@ type RouteContext = {
 };
 
 const TASK_SELECT =
-  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, milestone_id, sort_order, updated_at, deleted_at";
+  "id, project_id, encrypted_blob, label_id, stage_id, priority_id, milestone_id, sort_order, created_at, updated_at, deleted_at";
 
 function toTaskResponse(
   row: {
@@ -42,6 +42,7 @@ function toTaskResponse(
     priority_id: string | null;
     milestone_id: string | null;
     sort_order: number;
+    created_at: string;
     updated_at: string;
     deleted_at: string | null;
   },
@@ -58,6 +59,7 @@ function toTaskResponse(
     priorityId: row.priority_id,
     milestoneId: row.milestone_id,
     sortOrder: row.sort_order,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
     links,

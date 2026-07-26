@@ -45,6 +45,7 @@ export type DecryptedTask = {
   milestoneId: string | null;
   links: EntityLinkTarget[];
   sortOrder: number;
+  createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
 };
@@ -116,6 +117,7 @@ async function toDecrypted(
     milestoneId: row.milestoneId,
     links: row.links,
     sortOrder: row.sortOrder,
+    createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   };
