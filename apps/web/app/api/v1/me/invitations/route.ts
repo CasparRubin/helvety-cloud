@@ -1,4 +1,8 @@
-import { listMyInvitationsResponseSchema } from "@helvety-cloud/api-contract";
+import {
+  ciphertextEnvelopeSchema,
+  listMyInvitationsResponseSchema,
+  type CiphertextEnvelope,
+} from "@helvety-cloud/api-contract";
 
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { mapInvitationRow } from "@/lib/api/invitations";
@@ -29,24 +33,27 @@ export async function GET(request: Request) {
   }
 
   const workspaceIds = [...new Set((data ?? []).map((row) => row.workspace_id))];
-  const nameById = new Map<string, string>();
+  const blobById = new Map<string, CiphertextEnvelope>();
   if (workspaceIds.length > 0) {
     const { data: workspaces, error: wsError } = await supabase
       .from("workspaces")
-      .select("id, name")
+      .select("id, encrypted_blob")
       .in("id", workspaceIds);
     if (wsError) {
       return apiError("internal", wsError.message, 500);
     }
     for (const workspace of workspaces ?? []) {
-      nameById.set(workspace.id, workspace.name);
+      blobById.set(
+        workspace.id,
+        ciphertextEnvelopeSchema.parse(workspace.encrypted_blob),
+      );
     }
   }
 
   return jsonOk(
     listMyInvitationsResponseSchema.parse({
       invitations: (data ?? []).map((row) =>
-        mapInvitationRow(row, nameById.get(row.workspace_id)),
+        mapInvitationRow(row, blobById.get(row.workspace_id)),
       ),
     }),
   );

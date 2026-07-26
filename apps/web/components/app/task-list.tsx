@@ -56,6 +56,7 @@ import {
 } from "@/lib/vault/categorizations";
 import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
 import {
+  formatMilestoneDateRange,
   loadAllDecryptedMilestones,
   type DecryptedMilestone,
 } from "@/lib/vault/milestones";
@@ -408,7 +409,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                     options={milestones.map((m) => ({
                       id: m.id,
                       title: m.title,
-                      targetDate: m.targetDate,
+                      startDate: m.startDate,
+                      endDate: m.endDate,
                     }))}
                     value={newMilestoneId}
                     disabled={busy}
@@ -473,7 +475,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             </DndContext>
           </div>
 
-          <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-hidden border-l border-border/60 pl-4">
+          <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-y-auto border-l border-border/60 pl-4">
             <ProjectMilestonesPanel
               workspaceId={workspaceId}
               projectId={projectId}
@@ -492,6 +494,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               tasks={tasks}
               categorizations={project.categorizations}
               milestones={milestones}
+              milestoneFilter={milestoneFilter}
             />
           </aside>
         </div>
@@ -755,6 +758,9 @@ function TaskCardContent({
 }) {
   const stageId = task.stageId ?? "";
   const priorityId = task.priorityId ?? "";
+  const milestoneRange = milestone
+    ? formatMilestoneDateRange(milestone.startDate, milestone.endDate)
+    : null;
 
   return (
     <article
@@ -778,8 +784,8 @@ function TaskCardContent({
         <span
           className="max-w-[7rem] truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
           title={
-            milestone.targetDate
-              ? `${milestone.title} · ${milestone.targetDate}`
+            milestoneRange && milestoneRange !== "No dates"
+              ? `${milestone.title} · ${milestoneRange}`
               : milestone.title
           }
         >

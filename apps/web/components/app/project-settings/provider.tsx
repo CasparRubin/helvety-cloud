@@ -20,6 +20,7 @@ import {
   setCategorizationOptionColor,
   setCategorizationOptionIcon,
   setCategorizationOptionMaxVisibleTasks,
+  setCategorizationOptionCompletionPercent,
 } from "@/lib/vault/categorization-ops";
 import type {
   CategorizationIcon,
@@ -76,6 +77,10 @@ type ProjectSettingsContextValue = {
     icon: CategorizationIcon | undefined,
   ) => Promise<void>;
   onSetMaxVisibleTasks: (id: string, maxVisibleTasks: number) => Promise<void>;
+  onSetCompletionPercent: (
+    id: string,
+    completionPercent: number,
+  ) => Promise<void>;
   ensureSiblingsLoaded: () => Promise<void>;
 };
 
@@ -366,6 +371,22 @@ export function ProjectSettingsProvider({
     });
   }
 
+  async function onSetCompletionPercent(id: string, completionPercent: number) {
+    if (!project) return;
+    await withBusy(async () => {
+      const key = await getWorkspaceKey(workspaceId);
+      setProject(
+        await setCategorizationOptionCompletionPercent(
+          workspaceId,
+          key,
+          project,
+          id,
+          completionPercent,
+        ),
+      );
+    });
+  }
+
   if (!vault) return null;
 
   const value: ProjectSettingsContextValue = {
@@ -390,6 +411,7 @@ export function ProjectSettingsProvider({
     onSetOptionColor,
     onSetOptionIcon,
     onSetMaxVisibleTasks,
+    onSetCompletionPercent,
     ensureSiblingsLoaded,
   };
 

@@ -2,7 +2,7 @@
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
-> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. **P13** is the clean development baseline + constrained entity-link model. Stripe billing landed in **P6f** and extended in **P12** (see [`BILLING.md`](./BILLING.md)).
+> **P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 + P14 are done**. Do not re-implement them unless docs need fixes. Do not implement multiple P\* phases in the same chat unless the user explicitly expands scope. **P14** encrypts workspace names, milestone start/end dates, stage completion weights, and the project progress chart. Stripe billing landed in **P6f** and extended in **P12** (see [`BILLING.md`](./BILLING.md)).
 
 ---
 
@@ -552,14 +552,14 @@ Workspace  (members + per-member wrapped_keys)
 
 **Status:** **Done**
 
-**Goal:** Rich TipTap project descriptions; project-scoped milestones (title, description, target date) with tasks assignable via plaintext `milestone_id`. Stage board stays primary; milestones are an orthogonal filter/badge/picker overlay.
+**Goal:** Rich TipTap project descriptions; project-scoped milestones (title, description, start/end dates) with tasks assignable via plaintext `milestone_id`. Stage board stays primary; milestones are an orthogonal filter/badge/picker overlay.
 
 **Do:**
 
 - Project ciphertext: TipTap `description` (empty doc default on create).
-- `milestones` table under `project_id`; ciphertext `{ version: 1, title, description, targetDate }` (`targetDate` ISO date or null — encrypted).  
+- `milestones` table under `project_id`; ciphertext `{ version: 1, title, description, startDate, endDate }` (ISO dates or null — encrypted).  
 - `tasks.milestone_id` FK → milestones ON DELETE SET NULL + index; API list/get/put/delete milestones; task PUT `milestoneId`.  
-- Project page overview: collapsible description editor + milestones CRUD (sorted by target date).  
+- Project page overview: collapsible description editor + milestones CRUD (sorted by end date).  
 - Stage board: milestone filter (All / Unassigned / specific); card badge; task detail milestone picker.  
 - Reuse TipTap `TaskBodyEditor` (`compact`, no entity links) for descriptions.
 
@@ -619,6 +619,23 @@ Workspace  (members + per-member wrapped_keys)
 - Structural FKs: project → tasks/milestones, milestone → tasks, note → optional single project filing.
 - Cross links: note ↔ task and contact ↔ note/project/task only.
 - Note body selection → create/link task remains supported through encrypted TipTap `entityRef` nodes and plaintext UUID backlinks.
+
+---
+
+### P14 — Encrypted workspace names, milestone dates, progress chart
+
+**Status:** **Done**
+
+**Goal:** Close remaining user-entered plaintext gaps and replace the temporary progress spark with a milestone-window chart.
+
+- `workspaces.name` → `encrypted_blob` (`{ version: 1, name }` under workspace key); wipe vault data on apply (no legacy plaintext name readers).
+- Milestone ciphertext: `{ version: 1, title, description, startDate, endDate }` — no `targetDate`.
+- Stage options may store `completionPercent` (0–100); Cancelled excluded from weighted scope; client averages weights for “% done”.
+- Project Progress panel: X-axis from milestone start→end (or min/max when filter is all); dashed ideal line; actual curve to today + current weighted %; syncs with board `milestoneFilter`.
+
+**Don’t:** Predictions / stage-transition history tables; plaintext date columns; dual-read parsers for old shapes.
+
+**Done when:** Personal name decrypts after unlock; rename/create encrypt; milestones use start+end; moving tasks across stages moves %; milestone filter updates chart window + %.
 
 ---
 
@@ -703,4 +720,4 @@ workspace_key / project_key (random)
 
 ## Status
 
-**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).
+**P0–P5 + P-legal + P-legal2 + P6a + P6b + P6c + P6d + P6e + P6f + P7 + P8a + P8b + P8c + P8d + P8e + P9 + P10 + P11 + P12 + P13 + P14 done.** Billing: [`BILLING.md`](./BILLING.md). Auth: [`AUTH.md`](./AUTH.md). Crypto: [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md). Data model: [`DATA_MODEL.md`](./DATA_MODEL.md). Legal: [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).

@@ -1,9 +1,9 @@
--- workspaces: client-generated UUIDs; plaintext display metadata only.
+-- workspaces: client-generated UUIDs; display name in encrypted_blob (workspace key).
 
 create table public.workspaces (
   id uuid primary key,
   created_by uuid not null references public.profiles (id),
-  name text not null,
+  encrypted_blob jsonb not null,
   kind text not null default 'standard'
     check (kind in ('personal', 'standard')),
   created_at timestamptz not null default now(),

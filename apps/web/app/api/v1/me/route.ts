@@ -66,8 +66,11 @@ export async function DELETE(request: Request) {
   }
 
   if (split.blockingWorkspaces.length > 0) {
-    const names = split.blockingWorkspaces.map((w) => w.name).join(", ");
-    return apiError("conflict", `${SHARED_OWNERSHIP_MESSAGE}: ${names}`, 409);
+    return apiError(
+      "conflict",
+      `${SHARED_OWNERSHIP_MESSAGE} (${split.blockingWorkspaces.length})`,
+      409,
+    );
   }
 
   const soloOwnedIds = split.soloOwnedWorkspaces.map((w) => w.id);

@@ -28,6 +28,8 @@ export type CategorizationOption = {
   isDefault?: boolean;
   /** Stages only: how many tasks to show before “Show more”. Default 15. */
   maxVisibleTasks?: number;
+  /** Stages only: 0–100 contribution toward project completion. */
+  completionPercent?: number;
 };
 
 export type ProjectCategorizations = {
@@ -77,6 +79,66 @@ export function resolveStageColor(
   ];
 }
 
+/** Default completion weights for seeded stage names. Cancelled is out of scope. */
+const DEFAULT_STAGE_COMPLETION: Record<(typeof STAGE_NAMES)[number], number> = {
+  Backlog: 0,
+  Discovery: 15,
+  Ready: 30,
+  "In Progress": 50,
+  Testing: 70,
+  Acceptance: 85,
+  Completed: 100,
+  Cancelled: 0,
+};
+
+export function isCancelledStageName(name: string): boolean {
+  return name === "Cancelled";
+}
+
+/** Accept integers 0–100; null if invalid. */
+export function normalizeCompletionPercent(value: unknown): number | null {
+  if (typeof value !== "number" || !Number.isInteger(value)) return null;
+  if (value < 0 || value > 100) return null;
+  return value;
+}
+
+/**
+ * Resolve a stage's contribution to weighted completion.
+ * Cancelled stages should be excluded from scope by callers — this still returns 0.
+ */
+export function resolveCompletionPercent(
+  stage:
+    | Pick<
+        CategorizationOption,
+        "id" | "name" | "completionPercent" | "sortOrder" | "isDefault"
+      >
+    | null
+    | undefined,
+  stages: CategorizationOption[],
+): number {
+  if (!stage) return 0;
+  if (isCancelledStageName(stage.name)) return 0;
+  const stored = normalizeCompletionPercent(stage.completionPercent);
+  if (stored !== null) return stored;
+  if (stage.name === "Completed") return 100;
+  if (stage.isDefault) return 0;
+
+  const named =
+    DEFAULT_STAGE_COMPLETION[
+      stage.name as keyof typeof DEFAULT_STAGE_COMPLETION
+    ];
+  if (named !== undefined) return named;
+
+  const active = [...stages]
+    .filter((s) => !isCancelledStageName(s.name))
+    .sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+  if (active.length <= 1) return 0;
+  const index = active.findIndex((s) => s.id === stage.id);
+  if (index < 0) return 0;
+  if (index === active.length - 1) return 100;
+  return Math.round((index / (active.length - 1)) * 100);
+}
+
 /** Resolve how many tasks a stage shows before “Show more”. */
 export function resolveMaxVisibleTasks(
   stage: Pick<CategorizationOption, "maxVisibleTasks"> | null | undefined,
@@ -103,6 +165,7 @@ function option(
     color?: EntityColor;
     icon?: CategorizationIcon;
     maxVisibleTasks?: number;
+    completionPercent?: number;
   },
 ): CategorizationOption {
   const o: CategorizationOption = {
@@ -115,6 +178,9 @@ function option(
   if (opts?.icon) o.icon = opts.icon;
   if (opts?.maxVisibleTasks !== undefined) {
     o.maxVisibleTasks = opts.maxVisibleTasks;
+  }
+  if (opts?.completionPercent !== undefined) {
+    o.completionPercent = opts.completionPercent;
   }
   return o;
 }
@@ -131,6 +197,7 @@ export function defaultCategorizations(): ProjectCategorizations {
         color: DEFAULT_STAGE_COLORS[name],
         icon: DEFAULT_OPTION_ICONS[name],
         maxVisibleTasks: DEFAULT_MAX_VISIBLE_TASKS,
+        completionPercent: DEFAULT_STAGE_COMPLETION[name],
       }),
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
@@ -160,6 +227,8 @@ function normalizeOption(item: unknown): CategorizationOption | null {
   if (o.isDefault === true) next.isDefault = true;
   const maxVisible = normalizeMaxVisibleTasks(o.maxVisibleTasks);
   if (maxVisible !== null) next.maxVisibleTasks = maxVisible;
+  const completion = normalizeCompletionPercent(o.completionPercent);
+  if (completion !== null) next.completionPercent = completion;
   // Ignore invalid color/icon tokens rather than rejecting the whole option.
   if (o.color !== undefined && isEntityColor(o.color)) {
     next.color = o.color;
@@ -229,6 +298,9 @@ export function cloneCategorizations(
       if (o.isDefault) next.isDefault = true;
       if (o.maxVisibleTasks !== undefined) {
         next.maxVisibleTasks = o.maxVisibleTasks;
+      }
+      if (o.completionPercent !== undefined) {
+        next.completionPercent = o.completionPercent;
       }
       return next;
     });

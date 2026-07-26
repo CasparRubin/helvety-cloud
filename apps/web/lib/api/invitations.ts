@@ -1,7 +1,9 @@
 import {
   invitationStatusSchema,
+  sealedKeyEnvelopeSchema,
   workspaceInvitationSchema,
   workspaceInviteRoleSchema,
+  type CiphertextEnvelope,
   type InvitationStatus,
   type WorkspaceInvitation,
 } from "@helvety-cloud/api-contract";
@@ -34,12 +36,12 @@ export function invitationStatus(row: InvitationRow): InvitationStatus {
 
 export function mapInvitationRow(
   row: InvitationRow,
-  workspaceName?: string,
+  workspaceEncryptedBlob?: CiphertextEnvelope,
 ): WorkspaceInvitation {
   return workspaceInvitationSchema.parse({
     id: row.id,
     workspaceId: row.workspace_id,
-    workspaceName,
+    workspaceEncryptedBlob,
     email: row.email,
     role: workspaceInviteRoleSchema.parse(row.role),
     status: invitationStatusSchema.parse(invitationStatus(row)),
@@ -48,6 +50,10 @@ export function mapInvitationRow(
     claimedPublicKey: row.claimed_public_key,
     claimedAt: row.claimed_at,
     sealedAt: row.sealed_at,
+    sealedWorkspaceKey:
+      row.sealed_workspace_key == null
+        ? row.sealed_workspace_key
+        : sealedKeyEnvelopeSchema.parse(row.sealed_workspace_key),
     acceptedAt: row.accepted_at,
     cancelledAt: row.cancelled_at,
     createdAt: row.created_at,

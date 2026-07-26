@@ -1,4 +1,5 @@
 import {
+  ciphertextEnvelopeSchema,
   createWorkspaceRequestSchema,
   createWorkspaceResponseSchema,
   listWorkspacesResponseSchema,
@@ -38,7 +39,7 @@ export async function GET(request: Request) {
 
   const { data: workspaces, error: workspaceError } = await supabase
     .from("workspaces")
-    .select("id, name, kind, updated_at")
+    .select("id, encrypted_blob, kind, updated_at")
     .in("id", workspaceIds)
     .order("updated_at", { ascending: false });
 
@@ -70,7 +71,7 @@ export async function GET(request: Request) {
     }
     items.push({
       id: workspace.id,
-      name: workspace.name,
+      encryptedBlob: ciphertextEnvelopeSchema.parse(workspace.encrypted_blob),
       kind: workspaceKindSchema.parse(workspace.kind),
       role: workspaceRoleSchema.parse(role),
       wrappedKey: sealedKeyEnvelopeSchema.parse(wrappedKey),
@@ -99,7 +100,7 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return apiError("invalid_body", parsed.error.message, 400);
   }
-  const { id, name, kind, wrappedKey } = parsed.data;
+  const { id, encryptedBlob, kind, wrappedKey } = parsed.data;
 
   const limitResponse = await assertOwnedWorkspaceAllowed(supabase, user.id);
   if (limitResponse) {
@@ -117,7 +118,7 @@ export async function POST(request: Request) {
   const { error: workspaceError } = await supabase.from("workspaces").insert({
     id,
     created_by: user.id,
-    name,
+    encrypted_blob: encryptedBlob,
     kind,
   });
   if (workspaceError) {
@@ -149,7 +150,7 @@ export async function POST(request: Request) {
   }
 
   return jsonOk(
-    createWorkspaceResponseSchema.parse({ id, name, kind }),
+    createWorkspaceResponseSchema.parse({ id, encryptedBlob, kind }),
     201,
   );
 }

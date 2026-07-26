@@ -10,7 +10,9 @@ export type MilestonePlaintext = {
   title: string;
   description: TaskBodyDoc;
   /** ISO date `YYYY-MM-DD`, or null when unset. */
-  targetDate: string | null;
+  startDate: string | null;
+  /** ISO date `YYYY-MM-DD`, or null when unset. */
+  endDate: string | null;
 };
 
 export function parseMilestonePlaintext(raw: unknown): MilestonePlaintext {
@@ -33,31 +35,42 @@ export function parseMilestonePlaintext(raw: unknown): MilestonePlaintext {
     };
   }
 
-  let targetDate: string | null = null;
-  if (obj.targetDate !== undefined && obj.targetDate !== null) {
-    if (!isIsoDate(obj.targetDate)) {
-      throw new Error("Invalid milestone targetDate");
+  let startDate: string | null = null;
+  if (obj.startDate !== undefined && obj.startDate !== null) {
+    if (!isIsoDate(obj.startDate)) {
+      throw new Error("Invalid milestone startDate");
     }
-    targetDate = obj.targetDate;
+    startDate = obj.startDate;
+  }
+
+  let endDate: string | null = null;
+  if (obj.endDate !== undefined && obj.endDate !== null) {
+    if (!isIsoDate(obj.endDate)) {
+      throw new Error("Invalid milestone endDate");
+    }
+    endDate = obj.endDate;
   }
 
   return {
     version: 1,
     title: obj.title,
     description,
-    targetDate,
+    startDate,
+    endDate,
   };
 }
 
 export function toMilestonePlaintext(
   title: string,
   description: TaskBodyDoc = EMPTY_TASK_BODY,
-  targetDate: string | null = null,
+  startDate: string | null = null,
+  endDate: string | null = null,
 ): MilestonePlaintext {
   return {
     version: 1,
     title: title.trim(),
     description,
-    targetDate: targetDate && isIsoDate(targetDate) ? targetDate : null,
+    startDate: startDate && isIsoDate(startDate) ? startDate : null,
+    endDate: endDate && isIsoDate(endDate) ? endDate : null,
   };
 }

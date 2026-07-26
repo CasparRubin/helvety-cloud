@@ -12,7 +12,12 @@ import {
   claimInvitation,
   listMyInvitations,
 } from "@/lib/api/v1-client";
-import { storeLastWorkspaceId } from "@/lib/vault/workspaces";
+import type { UnlockedVault } from "@/lib/vault/user-keys";
+import {
+  decryptWorkspaceName,
+  storeLastWorkspaceId,
+  unwrapWorkspaceKey,
+} from "@/lib/vault/workspaces";
 
 function statusCopy(status: WorkspaceInvitation["status"]): string {
   switch (status) {
@@ -33,6 +38,41 @@ function statusCopy(status: WorkspaceInvitation["status"]): string {
   }
 }
 
+/**
+ * Workspace names live in ciphertext; readable once the owner sealed the
+ * workspace key to this vault.
+ */
+async function decryptWorkspaceNames(
+  vault: UnlockedVault,
+  invitations: WorkspaceInvitation[],
+): Promise<Map<string, string>> {
+  const names = new Map<string, string>();
+  await Promise.all(
+    invitations.map(async (invitation) => {
+      const { workspaceEncryptedBlob, sealedWorkspaceKey } = invitation;
+      if (!workspaceEncryptedBlob || !sealedWorkspaceKey) return;
+      try {
+        const workspaceKey = await unwrapWorkspaceKey(
+          vault,
+          invitation.workspaceId,
+          sealedWorkspaceKey,
+        );
+        names.set(
+          invitation.id,
+          await decryptWorkspaceName(
+            workspaceKey,
+            invitation.workspaceId,
+            workspaceEncryptedBlob,
+          ),
+        );
+      } catch {
+        // Leave the name hidden rather than failing the whole inbox.
+      }
+    }),
+  );
+  return names;
+}
+
 type InvitationInboxProps = {
   userId: string;
 };
@@ -41,36 +81,47 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   const router = useRouter();
   const { vault, refreshWorkspaces } = useVaultSession();
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
+  const [workspaceNames, setWorkspaceNames] = useState<Map<string, string>>(
+    () => new Map(),
+  );
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadInvitations = useCallback(async () => {
+  const loadInvitations = useCallback(async (activeVault: UnlockedVault) => {
     const listed = await listMyInvitations();
-    return listed.invitations.filter(
+    const pending = listed.invitations.filter(
       (i) => i.status !== "cancelled" && i.status !== "accepted",
     );
+    return {
+      invitations: pending,
+      workspaceNames: await decryptWorkspaceNames(activeVault, pending),
+    };
   }, []);
 
   const refresh = useCallback(async () => {
+    if (!vault) return;
     setError(null);
     try {
-      setInvitations(await loadInvitations());
+      const loaded = await loadInvitations(vault);
+      setInvitations(loaded.invitations);
+      setWorkspaceNames(loaded.workspaceNames);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load invitations");
     } finally {
       setLoading(false);
     }
-  }, [loadInvitations]);
+  }, [vault, loadInvitations]);
 
   useEffect(() => {
     if (!vault) return;
     let cancelled = false;
     void (async () => {
       try {
-        const next = await loadInvitations();
+        const loaded = await loadInvitations(vault);
         if (cancelled) return;
-        setInvitations(next);
+        setInvitations(loaded.invitations);
+        setWorkspaceNames(loaded.workspaceNames);
         setError(null);
       } catch (err) {
         if (cancelled) return;
@@ -155,7 +206,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
               >
                 <div>
                   <p className="text-sm font-medium">
-                    {invitation.workspaceName ?? "Workspace"}
+                    {workspaceNames.get(invitation.id) ?? "Workspace"}
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Role: {invitation.role}

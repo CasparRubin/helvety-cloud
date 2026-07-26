@@ -9,6 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
+import { useVaultSession } from "@/components/vault/vault-session-provider";
 
 export function AccountGeneralSettings() {
   const { account, error } = useAccountSettings();
@@ -61,6 +62,10 @@ export function AccountDangerSettings() {
     canSubmit,
     onDeleteAccount,
   } = useAccountSettings();
+  const { workspaces } = useVaultSession();
+
+  const workspaceName = (workspaceId: string) =>
+    workspaces.find((w) => w.id === workspaceId)?.name ?? "Workspace";
 
   if (error && !account) {
     return (
@@ -120,7 +125,7 @@ export function AccountDangerSettings() {
                 key={ws.id}
                 className="rounded-md border border-border px-2 py-1.5"
               >
-                {ws.name}
+                {workspaceName(ws.id)}
                 {ws.kind === "personal" ? (
                   <span className="ml-1 text-xs text-muted-foreground">
                     (Personal)
@@ -141,7 +146,7 @@ export function AccountDangerSettings() {
                 key={ws.id}
                 className="flex items-center justify-between rounded-md border border-border px-2 py-1.5"
               >
-                <span>{ws.name}</span>
+                <span>{workspaceName(ws.id)}</span>
                 <span className="text-xs text-muted-foreground">{ws.role}</span>
               </li>
             ))}
@@ -164,7 +169,7 @@ export function AccountDangerSettings() {
                   href={`/app/w/${ws.id}/settings/general`}
                   className="underline underline-offset-4"
                 >
-                  {ws.name}
+                  {workspaceName(ws.id)}
                 </Link>
               </li>
             ))}

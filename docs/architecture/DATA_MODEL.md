@@ -30,7 +30,7 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 |-------|------|
 | `profiles` | `id` = `auth.users.id`; non-secret profile fields if any |
 | `user_crypto` | `public_key`, wrapped user/private key blobs, `prf_salt`, `key_check`, versions |
-| `workspaces` | Workspace ids, plaintext `name`, `kind` (`personal` \| `standard`), owner/timestamps; at most one Personal per owner |
+| `workspaces` | Workspace ids, `kind` (`personal` \| `standard`), owner/timestamps; at most one Personal per owner. Display **name** is ciphertext (`encrypted_blob`), not plaintext. |
 | `workspace_members` | `workspace_id`, `user_id`, `role` |
 | `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key` — always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
 | `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
@@ -51,13 +51,13 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
 | Table | Content |
 |-------|---------|
-| `projects` | `encrypted_blob` holds `{ name, description, categorizations, color? }` where `description` is TipTap JSON; `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, icon?, isDefault? }` (names + colors + icons encrypted); stage `color` is an `EntityColor` palette token; option `icon` is an allowlisted Lucide token; optional top-level `color` is a palette token; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
-| `milestones` (P10) | `encrypted_blob` holds `{ version: 1, title, description, targetDate }` where `description` is TipTap JSON and `targetDate` is `YYYY-MM-DD` or null (encrypted for ZK — Helvety cannot see deadlines); plaintext FKs: `id`, `project_id`, sort, timestamps, tombstone |
+| `projects` | `encrypted_blob` holds `{ name, description, categorizations, color? }` where `description` is TipTap JSON; `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, icon?, isDefault?, maxVisibleTasks?, completionPercent? }` (names + colors + icons + stage weights encrypted); stage `color` is an `EntityColor` palette token; option `icon` is an allowlisted Lucide token; stages may store `completionPercent` (0–100) for weighted progress; optional top-level `color` is a palette token; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
+| `milestones` (P10/P14) | `encrypted_blob` holds `{ version: 1, title, description, startDate, endDate }` where `description` is TipTap JSON and dates are `YYYY-MM-DD` or null (encrypted for ZK — Helvety cannot see schedules); plaintext FKs: `id`, `project_id`, sort, timestamps, tombstone |
 | `tasks` | `encrypted_blob` holds `{ version: 1, title, body, dueDate }` where `body` is TipTap JSON that may include allowed `entityRef` atoms; **no per-task accent** — chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. |
 | `notes` (P6d/P8) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body, tags, color? }` where `body` is TipTap JSON that may include `entityRef` atoms `{ type: "entityRef", attrs: { kind, id } }` (P8b); `tags` is `string[]`; optional `color` palette token (P8c); optional nullable plaintext `project_id` for filing filters. Task associations live in `entity_links`, not a note column. |
 | `contacts` | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; `notes` is TipTap JSON and may include allowed `entityRef` atoms; optional `color` palette token; duplicates across workspaces OK. |
 | `attachments` (P11) | `encrypted_meta` = `{ filename, mimeType }` envelope; `wrapped_dek` under workspace_key; raw file ciphertext in Storage (`vault-attachments/{workspaceId}/{attachmentId}`) as packed binary AES-GCM. TipTap `fileAttachment` atoms + `attachment_links` junction. |
-| `milestones` (P10) | Project-scoped ciphertext `{ version: 1, title, description, targetDate }` |
+| `workspaces` (P14) | `encrypted_blob` = `{ version: 1, name }` under **workspace_key** (AAD `workspaces:{id}:encrypted_blob`). `kind` stays plaintext. |
 
 ## RLS
 

@@ -1,13 +1,18 @@
 /**
  * Create / ensure Personal workspace after vault unlock.
  * Workspace keys stay in memory only (caller caches if needed).
+ * Display names live in encrypted_blob under the workspace key.
  */
 
 import {
+  decrypt,
+  encodeUtf8,
+  encrypt,
   fromBase64Url,
   openSealedKey,
   randomKeyBytes,
   sealToPublicKey,
+  type CiphertextEnvelope,
 } from "@helvety-cloud/crypto";
 import type {
   SealedKeyEnvelope,
@@ -21,6 +26,12 @@ import {
   ApiClientError,
 } from "@/lib/api/v1-client";
 import type { UnlockedVault } from "@/lib/vault/user-keys";
+import {
+  parseWorkspacePlaintext,
+  toWorkspacePlaintext,
+} from "@/lib/vault/workspace-plaintext";
+
+const textDecoder = new TextDecoder();
 
 function wrappedWorkspaceKeyAad(workspaceId: string) {
   return {
@@ -28,6 +39,41 @@ function wrappedWorkspaceKeyAad(workspaceId: string) {
     recordId: workspaceId,
     field: "wrapped_key",
   } as const;
+}
+
+function workspaceAad(workspaceId: string) {
+  return {
+    table: "workspaces" as const,
+    recordId: workspaceId,
+    field: "encrypted_blob" as const,
+  };
+}
+
+export async function encryptWorkspaceName(
+  workspaceKey: Uint8Array,
+  workspaceId: string,
+  name: string,
+  keyVersion = 1,
+): Promise<CiphertextEnvelope> {
+  return encrypt({
+    key: workspaceKey,
+    plaintext: encodeUtf8(JSON.stringify(toWorkspacePlaintext(name))),
+    aad: workspaceAad(workspaceId),
+    keyVersion,
+  });
+}
+
+export async function decryptWorkspaceName(
+  workspaceKey: Uint8Array,
+  workspaceId: string,
+  envelope: CiphertextEnvelope,
+): Promise<string> {
+  const bytes = await decrypt({
+    key: workspaceKey,
+    envelope,
+    aad: workspaceAad(workspaceId),
+  });
+  return parseWorkspacePlaintext(JSON.parse(textDecoder.decode(bytes))).name;
 }
 
 export async function unwrapWorkspaceKey(
@@ -103,10 +149,39 @@ export function invitationMailto(params: {
   };
 }
 
+export type DecryptedWorkspaceListItem = {
+  id: string;
+  name: string;
+  kind: WorkspaceListItem["kind"];
+  role: WorkspaceListItem["role"];
+  wrappedKey: WorkspaceListItem["wrappedKey"];
+  updatedAt: string;
+};
+
+export async function decryptWorkspaceListItem(
+  vault: UnlockedVault,
+  item: WorkspaceListItem,
+): Promise<DecryptedWorkspaceListItem> {
+  const workspaceKey = await unwrapWorkspaceKey(vault, item.id, item.wrappedKey);
+  const name = await decryptWorkspaceName(
+    workspaceKey,
+    item.id,
+    item.encryptedBlob,
+  );
+  return {
+    id: item.id,
+    name,
+    kind: item.kind,
+    role: item.role,
+    wrappedKey: item.wrappedKey,
+    updatedAt: item.updatedAt,
+  };
+}
+
 export async function createStandardWorkspace(
   vault: UnlockedVault,
   name: string,
-): Promise<WorkspaceListItem> {
+): Promise<DecryptedWorkspaceListItem> {
   const id = crypto.randomUUID();
   const workspaceKey = randomKeyBytes();
   const wrappedKey = await sealToPublicKey(
@@ -115,15 +190,21 @@ export async function createStandardWorkspace(
     wrappedWorkspaceKeyAad(id),
     vault.keyVersion,
   );
-  const created = await createWorkspace({
+  const encryptedBlob = await encryptWorkspaceName(
+    workspaceKey,
     id,
     name,
+    vault.keyVersion,
+  );
+  const created = await createWorkspace({
+    id,
+    encryptedBlob,
     kind: "standard",
     wrappedKey,
   });
   return {
     id: created.id,
-    name: created.name,
+    name,
     kind: created.kind,
     role: "owner",
     wrappedKey,
@@ -137,11 +218,11 @@ export async function createStandardWorkspace(
  */
 export async function ensurePersonalWorkspace(
   vault: UnlockedVault,
-): Promise<WorkspaceListItem> {
+): Promise<DecryptedWorkspaceListItem> {
   const listed = await listWorkspaces();
   const existing = listed.workspaces.find((w) => w.kind === "personal");
   if (existing) {
-    return existing;
+    return decryptWorkspaceListItem(vault, existing);
   }
 
   const id = crypto.randomUUID();
@@ -152,17 +233,23 @@ export async function ensurePersonalWorkspace(
     wrappedWorkspaceKeyAad(id),
     vault.keyVersion,
   );
+  const encryptedBlob = await encryptWorkspaceName(
+    workspaceKey,
+    id,
+    "Personal",
+    vault.keyVersion,
+  );
 
   try {
     const created = await createWorkspace({
       id,
-      name: "Personal",
+      encryptedBlob,
       kind: "personal",
       wrappedKey,
     });
     return {
       id: created.id,
-      name: created.name,
+      name: "Personal",
       kind: created.kind,
       role: "owner",
       wrappedKey,
@@ -172,14 +259,14 @@ export async function ensurePersonalWorkspace(
     if (error instanceof ApiClientError && error.status === 409) {
       const retry = await listWorkspaces();
       const personal = retry.workspaces.find((w) => w.kind === "personal");
-      if (personal) return personal;
+      if (personal) return decryptWorkspaceListItem(vault, personal);
     }
     throw error;
   }
 }
 
 export function pickDefaultWorkspaceId(
-  workspaces: WorkspaceListItem[],
+  workspaces: DecryptedWorkspaceListItem[],
   preferredId: string | null,
 ): string | null {
   if (preferredId && workspaces.some((w) => w.id === preferredId)) {

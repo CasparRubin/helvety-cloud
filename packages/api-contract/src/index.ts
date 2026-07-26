@@ -137,7 +137,7 @@ export const workspaceNameSchema = z.string().trim().min(1).max(120);
 
 export const createWorkspaceRequestSchema = z.object({
   id: uuidSchema,
-  name: workspaceNameSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
   kind: workspaceKindSchema.default("standard"),
   wrappedKey: sealedKeyEnvelopeSchema,
 });
@@ -147,7 +147,7 @@ export type CreateWorkspaceRequest = z.infer<
 
 export const createWorkspaceResponseSchema = z.object({
   id: uuidSchema,
-  name: workspaceNameSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
   kind: workspaceKindSchema,
 });
 export type CreateWorkspaceResponse = z.infer<
@@ -156,7 +156,7 @@ export type CreateWorkspaceResponse = z.infer<
 
 export const workspaceListItemSchema = z.object({
   id: uuidSchema,
-  name: workspaceNameSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
   kind: workspaceKindSchema,
   role: workspaceRoleSchema,
   wrappedKey: sealedKeyEnvelopeSchema,
@@ -173,20 +173,20 @@ export type ListWorkspacesResponse = z.infer<
 
 export const getWorkspaceResponseSchema = z.object({
   id: uuidSchema,
-  name: workspaceNameSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
   kind: workspaceKindSchema,
   wrappedKey: sealedKeyEnvelopeSchema,
 });
 export type GetWorkspaceResponse = z.infer<typeof getWorkspaceResponseSchema>;
 
 export const patchWorkspaceRequestSchema = z.object({
-  name: workspaceNameSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
 });
 export type PatchWorkspaceRequest = z.infer<typeof patchWorkspaceRequestSchema>;
 
 export const patchWorkspaceResponseSchema = z.object({
   id: uuidSchema,
-  name: workspaceNameSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
   kind: workspaceKindSchema,
 });
 export type PatchWorkspaceResponse = z.infer<
@@ -455,7 +455,7 @@ export const invitationEmailSchema = z
 export const workspaceInvitationSchema = z.object({
   id: uuidSchema,
   workspaceId: uuidSchema,
-  workspaceName: workspaceNameSchema.optional(),
+  workspaceEncryptedBlob: ciphertextEnvelopeSchema.optional(),
   email: z.string().min(1),
   role: workspaceInviteRoleSchema,
   status: invitationStatusSchema,
@@ -464,6 +464,7 @@ export const workspaceInvitationSchema = z.object({
   claimedPublicKey: base64UrlSchema.nullable(),
   claimedAt: z.string().nullable(),
   sealedAt: z.string().nullable(),
+  sealedWorkspaceKey: sealedKeyEnvelopeSchema.nullable().optional(),
   acceptedAt: z.string().nullable(),
   cancelledAt: z.string().nullable(),
   createdAt: z.string(),
@@ -720,22 +721,19 @@ export const getMeAccountResponseSchema = z.object({
   blockingWorkspaces: z.array(
     z.object({
       id: uuidSchema,
-      name: workspaceNameSchema,
     }),
   ),
   /** Owned workspaces with no other members — deleted with the account. */
   soloOwnedWorkspaces: z.array(
     z.object({
       id: uuidSchema,
-      name: workspaceNameSchema,
       kind: workspaceKindSchema,
     }),
   ),
-  /** Workspaces the account is only removed from. */
+  /** Workspaces the account is only removed from. Names resolve client-side after unlock. */
   leavingWorkspaces: z.array(
     z.object({
       id: uuidSchema,
-      name: workspaceNameSchema,
       role: workspaceRoleSchema,
     }),
   ),

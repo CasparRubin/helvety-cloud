@@ -1,6 +1,7 @@
 import {
   cloneCategorizations,
   DEFAULT_MAX_VISIBLE_TASKS,
+  normalizeCompletionPercent,
   normalizeMaxVisibleTasks,
   removeOption,
   remapTaskIdsByName,
@@ -178,6 +179,31 @@ export async function setCategorizationOptionMaxVisibleTasks(
     ...project.categorizations,
     stages: project.categorizations.stages.map((o) =>
       o.id === optionId ? { ...o, maxVisibleTasks: normalized } : o,
+    ),
+  };
+  return updateProjectCategorizations(
+    workspaceId,
+    workspaceKey,
+    project,
+    categorizations,
+  );
+}
+
+export async function setCategorizationOptionCompletionPercent(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  project: DecryptedProject,
+  optionId: string,
+  completionPercent: number,
+): Promise<DecryptedProject> {
+  const normalized = normalizeCompletionPercent(completionPercent);
+  if (normalized === null) {
+    throw new Error("Completion must be an integer from 0 to 100");
+  }
+  const categorizations: ProjectCategorizations = {
+    ...project.categorizations,
+    stages: project.categorizations.stages.map((o) =>
+      o.id === optionId ? { ...o, completionPercent: normalized } : o,
     ),
   };
   return updateProjectCategorizations(

@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import {
   MAX_MAX_VISIBLE_TASKS,
   MIN_MAX_VISIBLE_TASKS,
+  resolveCompletionPercent,
   resolveMaxVisibleTasks,
   type CategorizationIcon,
   type CategorizationKind,
@@ -30,6 +31,7 @@ export function CategorizationOptionList({
   onSetColor,
   onSetIcon,
   onSetMaxVisibleTasks,
+  onSetCompletionPercent,
 }: {
   title: string;
   description: string;
@@ -48,6 +50,10 @@ export function CategorizationOptionList({
     icon: CategorizationIcon | undefined,
   ) => Promise<void>;
   onSetMaxVisibleTasks?: (id: string, maxVisibleTasks: number) => Promise<void>;
+  onSetCompletionPercent?: (
+    id: string,
+    completionPercent: number,
+  ) => Promise<void>;
 }) {
   const sorted = [...options].sort(
     (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
@@ -142,6 +148,42 @@ export function CategorizationOptionList({
                       }
                       if (parsed !== current) {
                         void onSetMaxVisibleTasks(opt.id, parsed);
+                      }
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.target as HTMLInputElement).blur();
+                      }
+                    }}
+                  />
+                </label>
+              ) : null}
+              {onSetCompletionPercent ? (
+                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <span>%</span>
+                  <Input
+                    type="number"
+                    inputMode="numeric"
+                    min={0}
+                    max={100}
+                    defaultValue={resolveCompletionPercent(opt, options)}
+                    disabled={busy}
+                    className="h-8 w-14 tabular-nums"
+                    aria-label={`Completion percent for ${opt.name}`}
+                    onBlur={(e) => {
+                      const parsed = Number.parseInt(e.target.value, 10);
+                      const current = resolveCompletionPercent(opt, options);
+                      if (
+                        !Number.isInteger(parsed) ||
+                        parsed < 0 ||
+                        parsed > 100
+                      ) {
+                        e.target.value = String(current);
+                        return;
+                      }
+                      if (parsed !== current) {
+                        void onSetCompletionPercent(opt.id, parsed);
                       }
                     }}
                     onKeyDown={(e) => {

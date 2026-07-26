@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
@@ -8,14 +8,23 @@ import { InlineTitle } from "@/components/app/inline-title";
 import { SaveStatus } from "@/components/app/save-status";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   createMilestone,
   deleteMilestone,
+  formatMilestoneDateRange,
   saveMilestone,
   sortMilestones,
   type DecryptedMilestone,
@@ -30,7 +39,6 @@ import {
   EMPTY_TASK_BODY,
   taskBodyPlainText,
   textToTaskBody,
-  type TaskBodyDoc,
 } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
 
@@ -165,9 +173,10 @@ export function ProjectMilestonesPanel({
   const { getWorkspaceKey } = useVaultSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [newDate, setNewDate] = useState("");
+  const [newStartDate, setNewStartDate] = useState("");
+  const [newEndDate, setNewEndDate] = useState("");
   const [newDescription, setNewDescription] = useState("");
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editing, setEditing] = useState<DecryptedMilestone | null>(null);
 
   async function onCreateMilestone(title: string) {
     setBusy(true);
@@ -183,17 +192,49 @@ export function ProjectMilestonesPanel({
         {
           title,
           description: description ? textToTaskBody(description) : undefined,
-          targetDate: newDate.trim() || null,
+          startDate: newStartDate.trim() || null,
+          endDate: newEndDate.trim() || null,
         },
         nextOrder,
       );
       onMilestonesChange(sortMilestones([...milestones, created]));
-      setNewDate("");
+      setNewStartDate("");
+      setNewEndDate("");
       setNewDescription("");
-      setEditingId(created.id);
     } finally {
       setBusy(false);
     }
+  }
+
+  async function onSaveMilestone(input: {
+    title: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }) {
+    if (!editing) return;
+    const key = await getWorkspaceKey(workspaceId);
+    const description = input.description.trim();
+    const saved = await saveMilestone(
+      workspaceId,
+      projectId,
+      key,
+      editing,
+      {
+        title: input.title.trim(),
+        description: description
+          ? textToTaskBody(description)
+          : EMPTY_TASK_BODY,
+        startDate: input.startDate.trim() || null,
+        endDate: input.endDate.trim() || null,
+      },
+    );
+    onMilestonesChange(
+      sortMilestones(
+        milestones.map((item) => (item.id === saved.id ? saved : item)),
+      ),
+    );
+    setEditing(null);
   }
 
   async function onDeleteMilestone(milestone: DecryptedMilestone) {
@@ -203,7 +244,7 @@ export function ProjectMilestonesPanel({
     try {
       await deleteMilestone(workspaceId, projectId, milestone);
       onMilestonesChange(milestones.filter((m) => m.id !== milestone.id));
-      if (editingId === milestone.id) setEditingId(null);
+      if (editing?.id === milestone.id) setEditing(null);
       if (selectedFilter === milestone.id) onSelectFilter("all");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Delete failed");
@@ -217,7 +258,7 @@ export function ProjectMilestonesPanel({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col gap-3">
+    <div className="flex flex-col gap-3">
       <CreateEntityDialog
         triggerLabel="Create milestone"
         dialogTitle="Create milestone"
@@ -229,21 +270,35 @@ export function ProjectMilestonesPanel({
         onCreate={onCreateMilestone}
         onOpenChange={(open) => {
           if (open) {
-            setNewDate("");
+            setNewStartDate("");
+            setNewEndDate("");
             setNewDescription("");
           }
         }}
       >
-        <div className="flex flex-col gap-2">
-          <Label htmlFor="milestone-target-date">Target date (optional)</Label>
-          <Input
-            id="milestone-target-date"
-            type="date"
-            value={newDate}
-            onChange={(e) => setNewDate(e.target.value)}
-            disabled={busy}
-            aria-label="Target date"
-          />
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="milestone-start-date">Start date (optional)</Label>
+            <Input
+              id="milestone-start-date"
+              type="date"
+              value={newStartDate}
+              onChange={(e) => setNewStartDate(e.target.value)}
+              disabled={busy}
+              aria-label="Start date"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="milestone-end-date">End date (optional)</Label>
+            <Input
+              id="milestone-end-date"
+              type="date"
+              value={newEndDate}
+              onChange={(e) => setNewEndDate(e.target.value)}
+              disabled={busy}
+              aria-label="End date"
+            />
+          </div>
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="milestone-description">Description (optional)</Label>
@@ -261,39 +316,29 @@ export function ProjectMilestonesPanel({
       {milestones.length === 0 ? (
         <p className="text-sm text-muted-foreground">No milestones yet.</p>
       ) : (
-        <ul className="flex min-h-0 flex-1 flex-col gap-2 overflow-y-auto pb-2">
+        <ul className="flex flex-col gap-2">
           {milestones.map((m) => (
             <li key={m.id}>
-              {editingId === m.id ? (
-                <MilestoneEditor
-                  workspaceId={workspaceId}
-                  projectId={projectId}
-                  milestone={m}
-                  onUpdated={(saved) => {
-                    onMilestonesChange(
-                      sortMilestones(
-                        milestones.map((item) =>
-                          item.id === saved.id ? saved : item,
-                        ),
-                      ),
-                    );
-                  }}
-                  onDone={() => setEditingId(null)}
-                  onDelete={() => void onDeleteMilestone(m)}
-                  onError={setError}
-                />
-              ) : (
-                <MilestoneListItem
-                  milestone={m}
-                  selected={selectedFilter === m.id}
-                  onSelect={() => selectMilestone(m.id)}
-                  onEdit={() => setEditingId(m.id)}
-                />
-              )}
+              <MilestoneListItem
+                milestone={m}
+                selected={selectedFilter === m.id}
+                onSelect={() => selectMilestone(m.id)}
+                onEdit={() => setEditing(m)}
+              />
             </li>
           ))}
         </ul>
       )}
+
+      <MilestoneEditDialog
+        milestone={editing}
+        busy={busy}
+        onOpenChange={(open) => {
+          if (!open) setEditing(null);
+        }}
+        onSave={onSaveMilestone}
+        onDelete={() => (editing ? onDeleteMilestone(editing) : undefined)}
+      />
 
       {error ? (
         <p className="text-sm text-destructive" role="alert">
@@ -335,7 +380,7 @@ function MilestoneListItem({
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-sm font-medium">{milestone.title}</span>
           <span className="shrink-0 text-[10px] text-muted-foreground">
-            {milestone.targetDate ?? "No date"}
+            {formatMilestoneDateRange(milestone.startDate, milestone.endDate)}
           </span>
         </div>
         <p
@@ -362,117 +407,173 @@ function MilestoneListItem({
   );
 }
 
-type MilestoneDraft = {
-  title: string;
-  description: TaskBodyDoc;
-  targetDate: string;
-};
-
-function MilestoneEditor({
-  workspaceId,
-  projectId,
+function MilestoneEditDialog({
   milestone,
-  onUpdated,
-  onDone,
+  busy,
+  onOpenChange,
+  onSave,
   onDelete,
-  onError,
 }: {
-  workspaceId: string;
-  projectId: string;
-  milestone: DecryptedMilestone;
-  onUpdated: (milestone: DecryptedMilestone) => void;
-  onDone: () => void;
-  onDelete: () => void;
-  onError?: (error: string | null) => void;
+  milestone: DecryptedMilestone | null;
+  busy: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (input: {
+    title: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }) => Promise<void>;
+  onDelete: () => void | Promise<void>;
 }) {
-  const { getWorkspaceKey } = useVaultSession();
+  return (
+    <Dialog open={milestone !== null} onOpenChange={onOpenChange}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit milestone</DialogTitle>
+        </DialogHeader>
+        {milestone ? (
+          <MilestoneEditForm
+            key={milestone.id}
+            milestone={milestone}
+            busy={busy}
+            onOpenChange={onOpenChange}
+            onSave={onSave}
+            onDelete={onDelete}
+          />
+        ) : null}
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+function MilestoneEditForm({
+  milestone,
+  busy,
+  onOpenChange,
+  onSave,
+  onDelete,
+}: {
+  milestone: DecryptedMilestone;
+  busy: boolean;
+  onOpenChange: (open: boolean) => void;
+  onSave: (input: {
+    title: string;
+    startDate: string;
+    endDate: string;
+    description: string;
+  }) => Promise<void>;
+  onDelete: () => void | Promise<void>;
+}) {
+  const titleId = useId();
+  const startDateId = useId();
+  const endDateId = useId();
+  const descriptionId = useId();
   const [title, setTitle] = useState(milestone.title);
-  const [targetDate, setTargetDate] = useState(milestone.targetDate ?? "");
+  const [startDate, setStartDate] = useState(milestone.startDate ?? "");
+  const [endDate, setEndDate] = useState(milestone.endDate ?? "");
   const [description, setDescription] = useState(
-    milestone.description ?? EMPTY_TASK_BODY,
+    taskBodyPlainText(milestone.description ?? EMPTY_TASK_BODY),
   );
-  const milestoneRef = useRef(milestone);
-  useEffect(() => {
-    milestoneRef.current = milestone;
-  });
+  const [pending, setPending] = useState(false);
+  const [formError, setFormError] = useState<string | null>(null);
 
-  const draft = useMemo<MilestoneDraft>(
-    () => ({ title, description, targetDate }),
-    [title, description, targetDate],
-  );
-
-  const { status, savedAt, flush } = useAutosave({
-    draft,
-    enabled: true,
-    save: async (next) => {
-      const trimmed = next.title.trim();
-      if (!trimmed) {
-        throw new Error("Milestone title cannot be empty");
-      }
-      const key = await getWorkspaceKey(workspaceId);
-      const saved = await saveMilestone(
-        workspaceId,
-        projectId,
-        key,
-        milestoneRef.current,
-        {
-          title: trimmed,
-          description: next.description,
-          targetDate: next.targetDate.trim() || null,
-        },
-      );
-      onUpdated(saved);
-      return {
-        title: saved.title,
-        description: saved.description ?? EMPTY_TASK_BODY,
-        targetDate: saved.targetDate ?? "",
-      };
-    },
-    onError: (message) => onError?.(message),
-    onSaved: (canonical) => {
-      setTitle(canonical.title);
-      setDescription(canonical.description);
-      setTargetDate(canonical.targetDate);
-      onError?.(null);
-    },
-  });
+  async function handleSave() {
+    const trimmed = title.trim();
+    if (!trimmed || pending) return;
+    setPending(true);
+    setFormError(null);
+    try {
+      await onSave({ title: trimmed, startDate, endDate, description });
+    } catch (err) {
+      setFormError(err instanceof Error ? err.message : "Save failed");
+    } finally {
+      setPending(false);
+    }
+  }
 
   return (
-    <div className="flex flex-col gap-2 rounded-md border border-border/60 bg-background p-3">
-      <Input
-        variant="seamless"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
-        onBlur={flush}
-        maxLength={200}
-        aria-label="Milestone title"
-        placeholder="Milestone title"
-      />
-      <Input
-        variant="seamless"
-        type="date"
-        value={targetDate}
-        onChange={(e) => setTargetDate(e.target.value)}
-        onBlur={flush}
-        aria-label="Target date"
-      />
-      <TaskBodyEditor
-        content={description}
-        compact
-        placeholder="Add a description…"
-        onChange={setDescription}
-      />
-      <div className="flex flex-wrap items-center gap-2">
-        <Button type="button" size="sm" variant="outline" onClick={onDone}>
-          Done
-        </Button>
+    <>
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={titleId}>Title</Label>
+          <Input
+            id={titleId}
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Milestone title"
+            maxLength={200}
+            disabled={pending || busy}
+            autoFocus
+          />
+        </div>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={startDateId}>Start date (optional)</Label>
+            <Input
+              id={startDateId}
+              type="date"
+              value={startDate}
+              onChange={(e) => setStartDate(e.target.value)}
+              disabled={pending || busy}
+              aria-label="Start date"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor={endDateId}>End date (optional)</Label>
+            <Input
+              id={endDateId}
+              type="date"
+              value={endDate}
+              onChange={(e) => setEndDate(e.target.value)}
+              disabled={pending || busy}
+              aria-label="End date"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor={descriptionId}>Description (optional)</Label>
+          <Textarea
+            id={descriptionId}
+            value={description}
+            onChange={(e) => setDescription(e.target.value)}
+            placeholder="Add a description…"
+            disabled={pending || busy}
+            rows={3}
+          />
+        </div>
+        {formError ? (
+          <p className="text-xs text-destructive" role="alert">
+            {formError}
+          </p>
+        ) : null}
+      </div>
+      <DialogFooter className="sm:justify-between">
         <DeleteButton
           dialogTitle="Delete this milestone?"
           dialogDescription="Tasks assigned to it will become unassigned. This cannot be undone."
+          disabled={pending || busy}
+          busy={busy}
           onConfirm={onDelete}
         />
-        <SaveStatus status={status} savedAt={savedAt} onRetry={flush} />
-      </div>
-    </div>
+        <div className="flex gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending || busy}
+            onClick={() => onOpenChange(false)}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="button"
+            disabled={pending || busy || !title.trim()}
+            onClick={() => void handleSave()}
+          >
+            {pending ? <Spinner data-icon="inline-start" /> : null}
+            Save
+          </Button>
+        </div>
+      </DialogFooter>
+    </>
   );
 }

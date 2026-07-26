@@ -181,7 +181,7 @@ create trigger wrapped_keys_set_updated_at
 alter table public.wrapped_keys enable row level security;
 alter table public.wrapped_keys force row level security;
 
--- milestones: project-scoped ciphertext; title/description/targetDate in blob.
+-- milestones: project-scoped ciphertext; title/description/startDate/endDate in blob.
 -- Must load before 09_tasks.sql (tasks.milestone_id FK).
 
 create table public.milestones (

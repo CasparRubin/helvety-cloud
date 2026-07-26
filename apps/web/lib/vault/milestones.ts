@@ -29,7 +29,8 @@ export type DecryptedMilestone = {
   workspaceId: string;
   title: string;
   description: TaskBodyDoc;
-  targetDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
   sortOrder: number;
   updatedAt: string;
   deletedAt: string | null;
@@ -76,7 +77,8 @@ async function toDecrypted(
 ): Promise<DecryptedMilestone> {
   let title = "Untitled milestone";
   let description: TaskBodyDoc = EMPTY_TASK_BODY;
-  let targetDate: string | null = null;
+  let startDate: string | null = null;
+  let endDate: string | null = null;
   try {
     const content = await decryptMilestoneContent(
       workspaceKey,
@@ -85,7 +87,8 @@ async function toDecrypted(
     );
     title = content.title;
     description = content.description;
-    targetDate = content.targetDate;
+    startDate = content.startDate;
+    endDate = content.endDate;
   } catch {
     title = "Unable to decrypt";
   }
@@ -95,29 +98,55 @@ async function toDecrypted(
     workspaceId: row.workspaceId,
     title,
     description,
-    targetDate,
+    startDate,
+    endDate,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   };
 }
 
-/** Sort by target date ascending (nulls last), then sortOrder, then id. */
+/** Sort by start date, then end date (nulls last), then sortOrder, then id. */
 export function sortMilestones(
   milestones: DecryptedMilestone[],
 ): DecryptedMilestone[] {
   return [...milestones].sort((a, b) => {
-    if (a.targetDate && b.targetDate) {
-      const byDate = a.targetDate.localeCompare(b.targetDate);
-      if (byDate !== 0) return byDate;
-    } else if (a.targetDate && !b.targetDate) {
-      return -1;
-    } else if (!a.targetDate && b.targetDate) {
-      return 1;
-    }
+    const byStart = compareNullableDates(a.startDate, b.startDate);
+    if (byStart !== 0) return byStart;
+    const byEnd = compareNullableDates(a.endDate, b.endDate);
+    if (byEnd !== 0) return byEnd;
     if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
     return a.id.localeCompare(b.id);
   });
+}
+
+function compareNullableDates(a: string | null, b: string | null): number {
+  if (a && b) return a.localeCompare(b);
+  if (a && !b) return -1;
+  if (!a && b) return 1;
+  return 0;
+}
+
+function formatIsoDateShort(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** Display helper: `Jul 1 – Aug 1`, a single date, or `No dates`. */
+export function formatMilestoneDateRange(
+  startDate: string | null,
+  endDate: string | null,
+): string {
+  if (startDate && endDate) {
+    return `${formatIsoDateShort(startDate)} – ${formatIsoDateShort(endDate)}`;
+  }
+  if (startDate) return formatIsoDateShort(startDate);
+  if (endDate) return formatIsoDateShort(endDate);
+  return "No dates";
 }
 
 export async function loadAllDecryptedMilestones(
@@ -148,7 +177,8 @@ export async function createMilestone(
   content: {
     title: string;
     description?: TaskBodyDoc;
-    targetDate?: string | null;
+    startDate?: string | null;
+    endDate?: string | null;
   },
   sortOrder = 0,
 ): Promise<DecryptedMilestone> {
@@ -156,7 +186,8 @@ export async function createMilestone(
   const plaintext = toMilestonePlaintext(
     content.title,
     content.description ?? EMPTY_TASK_BODY,
-    content.targetDate ?? null,
+    content.startDate ?? null,
+    content.endDate ?? null,
   );
   const encryptedBlob = await encryptMilestoneContent(
     workspaceKey,
@@ -178,13 +209,15 @@ export async function saveMilestone(
   content: {
     title: string;
     description: TaskBodyDoc;
-    targetDate: string | null;
+    startDate: string | null;
+    endDate: string | null;
   },
 ): Promise<DecryptedMilestone> {
   const plaintext = toMilestonePlaintext(
     content.title,
     content.description,
-    content.targetDate,
+    content.startDate,
+    content.endDate,
   );
   const encryptedBlob = await encryptMilestoneContent(
     workspaceKey,

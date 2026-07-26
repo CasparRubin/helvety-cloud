@@ -1,4 +1,7 @@
-import { workspaceInvitationSchema } from "@helvety-cloud/api-contract";
+import {
+  ciphertextEnvelopeSchema,
+  workspaceInvitationSchema,
+} from "@helvety-cloud/api-contract";
 
 import { assertAcceptSeatAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
@@ -59,13 +62,18 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { data: workspace } = await supabase
     .from("workspaces")
-    .select("name")
+    .select("id, encrypted_blob")
     .eq("id", data.workspace_id)
     .maybeSingle();
 
   return jsonOk(
     workspaceInvitationSchema.parse(
-      mapInvitationRow(data, workspace?.name),
+      mapInvitationRow(
+        data,
+        workspace
+          ? ciphertextEnvelopeSchema.parse(workspace.encrypted_blob)
+          : undefined,
+      ),
     ),
   );
 }

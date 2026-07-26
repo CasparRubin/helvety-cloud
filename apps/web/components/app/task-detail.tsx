@@ -73,7 +73,12 @@ export function TaskDetail({
   const [priorityId, setPriorityId] = useState("");
   const [milestoneId, setMilestoneId] = useState<string | null>(null);
   const [milestoneOptions, setMilestoneOptions] = useState<
-    { id: string; title: string; targetDate: string | null }[]
+    {
+      id: string;
+      title: string;
+      startDate: string | null;
+      endDate: string | null;
+    }[]
   >([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,7 +180,8 @@ export function TaskDetail({
           milestones.map((m) => ({
             id: m.id,
             title: m.title,
-            targetDate: m.targetDate,
+            startDate: m.startDate,
+            endDate: m.endDate,
           })),
         );
         setTitle(loaded.title);

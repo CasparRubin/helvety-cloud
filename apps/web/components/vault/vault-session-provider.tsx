@@ -8,7 +8,6 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import type { WorkspaceListItem } from "@helvety-cloud/api-contract";
 
 import {
   deleteWorkspace,
@@ -28,21 +27,24 @@ import {
 } from "@/lib/vault/user-keys";
 import {
   createStandardWorkspace,
+  decryptWorkspaceListItem,
+  encryptWorkspaceName,
   ensurePersonalWorkspace,
   unwrapWorkspaceKey,
+  type DecryptedWorkspaceListItem,
 } from "@/lib/vault/workspaces";
 
 type VaultSessionValue = {
   vault: UnlockedVault | null;
   recovery: RecoveryExport | null;
-  workspaces: WorkspaceListItem[];
+  workspaces: DecryptedWorkspaceListItem[];
   workspaceKeys: ReadonlyMap<string, Uint8Array>;
   clearRecovery: () => void;
   lock: () => void;
   setupVault: (userId: string, email: string) => Promise<void>;
   unlockVault: (userId: string) => Promise<void>;
-  refreshWorkspaces: () => Promise<WorkspaceListItem[]>;
-  createWorkspace: (name: string) => Promise<WorkspaceListItem>;
+  refreshWorkspaces: () => Promise<DecryptedWorkspaceListItem[]>;
+  createWorkspace: (name: string) => Promise<DecryptedWorkspaceListItem>;
   renameWorkspace: (workspaceId: string, name: string) => Promise<void>;
   removeWorkspace: (workspaceId: string) => Promise<void>;
   getWorkspaceKey: (workspaceId: string) => Promise<Uint8Array>;
@@ -53,7 +55,9 @@ const VaultSessionContext = createContext<VaultSessionValue | null>(null);
 export function VaultSessionProvider({ children }: { children: ReactNode }) {
   const [vault, setVault] = useState<UnlockedVault | null>(null);
   const [recovery, setRecovery] = useState<RecoveryExport | null>(null);
-  const [workspaces, setWorkspaces] = useState<WorkspaceListItem[]>([]);
+  const [workspaces, setWorkspaces] = useState<DecryptedWorkspaceListItem[]>(
+    [],
+  );
   const [workspaceKeys, setWorkspaceKeys] = useState<Map<string, Uint8Array>>(
     () => new Map(),
   );
@@ -80,20 +84,43 @@ export function VaultSessionProvider({ children }: { children: ReactNode }) {
     [],
   );
 
-  const refreshWorkspaces = useCallback(async () => {
+  const loadWorkspaces = useCallback(async (unlocked: UnlockedVault) => {
     const listed = await listWorkspaces();
-    setWorkspaces(listed.workspaces);
-    return listed.workspaces;
+    const decrypted = await Promise.all(
+      listed.workspaces.map(async (item) => {
+        try {
+          return await decryptWorkspaceListItem(unlocked, item);
+        } catch {
+          // One unreadable workspace must not lock the user out of the others.
+          return {
+            id: item.id,
+            name: "Unable to decrypt",
+            kind: item.kind,
+            role: item.role,
+            wrappedKey: item.wrappedKey,
+            updatedAt: item.updatedAt,
+          };
+        }
+      }),
+    );
+    setWorkspaces(decrypted);
+    return decrypted;
   }, []);
+
+  const refreshWorkspaces = useCallback(async () => {
+    if (!vault) {
+      throw new Error("Vault is locked");
+    }
+    return loadWorkspaces(vault);
+  }, [vault, loadWorkspaces]);
 
   const afterUnlocked = useCallback(
     async (unlocked: UnlockedVault) => {
       await ensurePersonalWorkspace(unlocked);
-      const listed = await listWorkspaces();
-      setWorkspaces(listed.workspaces);
+      await loadWorkspaces(unlocked);
       setVault(unlocked);
     },
-    [],
+    [loadWorkspaces],
   );
 
   const setupVault = useCallback(
@@ -121,42 +148,6 @@ export function VaultSessionProvider({ children }: { children: ReactNode }) {
     [afterUnlocked],
   );
 
-  const createWorkspace = useCallback(
-    async (name: string) => {
-      if (!vault) {
-        throw new Error("Vault is locked");
-      }
-      const created = await createStandardWorkspace(vault, name);
-      const key = await unwrapWorkspaceKey(
-        vault,
-        created.id,
-        created.wrappedKey,
-      );
-      cacheWorkspaceKey(created.id, key);
-      const listed = await refreshWorkspaces();
-      return listed.find((w) => w.id === created.id) ?? created;
-    },
-    [vault, cacheWorkspaceKey, refreshWorkspaces],
-  );
-
-  const renameWorkspace = useCallback(
-    async (workspaceId: string, name: string) => {
-      await patchWorkspace(workspaceId, { name });
-      await refreshWorkspaces();
-    },
-    [refreshWorkspaces],
-  );
-
-  const removeWorkspace = useCallback(async (workspaceId: string) => {
-    await deleteWorkspace(workspaceId);
-    setWorkspaces((prev) => prev.filter((w) => w.id !== workspaceId));
-    setWorkspaceKeys((prev) => {
-      const next = new Map(prev);
-      next.delete(workspaceId);
-      return next;
-    });
-  }, []);
-
   const getWorkspaceKey = useCallback(
     async (workspaceId: string) => {
       if (!vault) {
@@ -174,6 +165,52 @@ export function VaultSessionProvider({ children }: { children: ReactNode }) {
     },
     [vault, workspaceKeys, workspaces, cacheWorkspaceKey],
   );
+
+  const createWorkspace = useCallback(
+    async (name: string) => {
+      if (!vault) {
+        throw new Error("Vault is locked");
+      }
+      const created = await createStandardWorkspace(vault, name);
+      const key = await unwrapWorkspaceKey(
+        vault,
+        created.id,
+        created.wrappedKey,
+      );
+      cacheWorkspaceKey(created.id, key);
+      const listed = await loadWorkspaces(vault);
+      return listed.find((w) => w.id === created.id) ?? created;
+    },
+    [vault, cacheWorkspaceKey, loadWorkspaces],
+  );
+
+  const renameWorkspace = useCallback(
+    async (workspaceId: string, name: string) => {
+      if (!vault) {
+        throw new Error("Vault is locked");
+      }
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      const encryptedBlob = await encryptWorkspaceName(
+        workspaceKey,
+        workspaceId,
+        name,
+        vault.keyVersion,
+      );
+      await patchWorkspace(workspaceId, { encryptedBlob });
+      await loadWorkspaces(vault);
+    },
+    [vault, getWorkspaceKey, loadWorkspaces],
+  );
+
+  const removeWorkspace = useCallback(async (workspaceId: string) => {
+    await deleteWorkspace(workspaceId);
+    setWorkspaces((prev) => prev.filter((w) => w.id !== workspaceId));
+    setWorkspaceKeys((prev) => {
+      const next = new Map(prev);
+      next.delete(workspaceId);
+      return next;
+    });
+  }, []);
 
   const value = useMemo<VaultSessionValue>(
     () => ({

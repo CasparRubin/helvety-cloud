@@ -163,8 +163,8 @@ export function WorkspaceSwitcher({
           <DialogHeader>
             <DialogTitle>New workspace</DialogTitle>
             <DialogDescription>
-              Creates a new workspace with its own key. Name is plaintext
-              metadata on the server.
+              Creates a new workspace with its own key. The name is encrypted
+              with that key, so Helvety cannot read it.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">

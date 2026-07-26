@@ -1,4 +1,4 @@
--- milestones: project-scoped ciphertext; title/description/targetDate in blob.
+-- milestones: project-scoped ciphertext; title/description/startDate/endDate in blob.
 -- Must load before 09_tasks.sql (tasks.milestone_id FK).
 
 create table public.milestones (

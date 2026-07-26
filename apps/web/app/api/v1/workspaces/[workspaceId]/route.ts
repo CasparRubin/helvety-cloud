@@ -1,4 +1,5 @@
 import {
+  ciphertextEnvelopeSchema,
   getWorkspaceResponseSchema,
   patchWorkspaceRequestSchema,
   patchWorkspaceResponseSchema,
@@ -23,7 +24,7 @@ export async function GET(request: Request, context: RouteContext) {
 
   const { data: workspace, error: workspaceError } = await supabase
     .from("workspaces")
-    .select("id, name, kind")
+    .select("id, encrypted_blob, kind")
     .eq("id", workspaceId)
     .maybeSingle();
 
@@ -52,7 +53,7 @@ export async function GET(request: Request, context: RouteContext) {
   return jsonOk(
     getWorkspaceResponseSchema.parse({
       id: workspace.id,
-      name: workspace.name,
+      encryptedBlob: ciphertextEnvelopeSchema.parse(workspace.encrypted_blob),
       kind: workspaceKindSchema.parse(workspace.kind),
       wrappedKey: sealedKeyEnvelopeSchema.parse(wrapped.wrapped_key),
     }),
@@ -81,7 +82,7 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: existing, error: existingError } = await supabase
     .from("workspaces")
-    .select("id, name, kind")
+    .select("id")
     .eq("id", workspaceId)
     .maybeSingle();
 
@@ -94,22 +95,22 @@ export async function PATCH(request: Request, context: RouteContext) {
 
   const { data: updated, error: updateError } = await supabase
     .from("workspaces")
-    .update({ name: parsed.data.name })
+    .update({ encrypted_blob: parsed.data.encryptedBlob })
     .eq("id", workspaceId)
-    .select("id, name, kind")
+    .select("id, encrypted_blob, kind")
     .maybeSingle();
 
   if (updateError) {
     return apiError("internal", updateError.message, 500);
   }
   if (!updated) {
-    return apiError("forbidden", "Not allowed to rename workspace", 403);
+    return apiError("forbidden", "Not allowed to update workspace", 403);
   }
 
   return jsonOk(
     patchWorkspaceResponseSchema.parse({
       id: updated.id,
-      name: updated.name,
+      encryptedBlob: ciphertextEnvelopeSchema.parse(updated.encrypted_blob),
       kind: workspaceKindSchema.parse(updated.kind),
     }),
   );

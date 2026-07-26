@@ -5,10 +5,9 @@ import { useId, useMemo } from "react";
 import type { ProjectCategorizations } from "@/lib/vault/categorizations";
 import type { DecryptedMilestone } from "@/lib/vault/milestones";
 import {
-  computeProjectProgress,
-  formatTargetDate,
-  nearestMilestoneTarget,
-  todayIsoDate,
+  computeProjectProgressView,
+  progressWindowCaption,
+  scheduleProgressFraction,
 } from "@/lib/vault/project-progress";
 import type { DecryptedTask } from "@/lib/vault/tasks";
 import { cn } from "@/lib/utils";
@@ -17,6 +16,7 @@ type ProjectProgressProps = {
   tasks: DecryptedTask[];
   categorizations: ProjectCategorizations;
   milestones: DecryptedMilestone[];
+  milestoneFilter: string;
   className?: string;
 };
 
@@ -24,25 +24,24 @@ export function ProjectProgress({
   tasks,
   categorizations,
   milestones,
+  milestoneFilter,
   className,
 }: ProjectProgressProps) {
-  const stats = useMemo(
-    () => computeProjectProgress(tasks, categorizations),
-    [tasks, categorizations],
+  const view = useMemo(
+    () =>
+      computeProjectProgressView(
+        tasks,
+        categorizations,
+        milestones,
+        milestoneFilter,
+      ),
+    [tasks, categorizations, milestones, milestoneFilter],
   );
-
-  const target = useMemo(
-    () => nearestMilestoneTarget(milestones, todayIsoDate()),
-    [milestones],
-  );
-
-  const completedWidth = stats.scope > 0 ? (stats.completed / stats.scope) * 100 : 0;
-  const startedWidth = stats.scope > 0 ? (stats.started / stats.scope) * 100 : 0;
 
   return (
     <section
       className={cn(
-        "shrink-0 border-t border-border/60 pt-3 pb-1",
+        "mt-3 shrink-0 border-t border-border pt-3",
         className,
       )}
       aria-label="Project progress"
@@ -51,194 +50,130 @@ export function ProjectProgress({
         <h3 className="text-xs font-medium tracking-wide text-muted-foreground">
           Progress
         </h3>
-        {stats.scope > 0 ? (
+        {view.scopeCount > 0 ? (
           <span className="text-[11px] tabular-nums text-muted-foreground">
-            {stats.completedPct}% done
+            {view.weightedPercent}% done
           </span>
         ) : null}
       </div>
 
-      {stats.scope === 0 ? (
-        <p className="mt-3 text-sm text-muted-foreground">No tasks in scope.</p>
+      {!view.window ? (
+        <p className="mt-2 text-sm text-muted-foreground">
+          {milestoneFilter === "all"
+            ? "Add milestones with start and end dates to chart progress."
+            : "This milestone needs both a start and end date."}
+        </p>
       ) : (
         <>
-          <div className="mt-3 grid grid-cols-3 gap-2">
-            <Metric
-              label="Scope"
-              value={stats.scope}
-              swatch="bg-muted-foreground/50"
-            />
-            <Metric
-              label="Started"
-              value={stats.started}
-              hint={`${stats.startedPct}%`}
-              swatch="bg-amber-500"
-            />
-            <Metric
-              label="Completed"
-              value={stats.completed}
-              hint={`${stats.completedPct}%`}
-              swatch="bg-violet-500"
-            />
-          </div>
-
-          <div className="relative mt-3">
-            <div
-              className="h-2 overflow-hidden rounded-full bg-muted"
-              role="img"
-              aria-label={`${stats.completed} completed, ${stats.started} started, ${stats.remaining} remaining of ${stats.scope}`}
-            >
-              <div className="flex h-full w-full">
-                <div
-                  className="h-full bg-violet-500 transition-[width] duration-300 ease-out"
-                  style={{ width: `${completedWidth}%` }}
-                />
-                <div
-                  className="h-full bg-amber-500/90 transition-[width] duration-300 ease-out"
-                  style={{ width: `${startedWidth}%` }}
-                />
-              </div>
-            </div>
-
-            <ProgressSpark
-              completedPct={completedWidth}
-              startedPct={startedWidth}
-            />
-          </div>
+          <ProgressScheduleChart
+            windowStart={view.window.startDate}
+            windowEnd={view.window.endDate}
+            todayIso={view.todayIso}
+            weightedPercent={view.weightedPercent}
+            scopeCount={view.scopeCount}
+          />
+          <p className="mt-2 truncate text-[11px] text-muted-foreground">
+            {progressWindowCaption(view.window)}
+            {view.scopeCount > 0
+              ? ` · ${view.scopeCount} task${view.scopeCount === 1 ? "" : "s"}`
+              : " · No tasks in scope"}
+          </p>
         </>
       )}
-
-      {target?.targetDate ? (
-        <p className="mt-2.5 truncate text-[11px] text-muted-foreground">
-          <span className="text-foreground/70">{target.title}</span>
-          {" · "}
-          {formatTargetDate(target.targetDate)}
-        </p>
-      ) : null}
     </section>
   );
 }
 
-function Metric({
-  label,
-  value,
-  hint,
-  swatch,
+function ProgressScheduleChart({
+  windowStart,
+  windowEnd,
+  todayIso,
+  weightedPercent,
+  scopeCount,
 }: {
-  label: string;
-  value: number;
-  hint?: string;
-  swatch: string;
+  windowStart: string;
+  windowEnd: string;
+  todayIso: string;
+  weightedPercent: number;
+  scopeCount: number;
 }) {
-  return (
-    <div className="min-w-0">
-      <div className="flex items-center gap-1.5">
-        <span className={cn("size-2 shrink-0 rounded-[3px]", swatch)} />
-        <span className="truncate text-[11px] text-muted-foreground">
-          {label}
-        </span>
-      </div>
-      <div className="mt-0.5 flex items-baseline gap-1 pl-3.5">
-        <span className="text-sm font-medium tabular-nums tracking-tight">
-          {value}
-        </span>
-        {hint ? (
-          <span className="text-[10px] tabular-nums text-muted-foreground">
-            {hint}
-          </span>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-/** Soft area graphic mirroring current completion — not a historical burn-up. */
-function ProgressSpark({
-  completedPct,
-  startedPct,
-}: {
-  completedPct: number;
-  startedPct: number;
-}) {
-  const reactId = useId().replace(/:/g, "");
-  const completedFillId = `${reactId}-completed`;
-  const startedFillId = `${reactId}-started`;
+  const fillId = `${useId().replace(/:/g, "")}-actual`;
 
   const w = 200;
-  const h = 48;
-  const pad = 2;
-  const top = pad;
-  const bottom = h - pad;
-  const midY = top + (bottom - top) * 0.42;
-  const lowY = top + (bottom - top) * 0.68;
+  const h = 64;
+  const left = 4;
+  const right = w - 4;
+  const top = 8;
+  const bottom = h - 6;
+  const chartW = right - left;
+  const chartH = bottom - top;
 
-  const endX = w - pad;
-  const startBand = Math.min(100, completedPct + startedPct);
-  const completedX = pad + ((w - pad * 2) * completedPct) / 100;
-  const startedX = pad + ((w - pad * 2) * startBand) / 100;
+  const todayFrac = scheduleProgressFraction(todayIso, windowStart, windowEnd);
+  const pct = Math.min(100, Math.max(0, weightedPercent)) / 100;
+  const todayX = left + todayFrac * chartW;
+  const actualY = bottom - pct * chartH;
 
-  const scopePath = `M ${pad} ${bottom} L ${pad} ${lowY} C ${w * 0.35} ${lowY - 2}, ${w * 0.65} ${lowY + 1}, ${endX} ${lowY} L ${endX} ${bottom} Z`;
-  const startedPath = `M ${pad} ${bottom} L ${pad} ${midY} C ${startedX * 0.45} ${midY - 4}, ${startedX * 0.75} ${midY + 2}, ${startedX} ${midY} L ${startedX} ${bottom} Z`;
-  const completedPath = `M ${pad} ${bottom} L ${pad} ${top + 6} C ${completedX * 0.4} ${top}, ${completedX * 0.7} ${top + 8}, ${completedX} ${top + 4} L ${completedX} ${bottom} Z`;
+  function risePath(endX: number, endY: number): string {
+    if (endX <= left) return `M ${left} ${bottom}`;
+    const c1x = left + (endX - left) * 0.45;
+    const c2x = left + (endX - left) * 0.78;
+    return `M ${left} ${bottom} C ${c1x} ${bottom}, ${c2x} ${endY}, ${endX} ${endY}`;
+  }
+
+  const showActual = scopeCount > 0;
 
   return (
     <svg
-      className="mt-2 h-12 w-full text-muted-foreground"
+      className="mt-2 h-16 w-full text-muted-foreground"
       viewBox={`0 0 ${w} ${h}`}
       preserveAspectRatio="none"
-      aria-hidden
+      role="img"
+      aria-label={
+        showActual
+          ? `${weightedPercent}% complete`
+          : "Schedule progress chart"
+      }
     >
       <defs>
-        <linearGradient id={completedFillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgb(139 92 246)" stopOpacity="0.45" />
-          <stop offset="100%" stopColor="rgb(139 92 246)" stopOpacity="0.05" />
-        </linearGradient>
-        <linearGradient id={startedFillId} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgb(245 158 11)" stopOpacity="0.35" />
-          <stop offset="100%" stopColor="rgb(245 158 11)" stopOpacity="0.04" />
+        <linearGradient id={fillId} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgb(139 92 246)" stopOpacity="0.35" />
+          <stop offset="100%" stopColor="rgb(139 92 246)" stopOpacity="0.02" />
         </linearGradient>
       </defs>
 
-      <path d={scopePath} fill="currentColor" opacity="0.08" />
-      {startBand > 0 ? (
-        <path d={startedPath} fill={`url(#${startedFillId})`} />
-      ) : null}
-      {completedPct > 0 ? (
-        <path d={completedPath} fill={`url(#${completedFillId})`} />
-      ) : null}
-
       <path
-        d={`M ${pad} ${lowY} C ${w * 0.35} ${lowY - 2}, ${w * 0.65} ${lowY + 1}, ${endX} ${lowY}`}
+        d={`M ${left} ${top} L ${right} ${top}`}
         fill="none"
         stroke="currentColor"
-        strokeOpacity="0.35"
+        strokeOpacity="0.3"
         strokeWidth="1.25"
         strokeLinecap="round"
       />
-      {startBand > 0 ? (
-        <path
-          d={`M ${pad} ${midY} C ${startedX * 0.45} ${midY - 4}, ${startedX * 0.75} ${midY + 2}, ${startedX} ${midY}`}
-          fill="none"
-          stroke="rgb(245 158 11)"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-        />
-      ) : null}
-      {completedPct > 0 ? (
-        <path
-          d={`M ${pad} ${top + 6} C ${completedX * 0.4} ${top}, ${completedX * 0.7} ${top + 8}, ${completedX} ${top + 4}`}
-          fill="none"
-          stroke="rgb(139 92 246)"
-          strokeWidth="1.75"
-          strokeLinecap="round"
-        />
-      ) : null}
+      <path
+        d={`M ${left} ${bottom} L ${right} ${top}`}
+        fill="none"
+        stroke="currentColor"
+        strokeOpacity="0.45"
+        strokeWidth="1.25"
+        strokeDasharray="3.5 3"
+        strokeLinecap="round"
+      />
 
-      {startBand > 0 ? (
-        <circle cx={startedX} cy={midY} r="2.25" fill="rgb(245 158 11)" />
-      ) : null}
-      {completedPct > 0 ? (
-        <circle cx={completedX} cy={top + 4} r="2.5" fill="rgb(139 92 246)" />
+      {showActual ? (
+        <>
+          <path
+            d={`${risePath(todayX, actualY)} L ${todayX} ${bottom} L ${left} ${bottom} Z`}
+            fill={`url(#${fillId})`}
+          />
+          <path
+            d={risePath(todayX, actualY)}
+            fill="none"
+            stroke="rgb(139 92 246)"
+            strokeWidth="1.75"
+            strokeLinecap="round"
+          />
+          <circle cx={todayX} cy={actualY} r="2.5" fill="rgb(139 92 246)" />
+        </>
       ) : null}
     </svg>
   );

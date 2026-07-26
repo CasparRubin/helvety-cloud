@@ -28,12 +28,12 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/me/policy-acceptances` | Record ToS/Privacy/AUP/E2EE version acceptances |
 | GET | `/api/v1/me/crypto` | Load public key + wrapped user key material |
 | PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material (requires current policy acceptances) |
-| GET | `/api/v1/me` | Account deletion preview (solo / leaving / blocking workspaces) |
+| GET | `/api/v1/me` | Account deletion preview (solo / leaving / blocking workspace **ids**; names resolve client-side after unlock) |
 | DELETE | `/api/v1/me` | Hard-delete account (cancels solo-owned Stripe subs; blocks if owns shared workspaces; then `auth.admin.deleteUser`) |
-| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, name, kind, role, wrapped key) |
-| POST | `/api/v1/workspaces` | Create workspace + owner wrapped key (`name`, `kind`, sealed key) |
-| GET | `/api/v1/workspaces/:workspaceId` | Workspace id/name/kind + caller’s wrapped key |
-| PATCH | `/api/v1/workspaces/:workspaceId` | Rename workspace (`name` only; `kind` immutable) |
+| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, `encryptedBlob`, kind, role, wrapped key) |
+| POST | `/api/v1/workspaces` | Create workspace + owner wrapped key (`encryptedBlob`, `kind`, sealed key) |
+| GET | `/api/v1/workspaces/:workspaceId` | Workspace id/`encryptedBlob`/kind + caller’s wrapped key |
+| PATCH | `/api/v1/workspaces/:workspaceId` | Update workspace ciphertext (`encryptedBlob` only; `kind` immutable) |
 | GET | `/api/v1/workspaces/:workspaceId/projects` | List projects (paginated; ciphertext-opaque) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch |
 | GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks` | List tasks (paginated; ciphertext-opaque; optional `labelId` / `stageId` / `priorityId` / `milestoneId` filters) |
@@ -60,11 +60,11 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set addon pack quantities on Pro Stripe sub |
 | POST | `/api/webhooks/stripe` | Stripe webhook (signature-verified); service-role upserts; never overwrites comps |
 
-**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up vault, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own vault key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
+**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up vault, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own vault key. Invitation payloads expose `workspaceEncryptedBlob` (not a plaintext workspace name); the invitee decrypts the name after seal when they hold the workspace key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
 
 **List query params:** `limit` (1–100, default 50), opaque `cursor` (keyset on `sort_order ASC, id ASC`), `includeDeleted=true` to include soft-deleted rows. Soft-delete = PUT with `deletedAt` ISO timestamp (schema `deleted_at`). Default lists omit tombstones. Notes list also accepts optional `projectId` / `taskId` (UUID) to filter without decrypting (`taskId` resolved via `entity_links`). Task list accepts optional `labelId` / `stageId` / `priorityId` (UUID) — option **names** live in project ciphertext; these ids are intentional plaintext metadata for filtering.
 
-**Task categorizations (P7/P8d/P8e):** Project `encrypted_blob` includes `categorizations` (encrypted names, optional stage `color`, optional option `icon`). Tasks store `labelId` (nullable), `stageId`, `priorityId` as plaintext soft refs. No separate categorization API — defs ride on project PUT/GET.
+**Task categorizations (P7/P8d/P8e/P14):** Project `encrypted_blob` includes `categorizations` (encrypted names, optional stage `color`, optional option `icon`, optional stage `completionPercent` 0–100). Tasks store `labelId` (nullable), `stageId`, `priorityId` as plaintext soft refs. No separate categorization API — defs ride on project PUT/GET. Client-side weighted progress averages stage weights over non-Cancelled tasks.
 
 **Entity links:** Note / task / contact PUT may include `links: [{ kind, id }]`. Allowed pairs are note–task and contact–note/project/task; note→project uses the single `projectId` filing FK instead. The server validates both the pair and workspace ownership, then **replaces** that source’s outgoing `entity_links` rows. Responses include current outgoing links, and `GET …/links` supports backlinks. UUID edges are intentional metadata; titles and colors stay in ciphertext. Inline TipTap `entityRef` nodes remain inside note/task/contact body ciphertext and are extracted on save.
 

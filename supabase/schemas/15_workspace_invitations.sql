@@ -349,8 +349,8 @@ $$;
 revoke all on function public.accept_workspace_invitation(uuid) from public;
 grant execute on function public.accept_workspace_invitation(uuid) to authenticated;
 
--- Invitees may read workspace display metadata for their pending invitations
--- (name only; no ciphertext). Membership still required for vault tables, and
+-- Invitees may read workspace rows for their pending invitations (encrypted_blob
+-- only decryptable after seal). Membership still required for vault tables, and
 -- an accepted invite no longer grants metadata access once membership ends.
 create policy workspaces_select_invitee
   on public.workspaces

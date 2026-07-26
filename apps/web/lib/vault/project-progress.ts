@@ -1,88 +1,21 @@
 import {
   defaultStage,
+  findOption,
+  isCancelledStageName,
+  resolveCompletionPercent,
   type ProjectCategorizations,
 } from "@/lib/vault/categorizations";
-import type { DecryptedMilestone } from "@/lib/vault/milestones";
+import {
+  formatMilestoneDateRange,
+  type DecryptedMilestone,
+} from "@/lib/vault/milestones";
 
-export type ProjectProgressStats = {
-  scope: number;
-  started: number;
-  completed: number;
-  remaining: number;
-  startedPct: number;
-  completedPct: number;
+export type ProjectProgressView = {
+  scopeCount: number;
+  weightedPercent: number;
+  window: { startDate: string; endDate: string; label: string | null } | null;
+  todayIso: string;
 };
-
-function isCancelledStage(name: string): boolean {
-  return name === "Cancelled";
-}
-
-/** Prefer the seeded Completed stage; else the last non-cancelled stage. */
-function resolveCompletedStageId(
-  stages: ProjectCategorizations["stages"],
-): string | null {
-  const byName = stages.find((s) => s.name === "Completed");
-  if (byName) return byName.id;
-  const sorted = [...stages]
-    .filter((s) => !isCancelledStage(s.name))
-    .sort((a, b) => a.sortOrder - b.sortOrder);
-  return sorted.at(-1)?.id ?? null;
-}
-
-export function computeProjectProgress(
-  tasks: ReadonlyArray<{ stageId: string | null }>,
-  categorizations: ProjectCategorizations,
-): ProjectProgressStats {
-  const defaultId = defaultStage(categorizations).id;
-  const completedId = resolveCompletedStageId(categorizations.stages);
-  const cancelledIds = new Set(
-    categorizations.stages
-      .filter((s) => isCancelledStage(s.name))
-      .map((s) => s.id),
-  );
-
-  let scope = 0;
-  let started = 0;
-  let completed = 0;
-
-  for (const task of tasks) {
-    const stageId = task.stageId ?? defaultId;
-    if (cancelledIds.has(stageId)) continue;
-    scope += 1;
-    if (completedId && stageId === completedId) {
-      completed += 1;
-    } else if (stageId !== defaultId) {
-      started += 1;
-    }
-  }
-
-  const startedPct = scope > 0 ? Math.round((started / scope) * 100) : 0;
-  const completedPct = scope > 0 ? Math.round((completed / scope) * 100) : 0;
-
-  return {
-    scope,
-    started,
-    completed,
-    remaining: scope - started - completed,
-    startedPct,
-    completedPct,
-  };
-}
-
-/** Next upcoming target date; if none, the most recent past target. */
-export function nearestMilestoneTarget(
-  milestones: ReadonlyArray<DecryptedMilestone>,
-  todayIso: string,
-): DecryptedMilestone | null {
-  const dated = milestones
-    .filter((m) => m.targetDate)
-    .sort((a, b) => (a.targetDate! < b.targetDate! ? -1 : 1));
-  if (dated.length === 0) return null;
-
-  const upcoming = dated.find((m) => m.targetDate! >= todayIso);
-  if (upcoming) return upcoming;
-  return dated[dated.length - 1]!;
-}
 
 export function todayIsoDate(): string {
   const now = new Date();
@@ -92,11 +25,106 @@ export function todayIsoDate(): string {
   return `${year}-${month}-${day}`;
 }
 
-export function formatTargetDate(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
+function hasBothDates(
+  m: DecryptedMilestone,
+): m is DecryptedMilestone & { startDate: string; endDate: string } {
+  return Boolean(m.startDate && m.endDate);
+}
+
+function resolveProgressWindow(
+  milestones: ReadonlyArray<DecryptedMilestone>,
+  milestoneFilter: string,
+): ProjectProgressView["window"] {
+  if (milestoneFilter !== "all") {
+    const m = milestones.find((x) => x.id === milestoneFilter);
+    if (!m || !hasBothDates(m)) return null;
+    return {
+      startDate: m.startDate,
+      endDate: m.endDate,
+      label: m.title,
+    };
+  }
+
+  const dated = milestones.filter(hasBothDates);
+  if (dated.length === 0) return null;
+  let startDate = dated[0]!.startDate;
+  let endDate = dated[0]!.endDate;
+  for (const m of dated) {
+    if (m.startDate < startDate) startDate = m.startDate;
+    if (m.endDate > endDate) endDate = m.endDate;
+  }
+  return { startDate, endDate, label: null };
+}
+
+function computeWeightedCompletionPercent(
+  tasks: ReadonlyArray<{ stageId: string | null; milestoneId: string | null }>,
+  categorizations: ProjectCategorizations,
+  milestoneFilter: string,
+): { scopeCount: number; weightedPercent: number } {
+  const defaultId = defaultStage(categorizations).id;
+  const stages = categorizations.stages;
+  const cancelledIds = new Set(
+    stages.filter((s) => isCancelledStageName(s.name)).map((s) => s.id),
+  );
+
+  let sum = 0;
+  let scopeCount = 0;
+
+  for (const task of tasks) {
+    if (milestoneFilter !== "all" && task.milestoneId !== milestoneFilter) {
+      continue;
+    }
+    const stageId = task.stageId ?? defaultId;
+    if (cancelledIds.has(stageId)) continue;
+    sum += resolveCompletionPercent(findOption(stages, stageId), stages);
+    scopeCount += 1;
+  }
+
+  return {
+    scopeCount,
+    weightedPercent: scopeCount > 0 ? Math.round(sum / scopeCount) : 0,
+  };
+}
+
+export function computeProjectProgressView(
+  tasks: ReadonlyArray<{ stageId: string | null; milestoneId: string | null }>,
+  categorizations: ProjectCategorizations,
+  milestones: ReadonlyArray<DecryptedMilestone>,
+  milestoneFilter: string,
+  todayIso: string = todayIsoDate(),
+): ProjectProgressView {
+  const { scopeCount, weightedPercent } = computeWeightedCompletionPercent(
+    tasks,
+    categorizations,
+    milestoneFilter,
+  );
+  return {
+    scopeCount,
+    weightedPercent,
+    window: resolveProgressWindow(milestones, milestoneFilter),
+    todayIso,
+  };
+}
+
+/** Fraction 0–1 of today along [start, end], clamped into the window. */
+export function scheduleProgressFraction(
+  todayIso: string,
+  start: string,
+  end: string,
+): number {
+  const iso = todayIso < start ? start : todayIso > end ? end : todayIso;
+  const startMs = Date.parse(`${start}T00:00:00`);
+  const endMs = Date.parse(`${end}T00:00:00`);
+  const isoMs = Date.parse(`${iso}T00:00:00`);
+  if (endMs <= startMs) return iso >= end ? 1 : 0;
+  return Math.min(1, Math.max(0, (isoMs - startMs) / (endMs - startMs)));
+}
+
+export function progressWindowCaption(window: {
+  startDate: string;
+  endDate: string;
+  label: string | null;
+}): string {
+  const range = formatMilestoneDateRange(window.startDate, window.endDate);
+  return window.label ? `${window.label} · ${range}` : range;
 }

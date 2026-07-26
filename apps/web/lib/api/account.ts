@@ -11,11 +11,11 @@ type Api = SupabaseClient<Database>;
 
 export type AccountWorkspaceSplit = {
   /** Owned but shared with other members; deletion is blocked until resolved. */
-  blockingWorkspaces: { id: string; name: string }[];
+  blockingWorkspaces: { id: string }[];
   /** Owned with no other members; hard-deleted with the account. */
-  soloOwnedWorkspaces: { id: string; name: string; kind: WorkspaceKind }[];
+  soloOwnedWorkspaces: { id: string; kind: WorkspaceKind }[];
   /** Not owned; the account is only removed from these. */
-  leavingWorkspaces: { id: string; name: string; role: WorkspaceRole }[];
+  leavingWorkspaces: { id: string; role: WorkspaceRole }[];
 };
 
 const EMPTY_SPLIT: AccountWorkspaceSplit = {
@@ -44,7 +44,7 @@ export async function loadAccountWorkspaceSplit(
   }
 
   const [workspacesResult, membersResult] = await Promise.all([
-    supabase.from("workspaces").select("id, name, kind").in("id", workspaceIds),
+    supabase.from("workspaces").select("id, kind").in("id", workspaceIds),
     supabase
       .from("workspace_members")
       .select("workspace_id, user_id")
@@ -82,18 +82,16 @@ export async function loadAccountWorkspaceSplit(
     if (membership.role !== "owner") {
       split.leavingWorkspaces.push({
         id: workspace.id,
-        name: workspace.name,
         role: workspaceRoleSchema.parse(membership.role),
       });
       continue;
     }
 
     if ((memberCounts.get(workspace.id) ?? 1) > 1) {
-      split.blockingWorkspaces.push({ id: workspace.id, name: workspace.name });
+      split.blockingWorkspaces.push({ id: workspace.id });
     } else {
       split.soloOwnedWorkspaces.push({
         id: workspace.id,
-        name: workspace.name,
         kind: workspaceKindSchema.parse(workspace.kind),
       });
     }

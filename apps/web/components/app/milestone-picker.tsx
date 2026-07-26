@@ -9,12 +9,14 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { formatMilestoneDateRange } from "@/lib/vault/milestones";
 import { cn } from "@/lib/utils";
 
 export type MilestoneOption = {
   id: string;
   title: string;
-  targetDate: string | null;
+  startDate: string | null;
+  endDate: string | null;
 };
 
 type MilestonePickerProps = {
@@ -89,28 +91,34 @@ export function MilestonePicker({
               </button>
             </li>
           ) : null}
-          {options.map((option) => (
-            <li key={option.id}>
-              <button
-                type="button"
-                className={cn(
-                  "flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
-                  selected?.id === option.id && "bg-muted",
-                )}
-                onClick={() => {
-                  onChange(option.id);
-                  setOpen(false);
-                }}
-              >
-                <span className="truncate font-medium">{option.title}</span>
-                {option.targetDate ? (
-                  <span className="text-xs text-muted-foreground">
-                    {option.targetDate}
-                  </span>
-                ) : null}
-              </button>
-            </li>
-          ))}
+          {options.map((option) => {
+            const range = formatMilestoneDateRange(
+              option.startDate,
+              option.endDate,
+            );
+            return (
+              <li key={option.id}>
+                <button
+                  type="button"
+                  className={cn(
+                    "flex w-full flex-col items-start gap-0.5 rounded-md px-2 py-1.5 text-left text-sm hover:bg-muted",
+                    selected?.id === option.id && "bg-muted",
+                  )}
+                  onClick={() => {
+                    onChange(option.id);
+                    setOpen(false);
+                  }}
+                >
+                  <span className="truncate font-medium">{option.title}</span>
+                  {range !== "No dates" ? (
+                    <span className="text-xs text-muted-foreground">
+                      {range}
+                    </span>
+                  ) : null}
+                </button>
+              </li>
+            );
+          })}
         </ul>
       </PopoverContent>
     </Popover>

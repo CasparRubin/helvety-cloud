@@ -98,6 +98,7 @@ export function ProjectStagesSettings() {
     onSetOptionColor,
     onSetOptionIcon,
     onSetMaxVisibleTasks,
+    onSetCompletionPercent,
   } = useProjectSettings();
 
   const status = (
@@ -108,7 +109,7 @@ export function ProjectStagesSettings() {
   return (
     <CategorizationOptionList
       title="Stages"
-      description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Show limits how many tasks appear in a stage before “Show more”."
+      description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Show limits how many tasks appear before “Show more”. % is the stage’s weight toward project completion (Cancelled is excluded)."
       kind="stages"
       options={project.categorizations.stages}
       showDefault
@@ -121,6 +122,7 @@ export function ProjectStagesSettings() {
       onSetColor={(id, color) => onSetOptionColor(id, color)}
       onSetIcon={(id, icon) => onSetOptionIcon("stages", id, icon)}
       onSetMaxVisibleTasks={onSetMaxVisibleTasks}
+      onSetCompletionPercent={onSetCompletionPercent}
     />
   );
 }
