@@ -31,6 +31,18 @@ type ContactListProps = {
   workspaceId: string;
 };
 
+function compareContactsByLastName(a: DecryptedContact, b: DecryptedContact) {
+  const byLast = a.lastName.localeCompare(b.lastName, undefined, {
+    sensitivity: "base",
+  });
+  if (byLast !== 0) return byLast;
+  const byFirst = a.firstName.localeCompare(b.firstName, undefined, {
+    sensitivity: "base",
+  });
+  if (byFirst !== 0) return byFirst;
+  return a.id.localeCompare(b.id);
+}
+
 export function ContactList({ workspaceId }: ContactListProps) {
   const router = useRouter();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
@@ -55,7 +67,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
         if (cancelled) return;
         const page = await loadDecryptedContacts(workspaceId, key);
         if (cancelled) return;
-        setContacts(page.contacts);
+        setContacts([...page.contacts].sort(compareContactsByLastName));
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -130,8 +142,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
           onOpenChange={(open) => {
             if (open) resetCreateFields();
           }}
-        >
-          <div className="grid grid-cols-2 gap-3">
+          companion={
             <div className="flex flex-col gap-2">
               <Label htmlFor="new-contact-last-name">Last name</Label>
               <Input
@@ -143,17 +154,18 @@ export function ContactList({ workspaceId }: ContactListProps) {
                 maxLength={500}
               />
             </div>
-            <div className="flex flex-col gap-2">
-              <Label htmlFor="new-contact-job-title">Job title</Label>
-              <Input
-                id="new-contact-job-title"
-                value={newJobTitle}
-                onChange={(e) => setNewJobTitle(e.target.value)}
-                placeholder="Job title"
-                disabled={busy}
-                maxLength={500}
-              />
-            </div>
+          }
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="new-contact-job-title">Job title</Label>
+            <Input
+              id="new-contact-job-title"
+              value={newJobTitle}
+              onChange={(e) => setNewJobTitle(e.target.value)}
+              placeholder="Job title"
+              disabled={busy}
+              maxLength={500}
+            />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
@@ -206,7 +218,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
       >
         {contacts.map((contact) => {
           const name = formatContactName(contact) || "Untitled";
-          const subtitle = contact.jobTitle || contact.emails[0] || null;
+          const email = contact.emails[0] || null;
           return (
             <EntityListRow key={contact.id}>
               <Link
@@ -214,9 +226,9 @@ export function ContactList({ workspaceId }: ContactListProps) {
                 className="font-medium"
               >
                 {name}
-                {subtitle ? (
+                {email ? (
                   <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {subtitle}
+                    {email}
                   </span>
                 ) : null}
               </Link>

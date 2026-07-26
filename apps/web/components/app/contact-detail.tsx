@@ -291,16 +291,28 @@ export function ContactDetail({
       <EntityDetailLayout
         main={
           <>
-            <InlineTitle
-              value={firstName}
-              onChange={setFirstName}
-              onBlur={flush}
-              placeholder="First name"
-              disabled={deleting}
-              maxLength={500}
-              aria-label="First name"
-              className="min-w-0"
-            />
+            <div className="grid grid-cols-2 gap-2">
+              <InlineTitle
+                value={firstName}
+                onChange={setFirstName}
+                onBlur={flush}
+                placeholder="First name"
+                disabled={deleting}
+                maxLength={500}
+                aria-label="First name"
+                className="min-w-0"
+              />
+              <InlineTitle
+                value={lastName}
+                onChange={setLastName}
+                onBlur={flush}
+                placeholder="Last name"
+                disabled={deleting}
+                maxLength={500}
+                aria-label="Last name"
+                className="min-w-0"
+              />
+            </div>
 
             <TaskBodyEditor
               content={notes}
@@ -341,26 +353,6 @@ export function ContactDetail({
                 onRetry={flush}
               />
             ) : null}
-
-            <Card size="sm">
-              <CardContent className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="contact-detail-last-name"
-                  className="text-xs text-muted-foreground"
-                >
-                  Last name
-                </Label>
-                <Input
-                  id="contact-detail-last-name"
-                  value={lastName}
-                  onChange={(e) => setLastName(e.target.value)}
-                  onBlur={flush}
-                  placeholder="Last name"
-                  disabled={deleting}
-                  maxLength={500}
-                />
-              </CardContent>
-            </Card>
 
             <Card size="sm">
               <CardContent className="flex flex-col gap-1.5">

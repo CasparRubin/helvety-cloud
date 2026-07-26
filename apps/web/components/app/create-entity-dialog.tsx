@@ -27,6 +27,8 @@ type CreateEntityDialogProps = {
   onCreate: (value: string) => Promise<void>;
   /** Called when the dialog opens or closes so parents can reset extra fields. */
   onOpenChange?: (open: boolean) => void;
+  /** Field rendered beside the primary input in a 2-col grid. */
+  companion?: ReactNode;
   children?: ReactNode;
 };
 
@@ -41,6 +43,7 @@ export function CreateEntityDialog({
   disabled = false,
   onCreate,
   onOpenChange,
+  companion,
   children,
 }: CreateEntityDialogProps) {
   const fieldId = useId();
@@ -48,6 +51,7 @@ export function CreateEntityDialog({
   const [value, setValue] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const hasExtras = children != null || companion != null;
 
   function handleOpenChange(next: boolean) {
     setOpen(next);
@@ -74,6 +78,27 @@ export function CreateEntityDialog({
     }
   }
 
+  const primaryField = (
+    <div className="flex flex-col gap-2">
+      <Label htmlFor={fieldId} required>
+        {fieldLabel}
+      </Label>
+      <Input
+        id={fieldId}
+        type={fieldType}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        placeholder={fieldPlaceholder}
+        maxLength={fieldMaxLength}
+        disabled={pending}
+        autoFocus
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !hasExtras) void handleCreate();
+        }}
+      />
+    </div>
+  );
+
   return (
     <>
       <Button
@@ -88,29 +113,19 @@ export function CreateEntityDialog({
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className={children != null ? "sm:max-w-lg" : undefined}>
+        <DialogContent className={hasExtras ? "sm:max-w-lg" : undefined}>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
           </DialogHeader>
           <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-2">
-              <Label htmlFor={fieldId} required>
-                {fieldLabel}
-              </Label>
-              <Input
-                id={fieldId}
-                type={fieldType}
-                value={value}
-                onChange={(e) => setValue(e.target.value)}
-                placeholder={fieldPlaceholder}
-                maxLength={fieldMaxLength}
-                disabled={pending}
-                autoFocus
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !children) void handleCreate();
-                }}
-              />
-            </div>
+            {companion != null ? (
+              <div className="grid grid-cols-2 gap-3">
+                {primaryField}
+                {companion}
+              </div>
+            ) : (
+              primaryField
+            )}
             {children}
             {error ? (
               <p className="text-xs text-destructive" role="alert">
