@@ -38,6 +38,7 @@ export type DecryptedTask = {
   workspaceId: string;
   title: string;
   body: TaskBodyDoc;
+  dueDate: string | null;
   labelId: string | null;
   stageId: string | null;
   priorityId: string | null;
@@ -89,6 +90,7 @@ async function toDecrypted(
 ): Promise<DecryptedTask> {
   let title = "Untitled";
   let body: TaskBodyDoc = EMPTY_TASK_BODY;
+  let dueDate: string | null = null;
   try {
     const content = await decryptTaskContent(
       workspaceKey,
@@ -97,6 +99,7 @@ async function toDecrypted(
     );
     title = content.title;
     body = content.body;
+    dueDate = content.dueDate;
   } catch {
     title = "Unable to decrypt";
   }
@@ -106,6 +109,7 @@ async function toDecrypted(
     workspaceId: row.workspaceId,
     title,
     body,
+    dueDate,
     labelId: row.labelId,
     stageId: row.stageId,
     priorityId: row.priorityId,
@@ -163,35 +167,47 @@ export async function createTask(
   workspaceId: string,
   projectId: string,
   workspaceKey: Uint8Array,
-  content: { title: string; body?: TaskBodyDoc; links?: EntityLinkTarget[] },
+  content: {
+    title: string;
+    body?: TaskBodyDoc;
+    dueDate?: string | null;
+    links?: EntityLinkTarget[];
+  },
   sortOrder = 0,
   categorizations?: ProjectCategorizations,
+  categorizationIds?: {
+    labelId?: string | null;
+    stageId?: string;
+    priorityId?: string;
+    milestoneId?: string | null;
+  },
 ): Promise<DecryptedTask> {
   const taskId = crypto.randomUUID();
   const plaintext = toTaskPlaintext(
     content.title,
     content.body ?? EMPTY_TASK_BODY,
+    content.dueDate ?? null,
   );
   const encryptedBlob = await encryptTaskContent(
     workspaceKey,
     taskId,
     plaintext,
   );
-  const stageId = categorizations
-    ? defaultStage(categorizations).id
-    : undefined;
-  const priorityId = categorizations
-    ? defaultPriority(categorizations).id
-    : undefined;
+  const stageId =
+    categorizationIds?.stageId ??
+    (categorizations ? defaultStage(categorizations).id : undefined);
+  const priorityId =
+    categorizationIds?.priorityId ??
+    (categorizations ? defaultPriority(categorizations).id : undefined);
   const links =
     content.links ?? extractEntityRefsFromDoc(plaintext.body);
   const row = await putTask(workspaceId, projectId, taskId, {
     encryptedBlob,
     sortOrder,
-    labelId: null,
+    labelId: categorizationIds?.labelId ?? null,
     stageId,
     priorityId,
-    milestoneId: null,
+    milestoneId: categorizationIds?.milestoneId ?? null,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.body),
   });
@@ -266,7 +282,7 @@ export async function saveTaskCategorizationIds(
   const encryptedBlob = await encryptTaskContent(
     workspaceKey,
     task.id,
-    toTaskPlaintext(task.title, task.body),
+    toTaskPlaintext(task.title, task.body, task.dueDate),
   );
   const row = await putTask(workspaceId, projectId, task.id, {
     encryptedBlob,

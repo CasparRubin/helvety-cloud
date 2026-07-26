@@ -16,6 +16,7 @@ import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
@@ -34,6 +35,7 @@ import {
 import {
   EMPTY_TASK_BODY,
   taskBodyPlainText,
+  textToTaskBody,
   type TaskBodyDoc,
 } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
@@ -171,6 +173,7 @@ export function ProjectMilestonesPanel({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newDate, setNewDate] = useState("");
+  const [newDescription, setNewDescription] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
 
   async function onCreateMilestone(title: string) {
@@ -179,18 +182,21 @@ export function ProjectMilestonesPanel({
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
         milestones.reduce((max, m) => Math.max(max, m.sortOrder), -1) + 1;
+      const description = newDescription.trim();
       const created = await createMilestone(
         workspaceId,
         projectId,
         key,
         {
           title,
+          description: description ? textToTaskBody(description) : undefined,
           targetDate: newDate.trim() || null,
         },
         nextOrder,
       );
       onMilestonesChange(sortMilestones([...milestones, created]));
       setNewDate("");
+      setNewDescription("");
       setEditingId(created.id);
     } finally {
       setBusy(false);
@@ -249,7 +255,10 @@ export function ProjectMilestonesPanel({
           disabled={busy}
           onCreate={onCreateMilestone}
           onOpenChange={(open) => {
-            if (open) setNewDate("");
+            if (open) {
+              setNewDate("");
+              setNewDescription("");
+            }
           }}
         >
           <div className="flex flex-col gap-2">
@@ -261,6 +270,19 @@ export function ProjectMilestonesPanel({
               onChange={(e) => setNewDate(e.target.value)}
               disabled={busy}
               aria-label="Target date"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="milestone-description">
+              Description (optional)
+            </Label>
+            <Textarea
+              id="milestone-description"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Add a description…"
+              disabled={busy}
+              rows={3}
             />
           </div>
         </CreateEntityDialog>

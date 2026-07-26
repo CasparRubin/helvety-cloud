@@ -33,6 +33,7 @@ import {
   EntityListEmpty,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { MilestonePicker } from "@/components/app/milestone-picker";
 import {
   ProjectDescriptionEditor,
   ProjectMilestonesPanel,
@@ -40,9 +41,14 @@ import {
   type MilestoneFilter,
 } from "@/components/app/project-overview";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
 import {
+  defaultPriority,
+  defaultStage,
   resolveMaxVisibleTasks,
   resolveStageColor,
   type CategorizationOption,
@@ -54,6 +60,7 @@ import {
   type DecryptedMilestone,
 } from "@/lib/vault/milestones";
 import { groupTasksByStage } from "@/lib/vault/task-board";
+import { textToTaskBody } from "@/lib/vault/task-plaintext";
 import {
   createTask,
   loadAllDecryptedTasks,
@@ -65,6 +72,15 @@ import {
   type DecryptedProject,
 } from "@/lib/vault/projects";
 import { cn } from "@/lib/utils";
+
+/** Local calendar date as ISO `YYYY-MM-DD` for overdue comparison. */
+function todayIsoDate(): string {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
 
 type TaskListProps = {
   workspaceId: string;
@@ -85,6 +101,13 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const [busy, setBusy] = useState(false);
   const [savingTaskId, setSavingTaskId] = useState<string | null>(null);
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null);
+
+  const [newDescription, setNewDescription] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [newLabelId, setNewLabelId] = useState<string | null>(null);
+  const [newStageId, setNewStageId] = useState<string | null>(null);
+  const [newPriorityId, setNewPriorityId] = useState<string | null>(null);
+  const [newMilestoneId, setNewMilestoneId] = useState<string | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -144,6 +167,17 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     ? (tasks.find((t) => t.id === activeTaskId) ?? null)
     : null;
 
+  function resetCreateFields() {
+    setNewDescription("");
+    setNewDueDate("");
+    setNewLabelId(null);
+    setNewMilestoneId(null);
+    setNewStageId(project ? defaultStage(project.categorizations).id : null);
+    setNewPriorityId(
+      project ? defaultPriority(project.categorizations).id : null,
+    );
+  }
+
   async function onCreate(title: string) {
     if (busy || !project) return;
     setBusy(true);
@@ -151,13 +185,24 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
         tasks.reduce((max, t) => Math.max(max, t.sortOrder), -1) + 1;
+      const description = newDescription.trim();
       const created = await createTask(
         workspaceId,
         projectId,
         key,
-        { title },
+        {
+          title,
+          body: description ? textToTaskBody(description) : undefined,
+          dueDate: newDueDate.trim() || null,
+        },
         nextOrder,
         project.categorizations,
+        {
+          labelId: newLabelId,
+          stageId: newStageId ?? undefined,
+          priorityId: newPriorityId ?? undefined,
+          milestoneId: newMilestoneId,
+        },
       );
       window.dispatchEvent(new Event("helvety:tasks-changed"));
       router.push(`/app/w/${workspaceId}/p/${projectId}/t/${created.id}`);
@@ -315,7 +360,86 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               fieldMaxLength={500}
               disabled={busy || !project}
               onCreate={onCreate}
-            />
+              onOpenChange={(open) => {
+                if (open) resetCreateFields();
+              }}
+            >
+              <div className="flex flex-col gap-2">
+                <Label htmlFor="new-task-description">
+                  Description (optional)
+                </Label>
+                <Textarea
+                  id="new-task-description"
+                  value={newDescription}
+                  onChange={(e) => setNewDescription(e.target.value)}
+                  placeholder="Add a description…"
+                  disabled={busy}
+                  rows={3}
+                />
+              </div>
+              <div className="flex flex-wrap items-end gap-3">
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Label
+                  <CategorizationPicker
+                    options={project.categorizations.labels}
+                    value={newLabelId}
+                    allowNone
+                    disabled={busy}
+                    aria-label="Label"
+                    onChange={setNewLabelId}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Stage
+                  <CategorizationPicker
+                    options={project.categorizations.stages}
+                    value={newStageId}
+                    useStageColor
+                    disabled={busy}
+                    aria-label="Stage"
+                    onChange={(id) => {
+                      if (id) setNewStageId(id);
+                    }}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Priority
+                  <CategorizationPicker
+                    options={project.categorizations.priorities}
+                    value={newPriorityId}
+                    disabled={busy}
+                    aria-label="Priority"
+                    onChange={(id) => {
+                      if (id) setNewPriorityId(id);
+                    }}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Milestone
+                  <MilestonePicker
+                    options={milestones.map((m) => ({
+                      id: m.id,
+                      title: m.title,
+                      targetDate: m.targetDate,
+                    }))}
+                    value={newMilestoneId}
+                    disabled={busy}
+                    aria-label="Milestone"
+                    onChange={setNewMilestoneId}
+                  />
+                </label>
+                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                  Due date
+                  <Input
+                    type="date"
+                    className="w-40"
+                    value={newDueDate}
+                    disabled={busy}
+                    onChange={(e) => setNewDueDate(e.target.value)}
+                  />
+                </label>
+              </div>
+            </CreateEntityDialog>
 
             <DndContext
               sensors={sensors}
@@ -671,6 +795,17 @@ function TaskCardContent({
           }
         >
           {milestone.title}
+        </span>
+      ) : null}
+      {task.dueDate ? (
+        <span
+          className={cn(
+            "shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground",
+            task.dueDate < todayIsoDate() && "bg-destructive/10 text-destructive",
+          )}
+          title={`Due ${task.dueDate}`}
+        >
+          {task.dueDate}
         </span>
       ) : null}
       {onUpdateIds ? (

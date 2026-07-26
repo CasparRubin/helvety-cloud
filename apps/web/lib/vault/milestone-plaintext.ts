@@ -1,5 +1,6 @@
 import {
   EMPTY_TASK_BODY,
+  isIsoDate,
   isTaskBodyDoc,
   type TaskBodyDoc,
 } from "@/lib/vault/task-plaintext";
@@ -11,12 +12,6 @@ export type MilestonePlaintext = {
   /** ISO date `YYYY-MM-DD`, or null when unset. */
   targetDate: string | null;
 };
-
-const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-
-export function isIsoDate(value: unknown): value is string {
-  return typeof value === "string" && ISO_DATE.test(value);
-}
 
 export function parseMilestonePlaintext(raw: unknown): MilestonePlaintext {
   if (typeof raw !== "object" || raw === null) {

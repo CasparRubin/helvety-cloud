@@ -16,7 +16,23 @@ export type TaskPlaintext = {
   version: 1;
   title: string;
   body: TaskBodyDoc;
+  /** ISO date `YYYY-MM-DD` when the task is due, or null when unset. */
+  dueDate: string | null;
 };
+
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+export function isIsoDate(value: unknown): value is string {
+  if (typeof value !== "string") return false;
+  const match = ISO_DATE.exec(value);
+  if (!match) return false;
+  const year = Number(match[1]);
+  const month = Number(match[2]);
+  const day = Number(match[3]);
+  if (month < 1 || month > 12) return false;
+  const daysInMonth = new Date(Date.UTC(year, month, 0)).getUTCDate();
+  return day >= 1 && day <= daysInMonth;
+}
 
 export const EMPTY_TASK_BODY: TaskBodyDoc = {
   type: "doc",
@@ -57,6 +73,14 @@ export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
     throw new Error("Invalid task plaintext");
   }
 
+  let dueDate: string | null = null;
+  if (obj.dueDate !== undefined && obj.dueDate !== null) {
+    if (!isIsoDate(obj.dueDate)) {
+      throw new Error("Invalid task dueDate");
+    }
+    dueDate = obj.dueDate;
+  }
+
   if (obj.version === 1) {
     if (!isTaskBodyDoc(obj.body)) {
       throw new Error("Invalid task plaintext");
@@ -68,6 +92,7 @@ export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
         type: "doc",
         content: obj.body.content ?? [{ type: "paragraph" }],
       },
+      dueDate,
     };
   }
 
@@ -77,6 +102,7 @@ export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
       version: 1,
       title: obj.title,
       body: textToTaskBody(obj.body),
+      dueDate,
     };
   }
 
@@ -86,11 +112,13 @@ export function parseTaskPlaintext(raw: unknown): TaskPlaintext {
 export function toTaskPlaintext(
   title: string,
   body: TaskBodyDoc,
+  dueDate: string | null = null,
 ): TaskPlaintext {
   return {
     version: 1,
     title: title.trim(),
     body: isTaskBodyDoc(body) ? body : EMPTY_TASK_BODY,
+    dueDate: dueDate && isIsoDate(dueDate) ? dueDate : null,
   };
 }
 

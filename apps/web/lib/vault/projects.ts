@@ -256,6 +256,7 @@ export async function createProject(
   workspaceKey: Uint8Array,
   name: string,
   sortOrder = 0,
+  content?: { description?: TaskBodyDoc },
 ): Promise<DecryptedProject> {
   const projectId = crypto.randomUUID();
   const encryptedBlob = await encryptProjectContent(
@@ -263,7 +264,7 @@ export async function createProject(
     projectId,
     {
       name,
-      description: EMPTY_TASK_BODY,
+      description: content?.description ?? EMPTY_TASK_BODY,
       categorizations: defaultCategorizations(),
     },
   );

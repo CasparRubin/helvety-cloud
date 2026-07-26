@@ -10,6 +10,8 @@ import {
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import {
   createProject,
@@ -17,6 +19,7 @@ import {
   reorderProjects,
   type DecryptedProject,
 } from "@/lib/vault/projects";
+import { textToTaskBody } from "@/lib/vault/task-plaintext";
 
 type ProjectListProps = {
   workspaceId: string;
@@ -30,6 +33,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [newDescription, setNewDescription] = useState("");
 
   const loadProjects = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
@@ -69,7 +73,10 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       const key = await getWorkspaceKey(workspaceId);
       const nextOrder =
         projects.reduce((max, p) => Math.max(max, p.sortOrder), -1) + 1;
-      await createProject(workspaceId, key, name, nextOrder);
+      const description = newDescription.trim();
+      await createProject(workspaceId, key, name, nextOrder, {
+        description: description ? textToTaskBody(description) : undefined,
+      });
       await refresh();
       window.dispatchEvent(new Event("helvety:projects-changed"));
     } finally {
@@ -118,7 +125,24 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
           fieldMaxLength={120}
           disabled={busy}
           onCreate={onCreate}
-        />
+          onOpenChange={(open) => {
+            if (open) setNewDescription("");
+          }}
+        >
+          <div className="flex flex-col gap-2">
+            <Label htmlFor="new-project-description">
+              Description (optional)
+            </Label>
+            <Textarea
+              id="new-project-description"
+              value={newDescription}
+              onChange={(e) => setNewDescription(e.target.value)}
+              placeholder="Add a project description…"
+              disabled={busy}
+              rows={3}
+            />
+          </div>
+        </CreateEntityDialog>
       }
       error={error}
       loading={loading}

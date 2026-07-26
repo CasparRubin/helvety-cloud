@@ -11,6 +11,7 @@ import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { InlineTitle } from "@/components/app/inline-title";
 import { MilestonePicker } from "@/components/app/milestone-picker";
 import { SaveStatus } from "@/components/app/save-status";
+import { Input } from "@/components/ui/input";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -44,6 +45,7 @@ type TaskDetailProps = {
 type TaskDraft = {
   title: string;
   body: TaskBodyDoc;
+  dueDate: string | null;
   labelId: string | null;
   stageId: string;
   priorityId: string;
@@ -65,6 +67,7 @@ export function TaskDetail({
     useState<ProjectCategorizations | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState<TaskBodyDoc>(EMPTY_TASK_BODY);
+  const [dueDate, setDueDate] = useState<string | null>(null);
   const [labelId, setLabelId] = useState<string | null>(null);
   const [stageId, setStageId] = useState("");
   const [priorityId, setPriorityId] = useState("");
@@ -84,8 +87,8 @@ export function TaskDetail({
   });
 
   const draft = useMemo<TaskDraft>(
-    () => ({ title, body, labelId, stageId, priorityId, milestoneId }),
-    [title, body, labelId, stageId, priorityId, milestoneId],
+    () => ({ title, body, dueDate, labelId, stageId, priorityId, milestoneId }),
+    [title, body, dueDate, labelId, stageId, priorityId, milestoneId],
   );
 
   const { status, savedAt, flush } = useAutosave({
@@ -100,7 +103,7 @@ export function TaskDetail({
         projectId,
         key,
         current,
-        toTaskPlaintext(next.title, next.body),
+        toTaskPlaintext(next.title, next.body, next.dueDate),
         {
           labelId: next.labelId,
           stageId: next.stageId,
@@ -113,6 +116,7 @@ export function TaskDetail({
       return {
         title: saved.title,
         body: saved.body,
+        dueDate: saved.dueDate,
         labelId: saved.labelId,
         stageId: saved.stageId ?? next.stageId,
         priorityId: saved.priorityId ?? next.priorityId,
@@ -123,6 +127,7 @@ export function TaskDetail({
     onSaved: (canonical) => {
       setTitle(canonical.title);
       setBody(canonical.body);
+      setDueDate(canonical.dueDate);
       setLabelId(canonical.labelId);
       setStageId(canonical.stageId);
       setPriorityId(canonical.priorityId);
@@ -175,6 +180,7 @@ export function TaskDetail({
         );
         setTitle(loaded.title);
         setBody(loaded.body);
+        setDueDate(loaded.dueDate);
         setLabelId(nextLabel);
         setStageId(nextStage);
         setPriorityId(nextPriority);
@@ -333,6 +339,16 @@ export function TaskDetail({
                   disabled={deleting}
                   aria-label="Milestone"
                   onChange={setMilestoneId}
+                />
+              </label>
+              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
+                Due date
+                <Input
+                  type="date"
+                  className="w-40"
+                  value={dueDate ?? ""}
+                  disabled={deleting}
+                  onChange={(e) => setDueDate(e.target.value || null)}
                 />
               </label>
             </div>
