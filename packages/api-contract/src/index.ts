@@ -295,6 +295,12 @@ export const sortOrderCursorSchema = z.object({
 });
 export type SortOrderCursor = z.infer<typeof sortOrderCursorSchema>;
 
+export const createdAtCursorSchema = z.object({
+  createdAt: z.string(),
+  id: uuidSchema,
+});
+export type CreatedAtCursor = z.infer<typeof createdAtCursorSchema>;
+
 export const listProjectsResponseSchema = z.object({
   projects: z.array(projectResponseSchema),
   nextCursor: z.string().nullable(),

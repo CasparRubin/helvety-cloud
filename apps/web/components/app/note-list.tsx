@@ -22,6 +22,7 @@ import {
   type DecryptedNote,
 } from "@/lib/client-crypto/notes";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
+import { formatDateTime } from "@/lib/format-datetime";
 
 type NoteListProps = {
   workspaceId: string;
@@ -128,12 +129,19 @@ export function NoteList({ workspaceId }: NoteListProps) {
       >
         {notes.map((note) => (
           <EntityListRow key={note.id}>
-            <Link
-              href={`/app/w/${workspaceId}/notes/${note.id}`}
-              className="font-medium"
-            >
-              {note.title || "Untitled"}
-            </Link>
+            <div className="flex flex-col gap-0.5">
+              <Link
+                href={`/app/w/${workspaceId}/notes/${note.id}`}
+                className="font-medium"
+              >
+                {note.title || "Untitled"}
+              </Link>
+              <p className="text-xs text-muted-foreground">
+                Created {formatDateTime(note.createdAt)}
+                {" · "}
+                Modified {formatDateTime(note.updatedAt)}
+              </p>
+            </div>
           </EntityListRow>
         ))}
       </EntityListShell>

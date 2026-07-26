@@ -13,8 +13,8 @@ import {
 } from "@/lib/api/entity-links";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import {
-  encodeSortOrderCursor,
-  parseListSearchParams,
+  encodeCreatedAtCursor,
+  parseNotesListSearchParams,
 } from "@/lib/api/list-cursor";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
@@ -31,7 +31,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { workspaceId } = await context.params;
 
   const url = new URL(request.url);
-  const parsed = parseListSearchParams(url);
+  const parsed = parseNotesListSearchParams(url);
   if (!parsed.ok) {
     return apiError("invalid_body", parsed.message, 400);
   }
@@ -117,8 +117,8 @@ export async function GET(request: Request, context: RouteContext) {
       "id, workspace_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at",
     )
     .eq("workspace_id", workspaceId)
-    .order("sort_order", { ascending: true })
-    .order("id", { ascending: true })
+    .order("created_at", { ascending: false })
+    .order("id", { ascending: false })
     .limit(limit + 1);
 
   if (!includeDeleted) {
@@ -129,8 +129,9 @@ export async function GET(request: Request, context: RouteContext) {
   }
 
   if (cursor) {
+    const createdAt = `"${cursor.createdAt}"`;
     query = query.or(
-      `sort_order.gt.${cursor.sortOrder},and(sort_order.eq.${cursor.sortOrder},id.gt.${cursor.id})`,
+      `created_at.lt.${createdAt},and(created_at.eq.${createdAt},id.lt.${cursor.id})`,
     );
   }
 
@@ -149,7 +150,7 @@ export async function GET(request: Request, context: RouteContext) {
   const last = page[page.length - 1];
   const nextCursor =
     hasMore && last
-      ? encodeSortOrderCursor({ sortOrder: last.sort_order, id: last.id })
+      ? encodeCreatedAtCursor({ createdAt: last.created_at, id: last.id })
       : null;
 
   let linksByNote: Map<string, EntityLinkTarget[]>;

@@ -1,30 +1,53 @@
 import {
+  createdAtCursorSchema,
   sortOrderCursorSchema,
+  type CreatedAtCursor,
   type SortOrderCursor,
 } from "@helvety-cloud/api-contract";
 
-/** Encode keyset cursor as base64url JSON. */
-export function encodeSortOrderCursor(cursor: SortOrderCursor): string {
-  const json = JSON.stringify({
-    sortOrder: cursor.sortOrder,
-    id: cursor.id,
-  });
+function encodeBase64UrlJson(payload: object): string {
+  const json = JSON.stringify(payload);
   return btoa(json)
     .replace(/\+/g, "-")
     .replace(/\//g, "_")
     .replace(/=+$/, "");
 }
 
-/** Decode opaque cursor; returns null if invalid. */
+function decodeBase64UrlJson(raw: string): unknown {
+  const padded =
+    raw.replace(/-/g, "+").replace(/_/g, "/") +
+    "=".repeat((4 - (raw.length % 4)) % 4);
+  return JSON.parse(atob(padded)) as unknown;
+}
+
+export function encodeSortOrderCursor(cursor: SortOrderCursor): string {
+  return encodeBase64UrlJson({
+    sortOrder: cursor.sortOrder,
+    id: cursor.id,
+  });
+}
+
 export function decodeSortOrderCursor(
   raw: string,
 ): SortOrderCursor | null {
   try {
-    const padded =
-      raw.replace(/-/g, "+").replace(/_/g, "/") +
-      "=".repeat((4 - (raw.length % 4)) % 4);
-    const json: unknown = JSON.parse(atob(padded));
-    const parsed = sortOrderCursorSchema.safeParse(json);
+    const parsed = sortOrderCursorSchema.safeParse(decodeBase64UrlJson(raw));
+    return parsed.success ? parsed.data : null;
+  } catch {
+    return null;
+  }
+}
+
+export function encodeCreatedAtCursor(cursor: CreatedAtCursor): string {
+  return encodeBase64UrlJson({
+    createdAt: cursor.createdAt,
+    id: cursor.id,
+  });
+}
+
+export function decodeCreatedAtCursor(raw: string): CreatedAtCursor | null {
+  try {
+    const parsed = createdAtCursorSchema.safeParse(decodeBase64UrlJson(raw));
     return parsed.success ? parsed.data : null;
   } catch {
     return null;
@@ -47,15 +70,11 @@ function parseOptionalUuid(
   return { ok: true, value: raw };
 }
 
-/**
- * Parse list query from URL search params.
- * Returns `{ ok: false, message }` on invalid cursor/limit.
- */
-export function parseListSearchParams(url: URL):
+function parseCommonListParams(url: URL):
   | {
       ok: true;
       limit: number;
-      cursor: SortOrderCursor | null;
+      cursorRaw: string | null;
       includeDeleted: boolean;
     }
   | { ok: false; message: string } {
@@ -69,23 +88,43 @@ export function parseListSearchParams(url: URL):
     limit = n;
   }
 
-  const cursorRaw = url.searchParams.get("cursor");
+  return {
+    ok: true,
+    limit,
+    cursorRaw: url.searchParams.get("cursor"),
+    includeDeleted: url.searchParams.get("includeDeleted") === "true",
+  };
+}
+
+/** Parse list query; keyset cursor is sort_order ASC, id ASC. */
+export function parseListSearchParams(url: URL):
+  | {
+      ok: true;
+      limit: number;
+      cursor: SortOrderCursor | null;
+      includeDeleted: boolean;
+    }
+  | { ok: false; message: string } {
+  const common = parseCommonListParams(url);
+  if (!common.ok) return common;
+
   let cursor: SortOrderCursor | null = null;
-  if (cursorRaw) {
-    cursor = decodeSortOrderCursor(cursorRaw);
+  if (common.cursorRaw) {
+    cursor = decodeSortOrderCursor(common.cursorRaw);
     if (!cursor) {
       return { ok: false, message: "invalid cursor" };
     }
   }
 
-  const includeDeleted = url.searchParams.get("includeDeleted") === "true";
-
-  return { ok: true, limit, cursor, includeDeleted };
+  return {
+    ok: true,
+    limit: common.limit,
+    cursor,
+    includeDeleted: common.includeDeleted,
+  };
 }
 
-/**
- * Parse task list query including optional categorization filters.
- */
+/** Parse task list query including optional categorization filters. */
 export function parseTaskListSearchParams(url: URL):
   | {
       ok: true;
@@ -125,5 +164,33 @@ export function parseTaskListSearchParams(url: URL):
     stageId: stage.value,
     priorityId: priority.value,
     milestoneId: milestone.value,
+  };
+}
+
+/** Parse notes list query; keyset cursor is created_at DESC, id DESC. */
+export function parseNotesListSearchParams(url: URL):
+  | {
+      ok: true;
+      limit: number;
+      cursor: CreatedAtCursor | null;
+      includeDeleted: boolean;
+    }
+  | { ok: false; message: string } {
+  const common = parseCommonListParams(url);
+  if (!common.ok) return common;
+
+  let cursor: CreatedAtCursor | null = null;
+  if (common.cursorRaw) {
+    cursor = decodeCreatedAtCursor(common.cursorRaw);
+    if (!cursor) {
+      return { ok: false, message: "invalid cursor" };
+    }
+  }
+
+  return {
+    ok: true,
+    limit: common.limit,
+    cursor,
+    includeDeleted: common.includeDeleted,
   };
 }

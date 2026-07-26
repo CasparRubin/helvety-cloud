@@ -13,6 +13,7 @@ create table public.notes (
 
 create index notes_workspace_id_idx on public.notes (workspace_id);
 create index notes_workspace_updated_idx on public.notes (workspace_id, updated_at);
+create index notes_workspace_created_idx on public.notes (workspace_id, created_at desc);
 
 create trigger notes_set_updated_at
   before update on public.notes
