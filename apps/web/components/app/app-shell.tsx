@@ -126,6 +126,9 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const activeWorkspaceName =
     workspaces.find((w) => w.id === activeWorkspaceId)?.name ?? null;
   const workspaceBase = location?.workspaceBase ?? null;
+  const onWorkspaceHome = Boolean(
+    workspaceBase && pathname === workspaceBase,
+  );
   const backHref = location ? parentHrefFor(location) : null;
   const activeSection = location?.section ?? null;
   const sections = workspaceBase ? workspaceSections(workspaceBase) : [];
@@ -232,12 +235,23 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             {workspaceBase ? (
               <>
                 {activeWorkspaceName ? (
-                  <p
-                    className="truncate px-2 pb-1.5 text-xs font-medium text-muted-foreground"
-                    title={activeWorkspaceName}
-                  >
-                    {activeWorkspaceName}
-                  </p>
+                  <div className="mb-1.5 flex flex-col gap-0.5">
+                    <p className="px-2 text-xs font-medium text-muted-foreground">
+                      Workspace
+                    </p>
+                    <Link
+                      href={workspaceBase}
+                      title={activeWorkspaceName}
+                      aria-current={onWorkspaceHome ? "page" : undefined}
+                      className={cn(
+                        "truncate rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+                        onWorkspaceHome &&
+                          "bg-sidebar-accent text-sidebar-accent-foreground",
+                      )}
+                    >
+                      {activeWorkspaceName}
+                    </Link>
+                  </div>
                 ) : null}
                 {sections.map((section) => (
                   <Fragment key={section.id}>
