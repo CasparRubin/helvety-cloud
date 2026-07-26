@@ -354,9 +354,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               }}
             >
               <div className="flex flex-col gap-2">
-                <Label htmlFor="new-task-description">
-                  Description (optional)
-                </Label>
+                <Label htmlFor="new-task-description">Description</Label>
                 <Textarea
                   id="new-task-description"
                   value={newDescription}
@@ -366,9 +364,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                   rows={3}
                 />
               </div>
-              <div className="flex flex-wrap items-end gap-3">
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Label
+              <div className="grid grid-cols-2 gap-3">
+                <div className="flex flex-col gap-2">
+                  <Label>Label</Label>
                   <CategorizationPicker
                     options={project.categorizations.labels}
                     value={newLabelId}
@@ -377,9 +375,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                     aria-label="Label"
                     onChange={setNewLabelId}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Stage
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label required>Stage</Label>
                   <CategorizationPicker
                     options={project.categorizations.stages}
                     value={newStageId}
@@ -390,9 +388,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                       if (id) setNewStageId(id);
                     }}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Priority
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label required>Priority</Label>
                   <CategorizationPicker
                     options={project.categorizations.priorities}
                     value={newPriorityId}
@@ -402,9 +400,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                       if (id) setNewPriorityId(id);
                     }}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Milestone
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label>Milestone</Label>
                   <MilestonePicker
                     options={milestones.map((m) => ({
                       id: m.id,
@@ -417,17 +415,17 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                     aria-label="Milestone"
                     onChange={setNewMilestoneId}
                   />
-                </label>
-                <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                  Due date
+                </div>
+                <div className="flex flex-col gap-2">
+                  <Label htmlFor="new-task-due-date">Due date</Label>
                   <Input
+                    id="new-task-due-date"
                     type="date"
-                    className="w-40"
                     value={newDueDate}
                     disabled={busy}
                     onChange={(e) => setNewDueDate(e.target.value)}
                   />
-                </label>
+                </div>
               </div>
             </CreateEntityDialog>
 

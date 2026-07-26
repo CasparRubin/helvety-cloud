@@ -168,7 +168,9 @@ export function WorkspaceSwitcher({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="ws-create-name">Name</Label>
+            <Label htmlFor="ws-create-name" required>
+              Name
+            </Label>
             <Input
               id="ws-create-name"
               value={name}
@@ -215,7 +217,9 @@ export function WorkspaceSwitcher({
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="ws-rename-name">Name</Label>
+            <Label htmlFor="ws-rename-name" required>
+              Name
+            </Label>
             <Input
               id="ws-rename-name"
               value={name}

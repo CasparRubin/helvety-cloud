@@ -130,9 +130,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
           }}
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-project-description">
-              Description (optional)
-            </Label>
+            <Label htmlFor="new-project-description">Description</Label>
             <Textarea
               id="new-project-description"
               value={newDescription}

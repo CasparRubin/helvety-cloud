@@ -276,9 +276,9 @@ export function ProjectMilestonesPanel({
           }
         }}
       >
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
-            <Label htmlFor="milestone-start-date">Start date (optional)</Label>
+            <Label htmlFor="milestone-start-date">Start date</Label>
             <Input
               id="milestone-start-date"
               type="date"
@@ -289,7 +289,7 @@ export function ProjectMilestonesPanel({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="milestone-end-date">End date (optional)</Label>
+            <Label htmlFor="milestone-end-date">End date</Label>
             <Input
               id="milestone-end-date"
               type="date"
@@ -301,7 +301,7 @@ export function ProjectMilestonesPanel({
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="milestone-description">Description (optional)</Label>
+          <Label htmlFor="milestone-description">Description</Label>
           <Textarea
             id="milestone-description"
             value={newDescription}
@@ -495,7 +495,9 @@ function MilestoneEditForm({
     <>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-2">
-          <Label htmlFor={titleId}>Title</Label>
+          <Label htmlFor={titleId} required>
+            Title
+          </Label>
           <Input
             id={titleId}
             value={title}
@@ -506,9 +508,9 @@ function MilestoneEditForm({
             autoFocus
           />
         </div>
-        <div className="grid grid-cols-2 gap-2">
+        <div className="grid grid-cols-2 gap-3">
           <div className="flex flex-col gap-2">
-            <Label htmlFor={startDateId}>Start date (optional)</Label>
+            <Label htmlFor={startDateId}>Start date</Label>
             <Input
               id={startDateId}
               type="date"
@@ -519,7 +521,7 @@ function MilestoneEditForm({
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor={endDateId}>End date (optional)</Label>
+            <Label htmlFor={endDateId}>End date</Label>
             <Input
               id={endDateId}
               type="date"
@@ -531,7 +533,7 @@ function MilestoneEditForm({
           </div>
         </div>
         <div className="flex flex-col gap-2">
-          <Label htmlFor={descriptionId}>Description (optional)</Label>
+          <Label htmlFor={descriptionId}>Description</Label>
           <Textarea
             id={descriptionId}
             value={description}

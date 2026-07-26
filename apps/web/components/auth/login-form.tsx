@@ -119,7 +119,9 @@ export function LoginForm() {
         <form onSubmit={sendOtp}>
           <FieldGroup>
             <Field data-invalid={error ? true : undefined}>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <FieldLabel htmlFor="email" required>
+                Email
+              </FieldLabel>
               <Input
                 id="email"
                 name="email"
@@ -142,7 +144,9 @@ export function LoginForm() {
         <form onSubmit={verifyOtp}>
           <FieldGroup>
             <Field data-invalid={error ? true : undefined}>
-              <FieldLabel htmlFor="otp">One-time code</FieldLabel>
+              <FieldLabel htmlFor="otp" required>
+                One-time code
+              </FieldLabel>
               <InputOTP
                 id="otp"
                 maxLength={6}

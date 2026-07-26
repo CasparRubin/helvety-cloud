@@ -121,28 +121,30 @@ export function ContactList({ workspaceId }: ContactListProps) {
             if (open) resetCreateFields();
           }}
         >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="new-contact-emails">Emails (optional)</Label>
-            <Input
-              id="new-contact-emails"
-              value={newEmails}
-              onChange={(e) => setNewEmails(e.target.value)}
-              placeholder="comma-separated"
-              disabled={busy}
-            />
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-contact-emails">Emails</Label>
+              <Input
+                id="new-contact-emails"
+                value={newEmails}
+                onChange={(e) => setNewEmails(e.target.value)}
+                placeholder="comma-separated"
+                disabled={busy}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-contact-phones">Phones</Label>
+              <Input
+                id="new-contact-phones"
+                value={newPhones}
+                onChange={(e) => setNewPhones(e.target.value)}
+                placeholder="comma-separated"
+                disabled={busy}
+              />
+            </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-contact-phones">Phones (optional)</Label>
-            <Input
-              id="new-contact-phones"
-              value={newPhones}
-              onChange={(e) => setNewPhones(e.target.value)}
-              placeholder="comma-separated"
-              disabled={busy}
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="new-contact-notes">Notes (optional)</Label>
+            <Label htmlFor="new-contact-notes">Notes</Label>
             <Textarea
               id="new-contact-notes"
               value={newNotes}

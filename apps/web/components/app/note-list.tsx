@@ -115,7 +115,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
           }}
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-note-body">Note (optional)</Label>
+            <Label htmlFor="new-note-body">Note</Label>
             <Textarea
               id="new-note-body"
               value={newBody}
@@ -126,7 +126,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
             />
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-note-tags">Tags (optional)</Label>
+            <Label htmlFor="new-note-tags">Tags</Label>
             <Input
               id="new-note-tags"
               value={newTags}

@@ -48,7 +48,9 @@ export function WorkspaceGeneralSettings() {
     <div className="flex max-w-lg flex-col gap-3">
       <SettingsError error={error} />
       <div className="flex flex-col gap-2">
-        <Label htmlFor="ws-settings-name">Name</Label>
+        <Label htmlFor="ws-settings-name" required>
+          Name
+        </Label>
         <div className="flex gap-2">
           <Input
             id="ws-settings-name"
@@ -136,7 +138,9 @@ export function WorkspaceMembersSettings() {
           }}
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="invite-role">Role</Label>
+            <Label htmlFor="invite-role" required>
+              Role
+            </Label>
             <select
               id="invite-role"
               className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"

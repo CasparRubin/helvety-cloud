@@ -88,13 +88,15 @@ export function CreateEntityDialog({
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent>
+        <DialogContent className={children != null ? "sm:max-w-lg" : undefined}>
           <DialogHeader>
             <DialogTitle>{dialogTitle}</DialogTitle>
           </DialogHeader>
-          <div className="flex flex-col gap-3">
+          <div className="flex flex-col gap-4">
             <div className="flex flex-col gap-2">
-              <Label htmlFor={fieldId}>{fieldLabel}</Label>
+              <Label htmlFor={fieldId} required>
+                {fieldLabel}
+              </Label>
               <Input
                 id={fieldId}
                 type={fieldType}

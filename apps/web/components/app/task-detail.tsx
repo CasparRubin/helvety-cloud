@@ -12,6 +12,7 @@ import { InlineTitle } from "@/components/app/inline-title";
 import { MilestonePicker } from "@/components/app/milestone-picker";
 import { SaveStatus } from "@/components/app/save-status";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -294,8 +295,8 @@ export function TaskDetail({
 
           {categorizations ? (
             <div className="flex flex-wrap items-end gap-3">
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Label
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">Label</Label>
                 <CategorizationPicker
                   options={categorizations.labels}
                   value={labelId}
@@ -304,9 +305,11 @@ export function TaskDetail({
                   aria-label="Label"
                   onChange={setLabelId}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Stage
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground" required>
+                  Stage
+                </Label>
                 <CategorizationPicker
                   options={categorizations.stages}
                   value={stageId}
@@ -317,9 +320,11 @@ export function TaskDetail({
                     if (id) setStageId(id);
                   }}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Priority
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground" required>
+                  Priority
+                </Label>
                 <CategorizationPicker
                   options={categorizations.priorities}
                   value={priorityId}
@@ -329,9 +334,11 @@ export function TaskDetail({
                     if (id) setPriorityId(id);
                   }}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Milestone
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label className="text-xs text-muted-foreground">
+                  Milestone
+                </Label>
                 <MilestonePicker
                   options={milestoneOptions}
                   value={milestoneId}
@@ -339,17 +346,23 @@ export function TaskDetail({
                   aria-label="Milestone"
                   onChange={setMilestoneId}
                 />
-              </label>
-              <label className="flex flex-col gap-1 text-xs text-muted-foreground">
-                Due date
+              </div>
+              <div className="flex flex-col gap-1">
+                <Label
+                  htmlFor="task-detail-due-date"
+                  className="text-xs text-muted-foreground"
+                >
+                  Due date
+                </Label>
                 <Input
+                  id="task-detail-due-date"
                   type="date"
                   className="w-40"
                   value={dueDate ?? ""}
                   disabled={deleting}
                   onChange={(e) => setDueDate(e.target.value || null)}
                 />
-              </label>
+              </div>
             </div>
           ) : null}
 
