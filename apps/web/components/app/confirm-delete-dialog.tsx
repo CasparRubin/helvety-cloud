@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Trash2Icon } from "lucide-react";
 
 import {
   AlertDialog,
@@ -80,7 +81,6 @@ type DeleteButtonProps = {
   busy?: boolean;
   onConfirm: () => void | Promise<void>;
   variant?: React.ComponentProps<typeof Button>["variant"];
-  size?: React.ComponentProps<typeof Button>["size"];
 };
 
 /** Destructive delete button that opens ConfirmDeleteDialog. */
@@ -92,7 +92,6 @@ export function DeleteButton({
   busy,
   onConfirm,
   variant = "destructive",
-  size = "sm",
 }: DeleteButtonProps) {
   const [open, setOpen] = useState(false);
 
@@ -101,10 +100,11 @@ export function DeleteButton({
       <Button
         type="button"
         variant={variant}
-        size={size}
+        size="sm"
         disabled={disabled || busy}
         onClick={() => setOpen(true)}
       >
+        <Trash2Icon />
         {label}
       </Button>
       <ConfirmDeleteDialog

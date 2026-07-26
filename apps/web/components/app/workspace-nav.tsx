@@ -120,7 +120,7 @@ export function isInAppWorkspacePath(pathname: string): boolean {
   return pathname.startsWith("/app/w/");
 }
 
-export type NavBackMode = "history" | "parent" | "none";
+type NavBackMode = "history" | "parent" | "none";
 
 /** Prefer in-app history; otherwise logical parent; otherwise disabled. */
 export function resolveNavBackMode(input: {
@@ -201,8 +201,7 @@ export function NavBackButton({
     <Button
       type="button"
       variant="outline"
-      size="icon-sm"
-      aria-label="Back"
+      size="sm"
       title="Back"
       disabled={disabled}
       onClick={() => {
@@ -217,6 +216,7 @@ export function NavBackButton({
       }}
     >
       <ChevronLeftIcon />
+      Back
     </Button>
   );
 }

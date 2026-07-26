@@ -223,37 +223,6 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
               <UserMenu email={email} />
             </div>
           </header>
-          {workspaceBase ? (
-            <nav
-              aria-label="Workspace sections"
-              className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
-            >
-              {sections.map((section) => (
-                <SectionLink
-                  key={section.id}
-                  href={section.href}
-                  active={activeSection === section.id}
-                  icon={section.icon}
-                  variant="mobile"
-                >
-                  {section.label}
-                </SectionLink>
-              ))}
-            </nav>
-          ) : null}
-          <div
-            aria-label="Page actions"
-            className="flex h-10 shrink-0 items-center gap-2 border-b px-3"
-          >
-            <ButtonGroup>
-              <NavBackButton
-                mode={backMode}
-                parentHref={parentHref}
-                onParentNavigate={noteParentReplace}
-              />
-            </ButtonGroup>
-            <PageActionsSlot />
-          </div>
         </div>
         <div className="flex min-h-0 flex-1">
           <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
@@ -302,18 +271,53 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
               )}
             </nav>
           </aside>
-          <main className="min-w-0 flex-1">
-            {activeWorkspaceId ? (
-              <VaultEntityCacheProvider
-                key={activeWorkspaceId}
-                workspaceId={activeWorkspaceId}
+          <div className="flex min-w-0 flex-1 flex-col">
+            <div className="sticky top-12 z-30 border-b bg-muted/40">
+              {workspaceBase ? (
+                <nav
+                  aria-label="Workspace sections"
+                  className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
+                >
+                  {sections.map((section) => (
+                    <SectionLink
+                      key={section.id}
+                      href={section.href}
+                      active={activeSection === section.id}
+                      icon={section.icon}
+                      variant="mobile"
+                    >
+                      {section.label}
+                    </SectionLink>
+                  ))}
+                </nav>
+              ) : null}
+              <div
+                aria-label="Page actions"
+                className="flex h-10 shrink-0 items-center gap-2 px-3"
               >
-                {children}
-              </VaultEntityCacheProvider>
-            ) : (
-              children
-            )}
-          </main>
+                <ButtonGroup>
+                  <NavBackButton
+                    mode={backMode}
+                    parentHref={parentHref}
+                    onParentNavigate={noteParentReplace}
+                  />
+                </ButtonGroup>
+                <PageActionsSlot />
+              </div>
+            </div>
+            <main className="min-w-0 flex-1">
+              {activeWorkspaceId ? (
+                <VaultEntityCacheProvider
+                  key={activeWorkspaceId}
+                  workspaceId={activeWorkspaceId}
+                >
+                  {children}
+                </VaultEntityCacheProvider>
+              ) : (
+                children
+              )}
+            </main>
+          </div>
         </div>
       </div>
     </PageActionsProvider>

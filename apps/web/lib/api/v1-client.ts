@@ -42,7 +42,6 @@ import {
   createAttachmentResponseSchema,
   completeAttachmentResponseSchema,
   downloadAttachmentResponseSchema,
-  listAttachmentsResponseSchema,
   attachmentResponseSchema,
   type BillingRedirectResponse,
   type ContactResponse,
@@ -86,9 +85,7 @@ import {
   type CreateAttachmentResponse,
   type CompleteAttachmentResponse,
   type DownloadAttachmentResponse,
-  type ListAttachmentsResponse,
   type AttachmentResponse,
-  type AttachmentParentKind,
 } from "@helvety-cloud/api-contract";
 
 import { createClient } from "@/lib/supabase/client";
@@ -735,19 +732,6 @@ export async function getAttachment(
   return apiFetch(
     `/api/v1/workspaces/${workspaceId}/attachments/${attachmentId}`,
     attachmentResponseSchema,
-  );
-}
-
-export async function listAttachments(
-  workspaceId: string,
-  params?: { parentKind: AttachmentParentKind; parentId: string },
-): Promise<ListAttachmentsResponse> {
-  const qs = params
-    ? `?parentKind=${encodeURIComponent(params.parentKind)}&parentId=${encodeURIComponent(params.parentId)}`
-    : "";
-  return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/attachments${qs}`,
-    listAttachmentsResponseSchema,
   );
 }
 

@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 import { cn } from "@/lib/utils";
 
-export type SettingsNavItem = {
+type SettingsNavItem = {
   href: string;
   label: string;
   destructive?: boolean;

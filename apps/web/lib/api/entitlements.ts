@@ -20,7 +20,6 @@ import {
   selectFreeOverflowLockedIds,
   storageLimitMessage,
   workspaceMeterLimit,
-  type Plan,
   type SubscriptionLike,
   type WorkspaceMeter,
 } from "@/lib/billing/entitlements";
@@ -222,13 +221,6 @@ export async function getWorkspaceSubscription(
     .eq("workspace_id", workspaceId)
     .maybeSingle();
   return subscriptionLikeFromRow(data);
-}
-
-export async function getWorkspacePlan(
-  supabase: Api,
-  workspaceId: string,
-): Promise<Plan> {
-  return resolvePlan(await getWorkspaceSubscription(supabase, workspaceId));
 }
 
 async function countMeter(

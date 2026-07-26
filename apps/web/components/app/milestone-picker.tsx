@@ -12,7 +12,7 @@ import {
 import { formatMilestoneDateRange } from "@/lib/vault/milestones";
 import { cn } from "@/lib/utils";
 
-export type MilestoneOption = {
+type MilestoneOption = {
   id: string;
   title: string;
   startDate: string | null;
@@ -26,7 +26,6 @@ type MilestonePickerProps = {
   allowNone?: boolean;
   noneLabel?: string;
   disabled?: boolean;
-  variant?: "outline" | "ghost";
   className?: string;
   "aria-label"?: string;
 };
@@ -38,7 +37,6 @@ export function MilestonePicker({
   allowNone = true,
   noneLabel = "No milestone",
   disabled,
-  variant = "outline",
   className,
   "aria-label": ariaLabel,
 }: MilestonePickerProps) {
@@ -53,7 +51,7 @@ export function MilestonePicker({
       <PopoverTrigger
         render={
           <Button
-            variant={variant}
+            variant="outline"
             size="sm"
             disabled={disabled}
             aria-label={ariaLabel}

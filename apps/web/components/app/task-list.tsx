@@ -25,6 +25,7 @@ import {
   ChevronDownIcon,
   ChevronUpIcon,
   GripVerticalIcon,
+  SettingsIcon,
 } from "lucide-react";
 
 import { CategorizationPicker } from "@/components/app/categorization-picker";
@@ -394,6 +395,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           }
           nativeButton={false}
         >
+          <SettingsIcon />
           Project settings
         </Button>
       </PageActions>

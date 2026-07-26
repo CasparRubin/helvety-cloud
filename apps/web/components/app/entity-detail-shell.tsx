@@ -7,7 +7,6 @@ import { Spinner } from "@/components/ui/spinner";
 
 type EntityDetailShellProps = {
   loading?: boolean;
-  loadingLabel?: string;
   error?: string | null;
   children?: ReactNode;
 };
@@ -15,7 +14,6 @@ type EntityDetailShellProps = {
 /** Shared padding / loading / error chrome for task, note, and contact detail. */
 export function EntityDetailShell({
   loading = false,
-  loadingLabel = "Loading…",
   error,
   children,
 }: EntityDetailShellProps) {
@@ -25,7 +23,7 @@ export function EntityDetailShell({
       {loading ? (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner />
-          {loadingLabel}
+          Loading…
         </div>
       ) : (
         children

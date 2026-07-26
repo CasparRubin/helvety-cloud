@@ -83,7 +83,7 @@ export function CreateEntityDialog({
         disabled={disabled || pending}
         onClick={() => handleOpenChange(true)}
       >
-        <PlusIcon className="size-3.5" />
+        <PlusIcon />
         {triggerLabel}
       </Button>
 
