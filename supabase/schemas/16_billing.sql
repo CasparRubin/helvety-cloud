@@ -55,6 +55,9 @@ create table public.subscriptions (
   unmetered boolean not null default false,
   -- Pack quantities keyed by addon meter (e.g. {"projects": 2}). Plaintext only.
   addon_quantities jsonb not null default '{}'::jsonb,
+  -- Set when this workspace loses Pro while the owner exceeds free owned slots.
+  -- Soft-lock is computed dynamically from these tags (newest first).
+  free_overflowed_at timestamptz,
   applied_at timestamptz,
   applied_by_user_id uuid references auth.users (id) on delete set null,
   created_at timestamptz not null default now(),

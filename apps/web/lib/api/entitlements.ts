@@ -9,6 +9,7 @@ import type { NextResponse } from "next/server";
 import { apiError } from "@/lib/api/errors";
 import {
   effectiveLimits,
+  freeOverflowLockMessage,
   isUnlimited,
   limitMessage,
   maxUploadLimitMessage,
@@ -16,6 +17,7 @@ import {
   ownedWorkspacesLimitMessage,
   resolvePlan,
   seatLimitMessage,
+  selectFreeOverflowLockedIds,
   storageLimitMessage,
   workspaceMeterLimit,
   type Plan,
@@ -52,6 +54,78 @@ function subscriptionLikeFromRow(
     unmetered: row.unmetered,
     addon_quantities: normalizeAddonQuantities(row.addon_quantities),
   };
+}
+
+/**
+ * Soft-lock: lock overflow non-Pro owned workspaces (newest free_overflowed_at first).
+ */
+export async function isWorkspaceFreeOverflowLocked(
+  supabase: Api,
+  workspaceId: string,
+): Promise<boolean> {
+  const subscription = await getWorkspaceSubscription(supabase, workspaceId);
+  if (resolvePlan(subscription) === "pro") {
+    return false;
+  }
+
+  const { data: ownerRow, error: ownerError } = await supabase
+    .from("workspace_members")
+    .select("user_id")
+    .eq("workspace_id", workspaceId)
+    .eq("role", "owner")
+    .maybeSingle();
+  if (ownerError || !ownerRow) {
+    return false;
+  }
+
+  const { data: owned, error: ownedError } = await supabase
+    .from("workspace_members")
+    .select("workspace_id")
+    .eq("user_id", ownerRow.user_id)
+    .eq("role", "owner");
+  if (ownedError || !owned?.length) {
+    return false;
+  }
+
+  const ownedIds = owned.map((row) => row.workspace_id);
+  const { data: subs, error: subsError } = await supabase
+    .from("subscriptions")
+    .select(
+      "workspace_id, plan, status, billing_source, unmetered, free_overflowed_at",
+    )
+    .in("workspace_id", ownedIds);
+  if (subsError) {
+    return false;
+  }
+
+  const subByWorkspace = new Map(
+    (subs ?? []).map((row) => [row.workspace_id, row]),
+  );
+  const nonProOwned = ownedIds
+    .filter((id) => resolvePlan(subscriptionLikeFromRow(subByWorkspace.get(id) ?? null)) !== "pro")
+    .map((id) => ({
+      workspaceId: id,
+      freeOverflowedAt: subByWorkspace.get(id)?.free_overflowed_at ?? null,
+    }));
+
+  return selectFreeOverflowLockedIds(
+    nonProOwned,
+    effectiveLimits(null).ownedWorkspaces,
+  ).has(workspaceId);
+}
+
+async function assertNotFreeOverflowLocked(
+  supabase: Api,
+  workspaceId: string,
+): Promise<NextResponse | null> {
+  if (!(await isWorkspaceFreeOverflowLocked(supabase, workspaceId))) {
+    return null;
+  }
+  return apiError(
+    "limit_exceeded",
+    freeOverflowLockMessage(effectiveLimits(null).ownedWorkspaces),
+    403,
+  );
 }
 
 /**
@@ -194,6 +268,11 @@ export async function assertWorkspaceCreateAllowed(
   meter: WorkspaceMeter,
   options?: { projectId?: string },
 ): Promise<NextResponse | null> {
+  const overflow = await assertNotFreeOverflowLocked(supabase, workspaceId);
+  if (overflow) {
+    return overflow;
+  }
+
   const subscription = await getWorkspaceSubscription(supabase, workspaceId);
   const plan = resolvePlan(subscription);
   const limit = workspaceMeterLimit(subscription, meter);
@@ -226,6 +305,11 @@ export async function assertInviteSeatAllowed(
   supabase: Api,
   workspaceId: string,
 ): Promise<NextResponse | null> {
+  const overflow = await assertNotFreeOverflowLocked(supabase, workspaceId);
+  if (overflow) {
+    return overflow;
+  }
+
   const subscription = await getWorkspaceSubscription(supabase, workspaceId);
   const plan = resolvePlan(subscription);
   const limit = effectiveLimits(subscription).membersPerWorkspace;
@@ -264,6 +348,11 @@ export async function assertAcceptSeatAllowed(
   supabase: Api,
   workspaceId: string,
 ): Promise<NextResponse | null> {
+  const overflow = await assertNotFreeOverflowLocked(supabase, workspaceId);
+  if (overflow) {
+    return overflow;
+  }
+
   const { data, error } = await supabase.rpc("workspace_seat_usage", {
     ws_id: workspaceId,
   });
@@ -301,6 +390,11 @@ export async function assertWorkspaceStorageAllowed(
 ): Promise<NextResponse | null> {
   if (!Number.isFinite(incomingBytes) || incomingBytes < 0) {
     return apiError("invalid_body", "byteSize must be a non-negative number", 400);
+  }
+
+  const overflow = await assertNotFreeOverflowLocked(supabase, workspaceId);
+  if (overflow) {
+    return overflow;
   }
 
   const subscription = await getWorkspaceSubscription(supabase, workspaceId);

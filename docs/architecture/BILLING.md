@@ -56,6 +56,8 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 
 **3rd+ owned workspace:** only by creating/upgrading that workspace to Pro (Checkout) or redeeming a 100% code / admin comp. Each paid (or gifted) workspace stands alone — owning one Pro does not silently raise free slots.
 
+**Soft-lock overflow:** when Pro or complimentary access ends and the owner would then have more than two non-Pro workspaces, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 2`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates (projects, tasks, notes, contacts, invites, accept, uploads, new attachment links, further free workspace creation) return `limit_exceeded`. Ciphertext and wrapped keys are never deleted or withheld. Locks clear automatically when the workspace returns to Pro or the owner is back within two free workspaces.
+
 **Addons (Pro + Stripe only):** pack quantities on the same subscription. Effective limit =
 
 ```text

@@ -570,6 +570,8 @@ export const getWorkspaceBillingResponseSchema = z.object({
   cancelAtPeriodEnd: z.boolean(),
   currentPeriodEnd: z.string().nullable(),
   hasStripeCustomer: z.boolean(),
+  /** Soft-lock: owner exceeds free workspace allowance after Pro/comp ended. */
+  freeOverflowLocked: z.boolean(),
   limits: workspaceLimitsSchema,
   usage: workspaceUsageSchema,
   addons: z.array(billingAddonSchema),

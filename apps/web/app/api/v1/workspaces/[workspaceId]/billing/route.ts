@@ -3,7 +3,7 @@ import {
   subscriptionStatusSchema,
 } from "@helvety-cloud/api-contract";
 
-import { getWorkspaceUsage } from "@/lib/api/entitlements";
+import { getWorkspaceUsage, isWorkspaceFreeOverflowLocked } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import {
   ADDON_PACKS,
@@ -65,7 +65,10 @@ export async function GET(request: Request, context: RouteContext) {
   const quantities = normalizeAddonQuantities(
     subscription?.addon_quantities ?? {},
   );
-  const usage = await getWorkspaceUsage(supabase, workspaceId);
+  const [usage, freeOverflowLocked] = await Promise.all([
+    getWorkspaceUsage(supabase, workspaceId),
+    isWorkspaceFreeOverflowLocked(supabase, workspaceId),
+  ]);
 
   const statusParsed = subscriptionStatusSchema.safeParse(
     subscription?.status ?? "active",
@@ -85,6 +88,7 @@ export async function GET(request: Request, context: RouteContext) {
       cancelAtPeriodEnd: subscription?.cancel_at_period_end ?? false,
       currentPeriodEnd: subscription?.current_period_end ?? null,
       hasStripeCustomer: Boolean(subscription?.stripe_customer_id),
+      freeOverflowLocked,
       limits: {
         projects: limitToApi(limits.projectsPerWorkspace),
         members: limitToApi(limits.membersPerWorkspace),

@@ -340,6 +340,14 @@ export function WorkspaceBillingSettings() {
                 </p>
               )}
             </div>
+            {billing.freeOverflowLocked ? (
+              <p className="text-xs text-muted-foreground">
+                New creates are paused — this workspace is over the free
+                allowance (two free workspaces per account). Existing content
+                stays available. Upgrade to Pro, or reduce owned free workspaces
+                to unlock creates again.
+              </p>
+            ) : null}
             {isComplimentary ? (
               <p className="text-xs text-muted-foreground">
                 Unmetered Pro limits. Helvety cannot decrypt or recover vault

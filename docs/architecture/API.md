@@ -52,7 +52,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | GET | `/api/v1/me/invitations` | Invitations addressed to the caller’s verified email |
 | POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches vault `public_key` (must match their `user_crypto` row) |
 | POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (seat-gated) |
-| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits (null = unlimited), usage, addons (any member) |
+| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits (null = unlimited), usage, addons, `freeOverflowLocked` (any member) |
 | POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro → `{ url }` |
 | POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Owner-only: Stripe Customer Portal → `{ url }` |
 | POST | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: redeem discount / complimentary code |
@@ -68,7 +68,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 
 **Entity links (P8a–P8d):** Note / task / contact PUT may include `links: [{ kind: "task"|"contact"|"project"|"note", id }]` — server validates ids belong to the workspace, then **replaces** that source’s outgoing `entity_links` rows. Responses include the current `links` array. `GET …/links` supports reverse lookup for backlinks UI. Link graph is intentional metadata (UUIDs only); titles and colors stay in ciphertext. Inline TipTap `entityRef` nodes live inside note/task/contact body ciphertext; client extracts them on save to sync the junction. Task chip color comes from the stage option’s `EntityColor` (P8d), not a per-task accent.
 
-**Entitlement gates (P6f / P12):** create mutations (new workspace/project/task/note/contact, invite create, invite accept, attachment upload / task file links) are gated by **effective** workspace limits (`BILLING.md`) and return `limit_exceeded` (403) at the cap. Tasks are per-project; complimentary (`unmetered`) workspaces skip countable caps. Updates, soft-deletes, reads, seal/cancel are never gated. Meters are plaintext row counts only.
+**Entitlement gates (P6f / P12):** create mutations (new workspace/project/task/note/contact, invite create, invite accept, attachment upload / new attachment links) are gated by **effective** workspace limits (`BILLING.md`) and return `limit_exceeded` (403) at the cap. Tasks are per-project; complimentary (`unmetered`) workspaces skip countable caps. Soft-locked free-overflow workspaces (`freeOverflowLocked` on GET billing) also block those creates while leaving reads/updates/deletes/export available. Updates, soft-deletes, reads, seal/cancel, and billing actions are never gated by overflow. Meters are plaintext row counts only.
 
 Exact paths nest under `/api/v1/workspaces/:workspaceId/...` — keep stable once shipped; breaking changes → `/api/v2`.
 

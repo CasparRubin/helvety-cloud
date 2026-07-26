@@ -490,6 +490,7 @@ export type Database = {
           current_period_end: string | null
           discount_code_id: string | null
           discount_percent_off: number | null
+          free_overflowed_at: string | null
           plan: string
           status: string
           stripe_coupon_id: string | null
@@ -510,6 +511,7 @@ export type Database = {
           current_period_end?: string | null
           discount_code_id?: string | null
           discount_percent_off?: number | null
+          free_overflowed_at?: string | null
           plan?: string
           status?: string
           stripe_coupon_id?: string | null
@@ -530,6 +532,7 @@ export type Database = {
           current_period_end?: string | null
           discount_code_id?: string | null
           discount_percent_off?: number | null
+          free_overflowed_at?: string | null
           plan?: string
           status?: string
           stripe_coupon_id?: string | null

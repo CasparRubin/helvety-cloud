@@ -12,6 +12,7 @@ import {
   deleteLinksTouching,
 } from "@/lib/api/entity-links";
 import {
+  AttachmentLinkLimitError,
   replaceAttachmentLinks,
   softDeleteAttachmentsForParent,
 } from "@/lib/api/attachment-links";
@@ -203,6 +204,9 @@ export async function PUT(request: Request, context: RouteContext) {
         data.attachmentIds,
       );
     } catch (e) {
+      if (e instanceof AttachmentLinkLimitError) {
+        return apiError("limit_exceeded", e.message, 403);
+      }
       return apiError(
         "invalid_body",
         e instanceof Error ? e.message : "Failed to update attachments",

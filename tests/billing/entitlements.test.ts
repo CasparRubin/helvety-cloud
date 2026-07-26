@@ -8,6 +8,7 @@ import {
   ENTITLED_STATUSES,
   PLAN_LIMITS,
   effectiveLimits,
+  freeOverflowLockMessage,
   isUnmetered,
   isUnlimited,
   limitMessage,
@@ -16,6 +17,7 @@ import {
   ownedWorkspacesLimitMessage,
   resolvePlan,
   seatLimitMessage,
+  selectFreeOverflowLockedIds,
   storageLimitMessage,
   workspaceMeterLimit,
   type WorkspaceMeter,
@@ -167,5 +169,52 @@ describe("limit copy", () => {
     expect(msg.toLowerCase()).toContain("pro");
     expect(msg.toLowerCase()).not.toContain("recover");
     expect(msg.toLowerCase()).not.toContain("decrypt");
+  });
+
+  it("overflow lock copy keeps existing content available and never claims recovery", () => {
+    const msg = freeOverflowLockMessage(2);
+    expect(msg).toContain("Existing content stays available");
+    expect(msg.toLowerCase()).not.toContain("recover");
+    expect(msg.toLowerCase()).not.toContain("decrypt");
+    expect(msg.toLowerCase()).not.toContain("suspend");
+  });
+});
+
+describe("selectFreeOverflowLockedIds", () => {
+  it("locks nothing at or under the free allowance", () => {
+    expect(
+      selectFreeOverflowLockedIds(
+        [
+          { workspaceId: "a", freeOverflowedAt: "2026-07-01T00:00:00Z" },
+          { workspaceId: "b", freeOverflowedAt: null },
+        ],
+        2,
+      ).size,
+    ).toBe(0);
+  });
+
+  it("locks newest tags first, untagged last", () => {
+    expect(
+      selectFreeOverflowLockedIds(
+        [
+          { workspaceId: "old", freeOverflowedAt: "2026-01-01T00:00:00Z" },
+          { workspaceId: "new", freeOverflowedAt: "2026-07-01T00:00:00Z" },
+          { workspaceId: "untagged", freeOverflowedAt: null },
+        ],
+        2,
+      ),
+    ).toEqual(new Set(["new"]));
+
+    expect(
+      selectFreeOverflowLockedIds(
+        [
+          { workspaceId: "a", freeOverflowedAt: "2026-01-01T00:00:00Z" },
+          { workspaceId: "b", freeOverflowedAt: "2026-03-01T00:00:00Z" },
+          { workspaceId: "c", freeOverflowedAt: "2026-05-01T00:00:00Z" },
+          { workspaceId: "d", freeOverflowedAt: "2026-07-01T00:00:00Z" },
+        ],
+        2,
+      ),
+    ).toEqual(new Set(["d", "c"]));
   });
 });

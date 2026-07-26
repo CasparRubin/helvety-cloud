@@ -303,6 +303,42 @@ export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
   return `Workspace limit reached (${isUnlimited(limit) ? "unlimited" : limit} owned workspaces on the ${plan} plan).${upgradeHint}`;
 }
 
+/**
+ * Soft-lock copy when a workspace is over the free owned-workspace allowance.
+ */
+export function freeOverflowLockMessage(freeSlots: number): string {
+  return `This workspace is over the free allowance (${freeSlots} free workspaces per account). Existing content stays available; new creates are paused until you upgrade this workspace to Pro or reduce owned free workspaces.`;
+}
+
+export type FreeOverflowCandidate = {
+  workspaceId: string;
+  freeOverflowedAt: string | null;
+};
+
+/** Lock exactly max(0, count - freeSlots) non-Pro workspaces; newest tag first. */
+export function selectFreeOverflowLockedIds(
+  nonProOwned: FreeOverflowCandidate[],
+  freeSlots: number,
+): Set<string> {
+  const overflow = Math.max(0, nonProOwned.length - freeSlots);
+  if (overflow === 0) {
+    return new Set();
+  }
+  const ranked = [...nonProOwned].sort((a, b) => {
+    const aTs = a.freeOverflowedAt
+      ? Date.parse(a.freeOverflowedAt)
+      : Number.NEGATIVE_INFINITY;
+    const bTs = b.freeOverflowedAt
+      ? Date.parse(b.freeOverflowedAt)
+      : Number.NEGATIVE_INFINITY;
+    if (bTs !== aTs) {
+      return bTs - aTs;
+    }
+    return a.workspaceId.localeCompare(b.workspaceId);
+  });
+  return new Set(ranked.slice(0, overflow).map((row) => row.workspaceId));
+}
+
 /** Honest copy when free workspaces (or over-quota Pro) cannot upload files. */
 export function storageLimitMessage(plan: Plan, limitBytes: number): string {
   if (plan === "free" || limitBytes === 0) {

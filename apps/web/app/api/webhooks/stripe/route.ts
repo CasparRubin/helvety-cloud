@@ -4,6 +4,7 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 import { normalizeAddonQuantities } from "@/lib/billing/entitlements";
+import { syncWorkspaceFreeOverflowTag } from "@/lib/billing/free-overflow";
 import {
   addonQuantitiesFromSubscription,
   getStripe,
@@ -98,6 +99,8 @@ async function upsertStripeSubscription(
   if (error) {
     throw new Error(error.message);
   }
+
+  await syncWorkspaceFreeOverflowTag(supabase, row.workspace_id);
 }
 
 export async function POST(request: Request) {
@@ -188,6 +191,7 @@ export async function POST(request: Request) {
             if (error) {
               throw new Error(error.message);
             }
+            await syncWorkspaceFreeOverflowTag(supabase, existing.workspace_id);
           }
         }
         break;

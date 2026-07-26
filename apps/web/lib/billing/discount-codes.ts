@@ -5,6 +5,7 @@
 import type { Database } from "@helvety-cloud/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { syncWorkspaceFreeOverflowTag } from "@/lib/billing/free-overflow";
 import { ensurePercentOffCoupon } from "@/lib/stripe";
 
 type ServiceApi = SupabaseClient<Database>;
@@ -249,6 +250,8 @@ export async function applyCompGrant(args: {
     return { error: "Could not apply complimentary access. Try again later." };
   }
 
+  await syncWorkspaceFreeOverflowTag(service, workspaceId);
+
   return { ok: true };
 }
 
@@ -334,6 +337,10 @@ export async function removeWorkspaceDiscount(args: {
       was_comp: wasComp,
     },
   });
+
+  if (wasComp) {
+    await syncWorkspaceFreeOverflowTag(service, workspaceId);
+  }
 
   return { ok: true };
 }

@@ -6,15 +6,27 @@ import type { AttachmentParentKind } from "@helvety-cloud/api-contract";
 import type { Database } from "@helvety-cloud/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import { getWorkspaceSubscription } from "@/lib/api/entitlements";
+import {
+  getWorkspaceSubscription,
+  isWorkspaceFreeOverflowLocked,
+} from "@/lib/api/entitlements";
 import {
   effectiveLimits,
   filesPerTaskLimitMessage,
+  freeOverflowLockMessage,
   isUnlimited,
   resolvePlan,
 } from "@/lib/billing/entitlements";
 
 type Db = SupabaseClient<Database>;
+
+/** Map to `limit_exceeded` in PUT note/task/contact handlers. */
+export class AttachmentLinkLimitError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AttachmentLinkLimitError";
+  }
+}
 
 function dedupeIds(ids: string[]): string[] {
   return [...new Set(ids)];
@@ -30,12 +42,29 @@ export async function replaceAttachmentLinks(
 ): Promise<string[]> {
   const deduped = dedupeIds(attachmentIds);
 
+  const { data: existingLinks, error: existingError } = await supabase
+    .from("attachment_links")
+    .select("attachment_id")
+    .eq("workspace_id", workspaceId)
+    .eq("parent_kind", parentKind)
+    .eq("parent_id", parentId);
+  if (existingError) throw new Error(existingError.message);
+  const existingIds = new Set(
+    (existingLinks ?? []).map((row) => row.attachment_id),
+  );
+  const addingNew = deduped.some((id) => !existingIds.has(id));
+  if (addingNew && (await isWorkspaceFreeOverflowLocked(supabase, workspaceId))) {
+    throw new AttachmentLinkLimitError(
+      freeOverflowLockMessage(effectiveLimits(null).ownedWorkspaces),
+    );
+  }
+
   if (parentKind === "task") {
     const subscription = await getWorkspaceSubscription(supabase, workspaceId);
     const plan = resolvePlan(subscription);
     const limit = effectiveLimits(subscription).filesPerTask;
     if (!isUnlimited(limit) && deduped.length > limit) {
-      throw new Error(filesPerTaskLimitMessage(plan, limit));
+      throw new AttachmentLinkLimitError(filesPerTaskLimitMessage(plan, limit));
     }
   }
 
