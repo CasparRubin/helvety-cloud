@@ -2,7 +2,7 @@
 
 ## Assets
 
-- User encrypted content (task titles/bodies, later notes/contacts, etc.)
+- User encrypted content (workspace names, project/task/note/contact/milestone titles and bodies, file metadata and ciphertext, categorization names/colors)
 - User encryption keys (symmetric + private asymmetric)
 - Unlock material (WebAuthn PRF output, recovery key)
 - Account identity (email, session JWT)
@@ -45,4 +45,4 @@ Auth (Supabase Auth) identifies the user; it does **not** unlock encrypted conte
 
 - [`KEY_HIERARCHY.md`](KEY_HIERARCHY.md)  
 - [`LEGAL_REQUIREMENTS.md`](LEGAL_REQUIREMENTS.md)  
-- [`ROADMAP.md`](ROADMAP.md) §5–§8  
+- [`ROADMAP.md`](ROADMAP.md) 

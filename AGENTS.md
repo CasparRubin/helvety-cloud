@@ -1,13 +1,13 @@
 # Helvety Cloud: Agent brief
 
-Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before implementing any phase. New chats: `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only.”
+Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) for locked decisions and phase status. New chats: one scoped change against those decisions (prefer omit over add).
 
 ## Non-negotiables
 
 1. **Zero knowledge.** Helvety (staff, DB admins, service role) must not be able to decrypt your data. No master key, escrow, or support recovery of content.
 2. **No passwords.** Supabase Auth: email OTP only. Encryption unlock via WebAuthn **PRF** (session ≠ decrypt).
 3. **Greenfield.** Never copy UI/crypto/catalogs from `helvety` or `helvety-browser-extension-chromium`.
-4. **Free-tier infra**: Prefer omit paid SaaS (Redis, Sentry, analytics, etc.). Stripe is allowed for customer billing (**P6f**).
+4. **Free-tier infra**: Prefer omit paid SaaS (Redis, Sentry, analytics, etc.). Stripe is allowed for customer billing (**P6f** / **P12**).
 5. **Public API** = `/api/v1` + Bearer JWT. Browser may use Supabase **Auth** SDK; must **not** use PostgREST `from('…')` for encrypted entity tables.
 6. **Honesty.** Never claim Helvety can read or recover encrypted data. Live legal pack + acceptance gates (P-legal2); optional counsel is a business choice.
 7. **Workspace-scoped encryption.** All encrypted entities (projects, tasks, notes, contacts) live in a workspace. **Personal workspace** on first encryption setup. No user-global contacts/notes store; no `workspace_id = null`.
@@ -21,7 +21,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 | Runtime | Bun + Next.js → Vercel Hobby |
 | DB/Auth | Supabase project **helvety-cloud** · ref **`qnoeiurmyyyuawkcifmw`** · Zurich |
 | Forbidden DB | Old `helvety` project `bkdzeihxzvrkndjvyzye` |
-| Billing | Stripe workspace subscriptions (**P6f** / **P12**); no Clerk in foundation |
+| Billing | Stripe workspace subscriptions (**P6f** / **P12**); no Clerk |
 | UI | shadcn/ui with **Base UI** primitives (`npx shadcn init` default). Do **not** init with `-b radix` |
 
 ## Phases
@@ -61,3 +61,4 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 - Schema: `supabase/schemas` → diff → migrations → MCP `apply_migration` / `db push` → generate types → `get_advisors`
 - Hosting: Vercel MCP/skills, Hobby only
 - Prefer MCP over guessing live DB state
+- Extend schema/API/crypto: [`.cursor/skills/helvety-cloud-foundation/SKILL.md`](.cursor/skills/helvety-cloud-foundation/SKILL.md)

@@ -30,23 +30,24 @@ Optional: recovery_key (high entropy, shown once)
 
 ## Envelope
 
-Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod shape lives in `packages/api-contract` (P4).
+Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod shape lives in `packages/api-contract`.
 
-## Phases
+## What is shipped
 
-| Phase | What lands |
-|-------|------------|
-| P3 | Library + tests only (`packages/crypto`) |
-| P4 | `user_crypto`, `wrapped_keys` tables + wrap/key_check AAD |
-| P5 | Wire unlock → API → encrypt task round-trip (**done**) |
-| P6e | Seal `workspace_key` to invitees via claim → owner seal → accept (**done**) |
-| P6+ | Project keys / richer sharing if needed |
-| P11 | Per-file DEK + binary AES-GCM for Storage objects; meta/wrap envelopes under `workspace_key` |
+| Area | Status |
+|------|--------|
+| Library + tests (`packages/crypto`) | **Done** |
+| `user_crypto`, `wrapped_keys` + wrap/key_check AAD | **Done** |
+| Unlock → API → encrypt entity round-trip | **Done** |
+| Seal `workspace_key` to invitees (claim → owner seal → accept) | **Done** (P6e) |
+| Per-file DEK + binary AES-GCM for Storage; meta/wrap under `workspace_key` | **Done** (P11) |
+
+`project_key` remains optional in the hierarchy for future finer ACLs; current product encrypts under **workspace_key**.
 
 ## Forbidden
 
 - Server-side derivation of unlock keys  
 - Storing PRF output or recovery plaintext on server  
-- MLS / OpenMLS in foundation (revisit later if needed)
+- MLS / OpenMLS (revisit later if needed)
 
-See [`THREAT_MODEL.md`](THREAT_MODEL.md) and [`ROADMAP.md`](ROADMAP.md) §5.
+See [`THREAT_MODEL.md`](THREAT_MODEL.md) and [`ROADMAP.md`](ROADMAP.md).

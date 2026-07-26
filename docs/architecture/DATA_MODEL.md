@@ -1,6 +1,6 @@
 # Data model
 
-Blind Postgres on Supabase project `qnoeiurmyyyuawkcifmw`. Schema source of truth: `supabase/schemas/` (from P1/P4). See [`SCHEMA_WORKFLOW.md`](SCHEMA_WORKFLOW.md).
+Blind Postgres on Supabase project `qnoeiurmyyyuawkcifmw`. Schema source of truth: `supabase/schemas/`. See [`SCHEMA_WORKFLOW.md`](SCHEMA_WORKFLOW.md).
 
 ## Access model (locked)
 
@@ -22,7 +22,7 @@ Workspace  (members + per-member wrapped_keys)
 - Structural relationships use FKs: project → tasks/milestones, milestone → tasks.
 - Cross-entity links are limited to note ↔ task/contact/project and contact ↔ note/project/task. Other entity pairs are rejected. Notes and contacts may link to **0..n projects** via `entity_links` (managed separately from TipTap body refs).
 
-See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
+See [`ROADMAP.md`](ROADMAP.md) locked decisions.
 
 ## Plaintext (server-visible metadata)
 
@@ -70,4 +70,4 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
 New entity = new table + encrypt under existing **workspace_key** (or project key when needed) + membership RLS. No crypto redesign. No orphan entities outside a workspace.
 
-See [`KEY_HIERARCHY.md`](KEY_HIERARCHY.md) and [`ROADMAP.md`](ROADMAP.md) P4 / P6a–P6f.
+See [`KEY_HIERARCHY.md`](KEY_HIERARCHY.md) and [`ROADMAP.md`](ROADMAP.md).

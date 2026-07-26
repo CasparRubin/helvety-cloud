@@ -10,8 +10,8 @@ description: >-
 
 ## Before you start
 
-1. Read `AGENTS.md` and `docs/architecture/ROADMAP.md` §2 + the relevant playbook if extending a past phase.  
-2. Confirm scope is a **single** phase unless the user expands it.  
+1. Read `AGENTS.md` and `docs/architecture/ROADMAP.md` §2 (locked decisions).  
+2. Confirm scope is **one change** unless the user expands it.  
 3. Prefer MCP (Supabase/Vercel) over guessing.
 
 ## Changing the database

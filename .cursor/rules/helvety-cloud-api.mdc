@@ -13,6 +13,6 @@ Follow `docs/architecture/API.md`.
 - Ciphertext-opaque: never accept or return plaintext encrypted titles/bodies.
 - Client UUIDs + idempotent upserts; workspace-scoped authorization.
 - Authenticate via Supabase JWT; use user-scoped DB client for encrypted entity rows.
-- Service role only for justified server jobs (e.g. webhooks later), never to decrypt.
+- Service role only for justified server jobs (e.g. Stripe webhook, discount redeem), never to decrypt.
 - Do not make Server Actions the sole mutation API.
 - Do not expose PostgREST as the product API for encrypted entity tables.

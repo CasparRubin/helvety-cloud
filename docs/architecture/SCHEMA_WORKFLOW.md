@@ -2,7 +2,7 @@
 
 **Never** treat the Supabase Dashboard SQL editor as the source of truth. Edit declarative files, generate migrations, apply, regenerate types, run advisors.
 
-## Layout (from P1)
+## Layout
 
 ```text
 supabase/
@@ -34,4 +34,4 @@ Optional: GitHub Integration “Deploy to production” on `main` still requires
 
 Committed `schemas/` + `migrations/` + generated `packages/db` types. Agents read those; MCP confirms live state when needed.
 
-See [`DATA_MODEL.md`](DATA_MODEL.md) and [`ROADMAP.md`](ROADMAP.md) §9.
+See [`DATA_MODEL.md`](DATA_MODEL.md) and [`ROADMAP.md`](ROADMAP.md) §8.

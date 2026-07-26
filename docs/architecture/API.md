@@ -14,12 +14,12 @@
 
 | Plane | Examples |
 |-------|----------|
-| Control | `PUT /api/v1/me/crypto`, `DELETE /api/v1/me`, `POST /api/v1/workspaces`, workspace invitations (P6e), billing/Checkout (P6f) |
-| Data | Task/project/note/contact upserts with `encrypted_blob`; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=` |
+| Control | `PUT /api/v1/me/crypto`, `DELETE /api/v1/me`, `POST /api/v1/workspaces`, workspace invitations, billing/Checkout/portal/addons/discounts (see [`BILLING.md`](./BILLING.md)) |
+| Data | Task/project/note/contact/milestone/attachment upserts with ciphertext envelopes; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=` |
 
 Realtime (optional later) = wake-up only, not a second write API.
 
-## Foundation routes (P4–P5)
+## Routes
 
 | Method | Path | Purpose |
 |--------|------|---------|
@@ -58,7 +58,15 @@ Realtime (optional later) = wake-up only, not a second write API.
 | POST | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: redeem discount / complimentary code |
 | DELETE | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: remove applied discount / complimentary grant |
 | PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set addon pack quantities on Pro Stripe sub |
+| GET | `/api/v1/workspaces/:workspaceId/attachments` | List attachments (optional `parentKind` + `parentId` filter via `attachment_links`) |
+| POST | `/api/v1/workspaces/:workspaceId/attachments` | Create pending attachment + signed upload URL (`encryptedMeta`, `wrappedDek`, `byteSize`) |
+| GET | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId` | Fetch attachment metadata envelopes |
+| DELETE | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId` | Soft-delete attachment + Storage cleanup |
+| POST | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId/complete` | Mark upload ready (or failed) after client PUT to signed URL |
+| POST | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId/download` | Signed download URL + meta/DEK envelopes |
 | POST | `/api/webhooks/stripe` | Stripe webhook (signature-verified); service-role upserts; never overwrites comps |
+
+**Attachments (P11):** Client encrypts file bytes with a per-file DEK, wraps the DEK under `workspace_key`, and stores filename/mime in `encryptedMeta`. Server stores opaque envelopes + Storage ciphertext only. TipTap `fileAttachment` atoms and `attachment_links` join notes/tasks/contacts to attachment ids without decrypting bodies. Upload/create is entitlement-gated (storage + attachment counts); see [`BILLING.md`](./BILLING.md).
 
 **Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up encryption, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own encryption key. Invitation payloads expose `workspaceEncryptedBlob` (not a plaintext workspace name); the invitee decrypts the name after seal when they hold the workspace key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
 
@@ -84,4 +92,4 @@ Route handlers use Supabase client with the **user JWT**. Service role is used b
 
 **Advisor lint `0029_authenticated_security_definer_function_executable`:** expected WARN for invitation / delete / membership / seat `SECURITY DEFINER` RPCs that `/api/v1` calls with the user JWT. Do **not** “fix” by revoking `authenticated` EXECUTE; that breaks those routes. Trigger helpers and `increment_discount_redemption` correctly revoke EXECUTE from `authenticated` (service-role or trigger-only).
 
-See [`ROADMAP.md`](ROADMAP.md) §6 and P4/P5 playbooks.
+See [`ROADMAP.md`](ROADMAP.md) and [`BILLING.md`](BILLING.md).
