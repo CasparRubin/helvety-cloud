@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 
 export type EntityLinkAction =
   | { type: "create-task"; title: string }
-  | { type: "create-contact"; displayName: string }
+  | { type: "create-contact"; firstName: string }
   | { type: "link-existing"; target: EntityLinkTarget };
 
 type FileAttachmentsConfig = {
@@ -381,13 +381,13 @@ export function TaskBodyEditor({
                 disabled={disabled || busy}
                 onClick={() => {
                   const { from, to } = editor.state.selection;
-                  const displayName = editor.state.doc
+                  const firstName = editor.state.doc
                     .textBetween(from, to, " ")
                     .trim();
-                  if (!displayName) return;
+                  if (!firstName) return;
                   void handleAction({
                     type: "create-contact",
-                    displayName,
+                    firstName,
                   });
                 }}
               >

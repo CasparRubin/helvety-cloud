@@ -10,7 +10,9 @@ import {
 
 export type ContactPlaintext = {
   version: 1;
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
   emails: string[];
   phones: string[];
   /** TipTap JSON notes body. */
@@ -32,6 +34,17 @@ function parseNotesField(value: unknown): TaskBodyDoc {
   throw new Error("Invalid contact plaintext");
 }
 
+/** First + last name for chips and lists. */
+export function formatContactName(parts: {
+  firstName: string;
+  lastName: string;
+}): string {
+  return [parts.firstName, parts.lastName]
+    .map((p) => p.trim())
+    .filter(Boolean)
+    .join(" ");
+}
+
 export function parseContactPlaintext(raw: unknown): ContactPlaintext {
   if (typeof raw !== "object" || raw === null) {
     throw new Error("Invalid contact plaintext");
@@ -40,7 +53,13 @@ export function parseContactPlaintext(raw: unknown): ContactPlaintext {
   if (obj.version !== 1) {
     throw new Error("Invalid contact plaintext");
   }
-  if (typeof obj.displayName !== "string") {
+  if (typeof obj.firstName !== "string") {
+    throw new Error("Invalid contact plaintext");
+  }
+  if (typeof obj.lastName !== "string") {
+    throw new Error("Invalid contact plaintext");
+  }
+  if (typeof obj.jobTitle !== "string") {
     throw new Error("Invalid contact plaintext");
   }
   const emails = obj.emails === undefined ? [] : obj.emails;
@@ -59,7 +78,9 @@ export function parseContactPlaintext(raw: unknown): ContactPlaintext {
   }
   return {
     version: 1,
-    displayName: obj.displayName,
+    firstName: obj.firstName.trim(),
+    lastName: obj.lastName.trim(),
+    jobTitle: obj.jobTitle.trim(),
     emails: emails.map((e) => e.trim()).filter(Boolean),
     phones: phones.map((p) => p.trim()).filter(Boolean),
     notes,
@@ -68,7 +89,9 @@ export function parseContactPlaintext(raw: unknown): ContactPlaintext {
 }
 
 export function toContactPlaintext(input: {
-  displayName: string;
+  firstName: string;
+  lastName?: string;
+  jobTitle?: string;
   emails?: string[];
   phones?: string[];
   notes?: TaskBodyDoc;
@@ -77,7 +100,9 @@ export function toContactPlaintext(input: {
   const notes = input.notes ?? EMPTY_TASK_BODY;
   return {
     version: 1,
-    displayName: input.displayName.trim(),
+    firstName: input.firstName.trim(),
+    lastName: (input.lastName ?? "").trim(),
+    jobTitle: (input.jobTitle ?? "").trim(),
     emails: (input.emails ?? []).map((e) => e.trim()).filter(Boolean),
     phones: (input.phones ?? []).map((p) => p.trim()).filter(Boolean),
     notes,

@@ -142,7 +142,9 @@ describe("P6e invitee seal / open", () => {
       workspaceKey,
       contactId,
       toContactPlaintext({
-        displayName: "Ada",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        jobTitle: "Mathematician",
         emails: ["ada@example.com"],
         phones: [],
         notes: { type: "doc", content: [{ type: "paragraph" }] },
@@ -185,8 +187,10 @@ describe("P6e invitee seal / open", () => {
       contactId,
       contactBlob,
     );
-    expect(contactOwner.displayName).toBe("Ada");
-    expect(contactInvitee.displayName).toBe(contactOwner.displayName);
+    expect(contactOwner.firstName).toBe("Ada");
+    expect(contactOwner.lastName).toBe("Lovelace");
+    expect(contactOwner.jobTitle).toBe("Mathematician");
+    expect(contactInvitee.firstName).toBe(contactOwner.firstName);
 
     const stranger = await generateUserKeyMaterial();
     await expect(

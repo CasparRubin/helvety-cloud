@@ -30,6 +30,7 @@ import {
   loadDecryptedContacts,
   type DecryptedContact,
 } from "@/lib/client-crypto/contacts";
+import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import { loadDecryptedNotes, type DecryptedNote } from "@/lib/client-crypto/notes";
 import {
   loadDecryptedProjects,
@@ -144,7 +145,7 @@ export function WorkspaceJumpSwitcher({
     contact: contacts.map((c) => ({
       kind: "contact",
       id: c.id,
-      name: c.displayName || "Unnamed contact",
+      name: formatContactName(c) || "Unnamed contact",
       href: `${base}/contacts/${c.id}`,
     })),
   };

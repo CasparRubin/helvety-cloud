@@ -23,6 +23,7 @@ import {
   loadDecryptedContacts,
   type DecryptedContact,
 } from "@/lib/client-crypto/contacts";
+import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 
@@ -38,6 +39,8 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [newLastName, setNewLastName] = useState("");
+  const [newJobTitle, setNewJobTitle] = useState("");
   const [newEmails, setNewEmails] = useState("");
   const [newPhones, setNewPhones] = useState("");
   const [newNotes, setNewNotes] = useState("");
@@ -67,13 +70,15 @@ export function ContactList({ workspaceId }: ContactListProps) {
   }, [userKeys, workspaceId, getWorkspaceKey]);
 
   function resetCreateFields() {
+    setNewLastName("");
+    setNewJobTitle("");
     setNewEmails("");
     setNewPhones("");
     setNewNotes("");
     setNewColor(undefined);
   }
 
-  async function onCreate(displayName: string) {
+  async function onCreate(firstName: string) {
     setBusy(true);
     try {
       const key = await getWorkspaceKey(workspaceId);
@@ -92,7 +97,9 @@ export function ContactList({ workspaceId }: ContactListProps) {
         workspaceId,
         key,
         {
-          displayName,
+          firstName,
+          lastName: newLastName,
+          jobTitle: newJobTitle,
           emails,
           phones,
           notes: notes ? textToTaskBody(notes) : undefined,
@@ -115,8 +122,8 @@ export function ContactList({ workspaceId }: ContactListProps) {
         <CreateEntityDialog
           triggerLabel="Create contact"
           dialogTitle="Create contact"
-          fieldLabel="Name"
-          fieldPlaceholder="New contact name"
+          fieldLabel="First name"
+          fieldPlaceholder="First name"
           fieldMaxLength={500}
           disabled={busy}
           onCreate={onCreate}
@@ -124,6 +131,30 @@ export function ContactList({ workspaceId }: ContactListProps) {
             if (open) resetCreateFields();
           }}
         >
+          <div className="grid grid-cols-2 gap-3">
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-contact-last-name">Last name</Label>
+              <Input
+                id="new-contact-last-name"
+                value={newLastName}
+                onChange={(e) => setNewLastName(e.target.value)}
+                placeholder="Last name"
+                disabled={busy}
+                maxLength={500}
+              />
+            </div>
+            <div className="flex flex-col gap-2">
+              <Label htmlFor="new-contact-job-title">Job title</Label>
+              <Input
+                id="new-contact-job-title"
+                value={newJobTitle}
+                onChange={(e) => setNewJobTitle(e.target.value)}
+                placeholder="Job title"
+                disabled={busy}
+                maxLength={500}
+              />
+            </div>
+          </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
               <Label htmlFor="new-contact-emails">Emails</Label>
@@ -173,21 +204,25 @@ export function ContactList({ workspaceId }: ContactListProps) {
         empty={!loading && contacts.length === 0}
         emptyLabel="No contacts yet."
       >
-        {contacts.map((contact) => (
-          <EntityListRow key={contact.id}>
-            <Link
-              href={`/app/w/${workspaceId}/contacts/${contact.id}`}
-              className="font-medium"
-            >
-              {contact.displayName || "Untitled"}
-              {contact.emails[0] ? (
-                <span className="ml-2 text-xs font-normal text-muted-foreground">
-                  {contact.emails[0]}
-                </span>
-              ) : null}
-            </Link>
-          </EntityListRow>
-        ))}
+        {contacts.map((contact) => {
+          const name = formatContactName(contact) || "Untitled";
+          const subtitle = contact.jobTitle || contact.emails[0] || null;
+          return (
+            <EntityListRow key={contact.id}>
+              <Link
+                href={`/app/w/${workspaceId}/contacts/${contact.id}`}
+                className="font-medium"
+              >
+                {name}
+                {subtitle ? (
+                  <span className="ml-2 text-xs font-normal text-muted-foreground">
+                    {subtitle}
+                  </span>
+                ) : null}
+              </Link>
+            </EntityListRow>
+          );
+        })}
       </EntityListShell>
     </>
   );

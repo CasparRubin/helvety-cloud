@@ -38,6 +38,7 @@ import {
 import { ENTITY_COLOR_CLASSES } from "@/lib/client-crypto/entity-colors";
 import { cn } from "@/lib/utils";
 import { createContact } from "@/lib/client-crypto/contacts";
+import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import { loadAllDecryptedMilestones } from "@/lib/client-crypto/milestones";
 import { loadDecryptedProject } from "@/lib/client-crypto/projects";
 import {
@@ -249,7 +250,7 @@ export function TaskDetail({
       }
       case "create-contact": {
         const contact = await createContact(workspaceId, key, {
-          displayName: action.displayName,
+          firstName: action.firstName,
         });
         cache.upsertContact(contact);
         return { kind: "contact", id: contact.id };
@@ -270,7 +271,11 @@ export function TaskDetail({
       items.push({ kind: "note", id: n.id, label: n.title });
     }
     for (const c of cache.contacts) {
-      items.push({ kind: "contact", id: c.id, label: c.displayName });
+      items.push({
+        kind: "contact",
+        id: c.id,
+        label: formatContactName(c) || "Untitled",
+      });
     }
     return items;
   }, [cache.notes, cache.contacts]);

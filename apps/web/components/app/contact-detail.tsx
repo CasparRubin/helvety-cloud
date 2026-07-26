@@ -54,7 +54,9 @@ type ContactDetailProps = {
 };
 
 type ContactDraft = {
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
   emailsText: string;
   phonesText: string;
   notes: TaskBodyDoc;
@@ -71,7 +73,9 @@ export function ContactDetail({
   const { upsertContact } = cache;
 
   const [contact, setContact] = useState<DecryptedContact | null>(null);
-  const [displayName, setDisplayName] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
   const [emailsText, setEmailsText] = useState("");
   const [phonesText, setPhonesText] = useState("");
   const [notes, setNotes] = useState<TaskBodyDoc>(EMPTY_TASK_BODY);
@@ -93,8 +97,16 @@ export function ContactDetail({
   });
 
   const draft = useMemo<ContactDraft>(
-    () => ({ displayName, emailsText, phonesText, notes, color }),
-    [displayName, emailsText, phonesText, notes, color],
+    () => ({
+      firstName,
+      lastName,
+      jobTitle,
+      emailsText,
+      phonesText,
+      notes,
+      color,
+    }),
+    [firstName, lastName, jobTitle, emailsText, phonesText, notes, color],
   );
 
   const { status, savedAt, flush } = useAutosave({
@@ -109,7 +121,9 @@ export function ContactDetail({
         key,
         current,
         toContactPlaintext({
-          displayName: next.displayName,
+          firstName: next.firstName,
+          lastName: next.lastName,
+          jobTitle: next.jobTitle,
           emails: next.emailsText
             .split(",")
             .map((e) => e.trim())
@@ -125,7 +139,9 @@ export function ContactDetail({
       setContact(saved);
       cache.upsertContact(saved);
       return {
-        displayName: saved.displayName,
+        firstName: saved.firstName,
+        lastName: saved.lastName,
+        jobTitle: saved.jobTitle,
         emailsText: saved.emails.join(", "),
         phonesText: saved.phones.join(", "),
         notes: saved.notes,
@@ -134,7 +150,9 @@ export function ContactDetail({
     },
     onError: (message) => setError(message),
     onSaved: (canonical) => {
-      setDisplayName(canonical.displayName);
+      setFirstName(canonical.firstName);
+      setLastName(canonical.lastName);
+      setJobTitle(canonical.jobTitle);
       setEmailsText(canonical.emailsText);
       setPhonesText(canonical.phonesText);
       setNotes(canonical.notes);
@@ -157,7 +175,9 @@ export function ContactDetail({
         );
         if (cancelled) return;
         setContact(loaded);
-        setDisplayName(loaded.displayName);
+        setFirstName(loaded.firstName);
+        setLastName(loaded.lastName);
+        setJobTitle(loaded.jobTitle);
         setEmailsText(loaded.emails.join(", "));
         setPhonesText(loaded.phones.join(", "));
         setNotes(loaded.notes);
@@ -224,7 +244,7 @@ export function ContactDetail({
       }
       case "create-contact": {
         const created = await createContact(workspaceId, key, {
-          displayName: action.displayName,
+          firstName: action.firstName,
         });
         cache.upsertContact(created);
         return { kind: "contact", id: created.id };
@@ -270,13 +290,13 @@ export function ContactDetail({
         main={
           <>
             <InlineTitle
-              value={displayName}
-              onChange={setDisplayName}
+              value={firstName}
+              onChange={setFirstName}
               onBlur={flush}
-              placeholder="Display name"
+              placeholder="First name"
               disabled={deleting}
               maxLength={500}
-              aria-label="Display name"
+              aria-label="First name"
               className="min-w-0"
             />
 
@@ -319,6 +339,46 @@ export function ContactDetail({
                 onRetry={flush}
               />
             ) : null}
+
+            <Card size="sm">
+              <CardContent className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="contact-detail-last-name"
+                  className="text-xs text-muted-foreground"
+                >
+                  Last name
+                </Label>
+                <Input
+                  id="contact-detail-last-name"
+                  value={lastName}
+                  onChange={(e) => setLastName(e.target.value)}
+                  onBlur={flush}
+                  placeholder="Last name"
+                  disabled={deleting}
+                  maxLength={500}
+                />
+              </CardContent>
+            </Card>
+
+            <Card size="sm">
+              <CardContent className="flex flex-col gap-1.5">
+                <Label
+                  htmlFor="contact-detail-job-title"
+                  className="text-xs text-muted-foreground"
+                >
+                  Job title
+                </Label>
+                <Input
+                  id="contact-detail-job-title"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
+                  onBlur={flush}
+                  placeholder="Job title"
+                  disabled={deleting}
+                  maxLength={500}
+                />
+              </CardContent>
+            </Card>
 
             <Card size="sm">
               <CardContent className="flex flex-col gap-1.5">

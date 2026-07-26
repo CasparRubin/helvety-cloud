@@ -32,6 +32,7 @@ import { useEntityCache } from "@/components/unlock/entity-cache";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
 import { createContact } from "@/lib/client-crypto/contacts";
+import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import {
   EMPTY_NOTE_BODY,
   toNotePlaintext,
@@ -201,7 +202,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       }
       case "create-contact": {
         const contact = await createContact(workspaceId, key, {
-          displayName: action.displayName,
+          firstName: action.firstName,
         });
         cache.upsertContact(contact);
         return { kind: "contact", id: contact.id };
@@ -222,7 +223,11 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       items.push({ kind: "task", id: t.id, label: t.title });
     }
     for (const c of cache.contacts) {
-      items.push({ kind: "contact", id: c.id, label: c.displayName });
+      items.push({
+        kind: "contact",
+        id: c.id,
+        label: formatContactName(c) || "Untitled",
+      });
     }
     return items;
   }, [cache.tasks, cache.contacts]);

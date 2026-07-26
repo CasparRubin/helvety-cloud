@@ -457,7 +457,7 @@ Workspace  (members + per-member wrapped_keys)
 **Do:**
 
 - TipTap atom node `entityRef` `{ kind, id }` inside encrypted note body.  
-- BubbleMenu: Create task (title = selection), Create contact (displayName = selection), Link existing… (typeahead over decrypted workspace cache).  
+- BubbleMenu: Create task (title = selection), Create contact (firstName = selection), Link existing… (typeahead over decrypted workspace cache).  
 - New tasks: default project = note’s `project_id`, else project picker.  
 - On save: walk TipTap doc → replace note’s outgoing `entity_links`.  
 - Optional `@` mention suggestion (same node).

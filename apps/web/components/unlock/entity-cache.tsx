@@ -20,6 +20,7 @@ import {
   type ProjectCategorizations,
 } from "@/lib/client-crypto/categorizations";
 import { loadDecryptedContacts, type DecryptedContact } from "@/lib/client-crypto/contacts";
+import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import {
   KIND_FALLBACK_COLOR,
   type EntityColor,
@@ -165,7 +166,7 @@ export function EntityCacheProvider({
           return {
             kind,
             id,
-            label: contact?.displayName ?? "Contact",
+            label: (contact && formatContactName(contact)) || "Contact",
             color: contact?.color ?? fallback,
             href: `/app/w/${workspaceId}/contacts/${id}`,
             deleted: Boolean(contact?.deletedAt),

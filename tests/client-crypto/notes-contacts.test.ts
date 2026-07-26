@@ -7,6 +7,7 @@ import {
   toNotePlaintext,
 } from "../../apps/web/lib/client-crypto/note-plaintext";
 import {
+  formatContactName,
   parseContactPlaintext,
   toContactPlaintext,
 } from "../../apps/web/lib/client-crypto/contact-plaintext";
@@ -69,7 +70,9 @@ describe("contact plaintext v1", () => {
     expect(
       parseContactPlaintext({
         version: 1,
-        displayName: "Ada",
+        firstName: "Ada",
+        lastName: "Lovelace",
+        jobTitle: "Mathematician",
         emails: [],
         phones: [],
         notes: {
@@ -90,10 +93,20 @@ describe("contact plaintext v1", () => {
     expect(() =>
       parseContactPlaintext({
         version: 1,
-        displayName: "Ada",
+        firstName: "Ada",
+        lastName: "",
+        jobTitle: "",
         emails: "not-array",
         phones: [],
         notes: "",
+      }),
+    ).toThrow("Invalid contact plaintext");
+    expect(() =>
+      parseContactPlaintext({
+        version: 1,
+        displayName: "Ada",
+        emails: [],
+        phones: [],
       }),
     ).toThrow("Invalid contact plaintext");
   });
@@ -101,7 +114,9 @@ describe("contact plaintext v1", () => {
   it("toContactPlaintext trims fields", () => {
     expect(
       toContactPlaintext({
-        displayName: "  Ada  ",
+        firstName: "  Ada  ",
+        lastName: "  Lovelace ",
+        jobTitle: " Mathematician ",
         emails: ["  a@b.c  ", ""],
         phones: [" 1 "],
         notes: {
@@ -116,7 +131,9 @@ describe("contact plaintext v1", () => {
       }),
     ).toEqual({
       version: 1,
-      displayName: "Ada",
+      firstName: "Ada",
+      lastName: "Lovelace",
+      jobTitle: "Mathematician",
       emails: ["a@b.c"],
       phones: ["1"],
       notes: {
@@ -129,6 +146,14 @@ describe("contact plaintext v1", () => {
         ],
       },
     });
+  });
+
+  it("formatContactName joins trimmed parts", () => {
+    expect(
+      formatContactName({ firstName: "Ada", lastName: "Lovelace" }),
+    ).toBe("Ada Lovelace");
+    expect(formatContactName({ firstName: "Ada", lastName: "" })).toBe("Ada");
+    expect(formatContactName({ firstName: "", lastName: "" })).toBe("");
   });
 });
 
@@ -168,7 +193,7 @@ describe("notes/contacts AAD binding", () => {
     const key = randomKeyBytes();
     const wrong = randomKeyBytes();
     const contactId = "33333333-3333-4333-8333-333333333333";
-    const plaintext = toContactPlaintext({ displayName: "Ada" });
+    const plaintext = toContactPlaintext({ firstName: "Ada" });
     const envelope = await encrypt({
       key,
       plaintext: encodeUtf8(JSON.stringify(plaintext)),

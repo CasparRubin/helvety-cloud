@@ -33,7 +33,9 @@ const textDecoder = new TextDecoder();
 export type DecryptedContact = {
   id: string;
   workspaceId: string;
-  displayName: string;
+  firstName: string;
+  lastName: string;
+  jobTitle: string;
   emails: string[];
   phones: string[];
   notes: TaskBodyDoc;
@@ -84,7 +86,9 @@ async function toDecrypted(
   workspaceKey: Uint8Array,
   row: ContactResponse,
 ): Promise<DecryptedContact> {
-  let displayName = "Untitled";
+  let firstName = "";
+  let lastName = "";
+  let jobTitle = "";
   let emails: string[] = [];
   let phones: string[] = [];
   let notes: TaskBodyDoc = EMPTY_TASK_BODY;
@@ -95,18 +99,22 @@ async function toDecrypted(
       row.id,
       row.encryptedBlob,
     );
-    displayName = content.displayName;
+    firstName = content.firstName;
+    lastName = content.lastName;
+    jobTitle = content.jobTitle;
     emails = content.emails;
     phones = content.phones;
     notes = content.notes;
     color = content.color;
   } catch {
-    displayName = "Unable to decrypt";
+    firstName = "Unable to decrypt";
   }
   return {
     id: row.id,
     workspaceId: row.workspaceId,
-    displayName,
+    firstName,
+    lastName,
+    jobTitle,
     emails,
     phones,
     notes,
@@ -144,7 +152,9 @@ export async function createContact(
   workspaceId: string,
   workspaceKey: Uint8Array,
   content: {
-    displayName: string;
+    firstName: string;
+    lastName?: string;
+    jobTitle?: string;
     emails?: string[];
     phones?: string[];
     notes?: TaskBodyDoc;
