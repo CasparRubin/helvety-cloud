@@ -23,6 +23,10 @@ import { createClient } from "@/lib/supabase/client";
 
 type Step = "email" | "code";
 
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 function formatAuthError(error: {
   message?: string;
   code?: string;
@@ -98,7 +102,7 @@ export function LoginForm() {
       title="Sign in"
       subtitle={
         step === "email"
-          ? "Enter your email to get a one-time sign-in code."
+          ? "Enter your email and we'll send a one-time sign-in code."
           : `Enter the 6-digit code sent to ${email}.`
       }
       footer={
@@ -119,9 +123,7 @@ export function LoginForm() {
         <form onSubmit={sendOtp}>
           <FieldGroup>
             <Field data-invalid={error ? true : undefined}>
-              <FieldLabel htmlFor="email" required>
-                Email
-              </FieldLabel>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
               <Input
                 id="email"
                 name="email"
@@ -134,7 +136,11 @@ export function LoginForm() {
                 aria-invalid={error ? true : undefined}
               />
             </Field>
-            <Button type="submit" disabled={pending} className="w-full">
+            <Button
+              type="submit"
+              disabled={pending || !isValidEmail(email)}
+              className="w-full"
+            >
               {pending ? <Spinner data-icon="inline-start" /> : null}
               Send code
             </Button>
@@ -144,9 +150,7 @@ export function LoginForm() {
         <form onSubmit={verifyOtp}>
           <FieldGroup>
             <Field data-invalid={error ? true : undefined}>
-              <FieldLabel htmlFor="otp" required>
-                One-time code
-              </FieldLabel>
+              <FieldLabel htmlFor="otp">One-time code</FieldLabel>
               <InputOTP
                 id="otp"
                 maxLength={6}

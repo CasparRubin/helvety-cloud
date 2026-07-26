@@ -124,7 +124,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
 
   return (
     <AuthShell
-      title="Helvety Cloud"
+      title="Unlock your data"
       subtitle={
         <>
           Signed in as <span className="text-foreground">{email}</span>.
@@ -137,11 +137,11 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       }
     >
       <Alert>
-        <AlertTitle>Zero knowledge, no recovery by Helvety</AlertTitle>
+        <AlertTitle>Only you can unlock this</AlertTitle>
         <AlertDescription>
-          Helvety cannot decrypt or restore your data. If you lose your unlock
-          methods (unlock passkey and offline recovery key + wrap), your data is
-          gone permanently.
+          Your data is encrypted on your device. Helvety cannot decrypt or
+          restore it. If you lose your unlock passkey and offline recovery key,
+          your data is gone permanently.
         </AlertDescription>
       </Alert>
 

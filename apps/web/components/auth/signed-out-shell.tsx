@@ -8,11 +8,11 @@ export function SignedOutShell({
 }) {
   return (
     <AuthShell
-      title={accountDeleted ? "Account deleted" : "Helvety Cloud"}
+      title={accountDeleted ? "Account deleted" : "Private by design"}
       subtitle={
         accountDeleted
           ? "Your Helvety account and solo-owned workspaces are gone. Helvety cannot recover your data."
-          : "Passwordless E2EE workspace. Sign in to create a session."
+          : "Your projects, tasks, notes, and files are encrypted on your device before they reach us. Helvety can't read or recover them — there's no master key or password. You sign in with a one-time email code and unlock your data with a passkey."
       }
       footer={
         <>
@@ -55,7 +55,7 @@ export function SignedOutShell({
         nativeButton={false}
         className="w-full"
       >
-        {accountDeleted ? "Back to sign in" : "Sign in"}
+        {accountDeleted ? "Back to sign in" : "Join for free"}
       </Button>
     </AuthShell>
   );
