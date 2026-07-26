@@ -3,7 +3,8 @@ import { getMessages, setRequestLocale } from "next-intl/server";
 import { Geist } from "next/font/google";
 import { notFound } from "next/navigation";
 
-import { ThemeProvider } from "@/components/theme-provider";
+import { ThemeProvider } from "@wrksz/themes/next";
+
 import { routing } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 
@@ -34,16 +35,16 @@ export default async function LocaleLayout({ children, params }: Props) {
       className={cn("font-sans", geist.variable)}
     >
       <body>
-        <NextIntlClientProvider messages={messages}>
-          <ThemeProvider
-            attribute="class"
-            defaultTheme="system"
-            enableSystem
-            disableTransitionOnChange
-          >
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+        >
+          <NextIntlClientProvider messages={messages}>
             {children}
-          </ThemeProvider>
-        </NextIntlClientProvider>
+          </NextIntlClientProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

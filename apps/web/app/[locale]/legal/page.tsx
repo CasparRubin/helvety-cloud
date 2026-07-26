@@ -13,7 +13,7 @@ export async function generateMetadata({ params }: Props) {
   const t = await getTranslations({ locale, namespace: "legalChrome" });
   return {
     title: `${t("title")} · Helvety Cloud`,
-    description: t("subtitle"),
+    description: t("indexIntro"),
   };
 }
 

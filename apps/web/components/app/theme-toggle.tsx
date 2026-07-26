@@ -1,8 +1,8 @@
 "use client";
 
+import { useTheme } from "@wrksz/themes/client";
 import { MoonIcon, SunIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useTheme } from "next-themes";
 
 import { Button } from "@/components/ui/button";
 
