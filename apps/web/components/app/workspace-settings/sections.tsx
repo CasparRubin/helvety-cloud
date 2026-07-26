@@ -477,8 +477,8 @@ export function WorkspaceDangerSettings() {
         <>
           <p className="text-xs text-muted-foreground">
             Permanently delete this workspace and all projects, tasks, notes,
-            contacts, and invitations. This cannot be undone. Helvety cannot
-            recover deleted data.
+            contacts, files, invitations, and sharing. This cannot be undone.
+            Helvety cannot recover deleted data.
           </p>
           {needsBillingCancel ? (
             <p className="text-xs text-muted-foreground">
@@ -517,7 +517,7 @@ export function WorkspaceDangerSettings() {
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
             title={`Delete workspace “${workspace.name}”?`}
-            description="This permanently deletes the workspace and everything in it. This cannot be undone."
+            description="This permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             busy={pending}
             onConfirm={onDeleteWorkspace}
           />

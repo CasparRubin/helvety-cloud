@@ -19,7 +19,7 @@ import {
 } from "@/components/app/entity-detail-shell";
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
-import { PageActions } from "@/components/app/page-actions";
+import { PageDangerActions } from "@/components/app/page-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -279,15 +279,15 @@ export function TaskDetail({
 
   return (
     <EntityDetailShell loading={loading} error={error}>
-      <PageActions>
+      <PageDangerActions>
         <DeleteButton
           disabled={deleting}
           busy={deleting}
           dialogTitle="Delete this task?"
-          dialogDescription="This permanently deletes the task. This cannot be undone."
+          dialogDescription="This permanently deletes the task, its attached files, and its links to other items. This cannot be undone."
           onConfirm={onDelete}
         />
-      </PageActions>
+      </PageDangerActions>
       <EntityDetailLayout
         main={
           <>

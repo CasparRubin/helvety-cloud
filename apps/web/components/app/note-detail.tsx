@@ -16,7 +16,7 @@ import {
 } from "@/components/app/entity-detail-shell";
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
-import { PageActions } from "@/components/app/page-actions";
+import { PageDangerActions } from "@/components/app/page-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -231,15 +231,15 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
 
   return (
     <EntityDetailShell loading={loading} error={error}>
-      <PageActions>
+      <PageDangerActions>
         <DeleteButton
           disabled={deleting}
           busy={deleting}
           dialogTitle="Delete this note?"
-          dialogDescription="This permanently deletes the note. This cannot be undone."
+          dialogDescription="This permanently deletes the note, its attached files, and its links to other items. This cannot be undone."
           onConfirm={onDelete}
         />
-      </PageActions>
+      </PageDangerActions>
       <EntityDetailLayout
         main={
           <>

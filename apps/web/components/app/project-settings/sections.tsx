@@ -266,16 +266,16 @@ export function ProjectDangerSettings() {
   return (
     <div className="flex max-w-lg flex-col gap-3 rounded-lg border border-destructive/30 p-4">
       <p className="text-xs text-muted-foreground">
-        Permanently delete this project and all of its tasks. This cannot be
-        undone. Helvety cannot recover deleted data.
+        Permanently delete this project, all of its tasks and milestones, and
+        files on those tasks. Notes and contacts stay in the workspace. This
+        cannot be undone. Helvety cannot recover deleted data.
       </p>
       <DeleteButton
         label="Delete project"
-        variant="destructive"
         disabled={busy}
         busy={busy}
         dialogTitle={`Delete project “${project.name}”?`}
-        dialogDescription="This permanently deletes the project and all of its tasks. This cannot be undone."
+        dialogDescription="This permanently deletes the project, all of its tasks and milestones, and files on those tasks. Notes and contacts stay in the workspace. This cannot be undone."
         onConfirm={onDeleteProject}
       />
     </div>

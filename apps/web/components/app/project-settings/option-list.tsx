@@ -2,6 +2,7 @@
 
 import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
+import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -216,15 +217,16 @@ export function CategorizationOptionList({
                 >
                   ↓
                 </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  variant="destructive"
+                <DeleteButton
+                  label="Remove"
+                  confirmLabel="Remove"
+                  busyLabel="Removing…"
+                  dialogTitle={`Remove ${singular} “${opt.name}”?`}
+                  dialogDescription={`This removes the ${singular}. Tasks using it will be reassigned. This cannot be undone.`}
                   disabled={busy || !canDelete}
-                  onClick={() => void onDelete(opt.id)}
-                >
-                  Remove
-                </Button>
+                  busy={busy}
+                  onConfirm={() => onDelete(opt.id)}
+                />
               </div>
             </div>
           </li>

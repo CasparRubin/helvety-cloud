@@ -13,7 +13,7 @@ import {
 } from "@/components/app/entity-detail-shell";
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
-import { PageActions } from "@/components/app/page-actions";
+import { PageDangerActions } from "@/components/app/page-actions";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
@@ -257,15 +257,15 @@ export function ContactDetail({
 
   return (
     <EntityDetailShell loading={loading} error={error}>
-      <PageActions>
+      <PageDangerActions>
         <DeleteButton
           disabled={deleting}
           busy={deleting}
           dialogTitle="Delete this contact?"
-          dialogDescription="This permanently deletes the contact. This cannot be undone."
+          dialogDescription="This permanently deletes the contact, its attached files, and its links to other items. This cannot be undone."
           onConfirm={onDelete}
         />
-      </PageActions>
+      </PageDangerActions>
       <EntityDetailLayout
         main={
           <>

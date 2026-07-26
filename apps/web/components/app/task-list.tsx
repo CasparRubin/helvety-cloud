@@ -391,7 +391,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       </PageActions>
       <PageSettingsActions>
         <Button
-          variant="outline"
+          variant="ghost"
           size="sm"
           render={
             <Link
@@ -568,11 +568,19 @@ function StageRow({
     >
       <div
         className={cn(
-          "flex w-full items-center gap-2 border-b border-border px-3 py-2",
-          tint ? cn(tint.bg, tint.text) : "bg-muted/40",
+          "flex w-full items-center gap-2 border-b border-border px-3 py-2 text-foreground",
+          tint ? tint.wash : "bg-muted/40",
         )}
       >
-        {Icon ? <Icon className="size-3.5 shrink-0" aria-hidden /> : null}
+        {Icon ? (
+          <Icon
+            className={cn(
+              "size-3.5 shrink-0",
+              tint?.text ?? "text-muted-foreground",
+            )}
+            aria-hidden
+          />
+        ) : null}
         <h2 className="min-w-0 flex-1 truncate text-sm font-medium">
           {stage.name}
         </h2>

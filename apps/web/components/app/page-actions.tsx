@@ -17,8 +17,10 @@ import { ButtonGroup } from "@/components/ui/button-group";
 
 type PageActionsContextValue = {
   actionsEl: HTMLElement | null;
+  dangerEl: HTMLElement | null;
   settingsEl: HTMLElement | null;
   setActionsEl: (el: HTMLElement | null) => void;
+  setDangerEl: (el: HTMLElement | null) => void;
   setSettingsEl: (el: HTMLElement | null) => void;
 };
 
@@ -26,10 +28,15 @@ const PageActionsContext = createContext<PageActionsContextValue | null>(null);
 
 export function PageActionsProvider({ children }: { children: ReactNode }) {
   const [actionsEl, setActionsElState] = useState<HTMLElement | null>(null);
+  const [dangerEl, setDangerElState] = useState<HTMLElement | null>(null);
   const [settingsEl, setSettingsElState] = useState<HTMLElement | null>(null);
 
   const setActionsEl = useCallback((el: HTMLElement | null) => {
     setActionsElState((prev) => (prev === el ? prev : el));
+  }, []);
+
+  const setDangerEl = useCallback((el: HTMLElement | null) => {
+    setDangerElState((prev) => (prev === el ? prev : el));
   }, []);
 
   const setSettingsEl = useCallback((el: HTMLElement | null) => {
@@ -37,8 +44,22 @@ export function PageActionsProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo(
-    () => ({ actionsEl, settingsEl, setActionsEl, setSettingsEl }),
-    [actionsEl, settingsEl, setActionsEl, setSettingsEl],
+    () => ({
+      actionsEl,
+      dangerEl,
+      settingsEl,
+      setActionsEl,
+      setDangerEl,
+      setSettingsEl,
+    }),
+    [
+      actionsEl,
+      dangerEl,
+      settingsEl,
+      setActionsEl,
+      setDangerEl,
+      setSettingsEl,
+    ],
   );
 
   return (
@@ -56,14 +77,21 @@ function usePageActionsContext(): PageActionsContextValue {
   return ctx;
 }
 
-/** Portals primary actions into the sticky secondary bar. */
+/** Portals create actions into the sticky secondary bar (left, after Back). */
 export function PageActions({ children }: { children: ReactNode }) {
   const { actionsEl } = usePageActionsContext();
   if (!actionsEl) return null;
   return createPortal(children, actionsEl);
 }
 
-/** Portals settings actions; always rendered to the right of primary actions. */
+/** Portals delete actions into the sticky secondary bar (right). */
+export function PageDangerActions({ children }: { children: ReactNode }) {
+  const { dangerEl } = usePageActionsContext();
+  if (!dangerEl) return null;
+  return createPortal(children, dangerEl);
+}
+
+/** Portals settings actions; always rendered to the right of delete actions. */
 export function PageSettingsActions({ children }: { children: ReactNode }) {
   const { settingsEl } = usePageActionsContext();
   if (!settingsEl) return null;
@@ -78,7 +106,7 @@ export function WorkspaceSettingsAction({
   return (
     <PageSettingsActions>
       <Button
-        variant="outline"
+        variant="ghost"
         size="sm"
         render={<Link href={`/app/w/${workspaceId}/settings/general`} />}
         nativeButton={false}
@@ -91,11 +119,14 @@ export function WorkspaceSettingsAction({
 }
 
 export function PageActionsSlot() {
-  const { setActionsEl, setSettingsEl } = usePageActionsContext();
+  const { setActionsEl, setDangerEl, setSettingsEl } = usePageActionsContext();
   return (
-    <div className="ml-auto flex items-stretch gap-2">
+    <>
       <ButtonGroup ref={setActionsEl} />
-      <ButtonGroup ref={setSettingsEl} />
-    </div>
+      <div className="ml-auto flex items-stretch gap-2">
+        <ButtonGroup ref={setDangerEl} />
+        <ButtonGroup ref={setSettingsEl} />
+      </div>
+    </>
   );
 }

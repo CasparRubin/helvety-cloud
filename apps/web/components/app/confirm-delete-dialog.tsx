@@ -21,6 +21,7 @@ type ConfirmDeleteDialogProps = {
   title: string;
   description: string;
   confirmLabel?: string;
+  busyLabel?: string;
   busy?: boolean;
   onConfirm: () => void | Promise<void>;
 };
@@ -31,6 +32,7 @@ export function ConfirmDeleteDialog({
   title,
   description,
   confirmLabel = "Delete permanently",
+  busyLabel = "Deleting…",
   busy = false,
   onConfirm,
 }: ConfirmDeleteDialogProps) {
@@ -65,7 +67,7 @@ export function ConfirmDeleteDialog({
               void handleConfirm();
             }}
           >
-            {pending ? "Deleting…" : confirmLabel}
+            {pending ? busyLabel : confirmLabel}
           </AlertDialogAction>
         </AlertDialogFooter>
       </AlertDialogContent>
@@ -77,6 +79,8 @@ type DeleteButtonProps = {
   label?: string;
   dialogTitle: string;
   dialogDescription: string;
+  confirmLabel?: string;
+  busyLabel?: string;
   disabled?: boolean;
   busy?: boolean;
   onConfirm: () => void | Promise<void>;
@@ -88,6 +92,8 @@ export function DeleteButton({
   label = "Delete",
   dialogTitle,
   dialogDescription,
+  confirmLabel,
+  busyLabel,
   disabled,
   busy,
   onConfirm,
@@ -112,6 +118,8 @@ export function DeleteButton({
         onOpenChange={setOpen}
         title={dialogTitle}
         description={dialogDescription}
+        confirmLabel={confirmLabel}
+        busyLabel={busyLabel}
         busy={busy}
         onConfirm={onConfirm}
       />
