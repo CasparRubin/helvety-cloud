@@ -25,7 +25,7 @@ export function AuthShell({
   return (
     <main className="auth-shell relative flex min-h-svh flex-col items-center justify-center bg-background p-6">
       <Card className="relative z-10 w-full max-w-md">
-        <CardHeader className="justify-items-center text-center">
+        <CardHeader className="justify-items-center border-b border-border/50 text-center">
           <Image
             src="/icon.svg"
             width={48}
@@ -37,7 +37,10 @@ export function AuthShell({
           <CardTitle>Helvety Cloud</CardTitle>
           <CardDescription className="flex flex-col gap-0.5">
             <span>End-to-end encrypted workspace</span>
-            <span>Engineered, designed & made in Switzerland</span>
+            <span className="text-xs text-muted-foreground/70">
+              Engineered, designed & made in{" "}
+              <span className="text-[#DA291C]">Switzerland</span>
+            </span>
           </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
@@ -53,6 +56,17 @@ export function AuthShell({
           {footer ? (
             <p className="text-center text-xs text-muted-foreground">{footer}</p>
           ) : null}
+          <p className="text-center text-xs text-muted-foreground/70">
+            Developed by{" "}
+            <a
+              href="https://helvety.com"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="underline underline-offset-4"
+            >
+              Helvety
+            </a>
+          </p>
         </CardContent>
       </Card>
     </main>
