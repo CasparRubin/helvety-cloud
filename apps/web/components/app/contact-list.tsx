@@ -1,8 +1,8 @@
 "use client";
 
-import { Link, useRouter } from "@/i18n/navigation";
+import Link from "next/link";
 import { useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
+import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
@@ -42,8 +42,6 @@ function compareContactsByLastName(a: DecryptedContact, b: DecryptedContact) {
 }
 
 export function ContactList({ workspaceId }: ContactListProps) {
-  const t = useTranslations("contacts");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
 
@@ -70,7 +68,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
         setError(null);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : t("loadFailed"));
+        setError(e instanceof Error ? e.message : "Failed to load contacts");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -78,7 +76,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, workspaceId, getWorkspaceKey, t]);
+  }, [userKeys, workspaceId, getWorkspaceKey]);
 
   function resetCreateFields() {
     setNewLastName("");
@@ -129,10 +127,10 @@ export function ContactList({ workspaceId }: ContactListProps) {
     <>
       <PageActions>
         <CreateEntityDialog
-          triggerLabel={t("createTitle")}
-          dialogTitle={t("createTitle")}
-          fieldLabel={t("firstName")}
-          fieldPlaceholder={t("firstName")}
+          triggerLabel="Create contact"
+          dialogTitle="Create contact"
+          fieldLabel="First name"
+          fieldPlaceholder="First name"
           fieldMaxLength={500}
           disabled={busy}
           onCreate={onCreate}
@@ -141,12 +139,12 @@ export function ContactList({ workspaceId }: ContactListProps) {
           }}
           companion={
             <div className="flex flex-col gap-2">
-              <Label htmlFor="new-contact-last-name">{t("lastName")}</Label>
+              <Label htmlFor="new-contact-last-name">Last name</Label>
               <Input
                 id="new-contact-last-name"
                 value={newLastName}
                 onChange={(e) => setNewLastName(e.target.value)}
-                placeholder={t("lastName")}
+                placeholder="Last name"
                 disabled={busy}
                 maxLength={500}
               />
@@ -154,45 +152,45 @@ export function ContactList({ workspaceId }: ContactListProps) {
           }
         >
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-contact-job-title">{t("jobTitle")}</Label>
+            <Label htmlFor="new-contact-job-title">Job title</Label>
             <Input
               id="new-contact-job-title"
               value={newJobTitle}
               onChange={(e) => setNewJobTitle(e.target.value)}
-              placeholder={t("jobTitle")}
+              placeholder="Job title"
               disabled={busy}
               maxLength={500}
             />
           </div>
           <div className="grid grid-cols-2 gap-3">
             <div className="flex flex-col gap-2">
-              <Label htmlFor="new-contact-emails">{t("emails")}</Label>
+              <Label htmlFor="new-contact-emails">Emails</Label>
               <Input
                 id="new-contact-emails"
                 value={newEmails}
                 onChange={(e) => setNewEmails(e.target.value)}
-                placeholder={t("commaSeparated")}
+                placeholder="comma-separated"
                 disabled={busy}
               />
             </div>
             <div className="flex flex-col gap-2">
-              <Label htmlFor="new-contact-phones">{t("phones")}</Label>
+              <Label htmlFor="new-contact-phones">Phones</Label>
               <Input
                 id="new-contact-phones"
                 value={newPhones}
                 onChange={(e) => setNewPhones(e.target.value)}
-                placeholder={t("commaSeparated")}
+                placeholder="comma-separated"
                 disabled={busy}
               />
             </div>
           </div>
           <div className="flex flex-col gap-2">
-            <Label htmlFor="new-contact-notes">{t("notes")}</Label>
+            <Label htmlFor="new-contact-notes">Notes</Label>
             <Textarea
               id="new-contact-notes"
               value={newNotes}
               onChange={(e) => setNewNotes(e.target.value)}
-              placeholder={t("notesPlaceholder")}
+              placeholder="Add notes…"
               disabled={busy}
               rows={3}
             />
@@ -201,15 +199,15 @@ export function ContactList({ workspaceId }: ContactListProps) {
       </PageActions>
       <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
-        title={t("title")}
+        title="Contacts"
         error={error}
         loading={loading}
-        loadingLabel={t("loading")}
+        loadingLabel="Loading contacts…"
         empty={!loading && contacts.length === 0}
-        emptyLabel={t("empty")}
+        emptyLabel="No contacts yet."
       >
         {contacts.map((contact) => {
-          const name = formatContactName(contact) || tCommon("untitled");
+          const name = formatContactName(contact) || "Untitled";
           const email = contact.emails[0] || null;
           return (
             <EntityListRow key={contact.id}>

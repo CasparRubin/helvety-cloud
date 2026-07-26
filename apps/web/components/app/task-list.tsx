@@ -1,6 +1,6 @@
 "use client";
 
-import { Link, useRouter } from "@/i18n/navigation";
+import Link from "next/link";
 import {
   useCallback,
   useEffect,
@@ -8,6 +8,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { useRouter } from "next/navigation";
 import {
   DndContext,
   DragOverlay,
@@ -78,7 +79,6 @@ import {
 } from "@/lib/client-crypto/projects";
 import { todayIsoDate } from "@/lib/client-crypto/project-progress";
 import { cn } from "@/lib/utils";
-import { useTranslations } from "next-intl";
 
 type TaskListProps = {
   workspaceId: string;
@@ -86,8 +86,6 @@ type TaskListProps = {
 };
 
 export function TaskList({ workspaceId, projectId }: TaskListProps) {
-  const t = useTranslations("tasks");
-  const tSettings = useTranslations("settings");
   const router = useRouter();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
 
@@ -133,7 +131,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         if (!cancelled) setError(null);
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : t("loadFailed"));
+        setError(e instanceof Error ? e.message : "Failed to load tasks");
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -141,7 +139,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, reload, t]);
+  }, [userKeys, reload]);
 
   const filteredTasks = useMemo(() => {
     if (milestoneFilter === "all") return tasks;
@@ -303,10 +301,10 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       <PageActions>
         {!loading && project ? (
           <CreateEntityDialog
-            triggerLabel={t("createTitle")}
-            dialogTitle={t("createTitle")}
-            fieldLabel={t("titleLabel")}
-            fieldPlaceholder={t("namePlaceholder")}
+            triggerLabel="Create task"
+            dialogTitle="Create task"
+            fieldLabel="Title"
+            fieldPlaceholder="New task title"
             fieldMaxLength={500}
             disabled={busy || !project}
             onCreate={onCreate}
@@ -315,55 +313,55 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             }}
           >
             <div className="flex flex-col gap-2">
-              <Label htmlFor="new-task-description">{t("description")}</Label>
+              <Label htmlFor="new-task-description">Description</Label>
               <Textarea
                 id="new-task-description"
                 value={newDescription}
                 onChange={(e) => setNewDescription(e.target.value)}
-                placeholder={t("descriptionPlaceholder")}
+                placeholder="Add a description…"
                 disabled={busy}
                 rows={3}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="flex flex-col gap-2">
-                <Label>{t("label")}</Label>
+                <Label>Label</Label>
                 <CategorizationPicker
                   options={project.categorizations.labels}
                   value={newLabelId}
                   allowNone
                   disabled={busy}
-                  aria-label={t("label")}
+                  aria-label="Label"
                   onChange={setNewLabelId}
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label required>{t("stage")}</Label>
+                <Label required>Stage</Label>
                 <CategorizationPicker
                   options={project.categorizations.stages}
                   value={newStageId}
                   useStageColor
                   disabled={busy}
-                  aria-label={t("stage")}
+                  aria-label="Stage"
                   onChange={(id) => {
                     if (id) setNewStageId(id);
                   }}
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label required>{t("priority")}</Label>
+                <Label required>Priority</Label>
                 <CategorizationPicker
                   options={project.categorizations.priorities}
                   value={newPriorityId}
                   disabled={busy}
-                  aria-label={t("priority")}
+                  aria-label="Priority"
                   onChange={(id) => {
                     if (id) setNewPriorityId(id);
                   }}
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label>{t("milestone")}</Label>
+                <Label>Milestone</Label>
                 <MilestonePicker
                   options={milestones.map((m) => ({
                     id: m.id,
@@ -373,12 +371,12 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                   }))}
                   value={newMilestoneId}
                   disabled={busy}
-                  aria-label={t("milestone")}
+                  aria-label="Milestone"
                   onChange={setNewMilestoneId}
                 />
               </div>
               <div className="flex flex-col gap-2">
-                <Label htmlFor="new-task-due-date">{t("dueDate")}</Label>
+                <Label htmlFor="new-task-due-date">Due date</Label>
                 <Input
                   id="new-task-due-date"
                   type="date"
@@ -403,7 +401,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           nativeButton={false}
         >
           <SettingsIcon />
-          {tSettings("projectSettings")}
+          Project settings
         </Button>
       </PageSettingsActions>
       <EntityListShell
@@ -417,7 +415,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               onError={setError}
             />
           ) : (
-            (project?.name ?? t("projectFallback"))
+            (project?.name ?? "Project")
           )
         }
         belowTitle={
@@ -433,7 +431,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         }
         error={error}
         loading={loading}
-        loadingLabel={t("loading")}
+        loadingLabel="Loading tasks…"
         bareChildren
       >
         {!loading && project ? (
@@ -544,7 +542,6 @@ function StageRow({
     },
   ) => void;
 }) {
-  const t = useTranslations("tasks");
   const { setNodeRef, isOver } = useDroppable({
     id: stage.id,
     data: { type: "stage", stageId: stage.id },
@@ -592,7 +589,7 @@ function StageRow({
       <div className="flex flex-col">
         {tasks.length === 0 ? (
           <EntityListEmpty className="m-2 px-3 py-4 text-center text-xs">
-            {t("stageEmpty")}
+            No tasks in this stage
           </EntityListEmpty>
         ) : (
           <>

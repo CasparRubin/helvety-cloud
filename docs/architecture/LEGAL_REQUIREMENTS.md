@@ -21,7 +21,7 @@
 | **Subprocessors list** | `/legal/subprocessors` | Living list with regions |
 | **DPA / AVV** | Later | When selling B2B |
 
-Source of truth: `apps/web/content/legal/{locale}/` + `apps/web/lib/legal/policies.ts` versions.
+Source of truth: `apps/web/content/legal/*` + `apps/web/lib/legal/policies.ts` versions.
 
 ## Signup gates (engineering)
 

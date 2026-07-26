@@ -1,13 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useTranslations } from "next-intl";
 
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { Link } from "@/i18n/navigation";
 import {
   CURRENT_POLICY_VERSIONS,
   LEGAL_DOC_META,
@@ -16,14 +14,32 @@ import {
 } from "@/lib/legal/policies";
 import { putMePolicyAcceptances } from "@/lib/api/v1-client";
 
-const GATE_DOCS: Record<
+const GATE_LABELS: Record<
   SignupPolicyId,
-  { linkKey: "terms" | "privacy" | "aup" | "e2ee"; docSlug: keyof typeof LEGAL_DOC_META }
+  { prefix: string; linkText: string; suffix?: string; docSlug: keyof typeof LEGAL_DOC_META }
 > = {
-  tos: { linkKey: "terms", docSlug: "terms" },
-  privacy: { linkKey: "privacy", docSlug: "privacy" },
-  aup: { linkKey: "aup", docSlug: "aup" },
-  e2ee: { linkKey: "e2ee", docSlug: "e2ee" },
+  tos: {
+    prefix: "I accept the",
+    linkText: "Terms of Service",
+    docSlug: "terms",
+  },
+  privacy: {
+    prefix: "I accept the",
+    linkText: "Privacy Policy",
+    docSlug: "privacy",
+  },
+  aup: {
+    prefix: "I accept the",
+    linkText: "Acceptable Use Policy",
+    docSlug: "aup",
+  },
+  e2ee: {
+    prefix: "I acknowledge the",
+    linkText: "E2EE / zero-access notice",
+    suffix:
+      "Helvety cannot decrypt or recover your data; lost keys mean permanent loss; I am responsible for my content and keys.",
+    docSlug: "e2ee",
+  },
 };
 
 type PolicyAcceptanceGateProps = {
@@ -39,8 +55,6 @@ export function PolicyAcceptanceGate({
   onError,
   onAccepted,
 }: PolicyAcceptanceGateProps) {
-  const t = useTranslations("policy");
-  const tLegal = useTranslations("legalChrome");
   const [checked, setChecked] = useState<Record<SignupPolicyId, boolean>>({
     tos: false,
     privacy: false,
@@ -63,7 +77,7 @@ export function PolicyAcceptanceGate({
       onAccepted();
     } catch (err) {
       onError(
-        err instanceof Error ? err.message : t("recordFailed"),
+        err instanceof Error ? err.message : "Failed to record policy acceptance",
       );
     } finally {
       onPendingChange(false);
@@ -73,17 +87,19 @@ export function PolicyAcceptanceGate({
   return (
     <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
       <div className="flex flex-col gap-1">
-        <p className="text-sm font-medium">{t("title")}</p>
-        <p className="text-xs text-muted-foreground">{t("intro")}</p>
+        <p className="text-sm font-medium">Accept policies to continue</p>
+        <p className="text-xs text-muted-foreground">
+          Acceptance is logged with policy version and timestamp before
+          encryption setup. Open each linked document to read it.
+        </p>
       </div>
 
       <div className="flex flex-col gap-4">
         {SIGNUP_POLICY_IDS.map((id) => {
-          const meta = GATE_DOCS[id];
+          const meta = GATE_LABELS[id];
           const href = LEGAL_DOC_META[meta.docSlug].href;
           const inputId = `policy-${id}`;
           const isE2ee = id === "e2ee";
-          const prefix = isE2ee ? t("acknowledgePrefix") : t("acceptPrefix");
 
           return (
             <div key={id} className="flex min-w-0 items-start gap-3">
@@ -102,21 +118,21 @@ export function PolicyAcceptanceGate({
                 htmlFor={inputId}
                 className="block min-w-0 flex-1 cursor-pointer text-sm leading-relaxed font-normal"
               >
-                {prefix}{" "}
-                <Link
+                {meta.prefix}{" "}
+                <a
                   href={href}
                   target="_blank"
                   rel="noreferrer"
                   className="underline underline-offset-4"
                 >
-                  {tLegal(meta.linkKey)}
-                </Link>{" "}
+                  {meta.linkText}
+                </a>{" "}
                 <span className="text-muted-foreground">
                   ({CURRENT_POLICY_VERSIONS[id]})
                 </span>
-                {isE2ee ? (
+                {isE2ee && meta.suffix ? (
                   <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
-                    {t("e2eeSuffix")}
+                    {meta.suffix}
                   </span>
                 ) : null}
               </Label>
@@ -132,7 +148,7 @@ export function PolicyAcceptanceGate({
         onClick={() => void submit()}
       >
         {pending ? <Spinner data-icon="inline-start" /> : null}
-        {t("continue")}
+        Record acceptance and continue
       </Button>
     </div>
   );

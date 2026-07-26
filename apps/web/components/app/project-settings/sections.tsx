@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect } from "react";
-import { useTranslations } from "next-intl";
 
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
@@ -20,11 +19,8 @@ function SettingsStatus({
   error: string | null;
   empty?: boolean;
 }) {
-  const t = useTranslations("settings");
-  const tCommon = useTranslations("common");
-
   if (loading) {
-    return <p className="text-sm text-muted-foreground">{tCommon("loading")}</p>;
+    return <p className="text-sm text-muted-foreground">Loading…</p>;
   }
   if (error) {
     return (
@@ -35,15 +31,13 @@ function SettingsStatus({
   }
   if (empty) {
     return (
-      <p className="text-sm text-muted-foreground">{t("projectNotFound")}</p>
+      <p className="text-sm text-muted-foreground">Project not found.</p>
     );
   }
   return null;
 }
 
 export function ProjectGeneralSettings() {
-  const t = useTranslations("settings");
-  const tCommon = useTranslations("common");
   const {
     project,
     loading,
@@ -68,7 +62,7 @@ export function ProjectGeneralSettings() {
           onChange={(e) => setNameDraft(e.target.value)}
           disabled={busy}
           maxLength={200}
-          aria-label={t("projectNameAria")}
+          aria-label="Project name"
         />
         <Button
           type="submit"
@@ -76,7 +70,7 @@ export function ProjectGeneralSettings() {
             busy || !nameDraft.trim() || nameDraft.trim() === project.name
           }
         >
-          {tCommon("save")}
+          Save
         </Button>
       </form>
       <EntityColorPicker
@@ -91,7 +85,6 @@ export function ProjectGeneralSettings() {
 }
 
 export function ProjectStagesSettings() {
-  const t = useTranslations("settings");
   const {
     project,
     loading,
@@ -115,8 +108,8 @@ export function ProjectStagesSettings() {
 
   return (
     <CategorizationOptionList
-      title={t("stagesTitle")}
-      description={t("stagesDescription")}
+      title="Stages"
+      description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Show limits how many tasks appear before “Show more”. % is the stage’s weight toward project completion (Cancelled is excluded)."
       kind="stages"
       options={project.categorizations.stages}
       showDefault
@@ -135,7 +128,6 @@ export function ProjectStagesSettings() {
 }
 
 export function ProjectLabelsSettings() {
-  const t = useTranslations("settings");
   const {
     project,
     loading,
@@ -155,8 +147,8 @@ export function ProjectLabelsSettings() {
 
   return (
     <CategorizationOptionList
-      title={t("labelsTitle")}
-      description={t("labelsDescription")}
+      title="Labels"
+      description="Optional on tasks. Delete clears the label on affected tasks."
       kind="labels"
       options={project.categorizations.labels}
       showDefault={false}
@@ -171,7 +163,6 @@ export function ProjectLabelsSettings() {
 }
 
 export function ProjectPrioritiesSettings() {
-  const t = useTranslations("settings");
   const {
     project,
     loading,
@@ -192,8 +183,8 @@ export function ProjectPrioritiesSettings() {
 
   return (
     <CategorizationOptionList
-      title={t("prioritiesTitle")}
-      description={t("prioritiesDescription")}
+      title="Priorities"
+      description="Required on tasks. Default is used for new tasks and when deleting an in-use priority."
       kind="priorities"
       options={project.categorizations.priorities}
       showDefault
@@ -211,7 +202,6 @@ export function ProjectPrioritiesSettings() {
 }
 
 export function ProjectImportSettings() {
-  const t = useTranslations("settings");
   const {
     project,
     siblings,
@@ -235,19 +225,20 @@ export function ProjectImportSettings() {
 
   return (
     <div className="flex max-w-lg flex-col gap-3">
-      <p className="text-sm text-muted-foreground">{t("importDescription")}</p>
+      <p className="text-sm text-muted-foreground">
+        Replace this project’s labels, stages, and priorities with a clone from
+        another project. Tasks are remapped by matching option names.
+      </p>
       <form onSubmit={(e) => void onCopy(e)} className="flex gap-2">
         <select
           className="flex h-8 min-w-0 flex-1 rounded-lg border border-input bg-transparent px-2.5 text-sm"
           value={copyFromId}
           onChange={(e) => setCopyFromId(e.target.value)}
           disabled={busy || siblings.length === 0}
-          aria-label={t("copyFromProjectAria")}
+          aria-label="Copy categorizations from project"
         >
           <option value="">
-            {siblings.length === 0
-              ? t("noOtherProjects")
-              : t("selectProject")}
+            {siblings.length === 0 ? "No other projects" : "Select project…"}
           </option>
           {siblings.map((p) => (
             <option key={p.id} value={p.id}>
@@ -256,7 +247,7 @@ export function ProjectImportSettings() {
           ))}
         </select>
         <Button type="submit" disabled={busy || !copyFromId}>
-          {t("copy")}
+          Copy
         </Button>
       </form>
     </div>
@@ -264,7 +255,6 @@ export function ProjectImportSettings() {
 }
 
 export function ProjectDangerSettings() {
-  const t = useTranslations("settings");
   const { project, loading, error, busy, onDeleteProject } =
     useProjectSettings();
 
@@ -276,14 +266,16 @@ export function ProjectDangerSettings() {
   return (
     <div className="flex max-w-lg flex-col gap-3 rounded-lg border border-destructive/30 p-4">
       <p className="text-xs text-muted-foreground">
-        {t("deleteProjectWarning")}
+        Permanently delete this project, all of its tasks and milestones, and
+        files on those tasks. Notes and contacts stay in the workspace. This
+        cannot be undone. Helvety cannot recover deleted data.
       </p>
       <DeleteButton
-        label={t("deleteProject")}
+        label="Delete project"
         disabled={busy}
         busy={busy}
-        dialogTitle={t("deleteProjectTitle", { name: project.name })}
-        dialogDescription={t("deleteProjectDescription")}
+        dialogTitle={`Delete project “${project.name}”?`}
+        dialogDescription="This permanently deletes the project, all of its tasks and milestones, and files on those tasks. Notes and contacts stay in the workspace. This cannot be undone."
         onConfirm={onDeleteProject}
       />
     </div>

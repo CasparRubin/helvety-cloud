@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
@@ -42,7 +43,6 @@ import {
   type DecryptedNote,
 } from "@/lib/client-crypto/notes";
 import { createTask } from "@/lib/client-crypto/tasks";
-import { useRouter } from "@/i18n/navigation";
 
 type NoteDetailProps = {
   workspaceId: string;

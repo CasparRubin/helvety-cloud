@@ -37,7 +37,3 @@ Good: Privacy: Helvety cannot decrypt your data.
 ## Before finishing text changes
 
 Search active files for `—`. Ignore only immutable applied migrations under `supabase/migrations/`.
-
-## i18n
-
-See `.cursor/rules/helvety-cloud-i18n.mdc`. German UI/legal copy must use Swiss High German orthography (`ss`, never `ß`).

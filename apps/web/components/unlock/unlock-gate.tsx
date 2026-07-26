@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { AlertCircleIcon, CopyIcon } from "lucide-react";
-import { useTranslations } from "next-intl";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -10,7 +9,6 @@ import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { PolicyAcceptanceGate } from "@/components/legal/policy-acceptance-gate";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
-import { Link, useRouter } from "@/i18n/navigation";
 import { ApiClientError, getMePolicyAcceptances } from "@/lib/api/v1-client";
 import { createClient } from "@/lib/supabase/client";
 import type { RecoveryExport } from "@/lib/client-crypto/recovery";
@@ -40,10 +38,6 @@ function downloadRecoveryFile(recovery: RecoveryExport): void {
 }
 
 export function UnlockGate({ email, userId }: UnlockGateProps) {
-  const t = useTranslations("unlock");
-  const tShell = useTranslations("shell");
-  const tCommon = useTranslations("common");
-  const router = useRouter();
   const { recovery, setupUserCrypto, unlockUserCrypto, clearRecovery, lock } =
     useCryptoSession();
   const [error, setError] = useState<string | null>(null);
@@ -73,7 +67,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       } catch (err) {
         if (cancelled) return;
         setError(
-          err instanceof Error ? err.message : t("checkFailed"),
+          err instanceof Error ? err.message : "Failed to check account state",
         );
         setStep("needs_acceptance");
       }
@@ -81,7 +75,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
     return () => {
       cancelled = true;
     };
-  }, [userId, t]);
+  }, [userId]);
 
   async function signOut() {
     setError(null);
@@ -94,7 +88,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       setError(signOutError.message);
       return;
     }
-    router.replace("/");
+    window.location.href = "/";
   }
 
   async function onSetup() {
@@ -104,7 +98,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
     try {
       await setupUserCrypto(userId, email);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("setupFailed"));
+      setError(err instanceof Error ? err.message : "Encryption setup failed");
     } finally {
       setPending(false);
     }
@@ -119,9 +113,9 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 404) {
         setStep("needs_setup");
-        setError(t("noKeysYet"));
+        setError("No encryption keys yet. Set up encryption first.");
       } else {
-        setError(err instanceof Error ? err.message : t("unlockFailed"));
+        setError(err instanceof Error ? err.message : "Unlock failed");
       }
     } finally {
       setPending(false);
@@ -130,30 +124,38 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
 
   return (
     <AuthShell
-      title={t("titleUnlock")}
-      subtitle={t("signedInAs", { email })}
+      title="Unlock your data"
+      subtitle={
+        <>
+          Signed in as <span className="text-foreground">{email}</span>.
+        </>
+      }
       footer={
-        <Link href="/legal" className="underline underline-offset-4">
-          {tCommon("legal")}
-        </Link>
+        <a href="/legal" className="underline underline-offset-4">
+          Legal
+        </a>
       }
     >
       <Alert>
-        <AlertTitle>{t("cannotUnlockTitle")}</AlertTitle>
-        <AlertDescription>{t("cannotUnlockBody")}</AlertDescription>
+        <AlertTitle>Helvety cannot unlock this</AlertTitle>
+        <AlertDescription>
+          Your data is encrypted on your device. Helvety cannot decrypt or
+          restore it. If you lose your unlock passkey and offline recovery key,
+          your data is gone permanently.
+        </AlertDescription>
       </Alert>
 
       {error ? (
         <Alert variant="destructive">
           <AlertCircleIcon />
-          <AlertTitle>{t("actionFailed")}</AlertTitle>
+          <AlertTitle>Action failed</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
       {message ? (
         <Alert>
-          <AlertTitle>{t("status")}</AlertTitle>
+          <AlertTitle>Status</AlertTitle>
           <AlertDescription>{message}</AlertDescription>
         </Alert>
       ) : null}
@@ -164,7 +166,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
           onPendingChange={setPending}
           onError={setError}
           onAccepted={() => {
-            setMessage(t("policyAcceptanceRecorded"));
+            setMessage("Policy acceptance recorded.");
             setStep(cryptoReadyStep);
           }}
         />
@@ -172,13 +174,15 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
 
       {recovery ? (
         <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
-          <p className="text-sm font-medium">{t("recoveryMaterialTitle")}</p>
+          <p className="text-sm font-medium">Recovery material (shown once)</p>
           <p className="text-sm text-muted-foreground">
-            {t("recoveryMaterialIntro")}
+            Store both the recovery key and the recovery wrap offline. Neither is
+            logged or sent to Helvety. Losing these with your unlock passkey means
+            permanent data loss.
           </p>
           <div className="flex flex-col gap-1.5">
             <p className="text-xs font-medium text-muted-foreground">
-              {t("recoveryKeyLabel")}
+              Recovery key
             </p>
             <div className="relative rounded-md bg-muted">
               <code className="block break-all p-2 pr-10 text-xs">
@@ -190,12 +194,12 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
                 size="icon-xs"
                 className="absolute top-1.5 right-1.5"
                 disabled={pending}
-                aria-label={t("copyRecoveryKey")}
+                aria-label="Copy recovery key"
                 onClick={() => {
                   void navigator.clipboard.writeText(
                     recovery.recoveryKeyExported,
                   );
-                  setMessage(t("recoveryKeyCopied"));
+                  setMessage("Recovery key copied to clipboard (device only).");
                 }}
               >
                 <CopyIcon />
@@ -204,7 +208,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
           </div>
           <div className="flex flex-col gap-1.5">
             <p className="text-xs font-medium text-muted-foreground">
-              {t("recoveryWrapLabel")}
+              Recovery wrap
             </p>
             <div className="relative rounded-md bg-muted">
               <code className="block max-h-32 overflow-auto break-all p-2 pr-10 text-xs">
@@ -216,12 +220,12 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
                 size="icon-xs"
                 className="absolute top-1.5 right-1.5"
                 disabled={pending}
-                aria-label={t("copyRecoveryWrap")}
+                aria-label="Copy recovery wrap"
                 onClick={() => {
                   void navigator.clipboard.writeText(
                     JSON.stringify(recovery.recoveryWrappedUserKey),
                   );
-                  setMessage(t("recoveryWrapCopied"));
+                  setMessage("Recovery wrap copied to clipboard (device only).");
                 }}
               >
                 <CopyIcon />
@@ -235,10 +239,12 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             disabled={pending}
             onClick={() => {
               downloadRecoveryFile(recovery);
-              setMessage(t("recoveryDownloaded"));
+              setMessage(
+                "Downloaded helvety-recovery.json (device only, never upload).",
+              );
             }}
           >
-            {t("downloadRecoveryFile")}
+            Download helvety-recovery.json
           </Button>
           <Button
             type="button"
@@ -246,7 +252,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             disabled={pending}
             onClick={clearRecovery}
           >
-            {t("recoverySavedContinue")}
+            I saved both offline, continue
           </Button>
         </div>
       ) : null}
@@ -254,7 +260,9 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       {!recovery ? (
         <div className="flex flex-col gap-2">
           {step === "loading" ? (
-            <p className="text-sm text-muted-foreground">{t("checking")}</p>
+            <p className="text-sm text-muted-foreground">
+              Checking policies and encryption…
+            </p>
           ) : null}
 
           {step === "needs_setup" ? (
@@ -265,7 +273,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
               onClick={() => void onSetup()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              {t("setupWithPasskey")}
+              Set up encryption with passkey
             </Button>
           ) : null}
 
@@ -277,7 +285,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
               onClick={() => void onUnlock()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              {t("unlockWithPasskey")}
+              Unlock with passkey
             </Button>
           ) : null}
 
@@ -289,7 +297,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
               disabled={pending}
               onClick={() => void signOut()}
             >
-              {tShell("signOut")}
+              Sign out
             </Button>
           ) : null}
         </div>

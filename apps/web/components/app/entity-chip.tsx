@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, useRouter } from "@/i18n/navigation";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 

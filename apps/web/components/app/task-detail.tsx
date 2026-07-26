@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import {
   useEffect,
   useMemo,
@@ -52,7 +53,6 @@ import {
   saveTask,
   type DecryptedTask,
 } from "@/lib/client-crypto/tasks";
-import { useRouter } from "@/i18n/navigation";
 
 type TaskDetailProps = {
   workspaceId: string;

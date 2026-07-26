@@ -1,6 +1,7 @@
 "use client";
 
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   LogOutIcon,
   MailIcon,
@@ -8,7 +9,6 @@ import {
   UserRoundIcon,
   type LucideIcon,
 } from "lucide-react";
-import { useTranslations } from "next-intl";
 
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { createClient } from "@/lib/supabase/client";
@@ -45,10 +45,7 @@ function FooterLink({
 }
 
 export function AccountFooter({ email }: AccountFooterProps) {
-  const t = useTranslations("shell");
-  const tCommon = useTranslations("common");
   const pathname = usePathname();
-  const router = useRouter();
   const { lock } = useCryptoSession();
   const onAccount = pathname.startsWith("/app/account");
   const onInvitations = pathname.startsWith("/app/invitations");
@@ -57,7 +54,7 @@ export function AccountFooter({ email }: AccountFooterProps) {
     lock();
     const supabase = createClient();
     await supabase.auth.signOut();
-    router.replace("/");
+    window.location.href = "/";
   }
 
   return (
@@ -70,17 +67,17 @@ export function AccountFooter({ email }: AccountFooterProps) {
         active={onAccount}
         icon={UserRoundIcon}
       >
-        {t("account")}
+        Account
       </FooterLink>
       <FooterLink
         href="/app/invitations"
         active={onInvitations}
         icon={MailIcon}
       >
-        {t("invitations")}
+        Invitations
       </FooterLink>
       <FooterLink href="/legal" active={false} icon={ScaleIcon}>
-        {tCommon("legal")}
+        Legal
       </FooterLink>
       <button
         type="button"
@@ -88,7 +85,7 @@ export function AccountFooter({ email }: AccountFooterProps) {
         className="flex items-center gap-2 rounded-md px-2 py-1 text-left text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
       >
         <LogOutIcon className="size-4 shrink-0 opacity-60" />
-        {t("signOut")}
+        Sign out
       </button>
     </div>
   );

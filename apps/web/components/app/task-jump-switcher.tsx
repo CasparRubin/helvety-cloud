@@ -1,5 +1,6 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronsUpDownIcon } from "lucide-react";
 
@@ -18,7 +19,6 @@ import {
 } from "@/components/ui/popover";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { loadDecryptedTasks, type DecryptedTask } from "@/lib/client-crypto/tasks";
-import { useRouter } from "@/i18n/navigation";
 
 type TaskJumpSwitcherProps = {
   workspaceId: string;

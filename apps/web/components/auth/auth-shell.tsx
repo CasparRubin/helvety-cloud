@@ -1,10 +1,6 @@
-"use client";
-
 import Image from "next/image";
-import { useTranslations } from "next-intl";
 import type { ReactNode } from "react";
 
-import { HeaderControls } from "@/components/app/header-controls";
 import {
   Card,
   CardContent,
@@ -26,13 +22,8 @@ export function AuthShell({
   children,
   footer,
 }: AuthShellProps) {
-  const t = useTranslations("common");
-
   return (
     <main className="grain-bg relative flex min-h-svh flex-col items-center justify-center bg-background p-6">
-      <div className="absolute top-4 right-4 z-20">
-        <HeaderControls />
-      </div>
       <Card className="relative z-10 w-full max-w-md">
         <CardHeader className="justify-items-center border-b border-border/50 text-center">
           <Image
@@ -43,12 +34,12 @@ export function AuthShell({
             className="size-12 rounded-md"
             priority
           />
-          <CardTitle>{t("appName")}</CardTitle>
+          <CardTitle>Helvety Cloud</CardTitle>
           <CardDescription className="flex flex-col gap-0.5">
-            <span>{t("tagline")}</span>
+            <span>End-to-end encrypted workspace</span>
             <span className="text-xs text-muted-foreground/70">
-              {t("madeIn")}{" "}
-              <span className="text-[#DA291C]">{t("switzerland")}</span>
+              Engineered, designed & made in{" "}
+              <span className="text-[#DA291C]">Switzerland</span>
             </span>
           </CardDescription>
         </CardHeader>
@@ -66,14 +57,14 @@ export function AuthShell({
             <p className="text-center text-xs text-muted-foreground">{footer}</p>
           ) : null}
           <p className="text-center text-xs text-muted-foreground/70">
-            {t("developedBy")}{" "}
+            Developed by{" "}
             <a
               href="https://helvety.com"
               target="_blank"
               rel="noopener noreferrer"
               className="underline underline-offset-4"
             >
-              {t("brandHelvety")}
+              Helvety
             </a>
           </p>
         </CardContent>

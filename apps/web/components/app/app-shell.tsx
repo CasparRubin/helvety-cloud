@@ -1,8 +1,8 @@
 "use client";
 
-import { Link, usePathname, useRouter } from "@/i18n/navigation";
+import Link from "next/link";
 import Image from "next/image";
-import { useTranslations } from "next-intl";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import {
   ContactIcon,
@@ -17,7 +17,7 @@ import {
   PageActionsSlot,
 } from "@/components/app/page-actions";
 import { TaskJumpSwitcher } from "@/components/app/task-jump-switcher";
-import { HeaderControls } from "@/components/app/header-controls";
+import { ThemeToggle } from "@/components/app/theme-toggle";
 import { WorkspaceJumpSwitcher } from "@/components/app/workspace-jump-switcher";
 import {
   NavBackButton,
@@ -43,19 +43,16 @@ import {
 } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
 
-function workspacePlanLabel(
-  billing: {
-    plan: "free" | "pro";
-    billingSource: "stripe" | "comp";
-    unmetered: boolean;
-  },
-  t: (key: "planFree" | "planPro" | "planProViaCode") => string,
-): string {
-  if (billing.plan === "free") return t("planFree");
+function workspacePlanLabel(billing: {
+  plan: "free" | "pro";
+  billingSource: "stripe" | "comp";
+  unmetered: boolean;
+}): string {
+  if (billing.plan === "free") return "Free";
   if (billing.billingSource === "comp" || billing.unmetered) {
-    return t("planProViaCode");
+    return "Pro via 100% code";
   }
-  return t("planPro");
+  return "Pro";
 }
 
 type AppShellProps = {
@@ -66,10 +63,7 @@ type AppShellProps = {
 
 type SectionId = "projects" | "notes" | "contacts";
 
-function workspaceSections(
-  workspaceBase: string,
-  t: (key: "projects" | "notes" | "contacts") => string,
-): {
+function workspaceSections(workspaceBase: string): {
   id: SectionId;
   href: string;
   label: string;
@@ -79,19 +73,19 @@ function workspaceSections(
     {
       id: "projects",
       href: workspaceBase,
-      label: t("projects"),
+      label: "Projects",
       icon: FolderKanbanIcon,
     },
     {
       id: "notes",
       href: `${workspaceBase}/notes`,
-      label: t("notes"),
+      label: "Notes",
       icon: StickyNoteIcon,
     },
     {
       id: "contacts",
       href: `${workspaceBase}/contacts`,
-      label: t("contacts"),
+      label: "Contacts",
       icon: ContactIcon,
     },
   ];
@@ -136,8 +130,6 @@ function SectionLink({
 }
 
 function AppShellInner({ email, userId, children }: AppShellProps) {
-  const t = useTranslations("shell");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const pathname = usePathname();
   const { userKeys, recovery, workspaces } = useCryptoSession();
@@ -166,12 +158,12 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
     parentHref,
   });
   const activeSection = location?.section ?? null;
-  const sections = workspaceBase ? workspaceSections(workspaceBase, t) : [];
-  let nonWorkspaceSidebarLabel = t("selectWorkspace");
+  const sections = workspaceBase ? workspaceSections(workspaceBase) : [];
+  let nonWorkspaceSidebarLabel = "Select a workspace";
   if (pathname.startsWith("/app/account")) {
-    nonWorkspaceSidebarLabel = t("account");
+    nonWorkspaceSidebarLabel = "Account";
   } else if (pathname.startsWith("/app/invitations")) {
-    nonWorkspaceSidebarLabel = t("invitations");
+    nonWorkspaceSidebarLabel = "Invitations";
   }
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
@@ -195,14 +187,14 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
         if (cancelled) return;
         setPlanByWorkspace({
           id: activeWorkspaceId,
-          label: workspacePlanLabel(billing, t),
+          label: workspacePlanLabel(billing),
         });
       })
       .catch(() => {});
     return () => {
       cancelled = true;
     };
-  }, [activeWorkspaceId, t]);
+  }, [activeWorkspaceId]);
 
   if (!userKeys || recovery) {
     return <UnlockGate email={email} userId={userId} />;
@@ -211,7 +203,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   if (shouldRedirectToWorkspace) {
     return (
       <main className="flex min-h-svh items-center justify-center p-6 text-sm text-muted-foreground">
-        {t("openingWorkspace")}
+        Opening workspace…
       </main>
     );
   }
@@ -223,20 +215,20 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
             <Link
               href="/app"
-              title={tCommon("appName")}
+              title="Helvety Cloud"
               className="size-6 shrink-0"
             >
               <Image
                 src="/icon.svg"
                 width={24}
                 height={24}
-                alt={tCommon("appName")}
+                alt="Helvety Cloud"
                 className="size-6 rounded-md"
                 priority
               />
             </Link>
             <nav
-              aria-label={t("breadcrumb")}
+              aria-label="Breadcrumb"
               className="flex min-w-0 items-center gap-1.5 overflow-hidden"
             >
               <WorkspaceSwitcher
@@ -264,7 +256,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
               ) : null}
             </nav>
             <div className="ml-auto shrink-0">
-              <HeaderControls />
+              <ThemeToggle />
             </div>
           </header>
         </div>
@@ -276,7 +268,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                   {activeWorkspaceName ? (
                     <div className="mb-1.5 flex flex-col gap-0.5">
                       <p className="px-2 text-xs font-medium text-muted-foreground">
-                        {t("workspace")}
+                        Workspace
                       </p>
                       <Link
                         href={workspaceBase}
@@ -321,7 +313,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             <div className="sticky top-12 z-30 border-b bg-muted/40">
               {workspaceBase ? (
                 <nav
-                  aria-label={t("workspaceSections")}
+                  aria-label="Workspace sections"
                   className="flex items-center gap-1 overflow-x-auto border-b px-2 py-1.5 md:hidden"
                 >
                   {sections.map((section) => (
@@ -338,7 +330,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 </nav>
               ) : null}
               <div
-                aria-label={t("pageActions")}
+                aria-label="Page actions"
                 className="flex h-10 shrink-0 items-center gap-2 px-3"
               >
                 <ButtonGroup>

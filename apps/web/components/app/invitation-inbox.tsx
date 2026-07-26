@@ -1,7 +1,7 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import { useTranslations } from "next-intl";
 import type { WorkspaceInvitation } from "@helvety-cloud/api-contract";
 
 import { Button } from "@/components/ui/button";
@@ -18,30 +18,19 @@ import {
   storeLastWorkspaceId,
   unwrapWorkspaceKey,
 } from "@/lib/client-crypto/workspaces";
-import { useRouter } from "@/i18n/navigation";
 
-function statusCopy(
-  status: WorkspaceInvitation["status"],
-  t: (
-    key:
-      | "statusWaitingForRecipient"
-      | "statusWaitingForOwnerSeal"
-      | "statusReadyToAccept"
-      | "statusAccepted"
-      | "statusCancelled",
-  ) => string,
-): string {
+function statusCopy(status: WorkspaceInvitation["status"]): string {
   switch (status) {
     case "waiting_for_recipient":
-      return t("statusWaitingForRecipient");
+      return "Claim this invitation to share your public key with the owner.";
     case "waiting_for_owner_seal":
-      return t("statusWaitingForOwnerSeal");
+      return "Waiting for the owner to complete key handoff on their unlocked device.";
     case "ready_to_accept":
-      return t("statusReadyToAccept");
+      return "Key handoff is complete. Accept to join the workspace.";
     case "accepted":
-      return t("statusAccepted");
+      return "Accepted.";
     case "cancelled":
-      return t("statusCancelled");
+      return "Cancelled.";
     default: {
       const _exhaustive: never = status;
       return _exhaustive;
@@ -89,10 +78,6 @@ type InvitationInboxProps = {
 };
 
 export function InvitationInbox({ userId }: InvitationInboxProps) {
-  const t = useTranslations("invitations");
-  const tSettings = useTranslations("settings");
-  const tShell = useTranslations("shell");
-  const tCommon = useTranslations("common");
   const router = useRouter();
   const { userKeys, refreshWorkspaces } = useCryptoSession();
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
@@ -122,11 +107,11 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
       setInvitations(loaded.invitations);
       setWorkspaceNames(loaded.workspaceNames);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("loadFailed"));
+      setError(err instanceof Error ? err.message : "Failed to load invitations");
     } finally {
       setLoading(false);
     }
-  }, [userKeys, loadInvitations, t]);
+  }, [userKeys, loadInvitations]);
 
   useEffect(() => {
     if (!userKeys) return;
@@ -140,7 +125,9 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
         setError(null);
       } catch (err) {
         if (cancelled) return;
-        setError(err instanceof Error ? err.message : t("loadFailed"));
+        setError(
+          err instanceof Error ? err.message : "Failed to load invitations",
+        );
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -148,7 +135,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, loadInvitations, t]);
+  }, [userKeys, loadInvitations]);
 
   async function onClaim(invitation: WorkspaceInvitation) {
     setPendingId(invitation.id);
@@ -157,7 +144,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
       await claimInvitation(invitation.id);
       await refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("claimFailed"));
+      setError(err instanceof Error ? err.message : "Claim failed");
     } finally {
       setPendingId(null);
     }
@@ -172,35 +159,28 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
       storeLastWorkspaceId(userId, accepted.workspaceId);
       router.push(`/app/w/${accepted.workspaceId}`);
     } catch (err) {
-      setError(err instanceof Error ? err.message : t("acceptFailed"));
+      setError(err instanceof Error ? err.message : "Accept failed");
       setPendingId(null);
-    }
-  }
-
-  function roleLabel(role: string): string {
-    switch (role) {
-      case "owner":
-        return tSettings("owner");
-      case "admin":
-        return tSettings("admin");
-      case "member":
-        return tSettings("member");
-      default:
-        return role;
     }
   }
 
   if (!userKeys) {
     return (
-      <p className="text-sm text-muted-foreground">{t("unlockRequired")}</p>
+      <p className="text-sm text-muted-foreground">
+        Unlock with your passkey to claim and accept invitations.
+      </p>
     );
   }
 
   return (
     <div className="flex flex-col gap-4 p-4 sm:p-6">
       <div>
-        <h1 className="text-lg font-semibold tracking-tight">{t("title")}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">{t("intro")}</p>
+        <h1 className="text-lg font-semibold tracking-tight">Invitations</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          Invitations addressed to your signed-in email. Helvety cannot decrypt
+          workspace content; the owner seals the workspace key to your public
+          key on their device.
+        </p>
       </div>
 
       {error ? (
@@ -211,10 +191,10 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
 
       {loading ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Spinner /> {tCommon("loading")}
+          <Spinner /> Loading…
         </p>
       ) : invitations.length === 0 ? (
-        <p className="text-sm text-muted-foreground">{t("empty")}</p>
+        <p className="text-sm text-muted-foreground">No pending invitations.</p>
       ) : (
         <ul className="flex max-w-xl flex-col gap-3">
           {invitations.map((invitation) => {
@@ -226,13 +206,13 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
               >
                 <div>
                   <p className="text-sm font-medium">
-                    {workspaceNames.get(invitation.id) ?? tShell("workspace")}
+                    {workspaceNames.get(invitation.id) ?? "Workspace"}
                   </p>
                   <p className="text-xs text-muted-foreground">
-                    {t("roleLabel", { role: roleLabel(invitation.role) })}
+                    Role: {invitation.role}
                   </p>
                   <p className="mt-1 text-xs text-muted-foreground">
-                    {statusCopy(invitation.status, t)}
+                    {statusCopy(invitation.status)}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -244,7 +224,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
                       onClick={() => void onClaim(invitation)}
                     >
                       {busy ? <Spinner data-icon="inline-start" /> : null}
-                      {t("claim")}
+                      Claim
                     </Button>
                   ) : null}
                   {invitation.status === "ready_to_accept" ? (
@@ -255,7 +235,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
                       onClick={() => void onAccept(invitation)}
                     >
                       {busy ? <Spinner data-icon="inline-start" /> : null}
-                      {t("accept")}
+                      Accept
                     </Button>
                   ) : null}
                   {invitation.status === "waiting_for_owner_seal" ? (
@@ -266,7 +246,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
                       disabled={busy}
                       onClick={() => void refresh()}
                     >
-                      {t("refresh")}
+                      Refresh
                     </Button>
                   ) : null}
                 </div>

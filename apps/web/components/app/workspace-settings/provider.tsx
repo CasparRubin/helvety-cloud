@@ -6,6 +6,7 @@ import {
   useContext,
   useState,
 } from "react";
+import { useRouter } from "next/navigation";
 import type {
   GetWorkspaceBillingResponse,
   WorkspaceInvitation,
@@ -30,7 +31,6 @@ import {
   handoffInvitationSeal,
   invitationMailto,
 } from "@/lib/client-crypto/workspaces";
-import { useRouter } from "@/i18n/navigation";
 
 const BLOCKING_SUB_STATUSES = new Set([
   "active",
@@ -433,3 +433,23 @@ export function useWorkspaceSettings(): WorkspaceSettingsContextValue {
   return ctx;
 }
 
+export function invitationStatusLabel(
+  status: WorkspaceInvitation["status"],
+): string {
+  switch (status) {
+    case "waiting_for_recipient":
+      return "Waiting for recipient";
+    case "waiting_for_owner_seal":
+      return "Needs key handoff";
+    case "ready_to_accept":
+      return "Ready to accept";
+    case "accepted":
+      return "Accepted";
+    case "cancelled":
+      return "Cancelled";
+    default: {
+      const _exhaustive: never = status;
+      return _exhaustive;
+    }
+  }
+}
