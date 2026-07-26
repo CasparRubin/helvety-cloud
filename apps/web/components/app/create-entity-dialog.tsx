@@ -78,7 +78,6 @@ export function CreateEntityDialog({
     <>
       <Button
         type="button"
-        variant="success"
         disabled={disabled || pending}
         onClick={() => handleOpenChange(true)}
       >
@@ -126,7 +125,6 @@ export function CreateEntityDialog({
             </Button>
             <Button
               type="button"
-              variant="success"
               disabled={pending || !value.trim()}
               onClick={() => void handleCreate()}
             >

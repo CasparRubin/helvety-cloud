@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
@@ -39,7 +34,8 @@ import {
 } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
 
-export type MilestoneFilter = "all" | string;
+/** Either `"all"` or a milestone id. */
+export type MilestoneFilter = string;
 
 export function ProjectTitleEditor({
   workspaceId,
@@ -224,52 +220,45 @@ export function ProjectMilestonesPanel({
 
   return (
     <div className="flex h-full min-h-0 flex-col gap-3">
-      <div className="flex flex-col gap-2">
-        <h2 className="text-xs font-medium text-muted-foreground">
-          Milestones
-        </h2>
-        <CreateEntityDialog
-          triggerLabel="Create milestone"
-          dialogTitle="Create milestone"
-          fieldLabel="Title"
-          fieldPlaceholder="New milestone"
-          fieldMaxLength={200}
-          confirmLabel="Add"
-          disabled={busy}
-          onCreate={onCreateMilestone}
-          onOpenChange={(open) => {
-            if (open) {
-              setNewDate("");
-              setNewDescription("");
-            }
-          }}
-        >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="milestone-target-date">Target date (optional)</Label>
-            <Input
-              id="milestone-target-date"
-              type="date"
-              value={newDate}
-              onChange={(e) => setNewDate(e.target.value)}
-              disabled={busy}
-              aria-label="Target date"
-            />
-          </div>
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="milestone-description">
-              Description (optional)
-            </Label>
-            <Textarea
-              id="milestone-description"
-              value={newDescription}
-              onChange={(e) => setNewDescription(e.target.value)}
-              placeholder="Add a description…"
-              disabled={busy}
-              rows={3}
-            />
-          </div>
-        </CreateEntityDialog>
-      </div>
+      <CreateEntityDialog
+        triggerLabel="Create milestone"
+        dialogTitle="Create milestone"
+        fieldLabel="Title"
+        fieldPlaceholder="New milestone"
+        fieldMaxLength={200}
+        confirmLabel="Add"
+        disabled={busy}
+        onCreate={onCreateMilestone}
+        onOpenChange={(open) => {
+          if (open) {
+            setNewDate("");
+            setNewDescription("");
+          }
+        }}
+      >
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="milestone-target-date">Target date (optional)</Label>
+          <Input
+            id="milestone-target-date"
+            type="date"
+            value={newDate}
+            onChange={(e) => setNewDate(e.target.value)}
+            disabled={busy}
+            aria-label="Target date"
+          />
+        </div>
+        <div className="flex flex-col gap-2">
+          <Label htmlFor="milestone-description">Description (optional)</Label>
+          <Textarea
+            id="milestone-description"
+            value={newDescription}
+            onChange={(e) => setNewDescription(e.target.value)}
+            placeholder="Add a description…"
+            disabled={busy}
+            rows={3}
+          />
+        </div>
+      </CreateEntityDialog>
 
       {milestones.length === 0 ? (
         <p className="text-sm text-muted-foreground">No milestones yet.</p>
