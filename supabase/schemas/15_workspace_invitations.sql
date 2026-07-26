@@ -117,7 +117,7 @@ create policy workspace_invitations_insert_admin
     and cancelled_at is null
   );
 
--- No direct UPDATE/DELETE from clients — state transitions via RPCs below.
+-- No direct UPDATE/DELETE from clients. State transitions via RPCs below.
 revoke all on table public.workspace_invitations from anon, public;
 grant select, insert on table public.workspace_invitations to authenticated;
 revoke update, delete, truncate, references, trigger

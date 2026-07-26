@@ -1,4 +1,4 @@
--- SECURITY DEFINER membership check — bypasses RLS on workspace_members so
+-- SECURITY DEFINER membership check. Bypasses RLS on workspace_members so
 -- policies on other tables (and workspace_members INSERT) do not recurse.
 -- Own-row SELECT on workspace_members remains; do not use this helper there.
 

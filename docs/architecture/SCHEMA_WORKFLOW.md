@@ -7,8 +7,8 @@
 ```text
 supabase/
   config.toml
-  schemas/          # declarative desired state — edit these
-  migrations/       # generated incremental SQL — commit these
+  schemas/          # declarative desired state: edit these
+  migrations/       # generated incremental SQL: commit these
 ```
 
 ## Flow
@@ -19,7 +19,7 @@ supabase/
    - `supabase db push`, and/or  
    - Cursor **Supabase MCP** `apply_migration` with the same SQL.  
 4. MCP **`generate_typescript_types`** → commit under `packages/db`.  
-5. MCP **`get_advisors`** (security/performance) — fix critical RLS issues.  
+5. MCP **`get_advisors`** (security/performance): fix critical RLS issues.  
 6. Verify with MCP `list_tables` / `list_migrations`.
 
 Optional: GitHub Integration “Deploy to production” on `main` still requires migration files in the repo.

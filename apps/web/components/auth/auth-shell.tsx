@@ -35,7 +35,10 @@ export function AuthShell({
             priority
           />
           <CardTitle>Helvety Cloud</CardTitle>
-          <CardDescription>End-to-end encrypted workspace</CardDescription>
+          <CardDescription className="flex flex-col gap-0.5">
+            <span>End-to-end encrypted workspace</span>
+            <span>Engineered, designed & made in Switzerland</span>
+          </CardDescription>
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           <div className="flex flex-col gap-1.5 text-center">

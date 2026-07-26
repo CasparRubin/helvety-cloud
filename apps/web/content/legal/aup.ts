@@ -22,7 +22,7 @@ export const aupDoc: LegalDocument = {
     {
       heading: "Enforcement without reading encrypted content",
       paragraphs: [
-        "Because your data is end-to-end encrypted, Helvety cannot moderate plaintext. Enforcement options are limited to account-level and ciphertext-level measures (for example suspending accounts, deleting encrypted blobs or workspaces, or blocking access) based on signals Helvety can see — such as abuse of APIs, illegal account activity, or lawful requests relating to metadata Helvety holds.",
+        "Because your data is end-to-end encrypted, Helvety cannot moderate plaintext. Enforcement options are limited to account-level and ciphertext-level measures (for example suspending accounts, deleting encrypted blobs or workspaces, or blocking access) based on signals Helvety can see, such as abuse of APIs, illegal account activity, or lawful requests relating to metadata Helvety holds.",
         "Helvety does not claim the ability to inspect or “clean” encrypted content.",
       ],
     },

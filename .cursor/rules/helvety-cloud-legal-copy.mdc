@@ -1,5 +1,5 @@
 ---
-description: Helvety Cloud legal/marketing copy — no false E2EE or recovery claims
+description: Helvety Cloud legal/marketing copy: no false E2EE or recovery claims
 globs: "**/app/**/*.tsx,**/app/**/*.ts,docs/**/*.md,**/content/legal/**"
 alwaysApply: false
 ---
@@ -12,7 +12,7 @@ Follow `docs/architecture/LEGAL_REQUIREMENTS.md`.
 - Always state that lost passkeys/recovery keys mean permanent data loss when discussing unlock.
 - Do not invent certifications, compliance badges, or “military-grade” fluff.
 - Distinguish account data (email, billing metadata) from ciphertext.
-- Product legal pack lives under `apps/web/content/legal/` — keep in sync with `CURRENT_POLICY_VERSIONS` (bump versions on material changes).
+- Product legal pack lives under `apps/web/content/legal/`. Keep in sync with `CURRENT_POLICY_VERSIONS` (bump versions on material changes).
 - Do not reintroduce “NEED SWISS COUNSEL REVIEW” / draft banners on user-facing legal pages (P-legal2 production pack).
 - Encryption setup requires acceptance gates for ToS, Privacy, AUP, E2EE ack with version logging.
 - Optional Swiss counsel review remains a business risk decision; do not block product copy on it unless the user asks.

@@ -1,6 +1,6 @@
 # Auth (P2)
 
-Passwordless Supabase Auth for **helvety.cloud**. Session ≠ encrypted unlock (WebAuthn **PRF** — see P5 wiring in `apps/web/lib/client-crypto/`).
+Passwordless Supabase Auth for **helvety.cloud**. Session ≠ encrypted unlock (WebAuthn **PRF**; see P5 wiring in `apps/web/lib/client-crypto/`).
 
 ## Policy
 
@@ -17,7 +17,7 @@ UI: shadcn/ui **Base UI** (`style: base-nova` in `apps/web/components.json`). Do
 
 Session refresh runs in Next.js [`apps/web/proxy.ts`](../../apps/web/proxy.ts) (Next.js 16 file convention; not the deprecated `middleware` name), which calls `updateSession` in `apps/web/lib/supabase/proxy.ts`. Browser / RSC clients: `apps/web/lib/supabase/{client,server}.ts`.
 
-Do **not** enable `experimental: { passkey: true }` — account auth is email OTP only.
+Do **not** enable `experimental: { passkey: true }`. Account auth is email OTP only.
 
 ## Email OTP template
 
@@ -30,16 +30,16 @@ In the hosted dashboard (**Authentication → Email Templates → Magic Link**),
 
 ## Hosted dashboard checklist (`qnoeiurmyyyuawkcifmw`)
 
-1. **Passwords off** — Authentication → Providers → Email: disable password sign-in; keep email/OTP enabled.
-2. **OTP template** — Magic Link template includes `{{ .Token }}` (above).
-3. **Passkeys off** — Authentication → Passkeys: disable (sign-in is OTP only).
-4. **URL config** — Site URL for the environment (`http://localhost:3000` while developing, `https://helvety.cloud` in production); redirect allowlist includes the origins you use.
+1. **Passwords off**: Authentication → Providers → Email: disable password sign-in; keep email/OTP enabled.
+2. **OTP template**: Magic Link template includes `{{ .Token }}` (above).
+3. **Passkeys off**: Authentication → Passkeys: disable (sign-in is OTP only).
+4. **URL config**: Site URL for the environment (`http://localhost:3000` while developing, `https://helvety.cloud` in production); redirect allowlist includes the origins you use.
 
 ## Encryption unlock RP ID (client-only)
 
 Encryption unlock uses a **dedicated WebAuthn PRF** credential created in the browser (`apps/web/lib/client-crypto/prf.ts`). It is **not** configured in Supabase Auth.
 
-The RP ID is derived from `window.location.hostname` (`localhost` for local, `helvety.cloud` in production). Credentials enrolled under `localhost` do not work on `helvety.cloud` and vice versa — users must set up / re-enroll the unlock passkey on the production origin.
+The RP ID is derived from `window.location.hostname` (`localhost` for local, `helvety.cloud` in production). Credentials enrolled under `localhost` do not work on `helvety.cloud` and vice versa. Users must set up / re-enroll the unlock passkey on the production origin.
 
 ## App routes
 
@@ -50,4 +50,4 @@ The RP ID is derived from `window.location.hostname` (`localhost` for local, `he
 
 ## Session vs encryption unlock
 
-Auth session cookies prove identity to Supabase / `/api/v1`. They do **not** decrypt content. Unlock is a **dedicated WebAuthn PRF** credential → HKDF → unwrap `user_crypto` (see [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md)). Recovery export is one-shot offline — never logged or POSTed.
+Auth session cookies prove identity to Supabase / `/api/v1`. They do **not** decrypt content. Unlock is a **dedicated WebAuthn PRF** credential → HKDF → unwrap `user_crypto` (see [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md)). Recovery export is one-shot offline, never logged or POSTed.

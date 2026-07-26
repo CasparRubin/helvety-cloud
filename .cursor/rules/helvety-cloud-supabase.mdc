@@ -1,5 +1,5 @@
 ---
-description: Helvety Cloud Supabase — schema-as-code, MCP, correct project ref
+description: Helvety Cloud Supabase: schema-as-code, MCP, correct project ref
 globs: supabase/**/*
 alwaysApply: false
 ---

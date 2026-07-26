@@ -104,7 +104,7 @@ export function normalizeCompletionPercent(value: unknown): number | null {
 
 /**
  * Resolve a stage's contribution to weighted completion.
- * Cancelled stages should be excluded from scope by callers — this still returns 0.
+ * Cancelled stages should be excluded from scope by callers. This still returns 0.
  */
 export function resolveCompletionPercent(
   stage:

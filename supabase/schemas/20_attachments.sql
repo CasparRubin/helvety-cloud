@@ -1,6 +1,6 @@
 -- attachments: workspace-scoped E2EE file metadata (P11).
 -- Ciphertext bytes live in private Storage bucket encrypted-attachments.
--- Server sees sizes/paths/status only — never filenames, MIME, or plaintext bytes.
+-- Server sees sizes/paths/status only, never filenames, MIME, or plaintext bytes.
 
 create table public.attachments (
   id uuid primary key,

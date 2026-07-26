@@ -20,7 +20,7 @@ description: >-
 2. Generate migration (`supabase db diff`).  
 3. Apply to **`qnoeiurmyyyuawkcifmw` only** (CLI and/or MCP `apply_migration`).  
 4. MCP `generate_typescript_types` → commit `packages/db`.  
-5. MCP `get_advisors` — fix critical RLS findings.  
+5. MCP `get_advisors`: fix critical RLS findings.  
 Details: `docs/architecture/SCHEMA_WORKFLOW.md`.
 
 ## Changing the API

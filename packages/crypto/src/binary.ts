@@ -1,6 +1,6 @@
 /**
  * Binary AES-256-GCM for large Storage objects (P11 attachments).
- * Does not base64 the ciphertext — pack/unpack for opaque Storage blobs.
+ * Does not base64 the ciphertext. Pack/unpack for opaque Storage blobs.
  */
 import {
   asBufferSource,
@@ -91,7 +91,7 @@ export async function decryptBinary(
 
 /**
  * Pack for Storage: [version:1][nonce:12][ciphertext…].
- * Helvety stores this opaque blob only — never plaintext bytes.
+ * Helvety stores this opaque blob only, never plaintext bytes.
  */
 export function packBinaryCiphertext(value: BinaryCiphertext): Uint8Array {
   if (value.nonce.byteLength !== NONCE_BYTES) {

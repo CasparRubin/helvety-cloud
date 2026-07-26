@@ -5,10 +5,10 @@
 ## Why
 
 - E2EE ⇒ Helvety **cannot** moderate or recover encrypted plaintext. Users must accept responsibility for content and keys.  
-- Helvety is a Swiss **Einzelfirma** (Helvety by Rubin) — personal liability risk remains; counsel may later advise GmbH.  
+- Helvety is a Swiss **Einzelfirma** (Helvety by Rubin). Personal liability risk remains; counsel may later advise GmbH.  
 - Honesty: never mislead about access, recovery, or certifications.
 
-## Document pack (live — P-legal2)
+## Document pack (live, P-legal2)
 
 | Document | Location | Must cover |
 |----------|----------|------------|

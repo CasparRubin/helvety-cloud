@@ -12,7 +12,24 @@ export function SignedOutShell({
       subtitle={
         accountDeleted
           ? "Your Helvety account and solo-owned workspaces are gone. Helvety cannot recover your data."
-          : "Your projects, tasks, notes, and files are encrypted on your device before they reach us. Helvety can't read or recover them — there's no master key or password. You sign in with a one-time email code and unlock your data with a passkey."
+          : (
+              <>
+                Your projects, tasks, notes, and files are encrypted on your
+                device before they reach us. Helvety can&apos;t read or recover
+                them. There is no master key or password. You sign in with a
+                one-time email code and unlock your data with a passkey. Helvety
+                Cloud is 100% open source, so you can verify our claims on{" "}
+                <a
+                  href="https://github.com/CasparRubin/helvety-cloud"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline underline-offset-4"
+                >
+                  GitHub
+                </a>
+                .
+              </>
+            )
       }
       footer={
         <>

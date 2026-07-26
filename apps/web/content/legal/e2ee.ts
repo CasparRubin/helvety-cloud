@@ -28,7 +28,7 @@ export const e2eeDoc: LegalDocument = {
     {
       heading: "What Helvety may still hold",
       paragraphs: [
-        "Helvety may hold account identifiers (for example email), membership metadata, public keys, ciphertext blobs, sizes, timestamps, and (when enabled) billing counters. Compelled disclosure, if any, can only cover what Helvety actually stores — not plaintext Helvety cannot produce.",
+        "Helvety may hold account identifiers (for example email), membership metadata, public keys, ciphertext blobs, sizes, timestamps, and (when enabled) billing counters. Compelled disclosure, if any, can only cover what Helvety actually stores, not plaintext Helvety cannot produce.",
       ],
     },
     {

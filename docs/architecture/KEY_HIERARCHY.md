@@ -25,7 +25,7 @@ Optional: recovery_key (high entropy, shown once)
 |-----|-----------|
 | Content | AES-256-GCM, unique IV/nonce per encrypt |
 | KDF | HKDF from PRF material |
-| Key wrap (asymmetric) | X25519 (or RSA-OAEP if forced by platform constraints — prefer X25519) |
+| Key wrap (asymmetric) | X25519 (or RSA-OAEP if forced by platform constraints; prefer X25519) |
 | Binding | AAD includes `table:recordId:field` for **content, symmetric wraps, and X25519 seals** so ciphertext cannot be moved across rows/columns. `wrapKey`/`unwrapKey` and `sealToPublicKey`/`openSealedKey` bind AAD; `key_check` uses real `userId` (not `"self"`). |
 
 ## Envelope

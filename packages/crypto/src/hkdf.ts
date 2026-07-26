@@ -3,7 +3,7 @@ import { KEY_BYTES, UNLOCK_HKDF_INFO } from "./constants";
 
 /**
  * Derive unlock_key from WebAuthn PRF output via HKDF-SHA-256.
- * Auth session ≠ encryption unlock — only this client-side material unlocks.
+ * Auth session ≠ encryption unlock: only this client-side material unlocks.
  */
 export async function deriveUnlockKey(
   prfOutput: Uint8Array,

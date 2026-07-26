@@ -14,10 +14,10 @@ export const subprocessorsDoc: LegalDocument = {
     {
       heading: "Current processors",
       paragraphs: [
-        "Supabase — authentication and Postgres database. Project helvety-cloud is in eu-central-2 (Zurich). Processes account email/auth metadata and ciphertext/metadata as described in the Privacy Policy.",
-        "Vercel — application hosting. Processes HTTP traffic and hosting logs for the web app.",
-        "Email delivery via Supabase Auth — OTP and auth emails. Region depends on Supabase Auth email configuration.",
-        "Stripe — payment processing when billing is enabled. Processes billing identity and payment metadata only, never encrypted plaintext or raw encryption keys. Not charged until paid plans are turned on in the product.",
+        "Supabase: authentication and Postgres database. Project helvety-cloud is in eu-central-2 (Zurich). Processes account email/auth metadata and ciphertext/metadata as described in the Privacy Policy.",
+        "Vercel: application hosting. Processes HTTP traffic and hosting logs for the web app.",
+        "Email delivery via Supabase Auth: OTP and auth emails. Region depends on Supabase Auth email configuration.",
+        "Stripe: payment processing when billing is enabled. Processes billing identity and payment metadata only, never encrypted plaintext or raw encryption keys. Not charged until paid plans are turned on in the product.",
       ],
     },
     {

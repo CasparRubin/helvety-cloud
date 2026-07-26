@@ -1,5 +1,5 @@
 ---
-description: Helvety Cloud /api/v1 — ciphertext-opaque, workspace-scoped, multi-client
+description: Helvety Cloud /api/v1: ciphertext-opaque, workspace-scoped, multi-client
 globs: "**/api/**/*.ts,**/api/**/*.tsx,packages/api-contract/**"
 alwaysApply: false
 ---

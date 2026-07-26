@@ -11,7 +11,7 @@ Cursor / AI contributors: [`.cursor/rules/`](.cursor/rules/) encode the same non
 
 ```bash
 bun install
-bun run dev          # http://localhost:3000 — signed-out shell / sign-in
+bun run dev          # http://localhost:3000: signed-out shell / sign-in
 bun run test         # Vitest unit tests
 bun run lint
 bun run typecheck
@@ -29,4 +29,4 @@ Supabase project: `helvety-cloud` (`qnoeiurmyyyuawkcifmw`, Zurich). Do not use t
 
 Copyright (c) Helvety by Rubin / Caspar Rubin.
 
-This program is free software under the **GNU Affero General Public License v3.0 only** — see [LICENSE](LICENSE). Network use of a modified version requires offering corresponding source (AGPL §13).
+This program is free software under the **GNU Affero General Public License v3.0 only**. See [LICENSE](LICENSE). Network use of a modified version requires offering corresponding source (AGPL §13).

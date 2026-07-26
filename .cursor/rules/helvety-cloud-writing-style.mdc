@@ -1,0 +1,39 @@
+---
+description: Helvety Cloud writing style. No em dashes; prefer natural prose.
+alwaysApply: true
+---
+
+# Writing style
+
+## No em dashes
+
+Never use the em dash character (`—`, U+2014) in:
+
+- User-facing UI copy
+- Legal and marketing text
+- Source comments
+- Documentation, README, AGENTS.md
+- Cursor rules and skills
+
+## How to rewrite
+
+Do not replace an em dash with a hyphen by default. Rewrite the sentence with ordinary punctuation:
+
+- Use a period when the second part is its own clause.
+- Use a comma or semicolon for a related aside.
+- Use a colon when introducing an explanation or list.
+- Use parentheses for a short clarifying remark.
+
+### Examples
+
+```text
+Bad:  Helvety can't read or recover them — there's no master key.
+Good: Helvety can't read or recover them. There is no master key.
+
+Bad:  Privacy — Helvety cannot decrypt your data.
+Good: Privacy: Helvety cannot decrypt your data.
+```
+
+## Before finishing text changes
+
+Search active files for `—`. Ignore only immutable applied migrations under `supabase/migrations/`.

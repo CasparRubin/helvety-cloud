@@ -2,7 +2,7 @@
  * Helvety Cloud client crypto (P3).
  *
  * Zero knowledge: Helvety never holds unwrap capability for user content.
- * Server may later store public keys + wrapped blobs only — never PRF output,
+ * Server may later store public keys + wrapped blobs only, never PRF output,
  * recovery plaintext, or raw user/workspace keys.
  */
 

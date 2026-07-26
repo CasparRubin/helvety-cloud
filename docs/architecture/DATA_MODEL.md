@@ -11,11 +11,11 @@ Workspace  (members + per-member wrapped_keys)
   ├── projects → milestones → tasks
   ├── notes     (required workspace_id; optional project_id filing FK; TipTap body may embed EntityRef + fileAttachment)
   ├── contacts  (workspace address book; no global dedupe)
-  ├── entity_links  (constrained plaintext cross-entity links — intentional metadata)
+  ├── entity_links  (constrained plaintext cross-entity links; intentional metadata)
   └── attachments + attachment_links  (E2EE files in Storage; TipTap fileAttachment atoms)
 ```
 
-- **Personal workspace** — created/ensured on first encryption setup (P6a); home for “general” notes/contacts.  
+- **Personal workspace**: created/ensured on first encryption setup (P6a); home for “general” notes/contacts.  
 - Invite (P6e) = email invitation → invitee claims with their `public_key` → owner seals `workspace_key` (AAD `wrapped_keys:{workspaceId}:wrapped_key`) → accept inserts membership + wrap. Members decrypt **all** ciphertext in that workspace.
 - Same person in two workspaces ⇒ **two contact rows**. Later softener: copy-to-workspace (client re-encrypts).  
 - **Reject:** user-global contact graph; notes with `workspace_id = null`; project-level key ACLs for contacts.
@@ -32,12 +32,12 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `user_crypto` | `public_key`, wrapped user/private key blobs, `prf_salt`, `key_check`, versions |
 | `workspaces` | Workspace ids, `kind` (`personal` \| `standard`), owner/timestamps; at most one Personal per owner. Display **name** is ciphertext (`encrypted_blob`), not plaintext. |
 | `workspace_members` | `workspace_id`, `user_id`, `role` |
-| `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key` — always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
+| `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key`; always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
 | `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
 | `milestones` (P10) | `id`, `project_id`, sort, timestamps, tombstone |
 | `notes` | `id`, `workspace_id`, optional `project_id` (filing), sort, timestamps, tombstone |
 | `contacts` | `id`, `workspace_id`, sort, timestamps, tombstone |
-| `entity_links` | Constrained UUID edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. Allowed pairs are note–task and contact–note/project/task. **Intentional metadata** — Helvety sees which ids are linked, never titles/colors. |
+| `entity_links` | Constrained UUID edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. Allowed pairs are note–task and contact–note/project/task. **Intentional metadata**: Helvety sees which ids are linked, never titles/colors. |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |
 | `subscriptions` (P6f/P12) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `billing_source` (`stripe`\|`comp`), discount snapshot + `unmetered`, `addon_quantities` jsonb, Stripe ids, period fields. Members SELECT only; writes via service-role webhook / redeem |
@@ -52,8 +52,8 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | Table | Content |
 |-------|---------|
 | `projects` | `encrypted_blob` holds `{ name, description, categorizations, color? }` where `description` is TipTap JSON; `categorizations` has `labels` / `stages` / `priorities` arrays of `{ id, name, sortOrder, color?, icon?, isDefault?, maxVisibleTasks?, completionPercent? }` (names + colors + icons + stage weights encrypted); stage `color` is an `EntityColor` palette token; option `icon` is an allowlisted Lucide token; stages may store `completionPercent` (0–100) for weighted progress; optional top-level `color` is a palette token; plaintext FKs: `id`, `workspace_id`, sort, timestamps, tombstone |
-| `milestones` (P10/P14) | `encrypted_blob` holds `{ version: 1, title, description, startDate, endDate }` where `description` is TipTap JSON and dates are `YYYY-MM-DD` or null (encrypted for ZK — Helvety cannot see schedules); plaintext FKs: `id`, `project_id`, sort, timestamps, tombstone |
-| `tasks` | `encrypted_blob` holds `{ version: 1, title, body, dueDate }` where `body` is TipTap JSON that may include allowed `entityRef` atoms; **no per-task accent** — chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. |
+| `milestones` (P10/P14) | `encrypted_blob` holds `{ version: 1, title, description, startDate, endDate }` where `description` is TipTap JSON and dates are `YYYY-MM-DD` or null (encrypted for ZK; Helvety cannot see schedules); plaintext FKs: `id`, `project_id`, sort, timestamps, tombstone |
+| `tasks` | `encrypted_blob` holds `{ version: 1, title, body, dueDate }` where `body` is TipTap JSON that may include allowed `entityRef` atoms; **no per-task accent**; chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext; **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. |
 | `notes` (P6d/P8) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body }` where `body` is TipTap JSON that may include `entityRef` atoms `{ type: "entityRef", attrs: { kind, id } }` (P8b); optional nullable plaintext `project_id` for filing filters. Task associations live in `entity_links`, not a note column. Note chips use the kind fallback color (no per-note accent). |
 | `contacts` | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; `notes` is TipTap JSON and may include allowed `entityRef` atoms; optional `color` palette token; duplicates across workspaces OK. |
 | `attachments` (P11) | `encrypted_meta` = `{ filename, mimeType }` envelope; `wrapped_dek` under workspace_key; raw file ciphertext in Storage (`encrypted-attachments/{workspaceId}/{attachmentId}`) as packed binary AES-GCM. TipTap `fileAttachment` atoms + `attachment_links` junction. |
@@ -63,7 +63,7 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 
 - Force RLS on all user data tables.  
 - Policies: membership via `workspace_members` (or owner).  
-- Auto-expose new tables is **OFF** — grant Data API roles explicitly in migrations.  
+- Auto-expose new tables is **OFF**. Grant Data API roles explicitly in migrations.  
 - Automatic RLS trigger is **ON** for new public tables.
 
 ## Extensibility

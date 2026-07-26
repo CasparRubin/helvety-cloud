@@ -1,4 +1,4 @@
-# Helvety Cloud — Master Roadmap
+# Helvety Cloud: Master Roadmap
 
 > **Canonical master plan:** this file (`docs/architecture/ROADMAP.md`).  
 > **New chats:** `@docs/architecture/ROADMAP.md` + “Implement **P\<n\>** only”.  
@@ -9,7 +9,7 @@
 ## 0. How new agents should use this file
 
 1. Read **§1 Product** and **§2 Locked decisions** first.  
-2. Find your phase under **§4 Phase playbooks** — that section is the full brief.  
+2. Find your phase under **§4 Phase playbooks**. That section is the full brief.  
 3. Follow **Out of scope** strictly. Prefer omit over add.  
 4. Prefer **Supabase MCP** / **Vercel MCP** / project skills over guessing.  
 5. Never copy from sibling repos `helvety` or `helvety-browser-extension-chromium`.
@@ -18,13 +18,13 @@
 
 ## 1. Product (what we are building)
 
-**helvety.cloud** — greenfield E2EE workspace app (projects / tasks / notes / contacts / sharing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
+**helvety.cloud**: greenfield E2EE workspace app (projects / tasks / notes / contacts / sharing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
 
 **Priorities (in order):**
 
-1. **Privacy** — Helvety cannot decrypt user encrypted content (no master key, no escrow, no support recovery of content).  
-2. **Performance / UX** — later Linear-like speed; not required until after E2EE proof.  
-3. **Free base stack** — Supabase Free + Vercel Hobby + Stripe when charging (P6f); no paid Redis/Sentry/etc. in foundation.
+1. **Privacy**: Helvety cannot decrypt user encrypted content (no master key, no escrow, no support recovery of content).  
+2. **Performance / UX**: later Linear-like speed; not required until after E2EE proof.  
+3. **Free base stack**: Supabase Free + Vercel Hobby + Stripe when charging (P6f); no paid Redis/Sentry/etc. in foundation.
 
 **Foundation proof (end of P5):**
 
@@ -48,20 +48,20 @@ email OTP → session → PRF passkey unlock → user keys
 | Package manager | **Bun** workspaces |
 | Web | **Next.js** App Router → **Vercel** Hobby |
 | DB | Supabase **`helvety-cloud`** · ref **`qnoeiurmyyyuawkcifmw`** · region **eu-central-2 (Zurich)** |
-| Forbidden DB | Old project **`bkdzeihxzvrkndjvyzye`** (`helvety`) — do not touch |
-| Auth | **Supabase Auth** — email **OTP** only; **disable passwords**; **disable Auth passkeys** |
+| Forbidden DB | Old project **`bkdzeihxzvrkndjvyzye`** (`helvety`); do not touch |
+| Auth | **Supabase Auth**: email **OTP** only; **disable passwords**; **disable Auth passkeys** |
 | Encryption unlock | WebAuthn **PRF** → HKDF unlock key (auth session ≠ encryption decrypt) |
 | Crypto | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field |
-| Access model | **Everything workspace-scoped** — projects/tasks/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
+| Access model | **Everything workspace-scoped**: projects/tasks/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
 | Personal workspace | On first encryption setup, ensure one **Personal** workspace (home for “general” notes/contacts) |
 | Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** encrypted entities in that workspace (P6e) |
 | Public API | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>` |
-| Browser Supabase | **Auth SDK OK**; **`from('…')` for encrypted entity tables NOT OK** — go through API |
+| Browser Supabase | **Auth SDK OK**; **`from('…')` for encrypted entity tables NOT OK**. Go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |
 | Types | Generated TS committed under `packages/db` (or equiv.) so agents always see the model |
-| Billing | **Stripe** workspace subscriptions — **P6f only**; no Clerk in foundation |
+| Billing | **Stripe** workspace subscriptions (**P6f only**); no Clerk in foundation |
 | UI foundation | Minimal new **dense shadcn/ui on Base UI** (current shadcn default; **not** Radix). Not helvety.com look |
-| Cost | **Free-tier only** in P0–P5 and product phases until P6f Stripe — see §2.1 |
+| Cost | **Free-tier only** in P0–P5 and product phases until P6f Stripe. See §2.1 |
 | Legal | **P-legal2 production pack** live + acceptance gates; optional counsel for risk; see §7 |
 
 ### 2.1 Free-tier only (no exceptions in foundation)
@@ -102,7 +102,7 @@ helvety-cloud/
 
 ## 4. Phase playbooks
 
-### P0 — Constitution (THIS plan’s implementation)
+### P0: Constitution (THIS plan’s implementation)
 
 **Goal:** Durable memory so any new chat can build without the original strategy thread.
 
@@ -135,7 +135,7 @@ helvety-cloud/
 
 ---
 
-### P1 — Scaffold
+### P1: Scaffold
 
 **Goal:** Empty but runnable monorepo wired for later phases.
 
@@ -146,7 +146,7 @@ helvety-cloud/
 - `supabase/config.toml` + empty `supabase/schemas/.gitkeep`, `migrations/.gitkeep`.  
 - Env templates: `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` (no secrets committed). Document project ref `qnoeiurmyyyuawkcifmw`.  
 - ESLint + TypeScript + Vitest smoke test.  
-- Optional: create/link Vercel project via MCP (Hobby) — no paid add-ons.
+- Optional: create/link Vercel project via MCP (Hobby); no paid add-ons.
 
 **Don’t:** Auth UI, real crypto, real SQL schema, Stripe, Redis, Sentry, copy helvety.com UI, shadcn (defer to P2).
 
@@ -154,7 +154,7 @@ helvety-cloud/
 
 ---
 
-### P2 — Auth (passwordless)
+### P2: Auth (passwordless)
 
 **Goal:** Sign-in without passwords; session ready; encrypted still locked/empty.
 
@@ -174,7 +174,7 @@ helvety-cloud/
 
 ---
 
-### P3 — Crypto library
+### P3: Crypto library
 
 **Goal:** Correct client crypto with tests; still no DB tables required.
 
@@ -192,14 +192,14 @@ helvety-cloud/
 
 ---
 
-### P4 — Schema + API
+### P4: Schema + API
 
 **Goal:** Blind DB + versioned API stubs; types in git.
 
-**Crypto hardening before first wrap persistence (from P3 review — do here, not a P3 rework):**
+**Crypto hardening before first wrap persistence (from P3 review; do here, not a P3 rework):**
 
 - Extend `wrapKey` / `unwrapKey` with **AAD** (same `table:recordId:field` binding as content), e.g. `user_crypto:{userId}:wrapped_user_key`, `user_crypto:{userId}:wrapped_private_key`, `wrapped_keys:{subjectId}:wrapped_key`. Content already binds AAD; wraps currently omit it → column-swap of wrapped blobs at rest is possible. Prefer fixing in `packages/crypto` **before** migrations that store wraps (or wrap via `encrypt` with that AAD).  
-- `createKeyCheck` / `verifyKeyCheck` today use `recordId: "self"` — replace with the **real user id** when wiring `PUT /api/v1/me/crypto`.
+- `createKeyCheck` / `verifyKeyCheck` today use `recordId: "self"`. Replace with the **real user id** when wiring `PUT /api/v1/me/crypto`.
 
 **Schema (declarative then migrate):**
 
@@ -212,7 +212,7 @@ helvety-cloud/
 - RLS: membership-based; **explicit GRANTs** (auto-expose is OFF)  
 - Apply via CLI and/or MCP `apply_migration` to **`qnoeiurmyyyuawkcifmw` only**  
 - MCP `generate_typescript_types` → commit `packages/db`  
-- MCP `get_advisors` — fix critical RLS issues  
+- MCP `get_advisors`: fix critical RLS issues  
 
 **API:**
 
@@ -230,7 +230,7 @@ helvety-cloud/
 
 ---
 
-### P5 — E2EE proof
+### P5: E2EE proof
 
 **Goal:** Vertical slice proving zero-knowledge end-to-end. **Landed** (incl. post-review fix: seal AAD, recovery key+wrap export, migration sync, inline RLS membership / drop `is_workspace_member` RPC).
 
@@ -245,7 +245,7 @@ helvety-cloud/
 
 ---
 
-### P-legal — Draft pack + gates (historical)
+### P-legal: Draft pack + gates (historical)
 
 **Goal:** Engineering legal pack + signup gates.
 
@@ -253,14 +253,14 @@ helvety-cloud/
 
 ---
 
-### P-legal2 — Production legal pack
+### P-legal2: Production legal pack
 
 **Goal:** Replace drafts/placeholders with the live product legal pack and keep acceptance gates on current versions.
 
 **Do:**
 
 - Fill Impressum from public registry (Helvety by Rubin, Basel, UID CHE-356.266.592).  
-- Write production ToS, Privacy, AUP, E2EE notice, Billing terms, Subprocessors — no “NEED SWISS COUNSEL REVIEW” / draft banners on `/legal/*`.  
+- Write production ToS, Privacy, AUP, E2EE notice, Billing terms, Subprocessors. No “NEED SWISS COUNSEL REVIEW” / draft banners on `/legal/*`.  
 - Bump `CURRENT_POLICY_VERSIONS` (users must re-accept).  
 - Keep encryption gated on ToS/Privacy/AUP/E2EE acceptances.  
 - Honesty vs KEY_HIERARCHY (no decrypt/recovery claims).  
@@ -272,7 +272,7 @@ helvety-cloud/
 
 ---
 
-### Access model (locked) — product wave
+### Access model (locked): product wave
 
 All encrypted data is **workspace-scoped**. Invite = seal `workspace_key` → members decrypt everything in that workspace.
 
@@ -283,7 +283,7 @@ Workspace  (members + per-member wrapped_keys)
   └── contacts  (workspace address book; no global dedupe)
 ```
 
-- **Personal workspace** created on first encryption setup — home for “general” notes/contacts.  
+- **Personal workspace** created on first encryption setup; home for “general” notes/contacts.  
 - Same person in two workspaces ⇒ two contact rows. Later: copy-to-workspace (re-encrypt). No user-global contacts.  
 - No `workspace_id = null` notes. No project-level key ACLs for contacts.
 
@@ -292,7 +292,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6a — App shell + crypto session + workspaces
+### P6a: App shell + crypto session + workspaces
 
 **Goal:** Replace proof card with a real signed-in app chrome; unlock once; manage workspaces.
 
@@ -313,7 +313,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6b — Projects + tasks (minimal E2EE product)
+### P6b: Projects + tasks (minimal E2EE product)
 
 **Goal:** Usable project/task CRUD, all ciphertext-opaque.
 
@@ -329,11 +329,11 @@ Workspace  (members + per-member wrapped_keys)
 
 **Done when:** Create/edit/list/reload tasks across sessions; DB still only envelopes.
 
-**Status:** **Done** (post-review: `projects.encrypted_blob` NOT NULL; PUT requires envelope — no omit→null wipe).
+**Status:** **Done** (post-review: `projects.encrypted_blob` NOT NULL; PUT requires envelope; no omit→null wipe).
 
 ---
 
-### P6c — Editor (TipTap-style)
+### P6c: Editor (TipTap-style)
 
 **Status:** **Done**
 
@@ -351,7 +351,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6d — Notes + contacts (workspace-scoped)
+### P6d: Notes + contacts (workspace-scoped)
 
 **Goal:** New entity types under the locked access model (everything in a workspace).
 
@@ -371,7 +371,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6e — Sharing workspaces
+### P6e: Sharing workspaces
 
 **Goal:** Multi-member via sealed keys (Bitwarden-style).
 
@@ -379,7 +379,7 @@ Workspace  (members + per-member wrapped_keys)
 
 - Invite by email (OTP account must exist or signup); role on `workspace_members`.  
 - Seal `workspace_key` to invitee `user_public_key` → `wrapped_keys` row with AAD.  
-- Accept invite UI; member decrypts **all** workspace ciphertext (tasks, notes, contacts) after unlock — no separate contact share path.  
+- Accept invite UI; member decrypts **all** workspace ciphertext (tasks, notes, contacts) after unlock; no separate contact share path.  
 - AUP/ToS already cover abuse; no server-side content scan.
 
 **Don’t:** Project-level ACL complexity; MLS; cross-workspace contact sync; Stripe.
@@ -390,11 +390,11 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6f — Billing setup
+### P6f: Billing setup
 
 **Status:** **Done**
 
-**Goal:** Stripe workspace subscriptions per [`BILLING.md`](./BILLING.md) — after a usable product (P6a–P6b at least; preferably after P6e if seats matter).
+**Goal:** Stripe workspace subscriptions per [`BILLING.md`](./BILLING.md), after a usable product (P6a–P6b at least; preferably after P6e if seats matter).
 
 **Do:**
 
@@ -409,11 +409,11 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P7 — Task categorizations
+### P7: Task categorizations
 
 **Status:** **Done**
 
-**Goal:** Project-scoped labels, stages, and priorities for tasks — hybrid ZK (encrypted option names in project blob; plaintext option ids on tasks for filtering).
+**Goal:** Project-scoped labels, stages, and priorities for tasks: hybrid ZK (encrypted option names in project blob; plaintext option ids on tasks for filtering).
 
 **Do:**
 
@@ -429,7 +429,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P8a — Entity link graph
+### P8a: Entity link graph
 
 **Status:** **Done**
 
@@ -448,7 +448,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P8b — Editor entity refs + create from selection
+### P8b: Editor entity refs + create from selection
 
 **Status:** **Done**
 
@@ -468,7 +468,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P8c — Visual layer + navigation
+### P8c: Visual layer + navigation
 
 **Status:** **Done**
 
@@ -487,7 +487,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P8d — Stage colors + universal entity links
+### P8d: Stage colors + universal entity links
 
 **Status:** **Done**
 
@@ -507,7 +507,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P8e — Categorization icons + polished task pickers
+### P8e: Categorization icons + polished task pickers
 
 **Status:** **Done**
 
@@ -527,7 +527,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P9 — Task stage board
+### P9: Task stage board
 
 **Status:** **Done**
 
@@ -548,7 +548,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P10 — Project descriptions + milestones
+### P10: Project descriptions + milestones
 
 **Status:** **Done**
 
@@ -557,7 +557,7 @@ Workspace  (members + per-member wrapped_keys)
 **Do:**
 
 - Project ciphertext: TipTap `description` (empty doc default on create).
-- `milestones` table under `project_id`; ciphertext `{ version: 1, title, description, startDate, endDate }` (ISO dates or null — encrypted).  
+- `milestones` table under `project_id`; ciphertext `{ version: 1, title, description, startDate, endDate }` (ISO dates or null; encrypted).  
 - `tasks.milestone_id` FK → milestones ON DELETE SET NULL + index; API list/get/put/delete milestones; task PUT `milestoneId`.  
 - Project page overview: collapsible description editor + milestones CRUD (sorted by end date).  
 - Stage board: milestone filter (All / Unassigned / specific); card badge; task detail milestone picker.  
@@ -569,7 +569,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P11 — E2EE files & documents
+### P11: E2EE files & documents
 
 **Status:** **Done**
 
@@ -589,7 +589,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P12 — Billing: Free / Pro / addons / discount codes
+### P12: Billing: Free / Pro / addons / discount codes
 
 **Status:** **Done**
 
@@ -609,7 +609,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P13 — Clean baseline + constrained entity links
+### P13: Clean baseline + constrained entity links
 
 **Status:** **Done**
 
@@ -622,14 +622,14 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P14 — Encrypted workspace names, milestone dates, progress chart
+### P14: Encrypted workspace names, milestone dates, progress chart
 
 **Status:** **Done**
 
 **Goal:** Close remaining user-entered plaintext gaps and replace the temporary progress spark with a milestone-window chart.
 
 - `workspaces.name` → `encrypted_blob` (`{ version: 1, name }` under workspace key); wipe encrypted data on apply (no legacy plaintext name readers).
-- Milestone ciphertext: `{ version: 1, title, description, startDate, endDate }` — no `targetDate`.
+- Milestone ciphertext: `{ version: 1, title, description, startDate, endDate }`; no `targetDate`.
 - Stage options may store `completionPercent` (0–100); Cancelled excluded from weighted scope; client averages weights for “% done”.
 - Project Progress panel: X-axis from milestone start→end (or min/max when filter is all); dashed ideal line; actual curve to today + current weighted %; syncs with board `milestoneFilter`.
 
@@ -669,7 +669,7 @@ workspace_key / project_key (random)
 
 ---
 
-## 7. Legal (reference — not legal advice)
+## 7. Legal (reference, not legal advice)
 
 **Live pack (P-legal2):** Impressum, ToS, Privacy, AUP, E2EE notice, billing terms, subprocessors under `/legal/*` (`apps/web/content/legal/`).
 
@@ -700,7 +700,7 @@ workspace_key / project_key (random)
 |------|-----|
 | Schema change | Edit `supabase/schemas` → diff → migration → MCP `apply_migration` / `db push` → `generate_typescript_types` → `get_advisors` |
 | Inspect DB | MCP `list_tables`, `list_migrations` on `qnoeiurmyyyuawkcifmw` |
-| Hosting | Vercel MCP / skills — Hobby only |
+| Hosting | Vercel MCP / skills (Hobby only) |
 | Auth config | Supabase dashboard + docs; passwords off |
 
 ---

@@ -14,7 +14,7 @@ import type { CiphertextEnvelope } from "./envelope";
 export type UserKeyMaterial = {
   /** 32-byte AES key that wraps the X25519 private key and can encrypt content. */
   userSymmetricKey: Uint8Array;
-  /** Raw X25519 public key (32 bytes) — safe to store on server. */
+  /** Raw X25519 public key (32 bytes), safe to store on server. */
   publicKey: Uint8Array;
   /** PKCS8-encoded X25519 private key bytes (wrap before storage). */
   privateKey: Uint8Array;
@@ -46,7 +46,7 @@ export function importRecoveryKey(exported: string): Uint8Array {
 
 /**
  * Generate user_symmetric_key + X25519 keypair.
- * Helvety never holds these in plaintext — only wrapped blobs / public key.
+ * Helvety never holds these in plaintext, only wrapped blobs / public key.
  */
 export async function generateUserKeyMaterial(): Promise<UserKeyMaterial> {
   const userSymmetricKey = randomKeyBytes();

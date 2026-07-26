@@ -64,7 +64,7 @@ create policy workspaces_update_member
   using (public.is_workspace_member(id))
   with check (public.is_workspace_member(id));
 
--- workspace_members (own row only — do not call is_workspace_member here)
+-- workspace_members (own row only; do not call is_workspace_member here)
 create policy workspace_members_select_own
   on public.workspace_members
   for select

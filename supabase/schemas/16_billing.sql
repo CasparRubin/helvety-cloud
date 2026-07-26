@@ -1,4 +1,4 @@
--- P6f + P12: billing (plaintext entitlements only — never encryption keys or content).
+-- P6f + P12: billing (plaintext entitlements only, never encryption keys or content).
 -- Stripe webhook / redeem API (service_role) write subscriptions; members SELECT.
 -- Absence of a row = free plan (in code). Comp grants = billing_source=comp, no Stripe.
 

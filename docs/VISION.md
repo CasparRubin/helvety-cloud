@@ -1,6 +1,6 @@
-# Vision — helvety.cloud
+# Vision: helvety.cloud
 
-Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenfield repo **helvety-cloud**. Old helvety.com apps and the Chromium extension are prototypes to deprecate later — **do not copy them**.
+Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenfield repo **helvety-cloud**. Old helvety.com apps and the Chromium extension are prototypes to deprecate later. **Do not copy them**.
 
 ## Priorities
 
@@ -21,7 +21,7 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 | Labels/stages/priorities + entity links + stage board | Radix shadcn; unused SaaS | Further Linear-like polish |
 | Dense shadcn + Base UI | | |
 
-## Foundation proof (P5) — still the ZK bar
+## Foundation proof (P5): still the ZK bar
 
 ```text
 email OTP → session → PRF passkey → user keys

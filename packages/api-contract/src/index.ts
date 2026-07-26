@@ -519,7 +519,7 @@ export type ListWorkspaceMembersResponse = z.infer<
   typeof listWorkspaceMembersResponseSchema
 >;
 
-/** P6f / P12 billing — plaintext entitlements only; never encryption keys or content. */
+/** P6f / P12 billing: plaintext entitlements only; never encryption keys or content. */
 export const planIdSchema = z.enum(["free", "pro"]);
 export type PlanId = z.infer<typeof planIdSchema>;
 
@@ -647,7 +647,7 @@ export type UpdateBillingAddonsResponse = z.infer<
   typeof updateBillingAddonsResponseSchema
 >;
 
-/** P11 attachments — ciphertext-opaque metadata + signed URL handoff. */
+/** P11 attachments: ciphertext-opaque metadata + signed URL handoff. */
 export const attachmentStatusSchema = z.enum(["pending", "ready", "failed"]);
 export type AttachmentStatus = z.infer<typeof attachmentStatusSchema>;
 
@@ -720,13 +720,13 @@ export type ListAttachmentsResponse = z.infer<
 export const getMeAccountResponseSchema = z.object({
   email: z.string().email(),
   userId: uuidSchema,
-  /** Owned workspaces that still have other members — these block deletion. */
+  /** Owned workspaces that still have other members. These block deletion. */
   blockingWorkspaces: z.array(
     z.object({
       id: uuidSchema,
     }),
   ),
-  /** Owned workspaces with no other members — deleted with the account. */
+  /** Owned workspaces with no other members. Deleted with the account. */
   soloOwnedWorkspaces: z.array(
     z.object({
       id: uuidSchema,

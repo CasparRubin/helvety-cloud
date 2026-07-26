@@ -32,7 +32,7 @@ export const termsDoc: LegalDocument = {
       heading: "License and acceptable use",
       paragraphs: [
         "Subject to these Terms and the AUP (incorporated by reference), Helvety grants you a limited, non-exclusive, non-transferable, revocable right to use the Service for lawful purposes.",
-        "Helvety may suspend or terminate accounts for AUP violations, abuse, non-payment (when billing applies), legal risk, or to protect the Service. Because your data is end-to-end encrypted, enforcement for encrypted content is limited to account-level and ciphertext-level measures (for example suspending access or deleting encrypted blobs) — Helvety cannot read plaintext to moderate it.",
+        "Helvety may suspend or terminate accounts for AUP violations, abuse, non-payment (when billing applies), legal risk, or to protect the Service. Because your data is end-to-end encrypted, enforcement for encrypted content is limited to account-level and ciphertext-level measures (for example suspending access or deleting encrypted blobs). Helvety cannot read plaintext to moderate it.",
       ],
     },
     {
@@ -66,7 +66,7 @@ export const termsDoc: LegalDocument = {
     {
       heading: "Limitation of liability",
       paragraphs: [
-        "To the fullest extent permitted by mandatory applicable law, Helvety and Caspar Camille Rubin (as sole proprietor) are not liable for indirect, incidental, special, consequential, or punitive damages, or for loss of profits, revenue, data, goodwill, or business opportunities, arising from or related to the Service or these Terms — including permanent loss of your data due to lost keys or recovery material.",
+        "To the fullest extent permitted by mandatory applicable law, Helvety and Caspar Camille Rubin (as sole proprietor) are not liable for indirect, incidental, special, consequential, or punitive damages, or for loss of profits, revenue, data, goodwill, or business opportunities, arising from or related to the Service or these Terms, including permanent loss of your data due to lost keys or recovery material.",
         "To the fullest extent permitted by mandatory law, Helvety’s total aggregate liability for all claims arising out of or related to the Service or these Terms is limited to the greater of (a) CHF 100 or (b) the amounts you paid Helvety for the Service in the twelve (12) months before the claim (or CHF 0 if you used only a free offering).",
         "Nothing in these Terms excludes or limits liability that cannot be excluded or limited under mandatory Swiss law (or other mandatory consumer protections that apply to you), including liability for death or personal injury caused by negligence where such limitation is prohibited, or for fraud or willful misconduct.",
       ],
