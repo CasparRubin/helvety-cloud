@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 
@@ -43,6 +44,7 @@ export function EntityChip({
   navigate = true,
   className,
 }: EntityChipProps) {
+  const router = useRouter();
   const cache = useOptionalVaultEntityCache();
   const resolved = useMemo(() => {
     if (cache) return cache.resolve(kind, id);
@@ -97,7 +99,12 @@ export function EntityChip({
       <Link
         href={href}
         className="inline-flex align-baseline no-underline"
-        onClick={(e) => e.stopPropagation()}
+        onClick={(e) => {
+          e.stopPropagation();
+          if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+          e.preventDefault();
+          router.push(href);
+        }}
       >
         {inner}
       </Link>
