@@ -110,6 +110,7 @@ export function EntityCacheProvider({
           limit: 100,
         });
         if (cancelled || gen !== genRef.current) return;
+        setProjects(projectsPage.projects);
 
         const allTasks: DecryptedTask[] = [];
         for (const project of projectsPage.projects) {
@@ -126,18 +127,36 @@ export function EntityCacheProvider({
         ]);
         if (cancelled || gen !== genRef.current) return;
 
-        setProjects(projectsPage.projects);
         setTasks(allTasks);
         setNotes(notesPage.notes);
         setContacts(contactsPage.contacts);
       } catch {
-        // Leave cache empty; chips fall back to kind labels.
+        // Leave remaining cache empty; chips fall back to kind labels.
       }
     })();
     return () => {
       cancelled = true;
     };
   }, [userKeys, workspaceId, getWorkspaceKey]);
+
+  const refreshProjects = useCallback(async () => {
+    const key = await getWorkspaceKey(workspaceId);
+    const projectsPage = await loadDecryptedProjects(workspaceId, key, {
+      limit: 100,
+    });
+    setProjects(projectsPage.projects);
+  }, [getWorkspaceKey, workspaceId]);
+
+  useEffect(() => {
+    if (!userKeys) return;
+    const onChange = () => {
+      void refreshProjects().catch(() => undefined);
+    };
+    window.addEventListener("helvety:projects-changed", onChange);
+    return () => {
+      window.removeEventListener("helvety:projects-changed", onChange);
+    };
+  }, [userKeys, refreshProjects]);
 
   const projectById = useMemo(() => {
     const m = new Map<string, DecryptedProject>();
