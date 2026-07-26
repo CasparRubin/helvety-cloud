@@ -85,7 +85,7 @@ export function PolicyAcceptanceGate({
   }
 
   return (
-    <div className="flex flex-col gap-4 rounded-md border border-border p-4">
+    <div className="flex flex-col gap-4 rounded-lg border border-border p-4">
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">Accept policies to continue</p>
         <p className="text-xs text-muted-foreground">
@@ -143,6 +143,7 @@ export function PolicyAcceptanceGate({
 
       <Button
         type="button"
+        className="w-full"
         disabled={pending || !allChecked}
         onClick={() => void submit()}
       >

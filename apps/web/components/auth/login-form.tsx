@@ -4,15 +4,9 @@ import { useRouter } from "next/navigation";
 import { useState, type FormEvent } from "react";
 import { AlertCircleIcon } from "lucide-react";
 
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import {
   Field,
   FieldDescription,
@@ -102,102 +96,103 @@ export function LoginForm() {
   }
 
   return (
-    <Card className="w-full max-w-sm">
-      <CardHeader>
-        <CardTitle>Sign in</CardTitle>
-        <CardDescription>
-          Passwordless email code. No passwords.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        {error ? (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertTitle>Could not sign in</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
+    <AuthShell
+      title="Sign in"
+      subtitle={
+        step === "email"
+          ? "Passwordless email code. No passwords."
+          : `Enter the 6-digit code sent to ${email}.`
+      }
+      footer={
+        <a href="/legal" className="underline underline-offset-4">
+          Legal
+        </a>
+      }
+    >
+      {error ? (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertTitle>Could not sign in</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
+        </Alert>
+      ) : null}
 
-        {step === "email" ? (
-          <form onSubmit={sendOtp}>
-            <FieldGroup>
-              <Field data-invalid={error ? true : undefined}>
-                <FieldLabel htmlFor="email">Email</FieldLabel>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  autoComplete="email"
-                  required
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  disabled={pending}
-                  aria-invalid={error ? true : undefined}
-                />
-                <FieldDescription>
-                  We email a one-time code. Helvety cannot recover vault content
-                  later — this only creates a session.
-                </FieldDescription>
-              </Field>
-              <Button type="submit" disabled={pending} className="w-full">
-                {pending ? <Spinner data-icon="inline-start" /> : null}
-                Send code
-              </Button>
-            </FieldGroup>
-          </form>
-        ) : (
-          <form onSubmit={verifyOtp}>
-            <FieldGroup>
-              <Field data-invalid={error ? true : undefined}>
-                <FieldLabel htmlFor="otp">One-time code</FieldLabel>
-                <InputOTP
-                  id="otp"
-                  maxLength={6}
-                  value={code}
-                  onChange={setCode}
-                  disabled={pending}
-                  containerClassName="justify-center"
-                  aria-invalid={error ? true : undefined}
-                >
-                  <InputOTPGroup>
-                    <InputOTPSlot index={0} />
-                    <InputOTPSlot index={1} />
-                    <InputOTPSlot index={2} />
-                    <InputOTPSlot index={3} />
-                    <InputOTPSlot index={4} />
-                    <InputOTPSlot index={5} />
-                  </InputOTPGroup>
-                </InputOTP>
-                <FieldDescription>
-                  Enter the 6-digit code sent to {email}.
-                </FieldDescription>
-                {error ? <FieldError>{error}</FieldError> : null}
-              </Field>
-              <Button
-                type="submit"
-                disabled={pending || code.length !== 6}
-                className="w-full"
-              >
-                {pending ? <Spinner data-icon="inline-start" /> : null}
-                Verify and continue
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
+      {step === "email" ? (
+        <form onSubmit={sendOtp}>
+          <FieldGroup>
+            <Field data-invalid={error ? true : undefined}>
+              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                autoComplete="email"
+                required
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
                 disabled={pending}
-                className="w-full"
-                onClick={() => {
-                  setStep("email");
-                  setCode("");
-                  setError(null);
-                }}
+                aria-invalid={error ? true : undefined}
+              />
+              <FieldDescription>
+                We email a one-time code. Helvety cannot recover vault content
+                later — this only creates a session.
+              </FieldDescription>
+            </Field>
+            <Button type="submit" disabled={pending} className="w-full">
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              Send code
+            </Button>
+          </FieldGroup>
+        </form>
+      ) : (
+        <form onSubmit={verifyOtp}>
+          <FieldGroup>
+            <Field data-invalid={error ? true : undefined}>
+              <FieldLabel htmlFor="otp">One-time code</FieldLabel>
+              <InputOTP
+                id="otp"
+                maxLength={6}
+                value={code}
+                onChange={setCode}
+                disabled={pending}
+                containerClassName="justify-center"
+                aria-invalid={error ? true : undefined}
               >
-                Use a different email
-              </Button>
-            </FieldGroup>
-          </form>
-        )}
-      </CardContent>
-    </Card>
+                <InputOTPGroup>
+                  <InputOTPSlot index={0} />
+                  <InputOTPSlot index={1} />
+                  <InputOTPSlot index={2} />
+                  <InputOTPSlot index={3} />
+                  <InputOTPSlot index={4} />
+                  <InputOTPSlot index={5} />
+                </InputOTPGroup>
+              </InputOTP>
+              {error ? <FieldError>{error}</FieldError> : null}
+            </Field>
+            <Button
+              type="submit"
+              disabled={pending || code.length !== 6}
+              className="w-full"
+            >
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              Verify and continue
+            </Button>
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={pending}
+              className="w-full"
+              onClick={() => {
+                setStep("email");
+                setCode("");
+                setError(null);
+              }}
+            >
+              Use a different email
+            </Button>
+          </FieldGroup>
+        </form>
+      )}
+    </AuthShell>
   );
 }

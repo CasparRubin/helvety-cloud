@@ -1,18 +1,11 @@
 "use client";
 
-import Image from "next/image";
 import { useEffect, useState } from "react";
 import { AlertCircleIcon } from "lucide-react";
 
+import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { PolicyAcceptanceGate } from "@/components/legal/policy-acceptance-gate";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
@@ -130,160 +123,157 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
   }
 
   return (
-    <Card className="w-full max-w-xl">
-      <CardHeader className="justify-items-center text-center">
-        <Image
-          src="/icon.svg"
-          width={48}
-          height={48}
-          alt=""
-          className="size-12 rounded-md"
-          priority
-        />
-        <CardTitle>Helvety Cloud</CardTitle>
-        <CardDescription>
+    <AuthShell
+      title="Helvety Cloud"
+      subtitle={
+        <>
           Signed in as <span className="text-foreground">{email}</span>.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-4">
-        <Alert>
-          <AlertTitle>Zero knowledge — no recovery by Helvety</AlertTitle>
-          <AlertDescription>
-            Helvety cannot decrypt or restore vault content. If you lose your
-            unlock methods (unlock passkey and offline recovery key + wrap),
-            your data is gone permanently.
-          </AlertDescription>
+        </>
+      }
+      footer={
+        <a href="/legal" className="underline underline-offset-4">
+          Legal
+        </a>
+      }
+    >
+      <Alert>
+        <AlertTitle>Zero knowledge — no recovery by Helvety</AlertTitle>
+        <AlertDescription>
+          Helvety cannot decrypt or restore vault content. If you lose your
+          unlock methods (unlock passkey and offline recovery key + wrap), your
+          data is gone permanently.
+        </AlertDescription>
+      </Alert>
+
+      {error ? (
+        <Alert variant="destructive">
+          <AlertCircleIcon />
+          <AlertTitle>Action failed</AlertTitle>
+          <AlertDescription>{error}</AlertDescription>
         </Alert>
+      ) : null}
 
-        {error ? (
-          <Alert variant="destructive">
-            <AlertCircleIcon />
-            <AlertTitle>Action failed</AlertTitle>
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        ) : null}
+      {message ? (
+        <Alert>
+          <AlertTitle>Status</AlertTitle>
+          <AlertDescription>{message}</AlertDescription>
+        </Alert>
+      ) : null}
 
-        {message ? (
-          <Alert>
-            <AlertTitle>Status</AlertTitle>
-            <AlertDescription>{message}</AlertDescription>
-          </Alert>
-        ) : null}
+      {!recovery && step === "needs_acceptance" ? (
+        <PolicyAcceptanceGate
+          pending={pending}
+          onPendingChange={setPending}
+          onError={setError}
+          onAccepted={() => {
+            setMessage("Policy acceptance recorded.");
+            setStep(vaultReadyStep);
+          }}
+        />
+      ) : null}
 
-        {!recovery && step === "needs_acceptance" ? (
-          <PolicyAcceptanceGate
-            pending={pending}
-            onPendingChange={setPending}
-            onError={setError}
-            onAccepted={() => {
-              setMessage("Policy acceptance recorded.");
-              setStep(vaultReadyStep);
+      {recovery ? (
+        <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
+          <p className="text-sm font-medium">Recovery material (shown once)</p>
+          <p className="text-sm text-muted-foreground">
+            Store both the recovery key and the recovery wrap offline. Neither is
+            logged or sent to Helvety. Losing these with your unlock passkey means
+            permanent data loss.
+          </p>
+          <p className="text-xs font-medium text-muted-foreground">
+            Recovery key
+          </p>
+          <code className="break-all rounded-md bg-muted p-2 text-xs">
+            {recovery.recoveryKeyExported}
+          </code>
+          <p className="text-xs font-medium text-muted-foreground">
+            Recovery wrap
+          </p>
+          <code className="max-h-32 overflow-auto break-all rounded-md bg-muted p-2 text-xs">
+            {JSON.stringify(recovery.recoveryWrappedUserKey)}
+          </code>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={pending}
+            onClick={() => {
+              void navigator.clipboard.writeText(recovery.recoveryKeyExported);
+              setMessage("Recovery key copied to clipboard (device only).");
             }}
-          />
-        ) : null}
+          >
+            Copy recovery key
+          </Button>
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full"
+            disabled={pending}
+            onClick={() => {
+              downloadRecoveryFile(recovery);
+              setMessage(
+                "Downloaded helvety-recovery.json (device only — never upload).",
+              );
+            }}
+          >
+            Download helvety-recovery.json
+          </Button>
+          <Button
+            type="button"
+            className="w-full"
+            disabled={pending}
+            onClick={clearRecovery}
+          >
+            I saved both offline — continue
+          </Button>
+        </div>
+      ) : null}
 
-        {recovery ? (
-          <div className="flex flex-col gap-3 rounded-md border border-border p-3">
-            <p className="text-sm font-medium">Recovery material (shown once)</p>
+      {!recovery ? (
+        <div className="flex flex-col gap-2">
+          {step === "loading" ? (
             <p className="text-sm text-muted-foreground">
-              Store both the recovery key and the recovery wrap offline. Neither
-              is logged or sent to Helvety. Losing these with your unlock passkey
-              means permanent data loss.
+              Checking policies and vault…
             </p>
-            <p className="text-xs font-medium text-muted-foreground">
-              Recovery key
-            </p>
-            <code className="break-all rounded bg-muted p-2 text-xs">
-              {recovery.recoveryKeyExported}
-            </code>
-            <p className="text-xs font-medium text-muted-foreground">
-              Recovery wrap
-            </p>
-            <code className="max-h-32 overflow-auto break-all rounded bg-muted p-2 text-xs">
-              {JSON.stringify(recovery.recoveryWrappedUserKey)}
-            </code>
+          ) : null}
+
+          {step === "needs_setup" ? (
+            <Button
+              type="button"
+              className="w-full"
+              disabled={pending}
+              onClick={() => void onSetup()}
+            >
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              Set up vault via passkey
+            </Button>
+          ) : null}
+
+          {step === "locked" ? (
+            <Button
+              type="button"
+              className="w-full"
+              disabled={pending}
+              onClick={() => void onUnlock()}
+            >
+              {pending ? <Spinner data-icon="inline-start" /> : null}
+              Unlock via passkey
+            </Button>
+          ) : null}
+
+          {step !== "loading" ? (
             <Button
               type="button"
               variant="outline"
+              className="w-full"
               disabled={pending}
-              onClick={() => {
-                void navigator.clipboard.writeText(
-                  recovery.recoveryKeyExported,
-                );
-                setMessage("Recovery key copied to clipboard (device only).");
-              }}
+              onClick={() => void signOut()}
             >
-              Copy recovery key
+              Sign out
             </Button>
-            <Button
-              type="button"
-              variant="outline"
-              disabled={pending}
-              onClick={() => {
-                downloadRecoveryFile(recovery);
-                setMessage(
-                  "Downloaded helvety-recovery.json (device only — never upload).",
-                );
-              }}
-            >
-              Download helvety-recovery.json
-            </Button>
-            <Button type="button" disabled={pending} onClick={clearRecovery}>
-              I saved both offline — continue
-            </Button>
-          </div>
-        ) : null}
-
-        {!recovery ? (
-          <div className="flex flex-col gap-2">
-            {step === "loading" ? (
-              <p className="text-sm text-muted-foreground">
-                Checking policies and vault…
-              </p>
-            ) : null}
-
-            {step === "needs_setup" ? (
-              <Button
-                type="button"
-                disabled={pending}
-                onClick={() => void onSetup()}
-              >
-                {pending ? <Spinner data-icon="inline-start" /> : null}
-                Set up vault via passkey
-              </Button>
-            ) : null}
-
-            {step === "locked" ? (
-              <Button
-                type="button"
-                disabled={pending}
-                onClick={() => void onUnlock()}
-              >
-                {pending ? <Spinner data-icon="inline-start" /> : null}
-                Unlock via passkey
-              </Button>
-            ) : null}
-
-            {step !== "loading" ? (
-              <>
-                <Button
-                  type="button"
-                  variant="outline"
-                  disabled={pending}
-                  onClick={() => void signOut()}
-                >
-                  Sign out
-                </Button>
-                <p className="text-center text-xs text-muted-foreground">
-                  <a href="/legal" className="underline underline-offset-4">
-                    Legal
-                  </a>
-                </p>
-              </>
-            ) : null}
-          </div>
-        ) : null}
-      </CardContent>
-    </Card>
+          ) : null}
+        </div>
+      ) : null}
+    </AuthShell>
   );
 }
