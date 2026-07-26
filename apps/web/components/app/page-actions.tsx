@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import {
   createContext,
   useCallback,
@@ -9,25 +10,35 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
+import { SettingsIcon } from "lucide-react";
 
+import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 
 type PageActionsContextValue = {
-  slotEl: HTMLElement | null;
-  setSlotEl: (el: HTMLElement | null) => void;
+  actionsEl: HTMLElement | null;
+  settingsEl: HTMLElement | null;
+  setActionsEl: (el: HTMLElement | null) => void;
+  setSettingsEl: (el: HTMLElement | null) => void;
 };
 
 const PageActionsContext = createContext<PageActionsContextValue | null>(null);
 
 export function PageActionsProvider({ children }: { children: ReactNode }) {
-  const [slotEl, setSlotElState] = useState<HTMLElement | null>(null);
-  const setSlotEl = useCallback((el: HTMLElement | null) => {
-    setSlotElState((prev) => (prev === el ? prev : el));
+  const [actionsEl, setActionsElState] = useState<HTMLElement | null>(null);
+  const [settingsEl, setSettingsElState] = useState<HTMLElement | null>(null);
+
+  const setActionsEl = useCallback((el: HTMLElement | null) => {
+    setActionsElState((prev) => (prev === el ? prev : el));
+  }, []);
+
+  const setSettingsEl = useCallback((el: HTMLElement | null) => {
+    setSettingsElState((prev) => (prev === el ? prev : el));
   }, []);
 
   const value = useMemo(
-    () => ({ slotEl, setSlotEl }),
-    [slotEl, setSlotEl],
+    () => ({ actionsEl, settingsEl, setActionsEl, setSettingsEl }),
+    [actionsEl, settingsEl, setActionsEl, setSettingsEl],
   );
 
   return (
@@ -45,14 +56,46 @@ function usePageActionsContext(): PageActionsContextValue {
   return ctx;
 }
 
-/** Portals actions into the sticky secondary bar. */
+/** Portals primary actions into the sticky secondary bar. */
 export function PageActions({ children }: { children: ReactNode }) {
-  const { slotEl } = usePageActionsContext();
-  if (!slotEl) return null;
-  return createPortal(children, slotEl);
+  const { actionsEl } = usePageActionsContext();
+  if (!actionsEl) return null;
+  return createPortal(children, actionsEl);
+}
+
+/** Portals settings actions; always rendered to the right of primary actions. */
+export function PageSettingsActions({ children }: { children: ReactNode }) {
+  const { settingsEl } = usePageActionsContext();
+  if (!settingsEl) return null;
+  return createPortal(children, settingsEl);
+}
+
+export function WorkspaceSettingsAction({
+  workspaceId,
+}: {
+  workspaceId: string;
+}) {
+  return (
+    <PageSettingsActions>
+      <Button
+        variant="outline"
+        size="sm"
+        render={<Link href={`/app/w/${workspaceId}/settings/general`} />}
+        nativeButton={false}
+      >
+        <SettingsIcon />
+        Workspace settings
+      </Button>
+    </PageSettingsActions>
+  );
 }
 
 export function PageActionsSlot() {
-  const { setSlotEl } = usePageActionsContext();
-  return <ButtonGroup className="ml-auto" ref={setSlotEl} />;
+  const { setActionsEl, setSettingsEl } = usePageActionsContext();
+  return (
+    <div className="ml-auto flex items-stretch gap-2">
+      <ButtonGroup ref={setActionsEl} />
+      <ButtonGroup ref={setSettingsEl} />
+    </div>
+  );
 }

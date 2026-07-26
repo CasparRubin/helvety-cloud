@@ -10,7 +10,10 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
-import { PageActions } from "@/components/app/page-actions";
+import {
+  PageActions,
+  WorkspaceSettingsAction,
+} from "@/components/app/page-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -161,6 +164,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
           />
         </CreateEntityDialog>
       </PageActions>
+      <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
         title="Contacts"
         error={error}

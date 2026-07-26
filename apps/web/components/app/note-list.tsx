@@ -9,7 +9,10 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
-import { PageActions } from "@/components/app/page-actions";
+import {
+  PageActions,
+  WorkspaceSettingsAction,
+} from "@/components/app/page-actions";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -114,6 +117,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
           </div>
         </CreateEntityDialog>
       </PageActions>
+      <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
         title="Notes"
         error={error}

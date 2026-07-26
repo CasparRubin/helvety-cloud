@@ -3,11 +3,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, Fragment } from "react";
+import { useEffect } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
-  SettingsIcon,
   StickyNoteIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -49,7 +48,7 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-type SectionId = "projects" | "notes" | "contacts" | "settings";
+type SectionId = "projects" | "notes" | "contacts";
 
 function workspaceSections(workspaceBase: string): {
   id: SectionId;
@@ -75,12 +74,6 @@ function workspaceSections(workspaceBase: string): {
       href: `${workspaceBase}/contacts`,
       label: "Contacts",
       icon: ContactIcon,
-    },
-    {
-      id: "settings",
-      href: `${workspaceBase}/settings/general`,
-      label: "Workspace settings",
-      icon: SettingsIcon,
     },
   ];
 }
@@ -249,19 +242,15 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                     </div>
                   ) : null}
                   {sections.map((section) => (
-                    <Fragment key={section.id}>
-                      {section.id === "settings" ? (
-                        <div className="my-1 border-t border-sidebar-border" />
-                      ) : null}
-                      <SectionLink
-                        href={section.href}
-                        active={activeSection === section.id}
-                        icon={section.icon}
-                        variant="sidebar"
-                      >
-                        {section.label}
-                      </SectionLink>
-                    </Fragment>
+                    <SectionLink
+                      key={section.id}
+                      href={section.href}
+                      active={activeSection === section.id}
+                      icon={section.icon}
+                      variant="sidebar"
+                    >
+                      {section.label}
+                    </SectionLink>
                   ))}
                 </>
               ) : (

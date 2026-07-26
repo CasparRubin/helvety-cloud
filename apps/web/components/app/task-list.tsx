@@ -35,7 +35,10 @@ import {
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { MilestonePicker } from "@/components/app/milestone-picker";
-import { PageActions } from "@/components/app/page-actions";
+import {
+  PageActions,
+  PageSettingsActions,
+} from "@/components/app/page-actions";
 import {
   ProjectDescriptionEditor,
   ProjectMilestonesPanel,
@@ -385,6 +388,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             </div>
           </CreateEntityDialog>
         ) : null}
+      </PageActions>
+      <PageSettingsActions>
         <Button
           variant="outline"
           size="sm"
@@ -398,7 +403,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           <SettingsIcon />
           Project settings
         </Button>
-      </PageActions>
+      </PageSettingsActions>
       <EntityListShell
         title={
           !loading && project ? (

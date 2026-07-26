@@ -10,7 +10,10 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
-import { PageActions } from "@/components/app/page-actions";
+import {
+  PageActions,
+  WorkspaceSettingsAction,
+} from "@/components/app/page-actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -144,6 +147,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
           </div>
         </CreateEntityDialog>
       </PageActions>
+      <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
         title={workspace?.name ?? "Workspace"}
         error={error}
