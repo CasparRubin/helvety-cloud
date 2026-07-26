@@ -1,8 +1,4 @@
 import {
-  isEntityColor,
-  type EntityColor,
-} from "@/lib/client-crypto/entity-colors";
-import {
   EMPTY_TASK_BODY,
   isTaskBodyDoc,
   type TaskBodyDoc,
@@ -17,7 +13,6 @@ export type ContactPlaintext = {
   phones: string[];
   /** TipTap JSON notes body. */
   notes: TaskBodyDoc;
-  color?: EntityColor;
 };
 
 function isStringArray(value: unknown): value is string[] {
@@ -69,13 +64,6 @@ export function parseContactPlaintext(raw: unknown): ContactPlaintext {
   }
   const notes =
     obj.notes === undefined ? EMPTY_TASK_BODY : parseNotesField(obj.notes);
-  let color: EntityColor | undefined;
-  if (obj.color !== undefined) {
-    if (!isEntityColor(obj.color)) {
-      throw new Error("Invalid contact plaintext");
-    }
-    color = obj.color;
-  }
   return {
     version: 1,
     firstName: obj.firstName.trim(),
@@ -84,7 +72,6 @@ export function parseContactPlaintext(raw: unknown): ContactPlaintext {
     emails: emails.map((e) => e.trim()).filter(Boolean),
     phones: phones.map((p) => p.trim()).filter(Boolean),
     notes,
-    ...(color ? { color } : {}),
   };
 }
 
@@ -95,7 +82,6 @@ export function toContactPlaintext(input: {
   emails?: string[];
   phones?: string[];
   notes?: TaskBodyDoc;
-  color?: EntityColor;
 }): ContactPlaintext {
   const notes = input.notes ?? EMPTY_TASK_BODY;
   return {
@@ -106,6 +92,5 @@ export function toContactPlaintext(input: {
     emails: (input.emails ?? []).map((e) => e.trim()).filter(Boolean),
     phones: (input.phones ?? []).map((p) => p.trim()).filter(Boolean),
     notes,
-    ...(input.color ? { color: input.color } : {}),
   };
 }

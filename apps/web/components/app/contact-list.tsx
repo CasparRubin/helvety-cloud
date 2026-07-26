@@ -5,7 +5,6 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
-import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import {
   EntityListRow,
   EntityListShell,
@@ -24,7 +23,6 @@ import {
   type DecryptedContact,
 } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
-import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 
 type ContactListProps = {
@@ -56,7 +54,6 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [newEmails, setNewEmails] = useState("");
   const [newPhones, setNewPhones] = useState("");
   const [newNotes, setNewNotes] = useState("");
-  const [newColor, setNewColor] = useState<EntityColor | undefined>();
 
   useEffect(() => {
     if (!userKeys) return;
@@ -87,7 +84,6 @@ export function ContactList({ workspaceId }: ContactListProps) {
     setNewEmails("");
     setNewPhones("");
     setNewNotes("");
-    setNewColor(undefined);
   }
 
   async function onCreate(firstName: string) {
@@ -115,7 +111,6 @@ export function ContactList({ workspaceId }: ContactListProps) {
           emails,
           phones,
           notes: notes ? textToTaskBody(notes) : undefined,
-          color: newColor,
         },
         nextOrder,
       );
@@ -200,11 +195,6 @@ export function ContactList({ workspaceId }: ContactListProps) {
               rows={3}
             />
           </div>
-          <EntityColorPicker
-            value={newColor}
-            disabled={busy}
-            onChange={setNewColor}
-          />
         </CreateEntityDialog>
       </PageActions>
       <WorkspaceSettingsAction workspaceId={workspaceId} />

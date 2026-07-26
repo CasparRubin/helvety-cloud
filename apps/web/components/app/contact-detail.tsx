@@ -6,7 +6,6 @@ import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
-import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import {
   EntityDetailLayout,
   EntityDetailShell,
@@ -41,7 +40,6 @@ import {
   type DecryptedContact,
 } from "@/lib/client-crypto/contacts";
 import { toContactPlaintext } from "@/lib/client-crypto/contact-plaintext";
-import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import { createTask } from "@/lib/client-crypto/tasks";
 import {
   EMPTY_TASK_BODY,
@@ -60,7 +58,6 @@ type ContactDraft = {
   emailsText: string;
   phonesText: string;
   notes: TaskBodyDoc;
-  color: EntityColor | undefined;
 };
 
 export function ContactDetail({
@@ -79,7 +76,6 @@ export function ContactDetail({
   const [emailsText, setEmailsText] = useState("");
   const [phonesText, setPhonesText] = useState("");
   const [notes, setNotes] = useState<TaskBodyDoc>(EMPTY_TASK_BODY);
-  const [color, setColor] = useState<EntityColor | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [storageLimitMessage, setStorageLimitMessage] = useState<string | null>(
@@ -104,9 +100,8 @@ export function ContactDetail({
       emailsText,
       phonesText,
       notes,
-      color,
     }),
-    [firstName, lastName, jobTitle, emailsText, phonesText, notes, color],
+    [firstName, lastName, jobTitle, emailsText, phonesText, notes],
   );
 
   const { status, savedAt, flush } = useAutosave({
@@ -133,7 +128,6 @@ export function ContactDetail({
             .map((p) => p.trim())
             .filter(Boolean),
           notes: next.notes,
-          color: next.color,
         }),
       );
       setContact(saved);
@@ -145,7 +139,6 @@ export function ContactDetail({
         emailsText: saved.emails.join(", "),
         phonesText: saved.phones.join(", "),
         notes: saved.notes,
-        color: saved.color,
       };
     },
     onError: (message) => setError(message),
@@ -156,7 +149,6 @@ export function ContactDetail({
       setEmailsText(canonical.emailsText);
       setPhonesText(canonical.phonesText);
       setNotes(canonical.notes);
-      setColor(canonical.color);
       setError(null);
     },
   });
@@ -181,7 +173,6 @@ export function ContactDetail({
         setEmailsText(loaded.emails.join(", "));
         setPhonesText(loaded.phones.join(", "));
         setNotes(loaded.notes);
-        setColor(loaded.color);
         setError(null);
         upsertContact(loaded);
       } catch (e) {
@@ -292,26 +283,36 @@ export function ContactDetail({
         main={
           <>
             <div className="grid grid-cols-2 gap-2">
-              <InlineTitle
-                value={firstName}
-                onChange={setFirstName}
-                onBlur={flush}
-                placeholder="First name"
-                disabled={deleting}
-                maxLength={500}
-                aria-label="First name"
-                className="min-w-0"
-              />
-              <InlineTitle
-                value={lastName}
-                onChange={setLastName}
-                onBlur={flush}
-                placeholder="Last name"
-                disabled={deleting}
-                maxLength={500}
-                aria-label="Last name"
-                className="min-w-0"
-              />
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  First name
+                </Label>
+                <InlineTitle
+                  value={firstName}
+                  onChange={setFirstName}
+                  onBlur={flush}
+                  placeholder="First name"
+                  disabled={deleting}
+                  maxLength={500}
+                  aria-label="First name"
+                  className="min-w-0"
+                />
+              </div>
+              <div className="flex min-w-0 flex-col gap-1.5">
+                <Label className="text-xs text-muted-foreground">
+                  Last name
+                </Label>
+                <InlineTitle
+                  value={lastName}
+                  onChange={setLastName}
+                  onBlur={flush}
+                  placeholder="Last name"
+                  disabled={deleting}
+                  maxLength={500}
+                  aria-label="Last name"
+                  className="min-w-0"
+                />
+              </div>
             </div>
 
             <TaskBodyEditor
@@ -408,16 +409,6 @@ export function ContactDetail({
                   onBlur={flush}
                   placeholder="comma-separated"
                   disabled={deleting}
-                />
-              </CardContent>
-            </Card>
-
-            <Card size="sm">
-              <CardContent>
-                <EntityColorPicker
-                  value={color}
-                  disabled={deleting}
-                  onChange={setColor}
                 />
               </CardContent>
             </Card>

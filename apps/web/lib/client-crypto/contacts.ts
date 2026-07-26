@@ -21,7 +21,6 @@ import {
   toContactPlaintext,
   type ContactPlaintext,
 } from "@/lib/client-crypto/contact-plaintext";
-import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/client-crypto/entity-refs";
 import {
   EMPTY_TASK_BODY,
@@ -39,7 +38,6 @@ export type DecryptedContact = {
   emails: string[];
   phones: string[];
   notes: TaskBodyDoc;
-  color?: EntityColor;
   links: EntityLinkTarget[];
   sortOrder: number;
   createdAt: string;
@@ -92,7 +90,6 @@ async function toDecrypted(
   let emails: string[] = [];
   let phones: string[] = [];
   let notes: TaskBodyDoc = EMPTY_TASK_BODY;
-  let color: EntityColor | undefined;
   try {
     const content = await decryptContactContent(
       workspaceKey,
@@ -105,7 +102,6 @@ async function toDecrypted(
     emails = content.emails;
     phones = content.phones;
     notes = content.notes;
-    color = content.color;
   } catch {
     firstName = "Unable to decrypt";
   }
@@ -118,7 +114,6 @@ async function toDecrypted(
     emails,
     phones,
     notes,
-    color,
     links: row.links,
     sortOrder: row.sortOrder,
     createdAt: row.createdAt,
@@ -158,7 +153,6 @@ export async function createContact(
     emails?: string[];
     phones?: string[];
     notes?: TaskBodyDoc;
-    color?: EntityColor;
     links?: EntityLinkTarget[];
   },
   sortOrder = 0,

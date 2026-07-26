@@ -20,7 +20,7 @@ export function isEntityColor(value: unknown): value is EntityColor {
   );
 }
 
-/** Kind-level fallbacks when an entity has no accent color set. */
+/** Kind-level chip colors. Projects may override via ciphertext `color`; notes/contacts always use these. */
 export const KIND_FALLBACK_COLOR: Record<
   "task" | "contact" | "note" | "project",
   EntityColor

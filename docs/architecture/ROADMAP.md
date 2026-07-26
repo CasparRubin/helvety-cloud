@@ -476,7 +476,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- Optional `color` palette token in project/note/contact ciphertext; kind-level fallback constants.  
+- Optional `color` palette token in project ciphertext; kind-level fallback constants for note/contact chips.  
 - Rich chip: task shows live stage/priority/label from decrypted project categorizations; done/tombstoned = strikethrough.  
 - Click chip → navigate to target; backlinks panel on task/note/contact detail via `entity_links` reverse lookup.
 - Shared client entity cache so chips re-render when targets change.
@@ -496,12 +496,12 @@ Workspace  (members + per-member wrapped_keys)
 **Do:**
 
 - Stage option `color` as `EntityColor`; seed defaults for default stage names; project settings stage color picker; chip resolve uses stage color (name→default map when unset).  
-- Contact keeps own accent + kind fallback; notes use kind fallback only; no per-task accent.  
+- Notes and contacts use kind fallback only; no per-contact or per-task accent.  
 - EntityChip: label + color only; kind / stage / priority / label in `title` hover.  
 - Contact `notes` TipTap body; task + contact PUT `links` + extract EntityRefs on save.
 - Same BubbleMenu create/link UX as notes across task and contact bodies.
 
-**Don’t:** Per-task accent override; project body linking; self-link (same kind+id); plaintext color columns.
+**Don’t:** Per-contact or per-task accent override; project body linking; self-link (same kind+id); plaintext color columns.
 
 **Done when:** Stage colors drive task chips; linking works from note/task/contact bodies; badges not always-on.
 

@@ -186,7 +186,7 @@ export function EntityCacheProvider({
             kind,
             id,
             label: (contact && formatContactName(contact)) || "Contact",
-            color: contact?.color ?? fallback,
+            color: fallback,
             href: `/app/w/${workspaceId}/contacts/${id}`,
             deleted: Boolean(contact?.deletedAt),
             done: false,
