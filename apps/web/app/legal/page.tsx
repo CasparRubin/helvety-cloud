@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { LEGAL_DOC_META, LEGAL_DOC_SLUGS } from "@/lib/legal/policies";
 
 export const metadata: Metadata = {
-  title: "Legal — Helvety Cloud",
+  title: "Legal · Helvety Cloud",
   description: "Legal documents for Helvety Cloud (helvety.cloud)",
 };
 

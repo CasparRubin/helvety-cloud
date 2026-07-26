@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { AlertCircleIcon } from "lucide-react";
+import { AlertCircleIcon, CopyIcon } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -113,7 +113,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
     } catch (err) {
       if (err instanceof ApiClientError && err.status === 404) {
         setStep("needs_setup");
-        setError("No vault keys yet — set up the vault first.");
+        setError("No vault keys yet. Set up the vault first.");
       } else {
         setError(err instanceof Error ? err.message : "Vault unlock failed");
       }
@@ -137,7 +137,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       }
     >
       <Alert>
-        <AlertTitle>Zero knowledge — no recovery by Helvety</AlertTitle>
+        <AlertTitle>Zero knowledge, no recovery by Helvety</AlertTitle>
         <AlertDescription>
           Helvety cannot decrypt or restore vault content. If you lose your
           unlock methods (unlock passkey and offline recovery key + wrap), your
@@ -180,30 +180,58 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             logged or sent to Helvety. Losing these with your unlock passkey means
             permanent data loss.
           </p>
-          <p className="text-xs font-medium text-muted-foreground">
-            Recovery key
-          </p>
-          <code className="break-all rounded-md bg-muted p-2 text-xs">
-            {recovery.recoveryKeyExported}
-          </code>
-          <p className="text-xs font-medium text-muted-foreground">
-            Recovery wrap
-          </p>
-          <code className="max-h-32 overflow-auto break-all rounded-md bg-muted p-2 text-xs">
-            {JSON.stringify(recovery.recoveryWrappedUserKey)}
-          </code>
-          <Button
-            type="button"
-            variant="outline"
-            className="w-full"
-            disabled={pending}
-            onClick={() => {
-              void navigator.clipboard.writeText(recovery.recoveryKeyExported);
-              setMessage("Recovery key copied to clipboard (device only).");
-            }}
-          >
-            Copy recovery key
-          </Button>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Recovery key
+            </p>
+            <div className="relative rounded-md bg-muted">
+              <code className="block break-all p-2 pr-10 text-xs">
+                {recovery.recoveryKeyExported}
+              </code>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="absolute top-1.5 right-1.5"
+                disabled={pending}
+                aria-label="Copy recovery key"
+                onClick={() => {
+                  void navigator.clipboard.writeText(
+                    recovery.recoveryKeyExported,
+                  );
+                  setMessage("Recovery key copied to clipboard (device only).");
+                }}
+              >
+                <CopyIcon />
+              </Button>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1.5">
+            <p className="text-xs font-medium text-muted-foreground">
+              Recovery wrap
+            </p>
+            <div className="relative rounded-md bg-muted">
+              <code className="block max-h-32 overflow-auto break-all p-2 pr-10 text-xs">
+                {JSON.stringify(recovery.recoveryWrappedUserKey)}
+              </code>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon-xs"
+                className="absolute top-1.5 right-1.5"
+                disabled={pending}
+                aria-label="Copy recovery wrap"
+                onClick={() => {
+                  void navigator.clipboard.writeText(
+                    JSON.stringify(recovery.recoveryWrappedUserKey),
+                  );
+                  setMessage("Recovery wrap copied to clipboard (device only).");
+                }}
+              >
+                <CopyIcon />
+              </Button>
+            </div>
+          </div>
           <Button
             type="button"
             variant="outline"
@@ -212,7 +240,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             onClick={() => {
               downloadRecoveryFile(recovery);
               setMessage(
-                "Downloaded helvety-recovery.json (device only — never upload).",
+                "Downloaded helvety-recovery.json (device only, never upload).",
               );
             }}
           >
@@ -224,7 +252,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             disabled={pending}
             onClick={clearRecovery}
           >
-            I saved both offline — continue
+            I saved both offline, continue
           </Button>
         </div>
       ) : null}

@@ -259,7 +259,7 @@ async function countMeter(
 
 /**
  * Gate a net-new row in a workspace-scoped vault table.
- * For tasks, pass projectId — limits are per project.
+ * For tasks, pass projectId; limits are per project.
  * Returns an error response to short-circuit with, or null when allowed.
  */
 export async function assertWorkspaceCreateAllowed(

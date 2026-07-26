@@ -1,12 +1,12 @@
 /**
  * Current product legal pack versions (P-legal2).
- * Bump a version when that document changes materially — users must re-accept.
+ * Bump a version when that document changes materially; users must re-accept.
  */
 
 export const SIGNUP_POLICY_IDS = ["tos", "privacy", "aup", "e2ee"] as const;
 export type SignupPolicyId = (typeof SIGNUP_POLICY_IDS)[number];
 
-/** Current production versions — must match UI offers and API acceptance. */
+/** Current production versions. Must match UI offers and API acceptance. */
 export const CURRENT_POLICY_VERSIONS: Record<SignupPolicyId, string> = {
   tos: "2026-07-26-v1",
   privacy: "2026-07-26-v1",

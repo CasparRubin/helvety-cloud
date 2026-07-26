@@ -1,5 +1,5 @@
 /**
- * Stripe server client (P6f / P12). Billing metadata only — vault keys and vault
+ * Stripe server client (P6f / P12). Billing metadata only; vault keys and vault
  * content must never be sent to Stripe (BILLING.md).
  */
 import Stripe from "stripe";

@@ -1,9 +1,9 @@
 /**
- * Service-role Supabase client — justified server jobs only:
+ * Service-role Supabase client, justified server jobs only:
  * - Stripe webhook billing rows (subscriptions / billing_events per BILLING.md)
  * - Account deletion (`auth.admin.deleteUser` from DELETE /api/v1/me)
  * - Vault attachment Storage signed URLs + object size/remove (P11) after
- *   /api/v1 membership + entitlement checks — never to decrypt
+ *   /api/v1 membership + entitlement checks, never to decrypt
  *
  * Never import this from vault ciphertext routes for decryption and never use
  * it to "helpfully" decrypt vault tables.

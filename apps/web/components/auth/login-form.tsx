@@ -9,8 +9,6 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Field,
-  FieldDescription,
-  FieldError,
   FieldGroup,
   FieldLabel,
 } from "@/components/ui/field";
@@ -100,7 +98,7 @@ export function LoginForm() {
       title="Sign in"
       subtitle={
         step === "email"
-          ? "Passwordless email code. No passwords."
+          ? "Enter your email to get a one-time sign-in code."
           : `Enter the 6-digit code sent to ${email}.`
       }
       footer={
@@ -133,10 +131,6 @@ export function LoginForm() {
                 disabled={pending}
                 aria-invalid={error ? true : undefined}
               />
-              <FieldDescription>
-                We email a one-time code. Helvety cannot recover vault content
-                later — this only creates a session.
-              </FieldDescription>
             </Field>
             <Button type="submit" disabled={pending} className="w-full">
               {pending ? <Spinner data-icon="inline-start" /> : null}
@@ -167,7 +161,6 @@ export function LoginForm() {
                   <InputOTPSlot index={5} />
                 </InputOTPGroup>
               </InputOTP>
-              {error ? <FieldError>{error}</FieldError> : null}
             </Field>
             <Button
               type="submit"

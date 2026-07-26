@@ -1,6 +1,6 @@
 /**
  * WebAuthn PRF for vault unlock (session ≠ decrypt).
- * Dedicated discoverable credential with PRF — not Supabase Auth.
+ * Dedicated discoverable credential with PRF, not Supabase Auth.
  */
 
 import { deriveUnlockKey, fromBase64Url, generatePrfSalt, toBase64Url } from "@helvety-cloud/crypto";
@@ -140,7 +140,7 @@ export async function createPrfUnlock(
   try {
     prfOutput = extractPrfOutput(credential);
   } catch {
-    // Some authenticators only return PRF on get — assert immediately.
+    // Some authenticators only return PRF on get, so assert immediately.
     const asserted = (await navigator.credentials.get({
       publicKey: {
         challenge: bufferSource(randomChallenge()),

@@ -10,11 +10,11 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type Api = SupabaseClient<Database>;
 
 export type AccountWorkspaceSplit = {
-  /** Owned but shared with other members — deletion is blocked until resolved. */
+  /** Owned but shared with other members; deletion is blocked until resolved. */
   blockingWorkspaces: { id: string; name: string }[];
-  /** Owned with no other members — hard-deleted with the account. */
+  /** Owned with no other members; hard-deleted with the account. */
   soloOwnedWorkspaces: { id: string; name: string; kind: WorkspaceKind }[];
-  /** Not owned — the account is only removed from these. */
+  /** Not owned; the account is only removed from these. */
   leavingWorkspaces: { id: string; name: string; role: WorkspaceRole }[];
 };
 

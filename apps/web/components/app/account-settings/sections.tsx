@@ -39,7 +39,7 @@ export function AccountGeneralSettings() {
       <p className="text-sm text-muted-foreground">
         Signed in as{" "}
         <span className="font-medium text-foreground">{account.email}</span>.
-        Auth is email OTP — there is no account password. Billing is per
+        Auth is email OTP, so there is no account password. Billing is per
         workspace (owner manages Plan in workspace settings).
       </p>
     </div>
@@ -95,8 +95,8 @@ export function AccountDangerSettings() {
           </li>
           <li>
             Solo workspaces you own (including Personal) and everything inside
-            them — projects, tasks, notes, contacts, links, ciphertext, and
-            wrapped keys — are permanently deleted. Helvety cannot decrypt or
+            them (projects, tasks, notes, contacts, links, ciphertext, and
+            wrapped keys) are permanently deleted. Helvety cannot decrypt or
             recover vault data.
           </li>
           <li>

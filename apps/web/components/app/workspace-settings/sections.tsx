@@ -69,7 +69,7 @@ export function WorkspaceGeneralSettings() {
         </div>
         {isPersonal ? (
           <p className="text-xs text-muted-foreground">
-            Personal workspace — cannot be deleted.
+            Personal workspace. Cannot be deleted.
           </p>
         ) : null}
       </div>
@@ -333,7 +333,7 @@ export function WorkspaceBillingSettings() {
             </div>
             {billing.freeOverflowLocked ? (
               <p className="text-xs text-muted-foreground">
-                New creates are paused — this workspace is over the free
+                New creates are paused because this workspace is over the free
                 allowance (two free workspaces per account). Existing content
                 stays available. Upgrade to Pro, or reduce owned free workspaces
                 to unlock creates again.
@@ -361,7 +361,7 @@ export function WorkspaceBillingSettings() {
               {billing.limits.storageBytes === null
                 ? `${formatBytes(billing.usage.storageBytes)} used · unmetered (max ${formatBytes(billing.limits.maxUploadBytes)} per file)`
                 : billing.limits.storageBytes === 0
-                  ? "not included on Free — upgrade to attach files"
+                  ? "not included on Free (upgrade to attach files)"
                   : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file; ${formatLimit(billing.limits.filesPerTask)} files/task)`}
             </p>
             {isOwner && discountApplied ? (

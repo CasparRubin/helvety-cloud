@@ -1,5 +1,5 @@
 /**
- * Recovery key export — one-shot offline secret.
+ * Recovery key export: one-shot offline secret.
  * Never log or POST the recovery key or recovery wrap.
  */
 
@@ -11,7 +11,7 @@ import {
 } from "@helvety-cloud/crypto";
 
 export type RecoveryExport = {
-  /** Base64url recovery key — show once; user stores offline. */
+  /** Base64url recovery key. Show once; user stores offline. */
   recoveryKeyExported: string;
   /** Recovery-wrapped user_symmetric_key for offline backup (never uploaded). */
   recoveryWrappedUserKey: WrappedKeyEnvelope;

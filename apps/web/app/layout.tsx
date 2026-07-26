@@ -8,7 +8,7 @@ const geist = Geist({ subsets: ["latin"], variable: "--font-sans" });
 
 export const metadata: Metadata = {
   title: "Helvety Cloud",
-  description: "E2EE workspace — helvety.cloud",
+  description: "E2EE workspace on helvety.cloud",
 };
 
 export default function RootLayout({

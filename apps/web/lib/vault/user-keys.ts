@@ -116,7 +116,7 @@ export async function unlockUserKeys(
 
   const ok = await verifyKeyCheck(userSymmetricKey, row.keyCheck, userId);
   if (!ok) {
-    throw new Error("Key check failed — wrong unlock material or corrupt data");
+    throw new Error("Key check failed: wrong unlock material or corrupt data");
   }
 
   const privateKey = await unwrapKey(

@@ -46,7 +46,7 @@ const PRO_MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MiB
 export const UNLIMITED = Number.POSITIVE_INFINITY;
 
 /**
- * Tunable Free / Pro defaults. Adjust here (redeploy) — do not hardcode
+ * Tunable Free / Pro defaults. Adjust here (redeploy); do not hardcode
  * elsewhere. Lowering caps grandfather existing data (create gates only).
  */
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
@@ -149,7 +149,7 @@ export type SubscriptionLike = {
 
 /**
  * Missing row, unknown plan, or a lapsed status (past_due, canceled, unpaid,
- * incomplete, paused, …) all resolve to free — never a silent paid plan.
+ * incomplete, paused, …) all resolve to free, never a silent paid plan.
  * Comp grants use plan=pro + status=active + billing_source=comp.
  */
 export function resolvePlan(subscription: SubscriptionLike): Plan {

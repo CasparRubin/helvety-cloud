@@ -1,5 +1,5 @@
 /**
- * Attachment parent links (P11) — plaintext junction for list + cascade.
+ * Attachment parent links (P11): plaintext junction for list + cascade.
  * Synced from TipTap fileAttachment atoms on note/task/contact save.
  */
 import type { AttachmentParentKind } from "@helvety-cloud/api-contract";
