@@ -217,7 +217,7 @@ export function ProjectMilestonesPanel({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col gap-3">
+    <div className="flex min-h-0 flex-1 flex-col gap-3">
       <CreateEntityDialog
         triggerLabel="Create milestone"
         dialogTitle="Create milestone"

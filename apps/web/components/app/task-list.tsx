@@ -39,6 +39,7 @@ import {
   ProjectMilestonesPanel,
   ProjectTitleEditor,
 } from "@/components/app/project-overview";
+import { ProjectProgress } from "@/components/app/project-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -70,16 +71,8 @@ import {
   loadDecryptedProject,
   type DecryptedProject,
 } from "@/lib/vault/projects";
+import { todayIsoDate } from "@/lib/vault/project-progress";
 import { cn } from "@/lib/utils";
-
-/** Local calendar date as ISO `YYYY-MM-DD` for overdue comparison. */
-function todayIsoDate(): string {
-  const now = new Date();
-  const year = now.getFullYear();
-  const month = `${now.getMonth() + 1}`.padStart(2, "0");
-  const day = `${now.getDate()}`.padStart(2, "0");
-  return `${year}-${month}-${day}`;
-}
 
 type TaskListProps = {
   workspaceId: string;
@@ -480,7 +473,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             </DndContext>
           </div>
 
-          <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-y-auto border-l border-border/60 pl-4">
+          <aside className="flex min-h-0 min-w-0 flex-[1] flex-col overflow-hidden border-l border-border/60 pl-4">
             <ProjectMilestonesPanel
               workspaceId={workspaceId}
               projectId={projectId}
@@ -494,6 +487,11 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                   setMilestoneFilter("all");
                 }
               }}
+            />
+            <ProjectProgress
+              tasks={tasks}
+              categorizations={project.categorizations}
+              milestones={milestones}
             />
           </aside>
         </div>
