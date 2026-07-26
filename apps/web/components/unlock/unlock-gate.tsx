@@ -137,7 +137,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       }
     >
       <Alert>
-        <AlertTitle>Only you can unlock this</AlertTitle>
+        <AlertTitle>Helvety cannot unlock this</AlertTitle>
         <AlertDescription>
           Your data is encrypted on your device. Helvety cannot decrypt or
           restore it. If you lose your unlock passkey and offline recovery key,
