@@ -1,7 +1,7 @@
 /**
  * Billing catalog + effective limits (P12).
  * Free/Pro bases and addon pack sizes live in code so they can be tuned in one
- * place; Stripe Price IDs come from env. Never vault keys or content.
+ * place; Stripe Price IDs come from env. Never encryption keys or content.
  */
 
 export type Plan = "free" | "pro";

@@ -10,7 +10,7 @@ import {
   downloadAndDecryptAttachment,
   isInlineImageMime,
   loadAttachmentMeta,
-} from "@/lib/vault/attachments";
+} from "@/lib/client-crypto/attachments";
 import type { FileAttachmentOptions } from "@/lib/editor/file-attachment-extension";
 import { cn } from "@/lib/utils";
 

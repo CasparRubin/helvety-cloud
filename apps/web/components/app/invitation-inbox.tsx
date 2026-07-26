@@ -6,18 +6,18 @@ import type { WorkspaceInvitation } from "@helvety-cloud/api-contract";
 
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   acceptInvitation,
   claimInvitation,
   listMyInvitations,
 } from "@/lib/api/v1-client";
-import type { UnlockedVault } from "@/lib/vault/user-keys";
+import type { UnlockedUserKeys } from "@/lib/client-crypto/user-keys";
 import {
   decryptWorkspaceName,
   storeLastWorkspaceId,
   unwrapWorkspaceKey,
-} from "@/lib/vault/workspaces";
+} from "@/lib/client-crypto/workspaces";
 
 function statusCopy(status: WorkspaceInvitation["status"]): string {
   switch (status) {
@@ -40,10 +40,10 @@ function statusCopy(status: WorkspaceInvitation["status"]): string {
 
 /**
  * Workspace names live in ciphertext; readable once the owner sealed the
- * workspace key to this vault.
+ * workspace key to this user's keys.
  */
 async function decryptWorkspaceNames(
-  vault: UnlockedVault,
+  userKeys: UnlockedUserKeys,
   invitations: WorkspaceInvitation[],
 ): Promise<Map<string, string>> {
   const names = new Map<string, string>();
@@ -53,7 +53,7 @@ async function decryptWorkspaceNames(
       if (!workspaceEncryptedBlob || !sealedWorkspaceKey) return;
       try {
         const workspaceKey = await unwrapWorkspaceKey(
-          vault,
+          userKeys,
           invitation.workspaceId,
           sealedWorkspaceKey,
         );
@@ -79,7 +79,7 @@ type InvitationInboxProps = {
 
 export function InvitationInbox({ userId }: InvitationInboxProps) {
   const router = useRouter();
-  const { vault, refreshWorkspaces } = useVaultSession();
+  const { userKeys, refreshWorkspaces } = useCryptoSession();
   const [invitations, setInvitations] = useState<WorkspaceInvitation[]>([]);
   const [workspaceNames, setWorkspaceNames] = useState<Map<string, string>>(
     () => new Map(),
@@ -88,22 +88,22 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const loadInvitations = useCallback(async (activeVault: UnlockedVault) => {
+  const loadInvitations = useCallback(async (activeKeys: UnlockedUserKeys) => {
     const listed = await listMyInvitations();
     const pending = listed.invitations.filter(
       (i) => i.status !== "cancelled" && i.status !== "accepted",
     );
     return {
       invitations: pending,
-      workspaceNames: await decryptWorkspaceNames(activeVault, pending),
+      workspaceNames: await decryptWorkspaceNames(activeKeys, pending),
     };
   }, []);
 
   const refresh = useCallback(async () => {
-    if (!vault) return;
+    if (!userKeys) return;
     setError(null);
     try {
-      const loaded = await loadInvitations(vault);
+      const loaded = await loadInvitations(userKeys);
       setInvitations(loaded.invitations);
       setWorkspaceNames(loaded.workspaceNames);
     } catch (err) {
@@ -111,14 +111,14 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
     } finally {
       setLoading(false);
     }
-  }, [vault, loadInvitations]);
+  }, [userKeys, loadInvitations]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
-        const loaded = await loadInvitations(vault);
+        const loaded = await loadInvitations(userKeys);
         if (cancelled) return;
         setInvitations(loaded.invitations);
         setWorkspaceNames(loaded.workspaceNames);
@@ -135,7 +135,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, loadInvitations]);
+  }, [userKeys, loadInvitations]);
 
   async function onClaim(invitation: WorkspaceInvitation) {
     setPendingId(invitation.id);
@@ -164,10 +164,10 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
     }
   }
 
-  if (!vault) {
+  if (!userKeys) {
     return (
       <p className="text-sm text-muted-foreground">
-        Unlock your vault to claim and accept invitations.
+        Unlock with your passkey to claim and accept invitations.
       </p>
     );
   }

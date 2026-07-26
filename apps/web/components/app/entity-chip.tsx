@@ -5,13 +5,13 @@ import { useRouter } from "next/navigation";
 import { useMemo } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 
-import { useOptionalVaultEntityCache } from "@/components/vault/vault-entity-cache";
-import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
+import { useOptionalEntityCache } from "@/components/unlock/entity-cache";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/client-crypto/categorization-icons";
 import {
   ENTITY_COLOR_CLASSES,
   KIND_FALLBACK_COLOR,
   type EntityColor,
-} from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/entity-colors";
 import { cn } from "@/lib/utils";
 
 type EntityChipProps = {
@@ -45,7 +45,7 @@ export function EntityChip({
   className,
 }: EntityChipProps) {
   const router = useRouter();
-  const cache = useOptionalVaultEntityCache();
+  const cache = useOptionalEntityCache();
   const resolved = useMemo(() => {
     if (cache) return cache.resolve(kind, id);
     return {

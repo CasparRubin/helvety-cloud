@@ -1,4 +1,4 @@
--- Explicit GRANTs (Data API auto-expose is OFF). No vault access for anon.
+-- Explicit GRANTs (Data API auto-expose is OFF). No encrypted-entity access for anon.
 
 revoke all on table public.profiles from anon, public;
 revoke all on table public.user_crypto from anon, public;

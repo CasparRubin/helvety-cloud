@@ -9,8 +9,8 @@ export type AuthedApi = {
 };
 
 /**
- * User-JWT Supabase client for /api/v1 vault routes.
- * Browser Auth SDK is OK; vault I/O must not use PostgREST from the browser.
+ * User-JWT Supabase client for /api/v1 encrypted-entity routes.
+ * Browser Auth SDK is OK; encrypted entity I/O must not use PostgREST from the browser.
  */
 export function createClientFromBearer(
   request: Request,

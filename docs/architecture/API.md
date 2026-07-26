@@ -7,7 +7,7 @@
 3. **Ciphertext-opaque:** no plaintext titles/bodies on the wire to our servers.  
 4. **Client-generated UUIDs** + idempotent upserts.  
 5. **Workspace-scoped** resources.  
-6. Browser **must not** use Supabase Data API (`from('tasks')`) for vault tables. Supabase **Auth** SDK in the browser is OK.  
+6. Browser **must not** use Supabase Data API (`from('tasks')`) for encrypted entity tables. Supabase **Auth** SDK in the browser is OK.  
 7. Do **not** make Next.js Server Actions the only mutation path (extension/native clients later).
 
 ## Surfaces
@@ -50,7 +50,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/seal` | Owner/admin stores client-sealed workspace key for claimed invitee |
 | POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/cancel` | Cancel active invitation (owner/admin; clears any stored seal) |
 | GET | `/api/v1/me/invitations` | Invitations addressed to the caller’s verified email |
-| POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches vault `public_key` (must match their `user_crypto` row) |
+| POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches their `public_key` (must match their `user_crypto` row) |
 | POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (seat-gated) |
 | GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits (null = unlimited), usage, addons, `freeOverflowLocked` (any member) |
 | POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro → `{ url }` |
@@ -60,7 +60,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set addon pack quantities on Pro Stripe sub |
 | POST | `/api/webhooks/stripe` | Stripe webhook (signature-verified); service-role upserts; never overwrites comps |
 
-**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up vault, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own vault key. Invitation payloads expose `workspaceEncryptedBlob` (not a plaintext workspace name); the invitee decrypts the name after seal when they hold the workspace key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
+**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up encryption, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own encryption key. Invitation payloads expose `workspaceEncryptedBlob` (not a plaintext workspace name); the invitee decrypts the name after seal when they hold the workspace key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
 
 **List query params:** `limit` (1–100, default 50), opaque `cursor` (keyset on `sort_order ASC, id ASC`), `includeDeleted=true` to include soft-deleted rows. Soft-delete = PUT with `deletedAt` ISO timestamp (schema `deleted_at`). Default lists omit tombstones. Notes list also accepts optional `projectId` / `taskId` (UUID) to filter without decrypting (`taskId` resolved via `entity_links`). Task list accepts optional `labelId` / `stageId` / `priorityId` (UUID) — option **names** live in project ciphertext; these ids are intentional plaintext metadata for filtering.
 
@@ -78,9 +78,9 @@ Stable codes via `packages/api-contract`: `unauthorized`, `forbidden`, `limit_ex
 
 ## Server DB access
 
-Route handlers use Supabase client with the **user JWT**. Service role is used by `/api/webhooks/stripe` and discount redeem (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events` / `discount_codes` redemption counters, and by `DELETE /api/v1/me` for `auth.admin.deleteUser` — never to “helpfully” decrypt or touch vault tables.
+Route handlers use Supabase client with the **user JWT**. Service role is used by `/api/webhooks/stripe` and discount redeem (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events` / `discount_codes` redemption counters, and by `DELETE /api/v1/me` for `auth.admin.deleteUser` — never to “helpfully” decrypt or touch encrypted entity tables.
 
-**PostgREST / grants:** `authenticated` retains table GRANTs so API routes can query with the user JWT under RLS. The **browser must still never** call the Data API for vault tables — entitlement gates (P6f) live only on `/api/v1`. Closing Data API entirely would require a larger “service-role-only API” redesign; not done in this wave.
+**PostgREST / grants:** `authenticated` retains table GRANTs so API routes can query with the user JWT under RLS. The **browser must still never** call the Data API for encrypted entity tables — entitlement gates (P6f) live only on `/api/v1`. Closing Data API entirely would require a larger “service-role-only API” redesign; not done in this wave.
 
 **Advisor lint `0029_authenticated_security_definer_function_executable`:** expected WARN for invitation / delete / membership / seat `SECURITY DEFINER` RPCs that `/api/v1` calls with the user JWT. Do **not** “fix” by revoking `authenticated` EXECUTE — that breaks those routes. Trigger helpers and `increment_discount_redemption` correctly revoke EXECUTE from `authenticated` (service-role or trigger-only).
 

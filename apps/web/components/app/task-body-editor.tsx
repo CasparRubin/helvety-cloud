@@ -16,8 +16,8 @@ import { Button } from "@/components/ui/button";
 import { ApiClientError } from "@/lib/api/v1-client";
 import { EntityRef } from "@/lib/editor/entity-ref-extension";
 import { FileAttachment } from "@/lib/editor/file-attachment-extension";
-import { uploadVaultAttachment } from "@/lib/vault/attachments";
-import type { TaskBodyDoc } from "@/lib/vault/task-plaintext";
+import { uploadEncryptedAttachment } from "@/lib/client-crypto/attachments";
+import type { TaskBodyDoc } from "@/lib/client-crypto/task-plaintext";
 import { cn } from "@/lib/utils";
 
 export type EntityLinkAction =
@@ -166,7 +166,7 @@ export function TaskBodyEditor({
         for (const file of files) {
           try {
             const key = await cfg.getWorkspaceKey();
-            const uploaded = await uploadVaultAttachment({
+            const uploaded = await uploadEncryptedAttachment({
               workspaceId: cfg.workspaceId,
               workspaceKey: key,
               file,

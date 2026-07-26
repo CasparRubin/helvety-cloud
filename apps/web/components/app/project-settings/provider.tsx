@@ -9,7 +9,7 @@ import {
 } from "react";
 import { useRouter } from "next/navigation";
 
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   addCategorizationOption,
   copyProjectCategorizations,
@@ -21,12 +21,12 @@ import {
   setCategorizationOptionIcon,
   setCategorizationOptionMaxVisibleTasks,
   setCategorizationOptionCompletionPercent,
-} from "@/lib/vault/categorization-ops";
+} from "@/lib/client-crypto/categorization-ops";
 import type {
   CategorizationIcon,
   CategorizationKind,
-} from "@/lib/vault/categorizations";
-import type { EntityColor } from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/categorizations";
+import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import {
   deleteProject,
   loadDecryptedProject,
@@ -35,7 +35,7 @@ import {
   saveProjectContent,
   projectPlaintextFrom,
   type DecryptedProject,
-} from "@/lib/vault/projects";
+} from "@/lib/client-crypto/projects";
 
 type ProjectSettingsContextValue = {
   project: DecryptedProject | null;
@@ -97,7 +97,7 @@ export function ProjectSettingsProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
 
   const [project, setProject] = useState<DecryptedProject | null>(null);
   const [siblings, setSiblings] = useState<DecryptedProject[]>([]);
@@ -116,7 +116,7 @@ export function ProjectSettingsProvider({
   }, [getWorkspaceKey, workspaceId, projectId]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -133,7 +133,7 @@ export function ProjectSettingsProvider({
     return () => {
       cancelled = true;
     };
-  }, [vault, reload]);
+  }, [userKeys, reload]);
 
   const ensureSiblingsLoaded = useCallback(async () => {
     if (siblingsLoaded) return;
@@ -387,7 +387,7 @@ export function ProjectSettingsProvider({
     });
   }
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   const value: ProjectSettingsContextValue = {
     project,

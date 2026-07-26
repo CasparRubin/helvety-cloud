@@ -31,7 +31,7 @@ export async function POST(request: Request, context: RouteContext) {
   if (!cryptoRow?.public_key) {
     return apiError(
       "forbidden",
-      "Set up and unlock your vault before claiming an invitation",
+      "Set up encryption and unlock with your passkey before claiming an invitation",
       403,
     );
   }
@@ -46,10 +46,10 @@ export async function POST(request: Request, context: RouteContext) {
     if (message.includes("not claimable") || message.includes("not found")) {
       return apiError("not_found", "Invitation not claimable", 404);
     }
-    if (message.includes("vault not set up")) {
+    if (message.includes("encryption not set up")) {
       return apiError(
         "forbidden",
-        "Set up and unlock your vault before claiming an invitation",
+        "Set up encryption and unlock with your passkey before claiming an invitation",
         403,
       );
     }

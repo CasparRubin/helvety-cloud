@@ -7,7 +7,7 @@ import {
   workspaceSettingsNavItems,
 } from "@/components/app/settings-shell";
 import { WorkspaceSettingsProvider } from "@/components/app/workspace-settings/provider";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 
 export default function WorkspaceSettingsLayout({
   children,
@@ -16,7 +16,7 @@ export default function WorkspaceSettingsLayout({
 }) {
   const params = useParams<{ workspaceId: string }>();
   const workspaceId = params.workspaceId;
-  const { workspaces } = useVaultSession();
+  const { workspaces } = useCryptoSession();
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
   const isOwner = workspace?.role === "owner";
 

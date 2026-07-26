@@ -13,21 +13,21 @@ import { PageActions } from "@/components/app/page-actions";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   createProject,
   loadDecryptedProjects,
   reorderProjects,
   type DecryptedProject,
-} from "@/lib/vault/projects";
-import { textToTaskBody } from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/projects";
+import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 
 type ProjectListProps = {
   workspaceId: string;
 };
 
 export function ProjectList({ workspaceId }: ProjectListProps) {
-  const { vault, workspaces, getWorkspaceKey } = useVaultSession();
+  const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const workspace = workspaces.find((w) => w.id === workspaceId);
 
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
@@ -48,7 +48,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   }, [loadProjects]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -66,7 +66,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, loadProjects]);
+  }, [userKeys, loadProjects]);
 
   async function onCreate(name: string) {
     setBusy(true);
@@ -112,7 +112,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     }
   }
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <>

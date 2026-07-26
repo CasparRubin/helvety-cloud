@@ -8,7 +8,7 @@ import { CategorizationOptionList } from "@/components/app/project-settings/opti
 import { useProjectSettings } from "@/components/app/project-settings/provider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { EntityColor } from "@/lib/vault/entity-colors";
+import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 
 function SettingsStatus({
   loading,
@@ -267,7 +267,7 @@ export function ProjectDangerSettings() {
     <div className="flex max-w-lg flex-col gap-3 rounded-lg border border-destructive/30 p-4">
       <p className="text-xs text-muted-foreground">
         Permanently delete this project and all of its tasks. This cannot be
-        undone. Helvety cannot recover deleted vault data.
+        undone. Helvety cannot recover deleted data.
       </p>
       <DeleteButton
         label="Delete project"

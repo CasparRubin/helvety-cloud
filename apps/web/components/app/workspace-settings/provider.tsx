@@ -14,7 +14,7 @@ import type {
   WorkspaceMember,
 } from "@helvety-cloud/api-contract";
 
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   ApiClientError,
   cancelWorkspaceInvitation,
@@ -30,7 +30,7 @@ import {
 import {
   handoffInvitationSeal,
   invitationMailto,
-} from "@/lib/vault/workspaces";
+} from "@/lib/client-crypto/workspaces";
 
 const BLOCKING_SUB_STATUSES = new Set([
   "active",
@@ -94,13 +94,8 @@ export function WorkspaceSettingsProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-  const {
-    vault,
-    workspaces,
-    getWorkspaceKey,
-    renameWorkspace,
-    removeWorkspace,
-  } = useVaultSession();
+  const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace } =
+    useCryptoSession();
 
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
   const canManage =
@@ -307,13 +302,13 @@ export function WorkspaceSettingsProvider({
   }
 
   async function onSeal(invitation: WorkspaceInvitation) {
-    if (!vault || !invitation.claimedPublicKey) return;
+    if (!userKeys || !invitation.claimedPublicKey) return;
     setPending(true);
     setError(null);
     try {
       const workspaceKey = await getWorkspaceKey(workspaceId);
       await handoffInvitationSeal({
-        vault,
+        userKeys,
         workspaceId,
         invitationId: invitation.id,
         claimedPublicKey: invitation.claimedPublicKey,
@@ -384,7 +379,7 @@ export function WorkspaceSettingsProvider({
         !billing.cancelAtPeriodEnd,
     );
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   const value: WorkspaceSettingsContextValue = {
     workspace,

@@ -4,7 +4,7 @@ import {
   ENTITY_COLOR_TOKENS,
   ENTITY_COLOR_CLASSES,
   type EntityColor,
-} from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/entity-colors";
 import { cn } from "@/lib/utils";
 
 type ColorPickerProps = {

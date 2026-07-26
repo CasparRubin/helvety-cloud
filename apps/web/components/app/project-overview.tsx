@@ -20,7 +20,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { Textarea } from "@/components/ui/textarea";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   createMilestone,
@@ -29,18 +29,18 @@ import {
   saveMilestone,
   sortMilestones,
   type DecryptedMilestone,
-} from "@/lib/vault/milestones";
+} from "@/lib/client-crypto/milestones";
 import {
   projectPlaintextFrom,
   renameProject,
   saveProjectContent,
   type DecryptedProject,
-} from "@/lib/vault/projects";
+} from "@/lib/client-crypto/projects";
 import {
   EMPTY_TASK_BODY,
   taskBodyPlainText,
   textToTaskBody,
-} from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/task-plaintext";
 import { cn } from "@/lib/utils";
 
 export function ProjectTitleEditor({
@@ -54,7 +54,7 @@ export function ProjectTitleEditor({
   onProjectChange: (project: DecryptedProject) => void;
   onError?: (error: string | null) => void;
 }) {
-  const { getWorkspaceKey } = useVaultSession();
+  const { getWorkspaceKey } = useCryptoSession();
   const [name, setName] = useState(project.name);
   const projectRef = useRef(project);
   useEffect(() => {
@@ -111,7 +111,7 @@ export function ProjectDescriptionEditor({
   onProjectChange: (project: DecryptedProject) => void;
   onError?: (error: string | null) => void;
 }) {
-  const { getWorkspaceKey } = useVaultSession();
+  const { getWorkspaceKey } = useCryptoSession();
   const [description, setDescription] = useState(project.description);
   const projectRef = useRef(project);
   useEffect(() => {
@@ -171,7 +171,7 @@ export function ProjectMilestonesPanel({
   onSelectFilter,
   onMilestonesChange,
 }: ProjectMilestonesPanelProps) {
-  const { getWorkspaceKey } = useVaultSession();
+  const { getWorkspaceKey } = useCryptoSession();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [newStartDate, setNewStartDate] = useState("");

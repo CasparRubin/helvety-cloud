@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const subprocessorsDoc: LegalDocument = {
   slug: "subprocessors",
   title: "Subprocessors",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-26-v2",
   sections: [
     {
       heading: "Living list",
@@ -17,7 +17,7 @@ export const subprocessorsDoc: LegalDocument = {
         "Supabase — authentication and Postgres database. Project helvety-cloud is in eu-central-2 (Zurich). Processes account email/auth metadata and ciphertext/metadata as described in the Privacy Policy.",
         "Vercel — application hosting. Processes HTTP traffic and hosting logs for the web app.",
         "Email delivery via Supabase Auth — OTP and auth emails. Region depends on Supabase Auth email configuration.",
-        "Stripe — payment processing when billing is enabled. Processes billing identity and payment metadata only, never vault plaintext or raw vault keys. Not charged until paid plans are turned on in the product.",
+        "Stripe — payment processing when billing is enabled. Processes billing identity and payment metadata only, never encrypted plaintext or raw encryption keys. Not charged until paid plans are turned on in the product.",
       ],
     },
     {

@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const aupDoc: LegalDocument = {
   slug: "aup",
   title: "Acceptable Use Policy",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-26-v2",
   sections: [
     {
       heading: "Purpose",
@@ -20,23 +20,23 @@ export const aupDoc: LegalDocument = {
       ],
     },
     {
-      heading: "Enforcement without reading vault content",
+      heading: "Enforcement without reading encrypted content",
       paragraphs: [
-        "Because vault content is end-to-end encrypted, Helvety cannot moderate vault plaintext. Enforcement options are limited to account-level and ciphertext-level measures (for example suspending accounts, deleting encrypted blobs or workspaces, or blocking access) based on signals Helvety can see — such as abuse of APIs, illegal account activity, or lawful requests relating to metadata Helvety holds.",
-        "Helvety does not claim the ability to inspect or “clean” encrypted vault content.",
+        "Because your data is end-to-end encrypted, Helvety cannot moderate plaintext. Enforcement options are limited to account-level and ciphertext-level measures (for example suspending accounts, deleting encrypted blobs or workspaces, or blocking access) based on signals Helvety can see — such as abuse of APIs, illegal account activity, or lawful requests relating to metadata Helvety holds.",
+        "Helvety does not claim the ability to inspect or “clean” encrypted content.",
       ],
     },
     {
       heading: "Your responsibility",
       paragraphs: [
-        "You are responsible for the lawfulness of content you encrypt and for compliance with applicable law. Helvety’s inability to read vault content does not authorize illegal use.",
+        "You are responsible for the lawfulness of content you encrypt and for compliance with applicable law. Helvety’s inability to read your data does not authorize illegal use.",
         "If Helvety reasonably believes your use creates legal risk or harms the Service or others, Helvety may suspend or terminate access without prior notice when urgency reasonably requires it.",
       ],
     },
     {
       heading: "Reporting",
       paragraphs: [
-        "Abuse or legal notices regarding account/metadata Helvety can act on: contact@helvety.com. Reports that require Helvety to read vault plaintext cannot be fulfilled; Helvety can only act on what it stores.",
+        "Abuse or legal notices regarding account/metadata Helvety can act on: contact@helvety.com. Reports that require Helvety to read encrypted plaintext cannot be fulfilled; Helvety can only act on what it stores.",
       ],
     },
   ],

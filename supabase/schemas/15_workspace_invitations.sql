@@ -143,7 +143,7 @@ declare
   row public.workspace_invitations;
   caller uuid := (select auth.uid());
   caller_email text := public.normalized_auth_email();
-  vault_public_key text;
+  user_public_key text;
 begin
   if caller is null or caller_email is null then
     raise exception 'not authenticated' using errcode = '42501';
@@ -152,18 +152,18 @@ begin
     raise exception 'public_key required' using errcode = '22023';
   end if;
 
-  select uc.public_key into vault_public_key
+  select uc.public_key into user_public_key
   from public.user_crypto uc
   where uc.user_id = caller;
 
-  if vault_public_key is null then
-    raise exception 'vault not set up' using errcode = 'P0001';
+  if user_public_key is null then
+    raise exception 'encryption not set up' using errcode = 'P0001';
   end if;
 
   -- Owners seal to whatever key lands here, so it must be the caller's own
-  -- registered vault key, not an arbitrary argument.
-  if public_key is distinct from vault_public_key then
-    raise exception 'public_key does not match vault public key'
+  -- registered user public key, not an arbitrary argument.
+  if public_key is distinct from user_public_key then
+    raise exception 'public_key does not match user public key'
       using errcode = '22023';
   end if;
 
@@ -174,7 +174,7 @@ begin
   update public.workspace_invitations wi
   set
     claimed_by = caller,
-    claimed_public_key = vault_public_key,
+    claimed_public_key = user_public_key,
     claimed_at = now()
   where wi.id = invitation_id
     and wi.email = caller_email
@@ -350,7 +350,7 @@ revoke all on function public.accept_workspace_invitation(uuid) from public;
 grant execute on function public.accept_workspace_invitation(uuid) to authenticated;
 
 -- Invitees may read workspace rows for their pending invitations (encrypted_blob
--- only decryptable after seal). Membership still required for vault tables, and
+-- only decryptable after seal). Membership still required for encrypted entity tables, and
 -- an accepted invite no longer grants metadata access once membership ends.
 create policy workspaces_select_invitee
   on public.workspaces

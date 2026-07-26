@@ -14,7 +14,7 @@ import { apiError, jsonOk } from "@/lib/api/errors";
 import {
   attachmentStoragePath,
   createAttachmentUploadUrl,
-} from "@/lib/api/vault-storage";
+} from "@/lib/api/attachment-storage";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
 type RouteContext = {

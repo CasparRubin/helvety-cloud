@@ -4,7 +4,7 @@ import { defineConfig } from "vitest/config";
 export default defineConfig({
   resolve: {
     alias: {
-      // Mirrors apps/web tsconfig "@/*" so vault modules are importable in tests.
+      // Mirrors apps/web tsconfig "@/*" so client-crypto modules are importable in tests.
       "@/": fileURLToPath(new URL("./apps/web/", import.meta.url)),
     },
   },

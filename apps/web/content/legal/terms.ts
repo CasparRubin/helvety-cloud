@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const termsDoc: LegalDocument = {
   slug: "terms",
   title: "Terms of Service",
-  versionLabel: "2026-07-26-v1",
+  versionLabel: "2026-07-26-v2",
   sections: [
     {
       heading: "Agreement",
@@ -15,37 +15,37 @@ export const termsDoc: LegalDocument = {
     {
       heading: "The service",
       paragraphs: [
-        "Helvety Cloud is a passwordless, end-to-end encrypted (E2EE) workspace service. Authentication creates an account session via email one-time codes. Vault unlock and decryption happen only on your device using keys derived from your vault unlock passkey (WebAuthn PRF) and related client-held material.",
-        "Helvety does not hold master keys, does not escrow vault keys, and cannot decrypt or restore vault content. Lost unlock credentials or recovery material can mean permanent loss of vault data.",
-        "The Service may change over time. We may add, modify, or discontinue features. Material changes to these Terms will be reflected by a new policy version that you may need to accept again before continued vault use.",
+        "Helvety Cloud is a passwordless, end-to-end encrypted (E2EE) workspace service. Authentication creates an account session via email one-time codes. Encryption unlock and decryption happen only on your device using keys derived from your unlock passkey (WebAuthn PRF) and related client-held material.",
+        "Helvety does not hold master keys, does not escrow encryption keys, and cannot decrypt or restore your data. Lost unlock credentials or recovery material can mean permanent loss of your data.",
+        "The Service may change over time. We may add, modify, or discontinue features. Material changes to these Terms will be reflected by a new policy version that you may need to accept again before continued use of encrypted features.",
       ],
     },
     {
       heading: "Account",
       paragraphs: [
-        "Access requires a valid email and one-time codes. Helvety Cloud does not use account passwords. Vault unlock uses a separate passkey on your device and is not the same as signing in.",
+        "Access requires a valid email and one-time codes. Helvety Cloud does not use account passwords. Encryption unlock uses a separate passkey on your device and is not the same as signing in.",
         "You must be able to enter into binding contracts under applicable law. If you use the Service on behalf of an organization, you represent that you have authority to bind that organization.",
-        "You are responsible for keeping access to your email, vault unlock passkey, devices, and any recovery export under your control. Helvety cannot reset vault access for you and will not ask you to send recovery keys or unlock material to Helvety.",
+        "You are responsible for keeping access to your email, unlock passkey, devices, and any recovery export under your control. Helvety cannot reset encryption access for you and will not ask you to send recovery keys or unlock material to Helvety.",
       ],
     },
     {
       heading: "License and acceptable use",
       paragraphs: [
         "Subject to these Terms and the AUP (incorporated by reference), Helvety grants you a limited, non-exclusive, non-transferable, revocable right to use the Service for lawful purposes.",
-        "Helvety may suspend or terminate accounts for AUP violations, abuse, non-payment (when billing applies), legal risk, or to protect the Service. Because vault content is end-to-end encrypted, enforcement for vault content is limited to account-level and ciphertext-level measures (for example suspending access or deleting encrypted blobs) — Helvety cannot read vault plaintext to moderate it.",
+        "Helvety may suspend or terminate accounts for AUP violations, abuse, non-payment (when billing applies), legal risk, or to protect the Service. Because your data is end-to-end encrypted, enforcement for encrypted content is limited to account-level and ciphertext-level measures (for example suspending access or deleting encrypted blobs) — Helvety cannot read plaintext to moderate it.",
       ],
     },
     {
       heading: "Your content and responsibility",
       paragraphs: [
         "You retain ownership of content you create. You grant Helvety only the rights needed to store and transmit ciphertext and related metadata to operate the Service.",
-        "You are solely responsible for the lawfulness of content you encrypt and for complying with applicable law. Helvety’s inability to read vault content does not authorize illegal use.",
+        "You are solely responsible for the lawfulness of content you encrypt and for complying with applicable law. Helvety’s inability to read your data does not authorize illegal use.",
       ],
     },
     {
       heading: "What the service is not",
       paragraphs: [
-        "Helvety Cloud is not a plaintext backup of vault data, not a key-recovery or forensic recovery service, and not a content host that can inspect or restore your encrypted workspace content.",
+        "Helvety Cloud is not a plaintext backup of your data, not a key-recovery or forensic recovery service, and not a content host that can inspect or restore your encrypted workspace content.",
         "Free-tier limits, if any, are stated in the product and in the Billing terms. Paid features, when offered, are governed by the Billing terms and these Terms.",
       ],
     },
@@ -53,7 +53,7 @@ export const termsDoc: LegalDocument = {
       heading: "Availability and support",
       paragraphs: [
         "We aim for reliable availability but do not guarantee uninterrupted or error-free operation. Planned maintenance, third-party outages (for example hosting or auth providers), and force majeure may affect access.",
-        "Support is limited to account and Service operation. Support cannot decrypt vault content or restore lost keys.",
+        "Support is limited to account and Service operation. Support cannot decrypt your data or restore lost keys.",
       ],
     },
     {
@@ -66,7 +66,7 @@ export const termsDoc: LegalDocument = {
     {
       heading: "Limitation of liability",
       paragraphs: [
-        "To the fullest extent permitted by mandatory applicable law, Helvety and Caspar Camille Rubin (as sole proprietor) are not liable for indirect, incidental, special, consequential, or punitive damages, or for loss of profits, revenue, data, goodwill, or business opportunities, arising from or related to the Service or these Terms — including permanent loss of vault data due to lost keys or recovery material.",
+        "To the fullest extent permitted by mandatory applicable law, Helvety and Caspar Camille Rubin (as sole proprietor) are not liable for indirect, incidental, special, consequential, or punitive damages, or for loss of profits, revenue, data, goodwill, or business opportunities, arising from or related to the Service or these Terms — including permanent loss of your data due to lost keys or recovery material.",
         "To the fullest extent permitted by mandatory law, Helvety’s total aggregate liability for all claims arising out of or related to the Service or these Terms is limited to the greater of (a) CHF 100 or (b) the amounts you paid Helvety for the Service in the twelve (12) months before the claim (or CHF 0 if you used only a free offering).",
         "Nothing in these Terms excludes or limits liability that cannot be excluded or limited under mandatory Swiss law (or other mandatory consumer protections that apply to you), including liability for death or personal injury caused by negligence where such limitation is prohibited, or for fraud or willful misconduct.",
       ],
@@ -74,7 +74,7 @@ export const termsDoc: LegalDocument = {
     {
       heading: "Indemnity",
       paragraphs: [
-        "You will defend and indemnify Helvety against claims, damages, and reasonable costs arising from your unlawful use of the Service, your vault content, or your breach of these Terms or the AUP, except to the extent caused by Helvety’s willful misconduct.",
+        "You will defend and indemnify Helvety against claims, damages, and reasonable costs arising from your unlawful use of the Service, your encrypted content, or your breach of these Terms or the AUP, except to the extent caused by Helvety’s willful misconduct.",
       ],
     },
     {
@@ -87,7 +87,7 @@ export const termsDoc: LegalDocument = {
     {
       heading: "Changes and contact",
       paragraphs: [
-        "We may update these Terms by publishing a new version and requiring acceptance of the new version where required for continued vault use. Continued use after required acceptance constitutes agreement to the updated Terms.",
+        "We may update these Terms by publishing a new version and requiring acceptance of the new version where required for continued use of encrypted features. Continued use after required acceptance constitutes agreement to the updated Terms.",
         "Contact: contact@helvety.com. Provider details: see Impressum.",
       ],
     },

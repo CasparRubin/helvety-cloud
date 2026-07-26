@@ -1,4 +1,4 @@
--- P6f + P12: billing (plaintext entitlements only — never vault keys or content).
+-- P6f + P12: billing (plaintext entitlements only — never encryption keys or content).
 -- Stripe webhook / redeem API (service_role) write subscriptions; members SELECT.
 -- Absence of a row = free plan (in code). Comp grants = billing_source=comp, no Stripe.
 
@@ -105,7 +105,7 @@ revoke insert, update, delete, truncate, references, trigger
 grant select, insert, update, delete on table public.subscriptions to service_role;
 
 -- Append-only audit of Stripe webhook events (idempotency + debugging).
--- Payload is the raw Stripe event: billing metadata only, never vault data.
+-- Payload is the raw Stripe event: billing metadata only, never encrypted data.
 create table public.billing_events (
   id uuid primary key default gen_random_uuid(),
   stripe_event_id text not null unique,

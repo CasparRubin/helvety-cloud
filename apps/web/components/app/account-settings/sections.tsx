@@ -9,7 +9,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 
 export function AccountGeneralSettings() {
   const { account, error } = useAccountSettings();
@@ -62,7 +62,7 @@ export function AccountDangerSettings() {
     canSubmit,
     onDeleteAccount,
   } = useAccountSettings();
-  const { workspaces } = useVaultSession();
+  const { workspaces } = useCryptoSession();
 
   const workspaceName = (workspaceId: string) =>
     workspaces.find((w) => w.id === workspaceId)?.name ?? "Workspace";
@@ -95,14 +95,14 @@ export function AccountDangerSettings() {
         <h2 className="text-sm font-medium">What deletion does</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>
-            Your auth account, profile, vault crypto metadata, policy
+            Your auth account, profile, encryption metadata, policy
             acceptances, and sessions are permanently removed.
           </li>
           <li>
             Solo workspaces you own (including Personal) and everything inside
             them (projects, tasks, notes, contacts, links, ciphertext, and
             wrapped keys) are permanently deleted. Helvety cannot decrypt or
-            recover vault data.
+            recover your data.
           </li>
           <li>
             Pro subscriptions on those deleted solo workspaces are cancelled.
@@ -180,10 +180,10 @@ export function AccountDangerSettings() {
       <section className="flex flex-col gap-3 rounded-lg border border-destructive/30 p-4">
         <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
         <p className="text-xs text-muted-foreground">
-          After deletion, remove your Helvety Cloud vault unlock passkey from
-          your device or password manager (Apple Passwords, Google Password
-          Manager, Windows Hello, etc.). The site cannot erase it from your
-          device. Also securely delete any downloaded{" "}
+          After deletion, remove your Helvety Cloud unlock passkey from your
+          device or password manager (Apple Passwords, Google Password Manager,
+          Windows Hello, etc.). The site cannot erase it from your device. Also
+          securely delete any downloaded{" "}
           <code className="text-[11px]">helvety-recovery.json</code> or other
           recovery-key backups. Stale passkeys and recovery files cannot restore
           deleted server data.
@@ -198,8 +198,8 @@ export function AccountDangerSettings() {
           />
           <Label htmlFor="cleanup-ack" className="text-xs leading-snug">
             I understand deletion is permanent, and I will remove my Helvety
-            Cloud vault unlock passkey from my devices/password managers and
-            destroy any recovery backups after deletion.
+            Cloud unlock passkey from my devices/password managers and destroy
+            any recovery backups after deletion.
           </Label>
         </div>
 
@@ -229,7 +229,7 @@ export function AccountDangerSettings() {
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
           title="Delete your Helvety Cloud account?"
-          description="This permanently deletes your account and solo-owned workspaces. Shared workspaces you leave stay for other members. Helvety cannot recover vault data. This cannot be undone."
+          description="This permanently deletes your account and solo-owned workspaces. Shared workspaces you leave stay for other members. Helvety cannot recover your data. This cannot be undone."
           confirmLabel="Delete account permanently"
           busy={pending}
           onConfirm={onDeleteAccount}

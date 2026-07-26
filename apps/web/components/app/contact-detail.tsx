@@ -30,8 +30,8 @@ import {
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useEntityCache } from "@/components/unlock/entity-cache";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   createContact,
@@ -39,14 +39,14 @@ import {
   loadDecryptedContact,
   saveContact,
   type DecryptedContact,
-} from "@/lib/vault/contacts";
-import { toContactPlaintext } from "@/lib/vault/contact-plaintext";
-import type { EntityColor } from "@/lib/vault/entity-colors";
-import { createTask } from "@/lib/vault/tasks";
+} from "@/lib/client-crypto/contacts";
+import { toContactPlaintext } from "@/lib/client-crypto/contact-plaintext";
+import type { EntityColor } from "@/lib/client-crypto/entity-colors";
+import { createTask } from "@/lib/client-crypto/tasks";
 import {
   EMPTY_TASK_BODY,
   type TaskBodyDoc,
-} from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/task-plaintext";
 
 type ContactDetailProps = {
   workspaceId: string;
@@ -66,8 +66,8 @@ export function ContactDetail({
   contactId,
 }: ContactDetailProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
-  const cache = useVaultEntityCache();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const cache = useEntityCache();
   const { upsertContact } = cache;
 
   const [contact, setContact] = useState<DecryptedContact | null>(null);
@@ -144,7 +144,7 @@ export function ContactDetail({
   });
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -174,7 +174,7 @@ export function ContactDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, contactId, getWorkspaceKey, upsertContact]);
+  }, [userKeys, workspaceId, contactId, getWorkspaceKey, upsertContact]);
 
   async function onDelete() {
     if (!contact || deleting || status === "saving") return;
@@ -253,7 +253,7 @@ export function ContactDetail({
     return items;
   }, [cache.tasks, cache.notes, cache.projects]);
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <EntityDetailShell loading={loading} error={error}>

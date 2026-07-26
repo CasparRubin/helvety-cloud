@@ -1,15 +1,15 @@
 # Auth (P2)
 
-Passwordless Supabase Auth for **helvety.cloud**. Session ≠ vault unlock (WebAuthn **PRF** — see P5 wiring in `apps/web/lib/vault/`).
+Passwordless Supabase Auth for **helvety.cloud**. Session ≠ encrypted unlock (WebAuthn **PRF** — see P5 wiring in `apps/web/lib/client-crypto/`).
 
 ## Policy
 
 | Allowed | Forbidden |
 |---------|-----------|
 | Email OTP (`signInWithOtp` / `verifyOtp`) | Passwords (`signInWithPassword`, password `signUp`) |
-| Vault unlock via WebAuthn **PRF** (client-only) | Supabase Auth passkeys (`registerPasskey` / `signInWithPasskey`) |
-| Browser Supabase **Auth** SDK | Browser PostgREST `from('…')` for vault tables |
-| | Claiming Helvety can recover vault content |
+| Encryption unlock via WebAuthn **PRF** (client-only) | Supabase Auth passkeys (`registerPasskey` / `signInWithPasskey`) |
+| Browser Supabase **Auth** SDK | Browser PostgREST `from('…')` for encrypted entity tables |
+| | Claiming Helvety can recover encrypted content |
 
 UI: shadcn/ui **Base UI** (`style: base-nova` in `apps/web/components.json`). Do not init with `-b radix`.
 
@@ -35,11 +35,11 @@ In the hosted dashboard (**Authentication → Email Templates → Magic Link**),
 3. **Passkeys off** — Authentication → Passkeys: disable (sign-in is OTP only).
 4. **URL config** — Site URL for the environment (`http://localhost:3000` while developing, `https://helvety.cloud` in production); redirect allowlist includes the origins you use.
 
-## Vault unlock RP ID (client-only)
+## Encryption unlock RP ID (client-only)
 
-Vault unlock uses a **dedicated WebAuthn PRF** credential created in the browser (`apps/web/lib/vault/prf.ts`). It is **not** configured in Supabase Auth.
+Encryption unlock uses a **dedicated WebAuthn PRF** credential created in the browser (`apps/web/lib/client-crypto/prf.ts`). It is **not** configured in Supabase Auth.
 
-The RP ID is derived from `window.location.hostname` (`localhost` for local, `helvety.cloud` in production). Credentials enrolled under `localhost` do not work on `helvety.cloud` and vice versa — users must set up / re-enroll the vault unlock passkey on the production origin.
+The RP ID is derived from `window.location.hostname` (`localhost` for local, `helvety.cloud` in production). Credentials enrolled under `localhost` do not work on `helvety.cloud` and vice versa — users must set up / re-enroll the unlock passkey on the production origin.
 
 ## App routes
 
@@ -48,6 +48,6 @@ The RP ID is derived from `window.location.hostname` (`localhost` for local, `he
 | `/` | Signed-out shell (CTA) or signed-in shell |
 | `/login` | Email → OTP code → session |
 
-## Session vs vault
+## Session vs encryption unlock
 
-Auth session cookies prove identity to Supabase / `/api/v1`. They do **not** decrypt vault content. Unlock is a **dedicated WebAuthn PRF** credential → HKDF → unwrap `user_crypto` (see [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md)). Recovery export is one-shot offline — never logged or POSTed.
+Auth session cookies prove identity to Supabase / `/api/v1`. They do **not** decrypt content. Unlock is a **dedicated WebAuthn PRF** credential → HKDF → unwrap `user_crypto` (see [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md)). Recovery export is one-shot offline — never logged or POSTed.

@@ -4,7 +4,7 @@ Blind Postgres on Supabase project `qnoeiurmyyyuawkcifmw`. Schema source of trut
 
 ## Access model (locked)
 
-All vault entities are **workspace-scoped**. There is no user-global contacts/notes store.
+All encrypted entities are **workspace-scoped**. There is no user-global contacts/notes store.
 
 ```text
 Workspace  (members + per-member wrapped_keys)
@@ -15,8 +15,8 @@ Workspace  (members + per-member wrapped_keys)
   └── attachments + attachment_links  (E2EE files in Storage; TipTap fileAttachment atoms)
 ```
 
-- **Personal workspace** — created/ensured on first vault setup (P6a); home for “general” notes/contacts.  
-- Invite (P6e) = email invitation → invitee claims with vault `public_key` → owner seals `workspace_key` (AAD `wrapped_keys:{workspaceId}:wrapped_key`) → accept inserts membership + wrap. Members decrypt **all** ciphertext in that workspace.
+- **Personal workspace** — created/ensured on first encryption setup (P6a); home for “general” notes/contacts.  
+- Invite (P6e) = email invitation → invitee claims with their `public_key` → owner seals `workspace_key` (AAD `wrapped_keys:{workspaceId}:wrapped_key`) → accept inserts membership + wrap. Members decrypt **all** ciphertext in that workspace.
 - Same person in two workspaces ⇒ **two contact rows**. Later softener: copy-to-workspace (client re-encrypts).  
 - **Reject:** user-global contact graph; notes with `workspace_id = null`; project-level key ACLs for contacts.
 - Structural relationships use FKs: project → tasks/milestones, milestone → tasks, and a note’s optional single project filing.
@@ -56,7 +56,7 @@ See [`ROADMAP.md`](ROADMAP.md) §4 access model + P6a–P6f.
 | `tasks` | `encrypted_blob` holds `{ version: 1, title, body, dueDate }` where `body` is TipTap JSON that may include allowed `entityRef` atoms; **no per-task accent** — chip color comes from the task’s stage option color; plaintext FKs: `id`, `project_id`, optional `label_id`, `stage_id`, `priority_id` (soft refs to option UUIDs in project ciphertext — **intentional metadata**: Helvety can see workflow structure/clustering, not option names), optional `milestone_id` FK → `milestones` ON DELETE SET NULL (intentional clustering metadata), sort, `updated_at`, tombstone. |
 | `notes` (P6d/P8) | Required `workspace_id`; `encrypted_blob` = `{ version: 1, title, body }` where `body` is TipTap JSON that may include `entityRef` atoms `{ type: "entityRef", attrs: { kind, id } }` (P8b); optional nullable plaintext `project_id` for filing filters. Task associations live in `entity_links`, not a note column. Note chips use the kind fallback color (no per-note accent). |
 | `contacts` | Required `workspace_id`; `encrypted_blob` = `{ version: 1, displayName, emails, phones, notes, color? }` under **workspace_key**; `notes` is TipTap JSON and may include allowed `entityRef` atoms; optional `color` palette token; duplicates across workspaces OK. |
-| `attachments` (P11) | `encrypted_meta` = `{ filename, mimeType }` envelope; `wrapped_dek` under workspace_key; raw file ciphertext in Storage (`vault-attachments/{workspaceId}/{attachmentId}`) as packed binary AES-GCM. TipTap `fileAttachment` atoms + `attachment_links` junction. |
+| `attachments` (P11) | `encrypted_meta` = `{ filename, mimeType }` envelope; `wrapped_dek` under workspace_key; raw file ciphertext in Storage (`encrypted-attachments/{workspaceId}/{attachmentId}`) as packed binary AES-GCM. TipTap `fileAttachment` atoms + `attachment_links` junction. |
 | `workspaces` (P14) | `encrypted_blob` = `{ version: 1, name }` under **workspace_key** (AAD `workspaces:{id}:encrypted_blob`). `kind` stays plaintext. |
 
 ## RLS

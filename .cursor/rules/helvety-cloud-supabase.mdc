@@ -13,4 +13,4 @@ Follow `docs/architecture/SCHEMA_WORKFLOW.md` and `DATA_MODEL.md`.
 - After schema changes: generate and commit TS types; run security advisors (MCP).
 - RLS on all user tables; explicit GRANTs (auto-expose is off).
 - Do not edit production schema only in the Dashboard.
-- Store only ciphertext + allowed metadata for vault entities.
+- Store only ciphertext + allowed metadata for encrypted entities.

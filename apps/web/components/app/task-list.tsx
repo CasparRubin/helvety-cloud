@@ -46,8 +46,8 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
-import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/client-crypto/categorization-icons";
 import {
   defaultPriority,
   defaultStage,
@@ -55,26 +55,26 @@ import {
   resolveStageColor,
   type CategorizationOption,
   type ProjectCategorizations,
-} from "@/lib/vault/categorizations";
-import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/categorizations";
+import { ENTITY_COLOR_CLASSES } from "@/lib/client-crypto/entity-colors";
 import {
   formatMilestoneDateRange,
   loadAllDecryptedMilestones,
   type DecryptedMilestone,
-} from "@/lib/vault/milestones";
-import { groupTasksByStage } from "@/lib/vault/task-board";
-import { textToTaskBody } from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/milestones";
+import { groupTasksByStage } from "@/lib/client-crypto/task-board";
+import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 import {
   createTask,
   loadAllDecryptedTasks,
   saveTaskCategorizationIds,
   type DecryptedTask,
-} from "@/lib/vault/tasks";
+} from "@/lib/client-crypto/tasks";
 import {
   loadDecryptedProject,
   type DecryptedProject,
-} from "@/lib/vault/projects";
-import { todayIsoDate } from "@/lib/vault/project-progress";
+} from "@/lib/client-crypto/projects";
+import { todayIsoDate } from "@/lib/client-crypto/project-progress";
 import { cn } from "@/lib/utils";
 
 type TaskListProps = {
@@ -84,7 +84,7 @@ type TaskListProps = {
 
 export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
 
   const [project, setProject] = useState<DecryptedProject | null>(null);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
@@ -120,7 +120,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   }, [getWorkspaceKey, workspaceId, projectId]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -136,7 +136,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, reload]);
+  }, [userKeys, reload]);
 
   const filteredTasks = useMemo(() => {
     if (milestoneFilter === "all") return tasks;
@@ -291,7 +291,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     });
   }
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <>

@@ -19,7 +19,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { createClient } from "@/lib/supabase/client";
 
 type UserMenuProps = {
@@ -28,7 +28,7 @@ type UserMenuProps = {
 
 export function UserMenu({ email }: UserMenuProps) {
   const router = useRouter();
-  const { lock } = useVaultSession();
+  const { lock } = useCryptoSession();
 
   async function signOut() {
     lock();

@@ -1,7 +1,7 @@
 /**
  * P3/P4 crypto tests.
  *
- * Helvety cannot decrypt vault content: this library never sends PRF output,
+ * Helvety cannot decrypt content: this library never sends PRF output,
  * recovery plaintext, or raw user keys to a server. Wrong unwrap material fails.
  * Wrapped blobs and key_check bind AAD `table:recordId:field`.
  */
@@ -305,7 +305,7 @@ describe("@helvety-cloud/crypto", () => {
   });
 });
 
-describe("P6b project/task vault content", () => {
+describe("P6b project/task encrypted content", () => {
   const decoder = new TextDecoder();
 
   it("encrypts project name with AAD; PUT schema requires encryptedBlob", async () => {

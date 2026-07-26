@@ -519,7 +519,7 @@ export type ListWorkspaceMembersResponse = z.infer<
   typeof listWorkspaceMembersResponseSchema
 >;
 
-/** P6f / P12 billing — plaintext entitlements only; never vault keys or content. */
+/** P6f / P12 billing — plaintext entitlements only; never encryption keys or content. */
 export const planIdSchema = z.enum(["free", "pro"]);
 export type PlanId = z.infer<typeof planIdSchema>;
 

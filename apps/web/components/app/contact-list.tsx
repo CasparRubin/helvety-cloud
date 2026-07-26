@@ -14,14 +14,14 @@ import { PageActions } from "@/components/app/page-actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   createContact,
   loadDecryptedContacts,
   type DecryptedContact,
-} from "@/lib/vault/contacts";
-import type { EntityColor } from "@/lib/vault/entity-colors";
-import { textToTaskBody } from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/contacts";
+import type { EntityColor } from "@/lib/client-crypto/entity-colors";
+import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 
 type ContactListProps = {
   workspaceId: string;
@@ -29,7 +29,7 @@ type ContactListProps = {
 
 export function ContactList({ workspaceId }: ContactListProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
 
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +41,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [newColor, setNewColor] = useState<EntityColor | undefined>();
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -61,7 +61,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, getWorkspaceKey]);
+  }, [userKeys, workspaceId, getWorkspaceKey]);
 
   function resetCreateFields() {
     setNewEmails("");
@@ -104,7 +104,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
     }
   }
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <>

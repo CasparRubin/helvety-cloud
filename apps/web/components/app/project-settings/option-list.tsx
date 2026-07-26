@@ -13,8 +13,8 @@ import {
   type CategorizationIcon,
   type CategorizationKind,
   type CategorizationOption,
-} from "@/lib/vault/categorizations";
-import type { EntityColor } from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/categorizations";
+import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 
 export function CategorizationOptionList({
   title,

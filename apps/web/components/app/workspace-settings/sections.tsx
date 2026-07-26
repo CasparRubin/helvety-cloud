@@ -11,7 +11,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { formatBytes } from "@/lib/billing/entitlements";
 
 function formatLimit(value: number | null): string {
@@ -80,7 +80,7 @@ export function WorkspaceGeneralSettings() {
 }
 
 export function WorkspaceMembersSettings() {
-  const { vault } = useVaultSession();
+  const { userKeys } = useCryptoSession();
   const {
     canManage,
     isOwner,
@@ -115,9 +115,9 @@ export function WorkspaceMembersSettings() {
     <div className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
       <p className="text-xs text-muted-foreground">
-        Invite by email. After they sign in and set up their vault, complete key
+        Invite by email. After they sign in and set up encryption, complete key
         handoff on an unlocked device. Helvety never sees the workspace key or
-        vault content.
+        your data.
       </p>
 
       {canManage ? (
@@ -236,7 +236,7 @@ export function WorkspaceMembersSettings() {
                       <Button
                         type="button"
                         size="sm"
-                        disabled={pending || !vault}
+                        disabled={pending || !userKeys}
                         onClick={() => void onSeal(invitation)}
                       >
                         Complete key handoff
@@ -345,8 +345,8 @@ export function WorkspaceBillingSettings() {
             ) : null}
             {isComplimentary ? (
               <p className="text-xs text-muted-foreground">
-                Unmetered Pro limits. Helvety cannot decrypt or recover vault
-                content.
+                Unmetered Pro limits. Helvety cannot decrypt or recover your
+                data.
               </p>
             ) : null}
             <p className="text-xs text-muted-foreground">
@@ -471,14 +471,14 @@ export function WorkspaceDangerSettings() {
       {isPersonal ? (
         <p className="text-xs text-muted-foreground">
           Your personal workspace cannot be deleted. It is created with your
-          vault and anchors your account.
+          encryption setup and anchors your account.
         </p>
       ) : (
         <>
           <p className="text-xs text-muted-foreground">
             Permanently delete this workspace and all projects, tasks, notes,
             contacts, and invitations. This cannot be undone. Helvety cannot
-            recover deleted vault data.
+            recover deleted data.
           </p>
           {needsBillingCancel ? (
             <p className="text-xs text-muted-foreground">

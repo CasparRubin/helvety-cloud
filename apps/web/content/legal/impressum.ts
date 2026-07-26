@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const impressumDoc: LegalDocument = {
   slug: "impressum",
   title: "Impressum",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-26-v2",
   sections: [
     {
       heading: "Service provider",
@@ -21,7 +21,7 @@ export const impressumDoc: LegalDocument = {
     {
       heading: "Responsibility for content",
       paragraphs: [
-        "Account and service metadata are processed as described in the Privacy Policy. Vault content is end-to-end encrypted: Helvety cannot read, decrypt, or restore vault plaintext. This Impressum does not create any obligation or ability to recover encrypted user content.",
+        "Account and service metadata are processed as described in the Privacy Policy. Your data in Helvety Cloud is end-to-end encrypted: Helvety cannot read, decrypt, or restore plaintext. This Impressum does not create any obligation or ability to recover encrypted user content.",
       ],
     },
   ],

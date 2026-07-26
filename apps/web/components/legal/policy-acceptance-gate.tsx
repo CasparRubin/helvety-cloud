@@ -37,7 +37,7 @@ const GATE_LABELS: Record<
     prefix: "I acknowledge the",
     linkText: "E2EE / zero-access notice",
     suffix:
-      "Helvety cannot decrypt or recover vault content; lost keys mean permanent loss; I am responsible for my content and keys.",
+      "Helvety cannot decrypt or recover your data; lost keys mean permanent loss; I am responsible for my content and keys.",
     docSlug: "e2ee",
   },
 };
@@ -89,8 +89,8 @@ export function PolicyAcceptanceGate({
       <div className="flex flex-col gap-1">
         <p className="text-sm font-medium">Accept policies to continue</p>
         <p className="text-xs text-muted-foreground">
-          Acceptance is logged with policy version and timestamp before vault
-          setup. Open each linked document to read it.
+          Acceptance is logged with policy version and timestamp before
+          encryption setup. Open each linked document to read it.
         </p>
       </div>
 

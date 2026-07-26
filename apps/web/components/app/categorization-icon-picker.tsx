@@ -4,7 +4,7 @@ import {
   CATEGORIZATION_ICON_COMPONENTS,
   CATEGORIZATION_ICON_TOKENS,
   type CategorizationIcon,
-} from "@/lib/vault/categorization-icons";
+} from "@/lib/client-crypto/categorization-icons";
 import { cn } from "@/lib/utils";
 
 type IconPickerProps = {

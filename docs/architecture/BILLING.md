@@ -6,7 +6,7 @@ owner completes Stripe Checkout (unless a **100%** code grants Pro with no card)
 
 ## Principles (unchanged)
 
-- Billing never touches vault keys or content.
+- Billing never touches encryption keys or content.
 - Meter **plaintext counts** only: workspaces, projects, members, row counts,
   ciphertext byte sizes, attachment link counts.
 - Subscription belongs to the **workspace** (owner pays).

@@ -22,7 +22,7 @@
 
 **Priorities (in order):**
 
-1. **Privacy** — Helvety cannot decrypt user vault content (no master key, no escrow, no support recovery of content).  
+1. **Privacy** — Helvety cannot decrypt user encrypted content (no master key, no escrow, no support recovery of content).  
 2. **Performance / UX** — later Linear-like speed; not required until after E2EE proof.  
 3. **Free base stack** — Supabase Free + Vercel Hobby + Stripe when charging (P6f); no paid Redis/Sentry/etc. in foundation.
 
@@ -50,13 +50,13 @@ email OTP → session → PRF passkey unlock → user keys
 | DB | Supabase **`helvety-cloud`** · ref **`qnoeiurmyyyuawkcifmw`** · region **eu-central-2 (Zurich)** |
 | Forbidden DB | Old project **`bkdzeihxzvrkndjvyzye`** (`helvety`) — do not touch |
 | Auth | **Supabase Auth** — email **OTP** only; **disable passwords**; **disable Auth passkeys** |
-| Vault unlock | WebAuthn **PRF** → HKDF unlock key (auth session ≠ vault decrypt) |
+| Encryption unlock | WebAuthn **PRF** → HKDF unlock key (auth session ≠ encryption decrypt) |
 | Crypto | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field |
 | Access model | **Everything workspace-scoped** — projects/tasks/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
-| Personal workspace | On first vault setup, ensure one **Personal** workspace (home for “general” notes/contacts) |
-| Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** vault entities in that workspace (P6e) |
+| Personal workspace | On first encryption setup, ensure one **Personal** workspace (home for “general” notes/contacts) |
+| Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** encrypted entities in that workspace (P6e) |
 | Public API | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>` |
-| Browser Supabase | **Auth SDK OK**; **`from('…')` for vault tables NOT OK** — go through API |
+| Browser Supabase | **Auth SDK OK**; **`from('…')` for encrypted entity tables NOT OK** — go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |
 | Types | Generated TS committed under `packages/db` (or equiv.) so agents always see the model |
 | Billing | **Stripe** workspace subscriptions — **P6f only**; no Clerk in foundation |
@@ -156,7 +156,7 @@ helvety-cloud/
 
 ### P2 — Auth (passwordless)
 
-**Goal:** Sign-in without passwords; session ready; vault still locked/empty.
+**Goal:** Sign-in without passwords; session ready; encrypted still locked/empty.
 
 **Do:**
 
@@ -164,11 +164,11 @@ helvety-cloud/
 - Disable Supabase password provider (dashboard).  
 - Email OTP flow (`signInWithOtp` / `verifyOtp`); email template with `{{ .Token }}`.  
 - Minimal auth pages (email → code → session) on shadcn/Base UI.  
-- No Supabase Auth passkeys (vault unlock PRF is separate, client-only).  
+- No Supabase Auth passkeys (encryption unlock PRF is separate, client-only).  
 - Gate app shell: signed-in vs signed-out.  
 - RP ID / origins for **helvety.cloud** (+ localhost for dev) documented.
 
-**Don’t:** PRF vault crypto persistence, encrypting tasks, PostgREST vault CRUD from client, **Radix-based shadcn**.
+**Don’t:** PRF encryption crypto persistence, encrypting tasks, PostgREST encrypted-entity CRUD from client, **Radix-based shadcn**.
 
 **Done when:** User can create session via OTP; shadcn is Base UI; no content decryption yet.
 
@@ -262,7 +262,7 @@ helvety-cloud/
 - Fill Impressum from public registry (Helvety by Rubin, Basel, UID CHE-356.266.592).  
 - Write production ToS, Privacy, AUP, E2EE notice, Billing terms, Subprocessors — no “NEED SWISS COUNSEL REVIEW” / draft banners on `/legal/*`.  
 - Bump `CURRENT_POLICY_VERSIONS` (users must re-accept).  
-- Keep vault gated on ToS/Privacy/AUP/E2EE acceptances.  
+- Keep encryption gated on ToS/Privacy/AUP/E2EE acceptances.  
 - Honesty vs KEY_HIERARCHY (no decrypt/recovery claims).  
 - Optional attorney review remains a business choice, not a product gate.
 
@@ -274,7 +274,7 @@ helvety-cloud/
 
 ### Access model (locked) — product wave
 
-All vault data is **workspace-scoped**. Invite = seal `workspace_key` → members decrypt everything in that workspace.
+All encrypted data is **workspace-scoped**. Invite = seal `workspace_key` → members decrypt everything in that workspace.
 
 ```text
 Workspace  (members + per-member wrapped_keys)
@@ -283,7 +283,7 @@ Workspace  (members + per-member wrapped_keys)
   └── contacts  (workspace address book; no global dedupe)
 ```
 
-- **Personal workspace** created on first vault setup — home for “general” notes/contacts.  
+- **Personal workspace** created on first encryption setup — home for “general” notes/contacts.  
 - Same person in two workspaces ⇒ two contact rows. Later: copy-to-workspace (re-encrypt). No user-global contacts.  
 - No `workspace_id = null` notes. No project-level key ACLs for contacts.
 
@@ -292,7 +292,7 @@ Workspace  (members + per-member wrapped_keys)
 
 ---
 
-### P6a — App shell + vault session + workspaces
+### P6a — App shell + crypto session + workspaces
 
 **Goal:** Replace proof card with a real signed-in app chrome; unlock once; manage workspaces.
 
@@ -301,7 +301,7 @@ Workspace  (members + per-member wrapped_keys)
 - Layout: sidebar/nav, workspace switcher, unlock gate (reuse PRF + policy acceptance).  
 - Routes e.g. `/app`, `/app/w/[workspaceId]`.  
 - List/create/rename workspaces via existing `/api/v1/workspaces*` (extend list endpoint if missing).  
-- **Personal workspace:** on first vault setup, create (or ensure) one Personal workspace so notes/contacts always have a home.  
+- **Personal workspace:** on first encryption setup, create (or ensure) one Personal workspace so notes/contacts always have a home.  
 - Client cache of unlocked keys in memory only (idle lock later OK).  
 - Dense shadcn/Base UI; no helvety.com port.
 
@@ -400,7 +400,7 @@ Workspace  (members + per-member wrapped_keys)
 
 - Stripe Checkout + Customer Portal + webhooks → `subscriptions` (plaintext entitlements only).  
 - Gate create-project / member limits in `/api/v1` from entitlements.  
-- Free plan in code; no vault keys/content in Stripe.  
+- Free plan in code; no encryption keys/content in Stripe.  
 - Service role only for webhook billing rows.
 
 **Don’t:** Paid Redis/Sentry; Clerk; redesign crypto/sharing UX beyond entitlement gates.
@@ -433,7 +433,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Status:** **Done**
 
-**Goal:** Many-to-many UUID link graph between vault entities (notes ↔ tasks/contacts/projects/notes) as intentional plaintext metadata; migrate off single `notes.task_id`.
+**Goal:** Many-to-many UUID link graph between encrypted entities (notes ↔ tasks/contacts/projects/notes) as intentional plaintext metadata; migrate off single `notes.task_id`.
 
 **Do:**
 
@@ -479,7 +479,7 @@ Workspace  (members + per-member wrapped_keys)
 - Optional `color` palette token in project/note/contact ciphertext; kind-level fallback constants.  
 - Rich chip: task shows live stage/priority/label from decrypted project categorizations; done/tombstoned = strikethrough.  
 - Click chip → navigate to target; backlinks panel on task/note/contact detail via `entity_links` reverse lookup.
-- Shared client vault cache so chips re-render when targets change.
+- Shared client entity cache so chips re-render when targets change.
 
 **Don’t:** Hover preview cards; cross-workspace links; store colors in plaintext columns; AI.
 
@@ -577,7 +577,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- `attachments` + `attachment_links` tables; private Supabase Storage bucket `vault-attachments`.  
+- `attachments` + `attachment_links` tables; private Supabase Storage bucket `encrypted-attachments`.  
 - Client: per-file DEK → AES-GCM file bytes; wrap DEK + encrypt `{ filename, mimeType }` under `workspace_key`.  
 - `/api/v1` create / complete / download / delete / list with signed URLs; gate on workspace plan (`storageBytes = 0` on free).  
 - TipTap `fileAttachment` node; sync `attachment_links` on entity save; cascade cleanup on delete.  
@@ -628,7 +628,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Goal:** Close remaining user-entered plaintext gaps and replace the temporary progress spark with a milestone-window chart.
 
-- `workspaces.name` → `encrypted_blob` (`{ version: 1, name }` under workspace key); wipe vault data on apply (no legacy plaintext name readers).
+- `workspaces.name` → `encrypted_blob` (`{ version: 1, name }` under workspace key); wipe encrypted data on apply (no legacy plaintext name readers).
 - Milestone ciphertext: `{ version: 1, title, description, startDate, endDate }` — no `targetDate`.
 - Stage options may store `completionPercent` (0–100); Cancelled excluded from weighted scope; client averages weights for “% done”.
 - Project Progress panel: X-axis from milestone start→end (or min/max when filter is all); dashed ideal line; actual curve to today + current weighted %; syncs with board `milestoneFilter`.
@@ -655,7 +655,7 @@ workspace_key / project_key (random)
 **Server may store:** user id, email (auth), public keys, wrapped blobs, membership, ids, timestamps, sizes, billing counters.  
 **Server must never have:** raw user/workspace keys, PRF output, recovery plaintext, titles/bodies.
 
-**Forbidden:** company recovery, escrow, “email reset restores vault,” MLS in foundation.
+**Forbidden:** company recovery, escrow, “email reset restores encrypted data,” MLS in foundation.
 
 ---
 
@@ -665,7 +665,7 @@ workspace_key / project_key (random)
 - Ciphertext-opaque; client-generated UUIDs; workspace-scoped; idempotent upserts.  
 - Later: `sync/push` + `sync/pull` without changing row ciphertext shape.  
 - Realtime = optional notify only.  
-- Not Server-Actions-only; not GraphQL for vault.
+- Not Server-Actions-only; not GraphQL for userKeys.
 
 ---
 
@@ -675,7 +675,7 @@ workspace_key / project_key (random)
 
 **Signup must accept (log versions):** ToS, Privacy, AUP, E2EE acknowledgment.
 
-**Honesty:** Never claim Helvety can read/recover vault content; never fake certifications; state free limits clearly.
+**Honesty:** Never claim Helvety can read/recover encrypted content; never fake certifications; state free limits clearly.
 
 **Risk note:** Text is product-authored (AI-assisted), not Swiss-attorney certification. Optional counsel review can still reduce Einzelfirma risk; GmbH may be advisable later. Stripe charges land in **P6f**.
 
@@ -683,10 +683,10 @@ workspace_key / project_key (random)
 
 ## 8. Success criteria (foundation = P5 green)
 
-1. Passwords disabled; OTP session + vault PRF unlock path works.  
-2. Service role cannot decrypt vault content.  
+1. Passwords disabled; OTP session + encryption PRF unlock path works.  
+2. Service role cannot decrypt content.  
 3. No API returns plaintext content or raw private keys.  
-4. Vault I/O only via `/api/v1`.  
+4. Encrypted entity I/O only via `/api/v1`.  
 5. `supabase/schemas` + migrations + committed types match remote (MCP verifiable).  
 6. Crypto tests reject wrong keys.  
 7. Recovery warning shown.  
@@ -710,7 +710,7 @@ workspace_key / project_key (random)
 - Implementing multiple P\* in one chat  
 - Copying old Helvety apps  
 - Studio-only schema without git  
-- Browser PostgREST for vault  
+- Browser PostgREST for encrypted entities  
 - Paid SaaS in foundation (or before P6f Stripe)  
 - Misleading E2EE/recovery copy  
 - Public launch without legal pack  

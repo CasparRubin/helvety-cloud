@@ -30,17 +30,17 @@ import {
 } from "@/components/app/workspace-nav";
 import { WorkspaceSwitcher } from "@/components/app/workspace-switcher";
 import { ButtonGroup } from "@/components/ui/button-group";
-import { UnlockGate } from "@/components/vault/unlock-gate";
-import { VaultEntityCacheProvider } from "@/components/vault/vault-entity-cache";
+import { UnlockGate } from "@/components/unlock/unlock-gate";
+import { EntityCacheProvider } from "@/components/unlock/entity-cache";
 import {
-  useVaultSession,
-  VaultSessionProvider,
-} from "@/components/vault/vault-session-provider";
+  useCryptoSession,
+  CryptoSessionProvider,
+} from "@/components/unlock/crypto-session-provider";
 import {
   loadLastWorkspaceId,
   pickDefaultWorkspaceId,
   storeLastWorkspaceId,
-} from "@/lib/vault/workspaces";
+} from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
 
 type AppShellProps = {
@@ -126,7 +126,7 @@ function SectionLink({
 function AppShellInner({ email, userId, children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const { vault, recovery, workspaces } = useVaultSession();
+  const { userKeys, recovery, workspaces } = useCryptoSession();
 
   const location = parseAppNavPath(pathname);
   const activeWorkspaceId = location?.workspaceId ?? null;
@@ -148,7 +148,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
 
   const onAppIndex = pathname === "/app" || pathname === "/app/";
   const shouldRedirectToWorkspace =
-    Boolean(vault) && !recovery && workspaces.length > 0 && onAppIndex;
+    Boolean(userKeys) && !recovery && workspaces.length > 0 && onAppIndex;
 
   useEffect(() => {
     if (!shouldRedirectToWorkspace) return;
@@ -159,7 +159,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
     router.replace(`/app/w/${id}`);
   }, [shouldRedirectToWorkspace, userId, workspaces, router]);
 
-  if (!vault || recovery) {
+  if (!userKeys || recovery) {
     return <UnlockGate email={email} userId={userId} />;
   }
 
@@ -307,12 +307,12 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             </div>
             <main className="min-w-0 flex-1">
               {activeWorkspaceId ? (
-                <VaultEntityCacheProvider
+                <EntityCacheProvider
                   key={activeWorkspaceId}
                   workspaceId={activeWorkspaceId}
                 >
                   {children}
-                </VaultEntityCacheProvider>
+                </EntityCacheProvider>
               ) : (
                 children
               )}
@@ -326,8 +326,8 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
 
 export function AppShell(props: AppShellProps) {
   return (
-    <VaultSessionProvider>
+    <CryptoSessionProvider>
       <AppShellInner {...props} />
-    </VaultSessionProvider>
+    </CryptoSessionProvider>
   );
 }

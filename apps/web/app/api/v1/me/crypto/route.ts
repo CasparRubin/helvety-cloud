@@ -59,7 +59,7 @@ export async function PUT(request: Request) {
     if (!status.allCurrentAccepted) {
       return apiError(
         "forbidden",
-        `Accept current ToS, Privacy, AUP, and E2EE notice before vault setup (missing: ${status.missingPolicies.join(", ")})`,
+        `Accept current ToS, Privacy, AUP, and E2EE notice before encryption setup (missing: ${status.missingPolicies.join(", ")})`,
         403,
       );
     }

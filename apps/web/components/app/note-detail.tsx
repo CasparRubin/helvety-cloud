@@ -28,22 +28,22 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
-import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useEntityCache } from "@/components/unlock/entity-cache";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
-import { createContact } from "@/lib/vault/contacts";
+import { createContact } from "@/lib/client-crypto/contacts";
 import {
   EMPTY_NOTE_BODY,
   toNotePlaintext,
   type TaskBodyDoc,
-} from "@/lib/vault/note-plaintext";
+} from "@/lib/client-crypto/note-plaintext";
 import {
   deleteNote,
   loadDecryptedNote,
   saveNote,
   type DecryptedNote,
-} from "@/lib/vault/notes";
-import { createTask } from "@/lib/vault/tasks";
+} from "@/lib/client-crypto/notes";
+import { createTask } from "@/lib/client-crypto/tasks";
 
 type NoteDetailProps = {
   workspaceId: string;
@@ -58,8 +58,8 @@ type NoteDraft = {
 
 export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
-  const cache = useVaultEntityCache();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const cache = useEntityCache();
   const { upsertNote } = cache;
 
   const [note, setNote] = useState<DecryptedNote | null>(null);
@@ -123,7 +123,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   });
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -147,7 +147,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, noteId, getWorkspaceKey, upsertNote]);
+  }, [userKeys, workspaceId, noteId, getWorkspaceKey, upsertNote]);
 
   async function onDelete() {
     if (!note || deleting || status === "saving") return;
@@ -227,7 +227,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     return items;
   }, [cache.tasks, cache.contacts]);
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <EntityDetailShell loading={loading} error={error}>

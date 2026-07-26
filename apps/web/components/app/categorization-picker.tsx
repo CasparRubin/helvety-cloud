@@ -9,12 +9,12 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/client-crypto/categorization-icons";
 import {
   resolveStageColor,
   type CategorizationOption,
-} from "@/lib/vault/categorizations";
-import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/categorizations";
+import { ENTITY_COLOR_CLASSES } from "@/lib/client-crypto/entity-colors";
 import { cn } from "@/lib/utils";
 
 type CategorizationPickerProps = {

@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const privacyDoc: LegalDocument = {
   slug: "privacy",
   title: "Privacy Policy",
-  versionLabel: "2026-07-26-v1",
+  versionLabel: "2026-07-26-v2",
   sections: [
     {
       heading: "Controller",
@@ -16,7 +16,7 @@ export const privacyDoc: LegalDocument = {
       heading: "Scope",
       paragraphs: [
         "This Privacy Policy explains how Helvety processes personal data when you use helvety.cloud. It applies under the Swiss Federal Act on Data Protection (FADP / nDSG). If you are in the EEA/UK and Helvety offers the Service to you, Helvety also aims to respect applicable GDPR/UK GDPR principles for the personal data Helvety actually processes.",
-        "Vault ciphertext is opaque to Helvety. Helvety is not a controller of vault plaintext it cannot access.",
+        "Encrypted content (ciphertext) is opaque to Helvety. Helvety is not a controller of plaintext it cannot access.",
       ],
     },
     {
@@ -27,14 +27,14 @@ export const privacyDoc: LegalDocument = {
         "Public cryptographic material needed for the product (for example user public keys) and wrapped or encrypted blobs that Helvety cannot decrypt.",
         "Policy acceptance records (which policy versions you accepted and when).",
         "Technical logs reasonably needed to operate and secure the Service (for example IP addresses in hosting/auth logs, request metadata).",
-        "Billing metadata when paid plans are enabled (for example subscription status and meter counts). Billing never includes vault plaintext or raw vault keys.",
+        "Billing metadata when paid plans are enabled (for example subscription status and meter counts). Billing never includes encrypted plaintext or raw encryption keys.",
       ],
     },
     {
       heading: "Data Helvety cannot access",
       paragraphs: [
-        "Vault content ciphertext is opaque to Helvety. Staff, database administrators, and privileged database roles cannot decrypt titles, bodies, or other vault plaintext.",
-        "Helvety does not receive PRF output, unlock keys, recovery key plaintext, or raw private keys. Helvety cannot restore vault content if you lose unlock or recovery material.",
+        "Encrypted content ciphertext is opaque to Helvety. Staff, database administrators, and privileged database roles cannot decrypt titles, bodies, or other plaintext from your encrypted data.",
+        "Helvety does not receive PRF output, unlock keys, recovery key plaintext, or raw private keys. Helvety cannot restore your data if you lose unlock or recovery material.",
       ],
     },
     {
@@ -64,7 +64,7 @@ export const privacyDoc: LegalDocument = {
       heading: "Retention",
       paragraphs: [
         "Account and membership data are kept while your account is active and for a reasonable period afterward as needed for security, dispute handling, and legal retention.",
-        "Ciphertext and related vault metadata are kept while associated with your account/workspaces or until deleted via the Service or account closure processes.",
+        "Ciphertext and related encryption metadata are kept while associated with your account/workspaces or until deleted via the Service or account closure processes.",
         "Policy acceptance records are retained to evidence which terms applied.",
         "Logs are retained for a limited operational period unless a longer period is required for security or legal reasons.",
       ],
@@ -73,8 +73,8 @@ export const privacyDoc: LegalDocument = {
       heading: "Your rights",
       paragraphs: [
         "Depending on applicable law, you may have rights to access, rectification, erasure, restriction, objection, and data portability for personal data Helvety processes about you.",
-        "To exercise rights, email contact@helvety.com. Helvety may need to verify your identity. Helvety cannot produce vault plaintext it never held.",
-        "Erasure of account data does not recreate lost vault keys. Deleting ciphertext removes stored blobs; it does not mean Helvety ever held plaintext.",
+        "To exercise rights, email contact@helvety.com. Helvety may need to verify your identity. Helvety cannot produce encrypted plaintext it never held.",
+        "Erasure of account data does not recreate lost encryption keys. Deleting ciphertext removes stored blobs; it does not mean Helvety ever held plaintext.",
         "You may lodge a complaint with the Swiss FDPIC or another competent supervisory authority where applicable.",
       ],
     },
@@ -87,7 +87,7 @@ export const privacyDoc: LegalDocument = {
     {
       heading: "Changes",
       paragraphs: [
-        "We may update this Privacy Policy by publishing a new version. Material changes that affect signup-gated acceptance will use a new version string you must accept before continued vault setup or use where gated.",
+        "We may update this Privacy Policy by publishing a new version. Material changes that affect signup-gated acceptance will use a new version string you must accept before continued encryption setup or use where gated.",
       ],
     },
   ],

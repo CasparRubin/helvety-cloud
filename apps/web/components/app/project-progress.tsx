@@ -2,14 +2,14 @@
 
 import { useId, useMemo } from "react";
 
-import type { ProjectCategorizations } from "@/lib/vault/categorizations";
-import type { DecryptedMilestone } from "@/lib/vault/milestones";
+import type { ProjectCategorizations } from "@/lib/client-crypto/categorizations";
+import type { DecryptedMilestone } from "@/lib/client-crypto/milestones";
 import {
   computeProjectProgressView,
   progressWindowCaption,
   scheduleProgressFraction,
-} from "@/lib/vault/project-progress";
-import type { DecryptedTask } from "@/lib/vault/tasks";
+} from "@/lib/client-crypto/project-progress";
+import type { DecryptedTask } from "@/lib/client-crypto/tasks";
 import { cn } from "@/lib/utils";
 
 type ProjectProgressProps = {

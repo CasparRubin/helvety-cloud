@@ -12,13 +12,13 @@ import {
 import { PageActions } from "@/components/app/page-actions";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   createNote,
   loadDecryptedNotes,
   type DecryptedNote,
-} from "@/lib/vault/notes";
-import { textToTaskBody } from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/notes";
+import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 
 type NoteListProps = {
   workspaceId: string;
@@ -26,7 +26,7 @@ type NoteListProps = {
 
 export function NoteList({ workspaceId }: NoteListProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
 
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [loading, setLoading] = useState(true);
@@ -35,7 +35,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
   const [newBody, setNewBody] = useState("");
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -55,7 +55,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, getWorkspaceKey]);
+  }, [userKeys, workspaceId, getWorkspaceKey]);
 
   function resetCreateFields() {
     setNewBody("");
@@ -84,7 +84,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
     }
   }
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <>

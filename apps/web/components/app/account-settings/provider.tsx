@@ -8,10 +8,10 @@ import {
 } from "react";
 import type { GetMeAccountResponse } from "@helvety-cloud/api-contract";
 
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { deleteAccount, getMeAccount } from "@/lib/api/v1-client";
 import { createClient } from "@/lib/supabase/client";
-import { clearStoredPrfCredentialId } from "@/lib/vault/prf";
+import { clearStoredPrfCredentialId } from "@/lib/client-crypto/prf";
 
 type AccountSettingsContextValue = {
   account: GetMeAccountResponse | null;
@@ -36,7 +36,7 @@ export function AccountSettingsProvider({
 }: {
   children: React.ReactNode;
 }) {
-  const { lock } = useVaultSession();
+  const { lock } = useCryptoSession();
   const [account, setAccount] = useState<GetMeAccountResponse | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [pending, setPending] = useState(false);

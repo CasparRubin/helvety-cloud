@@ -16,7 +16,7 @@ import {
   replaceAttachmentLinks,
   softDeleteAttachmentsForParent,
 } from "@/lib/api/attachment-links";
-import { removeAttachmentObject } from "@/lib/api/vault-storage";
+import { removeAttachmentObject } from "@/lib/api/attachment-storage";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";

@@ -17,7 +17,7 @@ export default function LegalIndexPage() {
           <p className="text-sm text-muted-foreground">
             Product legal pack for Helvety Cloud, provided by Helvety by Rubin
             (Basel). You must accept the Terms, Privacy Policy, AUP, and E2EE
-            notice before vault setup.
+            notice before encryption setup.
           </p>
         </header>
 

@@ -11,7 +11,7 @@ export function SignedOutShell({
       title={accountDeleted ? "Account deleted" : "Helvety Cloud"}
       subtitle={
         accountDeleted
-          ? "Your Helvety account and solo-owned workspaces are gone. Helvety cannot recover vault data."
+          ? "Your Helvety account and solo-owned workspaces are gone. Helvety cannot recover your data."
           : "Passwordless E2EE workspace. Sign in to create a session."
       }
       footer={
@@ -35,7 +35,7 @@ export function SignedOutShell({
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-muted-foreground">
             <li>
-              Remove your Helvety Cloud vault unlock passkey from your password
+              Remove your Helvety Cloud unlock passkey from your password
               manager or device.
             </li>
             <li>

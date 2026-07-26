@@ -5,7 +5,7 @@ import {
 } from "@helvety-cloud/api-contract";
 
 import { apiError, jsonOk } from "@/lib/api/errors";
-import { createAttachmentDownloadUrl } from "@/lib/api/vault-storage";
+import { createAttachmentDownloadUrl } from "@/lib/api/attachment-storage";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
 type RouteContext = {

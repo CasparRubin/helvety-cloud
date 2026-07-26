@@ -23,8 +23,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
-import { storeLastWorkspaceId } from "@/lib/vault/workspaces";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
+import { storeLastWorkspaceId } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
 
 type WorkspaceSwitcherProps = {
@@ -37,7 +37,7 @@ export function WorkspaceSwitcher({
   activeWorkspaceId,
 }: WorkspaceSwitcherProps) {
   const router = useRouter();
-  const { workspaces, createWorkspace, renameWorkspace } = useVaultSession();
+  const { workspaces, createWorkspace, renameWorkspace } = useCryptoSession();
   const [createOpen, setCreateOpen] = useState(false);
   const [renameOpen, setRenameOpen] = useState(false);
   const [name, setName] = useState("");

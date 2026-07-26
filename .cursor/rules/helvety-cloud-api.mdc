@@ -10,9 +10,9 @@ Follow `docs/architecture/API.md`.
 
 - Versioned `/api/v1`; breaking changes → `/api/v2`.
 - Validate with Zod from `packages/api-contract`.
-- Ciphertext-opaque: never accept or return plaintext vault titles/bodies.
+- Ciphertext-opaque: never accept or return plaintext encrypted titles/bodies.
 - Client UUIDs + idempotent upserts; workspace-scoped authorization.
-- Authenticate via Supabase JWT; use user-scoped DB client for vault rows.
+- Authenticate via Supabase JWT; use user-scoped DB client for encrypted entity rows.
 - Service role only for justified server jobs (e.g. webhooks later), never to decrypt.
 - Do not make Server Actions the sole mutation API.
-- Do not expose PostgREST as the product API for vault tables.
+- Do not expose PostgREST as the product API for encrypted entity tables.

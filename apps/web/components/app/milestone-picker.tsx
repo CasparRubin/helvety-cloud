@@ -9,7 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatMilestoneDateRange } from "@/lib/vault/milestones";
+import { formatMilestoneDateRange } from "@/lib/client-crypto/milestones";
 import { cn } from "@/lib/utils";
 
 type MilestoneOption = {

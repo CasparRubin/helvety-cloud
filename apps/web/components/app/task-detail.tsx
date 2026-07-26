@@ -24,34 +24,34 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useEntityCache } from "@/components/unlock/entity-cache";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
-import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/vault/categorization-icons";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/client-crypto/categorization-icons";
 import {
   defaultPriority,
   defaultStage,
   resolveStageColor,
   type CategorizationOption,
   type ProjectCategorizations,
-} from "@/lib/vault/categorizations";
-import { ENTITY_COLOR_CLASSES } from "@/lib/vault/entity-colors";
+} from "@/lib/client-crypto/categorizations";
+import { ENTITY_COLOR_CLASSES } from "@/lib/client-crypto/entity-colors";
 import { cn } from "@/lib/utils";
-import { createContact } from "@/lib/vault/contacts";
-import { loadAllDecryptedMilestones } from "@/lib/vault/milestones";
-import { loadDecryptedProject } from "@/lib/vault/projects";
+import { createContact } from "@/lib/client-crypto/contacts";
+import { loadAllDecryptedMilestones } from "@/lib/client-crypto/milestones";
+import { loadDecryptedProject } from "@/lib/client-crypto/projects";
 import {
   EMPTY_TASK_BODY,
   toTaskPlaintext,
   type TaskBodyDoc,
-} from "@/lib/vault/task-plaintext";
+} from "@/lib/client-crypto/task-plaintext";
 import {
   createTask,
   deleteTask,
   loadDecryptedTask,
   saveTask,
   type DecryptedTask,
-} from "@/lib/vault/tasks";
+} from "@/lib/client-crypto/tasks";
 
 type TaskDetailProps = {
   workspaceId: string;
@@ -75,8 +75,8 @@ export function TaskDetail({
   taskId,
 }: TaskDetailProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
-  const cache = useVaultEntityCache();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const cache = useEntityCache();
   const { upsertTask } = cache;
 
   const [task, setTask] = useState<DecryptedTask | null>(null);
@@ -154,7 +154,7 @@ export function TaskDetail({
   });
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -213,7 +213,7 @@ export function TaskDetail({
     return () => {
       cancelled = true;
     };
-  }, [vault, workspaceId, projectId, taskId, getWorkspaceKey, upsertTask]);
+  }, [userKeys, workspaceId, projectId, taskId, getWorkspaceKey, upsertTask]);
 
   async function onDelete() {
     if (!task || deleting || status === "saving") return;
@@ -275,7 +275,7 @@ export function TaskDetail({
     return items;
   }, [cache.notes, cache.contacts]);
 
-  if (!vault) return null;
+  if (!userKeys) return null;
 
   return (
     <EntityDetailShell loading={loading} error={error}>

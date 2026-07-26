@@ -1,5 +1,5 @@
 -- entity_links: constrained cross-entity links for reverse lookup without
--- decrypting vault content. Intentional metadata: Helvety sees linked ids,
+-- decrypting content. Intentional metadata: Helvety sees linked ids,
 -- never titles or colors.
 
 create table public.entity_links (

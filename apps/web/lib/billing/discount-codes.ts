@@ -1,5 +1,5 @@
 /**
- * Discount code redeem helpers (P12). Service-role writes only; never vault data.
+ * Discount code redeem helpers (P12). Service-role writes only; never encrypted data.
  * Codes are never logged or returned to the client after redeem.
  */
 import type { Database } from "@helvety-cloud/db";

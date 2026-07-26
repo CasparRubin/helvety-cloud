@@ -17,8 +17,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
-import { loadDecryptedTasks, type DecryptedTask } from "@/lib/vault/tasks";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
+import { loadDecryptedTasks, type DecryptedTask } from "@/lib/client-crypto/tasks";
 
 type TaskJumpSwitcherProps = {
   workspaceId: string;
@@ -32,7 +32,7 @@ export function TaskJumpSwitcher({
   taskId,
 }: TaskJumpSwitcherProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
@@ -50,7 +50,7 @@ export function TaskJumpSwitcher({
   }, [loadTasks]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -63,10 +63,10 @@ export function TaskJumpSwitcher({
     return () => {
       cancelled = true;
     };
-  }, [vault, loadTasks]);
+  }, [userKeys, loadTasks]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     const onChange = () => {
       void refresh().catch(() => undefined);
     };
@@ -74,7 +74,7 @@ export function TaskJumpSwitcher({
     return () => {
       window.removeEventListener("helvety:tasks-changed", onChange);
     };
-  }, [vault, refresh]);
+  }, [userKeys, refresh]);
 
   const active = tasks.find((task) => task.id === taskId);
   const activeName = active ? active.title || "Untitled task" : "…";

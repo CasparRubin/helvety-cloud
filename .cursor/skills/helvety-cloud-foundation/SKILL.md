@@ -28,7 +28,7 @@ Details: `docs/architecture/SCHEMA_WORKFLOW.md`.
 1. Update Zod in `packages/api-contract`.  
 2. Keep handlers ciphertext-opaque and workspace-scoped.  
 3. Follow `docs/architecture/API.md`.  
-4. Never add browser PostgREST for vault tables.
+4. Never add browser PostgREST for encrypted entity tables.
 
 ## Changing crypto
 

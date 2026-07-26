@@ -5,7 +5,7 @@ import {
   toAttachmentResponse,
 } from "@/lib/api/attachment-response";
 import { apiError, jsonOk } from "@/lib/api/errors";
-import { getAttachmentObjectSize } from "@/lib/api/vault-storage";
+import { getAttachmentObjectSize } from "@/lib/api/attachment-storage";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
 type RouteContext = {

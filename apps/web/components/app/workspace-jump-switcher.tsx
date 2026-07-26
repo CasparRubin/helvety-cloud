@@ -24,17 +24,17 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useVaultSession } from "@/components/vault/vault-session-provider";
+import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import type { AppNavEntity } from "@/components/app/workspace-nav";
 import {
   loadDecryptedContacts,
   type DecryptedContact,
-} from "@/lib/vault/contacts";
-import { loadDecryptedNotes, type DecryptedNote } from "@/lib/vault/notes";
+} from "@/lib/client-crypto/contacts";
+import { loadDecryptedNotes, type DecryptedNote } from "@/lib/client-crypto/notes";
 import {
   loadDecryptedProjects,
   type DecryptedProject,
-} from "@/lib/vault/projects";
+} from "@/lib/client-crypto/projects";
 
 type WorkspaceJumpSwitcherProps = {
   workspaceId: string;
@@ -61,7 +61,7 @@ export function WorkspaceJumpSwitcher({
   active,
 }: WorkspaceJumpSwitcherProps) {
   const router = useRouter();
-  const { vault, getWorkspaceKey } = useVaultSession();
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
@@ -90,7 +90,7 @@ export function WorkspaceJumpSwitcher({
   }, [loadEntries]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
@@ -110,10 +110,10 @@ export function WorkspaceJumpSwitcher({
     return () => {
       cancelled = true;
     };
-  }, [vault, loadEntries]);
+  }, [userKeys, loadEntries]);
 
   useEffect(() => {
-    if (!vault) return;
+    if (!userKeys) return;
     const onChange = () => {
       void refresh().catch(() => undefined);
     };
@@ -125,7 +125,7 @@ export function WorkspaceJumpSwitcher({
       window.removeEventListener("helvety:notes-changed", onChange);
       window.removeEventListener("helvety:contacts-changed", onChange);
     };
-  }, [vault, refresh]);
+  }, [userKeys, refresh]);
 
   const base = `/app/w/${workspaceId}`;
   const entries: Record<JumpEntryKind, JumpEntry[]> = {
