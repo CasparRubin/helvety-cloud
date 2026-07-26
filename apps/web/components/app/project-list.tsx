@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SettingsIcon } from "lucide-react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -27,6 +28,7 @@ type ProjectListProps = {
 };
 
 export function ProjectList({ workspaceId }: ProjectListProps) {
+  const router = useRouter();
   const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const workspace = workspaces.find((w) => w.id === workspaceId);
 
@@ -75,11 +77,11 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       const nextOrder =
         projects.reduce((max, p) => Math.max(max, p.sortOrder), -1) + 1;
       const description = newDescription.trim();
-      await createProject(workspaceId, key, name, nextOrder, {
+      const created = await createProject(workspaceId, key, name, nextOrder, {
         description: description ? textToTaskBody(description) : undefined,
       });
-      await refresh();
       window.dispatchEvent(new Event("helvety:projects-changed"));
+      router.push(`/app/w/${workspaceId}/p/${created.id}`);
     } finally {
       setBusy(false);
     }
