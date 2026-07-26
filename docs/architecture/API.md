@@ -82,4 +82,6 @@ Route handlers use Supabase client with the **user JWT**. Service role is used b
 
 **PostgREST / grants:** `authenticated` retains table GRANTs so API routes can query with the user JWT under RLS. The **browser must still never** call the Data API for vault tables — entitlement gates (P6f) live only on `/api/v1`. Closing Data API entirely would require a larger “service-role-only API” redesign; not done in this wave.
 
+**Advisor lint `0029_authenticated_security_definer_function_executable`:** expected WARN for invitation / delete / membership / seat `SECURITY DEFINER` RPCs that `/api/v1` calls with the user JWT. Do **not** “fix” by revoking `authenticated` EXECUTE — that breaks those routes. Trigger helpers and `increment_discount_redemption` correctly revoke EXECUTE from `authenticated` (service-role or trigger-only).
+
 See [`ROADMAP.md`](ROADMAP.md) §6 and P4/P5 playbooks.
