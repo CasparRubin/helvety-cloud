@@ -326,6 +326,7 @@ export const noteResponseSchema = z.object({
   links: z.array(entityLinkTargetSchema),
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
+  createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
 });
@@ -371,6 +372,7 @@ export const contactResponseSchema = z.object({
   workspaceId: uuidSchema,
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
+  createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
   links: z.array(entityLinkTargetSchema),

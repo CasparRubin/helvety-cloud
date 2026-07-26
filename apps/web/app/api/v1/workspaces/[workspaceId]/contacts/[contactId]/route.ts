@@ -26,7 +26,7 @@ type RouteContext = {
 };
 
 const CONTACT_SELECT =
-  "id, workspace_id, encrypted_blob, sort_order, updated_at, deleted_at";
+  "id, workspace_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at";
 
 function toContactResponse(
   row: {
@@ -34,6 +34,7 @@ function toContactResponse(
     workspace_id: string;
     encrypted_blob: unknown;
     sort_order: number;
+    created_at: string;
     updated_at: string;
     deleted_at: string | null;
   },
@@ -44,6 +45,7 @@ function toContactResponse(
     workspaceId: row.workspace_id,
     encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
     sortOrder: row.sort_order,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
     links,

@@ -38,6 +38,7 @@ export type DecryptedNote = {
   tags: string[];
   color?: EntityColor;
   sortOrder: number;
+  createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
 };
@@ -108,6 +109,7 @@ async function toDecrypted(
     tags,
     color,
     sortOrder: row.sortOrder,
+    createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   };

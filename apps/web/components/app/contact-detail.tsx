@@ -4,17 +4,18 @@ import { useRouter } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
+import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
-import { SaveStatus } from "@/components/app/save-status";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
 } from "@/components/app/task-body-editor";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -245,91 +246,108 @@ export function ContactDetail({
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <InlineTitle
-              value={displayName}
-              onChange={setDisplayName}
-              onBlur={flush}
-              placeholder="Display name"
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <InlineTitle
+                value={displayName}
+                onChange={setDisplayName}
+                onBlur={flush}
+                placeholder="Display name"
+                disabled={deleting}
+                maxLength={500}
+                aria-label="Display name"
+                className="min-w-0 flex-1"
+              />
+              <DeleteButton
+                disabled={deleting}
+                busy={deleting}
+                dialogTitle="Delete this contact?"
+                dialogDescription="This permanently deletes the contact. This cannot be undone."
+                onConfirm={onDelete}
+              />
+            </div>
+
+            <TaskBodyEditor
+              content={notes}
+              onChange={setNotes}
               disabled={deleting}
-              maxLength={500}
-              aria-label="Display name"
-              className="min-w-0 flex-1"
+              placeholder="Add notes…"
+              enableEntityLinks
+              entityLinkSourceKind="contact"
+              linkCandidates={linkCandidates}
+              onEntityLinkAction={onEntityLinkAction}
+              fileAttachments={{
+                workspaceId,
+                getWorkspaceKey: () => getWorkspaceKey(workspaceId),
+                onStorageLimit: (message) => setStorageLimitMessage(message),
+              }}
             />
-            <DeleteButton
-              disabled={deleting}
-              busy={deleting}
-              dialogTitle="Delete this contact?"
-              dialogDescription="This permanently deletes the contact. This cannot be undone."
-              onConfirm={onDelete}
+            {storageLimitMessage ? (
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                {storageLimitMessage}
+              </p>
+            ) : null}
+            <BacklinksPanel
+              workspaceId={workspaceId}
+              kind="contact"
+              id={contactId}
             />
           </div>
 
-          <label className="flex items-center gap-2">
-            <span className="w-14 shrink-0 text-xs text-muted-foreground">
-              Emails
-            </span>
-            <Input
-              variant="seamless"
-              value={emailsText}
-              onChange={(e) => setEmailsText(e.target.value)}
-              onBlur={flush}
-              placeholder="comma-separated"
-              disabled={deleting}
-              aria-label="Emails"
-            />
-          </label>
-          <label className="flex items-center gap-2">
-            <span className="w-14 shrink-0 text-xs text-muted-foreground">
-              Phones
-            </span>
-            <Input
-              variant="seamless"
-              value={phonesText}
-              onChange={(e) => setPhonesText(e.target.value)}
-              onBlur={flush}
-              placeholder="comma-separated"
-              disabled={deleting}
-              aria-label="Phones"
-            />
-          </label>
-          <EntityColorPicker
-            value={color}
-            disabled={deleting}
-            onChange={setColor}
-          />
+          <aside className="flex min-w-0 flex-col gap-3">
+            {contact ? (
+              <EntityTimestampsCard
+                createdAt={contact.createdAt}
+                updatedAt={contact.updatedAt}
+                status={status}
+                savedAt={savedAt}
+                onRetry={flush}
+              />
+            ) : null}
 
-          <TaskBodyEditor
-            content={notes}
-            onChange={setNotes}
-            disabled={deleting}
-            placeholder="Add notes…"
-            enableEntityLinks
-            entityLinkSourceKind="contact"
-            linkCandidates={linkCandidates}
-            onEntityLinkAction={onEntityLinkAction}
-            fileAttachments={{
-              workspaceId,
-              getWorkspaceKey: () => getWorkspaceKey(workspaceId),
-              onStorageLimit: (message) => setStorageLimitMessage(message),
-            }}
-          />
-          {storageLimitMessage ? (
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              {storageLimitMessage}
-            </p>
-          ) : null}
-          <BacklinksPanel
-            workspaceId={workspaceId}
-            kind="contact"
-            id={contactId}
-          />
-          <SaveStatus
-            status={status}
-            savedAt={savedAt}
-            onRetry={flush}
-          />
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+              <Label
+                htmlFor="contact-detail-emails"
+                className="text-xs text-muted-foreground"
+              >
+                Emails
+              </Label>
+              <Input
+                id="contact-detail-emails"
+                value={emailsText}
+                onChange={(e) => setEmailsText(e.target.value)}
+                onBlur={flush}
+                placeholder="comma-separated"
+                disabled={deleting}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+              <Label
+                htmlFor="contact-detail-phones"
+                className="text-xs text-muted-foreground"
+              >
+                Phones
+              </Label>
+              <Input
+                id="contact-detail-phones"
+                value={phonesText}
+                onChange={(e) => setPhonesText(e.target.value)}
+                onBlur={flush}
+                placeholder="comma-separated"
+                disabled={deleting}
+              />
+            </div>
+
+            <div className="rounded-lg border border-border p-3">
+              <EntityColorPicker
+                value={color}
+                disabled={deleting}
+                onChange={setColor}
+              />
+            </div>
+          </aside>
         </div>
       )}
 

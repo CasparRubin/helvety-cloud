@@ -11,10 +11,11 @@ import {
   type EntityLinkAction,
 } from "@/components/app/task-body-editor";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
-import { SaveStatus } from "@/components/app/save-status";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
 import { useVaultSession } from "@/components/vault/vault-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -236,51 +237,91 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading…</p>
       ) : (
-        <div className="flex flex-col gap-3">
-          <div className="flex items-start justify-between gap-3">
-            <InlineTitle
-              value={title}
-              onChange={setTitle}
-              onBlur={flush}
-              placeholder="Untitled note"
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(0,1fr)]">
+          <div className="flex min-w-0 flex-col gap-3">
+            <div className="flex items-start justify-between gap-3">
+              <InlineTitle
+                value={title}
+                onChange={setTitle}
+                onBlur={flush}
+                placeholder="Untitled note"
+                disabled={deleting}
+                maxLength={500}
+                className="min-w-0 flex-1"
+              />
+              <DeleteButton
+                disabled={deleting}
+                busy={deleting}
+                dialogTitle="Delete this note?"
+                dialogDescription="This permanently deletes the note. This cannot be undone."
+                onConfirm={onDelete}
+              />
+            </div>
+
+            <TaskBodyEditor
+              content={body}
+              onChange={setBody}
               disabled={deleting}
-              maxLength={500}
-              className="min-w-0 flex-1"
+              enableEntityLinks
+              entityLinkSourceKind="note"
+              linkCandidates={linkCandidates}
+              onEntityLinkAction={onEntityLinkAction}
+              fileAttachments={{
+                workspaceId,
+                getWorkspaceKey: () => getWorkspaceKey(workspaceId),
+                onStorageLimit: (message) => setStorageLimitMessage(message),
+              }}
             />
-            <DeleteButton
-              disabled={deleting}
-              busy={deleting}
-              dialogTitle="Delete this note?"
-              dialogDescription="This permanently deletes the note. This cannot be undone."
-              onConfirm={onDelete}
-            />
+            {storageLimitMessage ? (
+              <p className="text-sm text-amber-700 dark:text-amber-400">
+                {storageLimitMessage}
+              </p>
+            ) : null}
+            <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
           </div>
 
-          <label className="flex items-center gap-2">
-            <span className="w-14 shrink-0 text-xs text-muted-foreground">
-              Tags
-            </span>
-            <Input
-              variant="seamless"
-              value={tagsText}
-              onChange={(e) => setTagsText(e.target.value)}
-              onBlur={flush}
-              placeholder="comma-separated"
-              disabled={deleting}
-              aria-label="Tags"
-            />
-          </label>
+          <aside className="flex min-w-0 flex-col gap-3">
+            {note ? (
+              <EntityTimestampsCard
+                createdAt={note.createdAt}
+                updatedAt={note.updatedAt}
+                status={status}
+                savedAt={savedAt}
+                onRetry={flush}
+              />
+            ) : null}
 
-          <div className="flex flex-wrap gap-3">
-            <label className="flex min-w-[10rem] flex-1 flex-col gap-1 text-xs text-muted-foreground">
-              Filed under project
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+              <Label
+                htmlFor="note-detail-tags"
+                className="text-xs text-muted-foreground"
+              >
+                Tags
+              </Label>
+              <Input
+                id="note-detail-tags"
+                value={tagsText}
+                onChange={(e) => setTagsText(e.target.value)}
+                onBlur={flush}
+                placeholder="comma-separated"
+                disabled={deleting}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
+              <Label
+                htmlFor="note-detail-project"
+                className="text-xs text-muted-foreground"
+              >
+                Filed under project
+              </Label>
               <select
-                className="h-8 rounded-lg border border-transparent bg-transparent px-2.5 text-sm text-foreground hover:bg-muted/40 focus:bg-muted/40 focus:outline-none"
+                id="note-detail-project"
+                className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
                 value={projectId}
                 disabled={deleting}
                 onChange={(e) => setProjectId(e.target.value)}
                 onBlur={flush}
-                aria-label="Filed under project"
               >
                 <option value="">None</option>
                 {cache.projects.map((p) => (
@@ -289,40 +330,16 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
                   </option>
                 ))}
               </select>
-            </label>
-            <EntityColorPicker
-              value={color}
-              disabled={deleting}
-              onChange={setColor}
-            />
-          </div>
+            </div>
 
-          <TaskBodyEditor
-            content={body}
-            onChange={setBody}
-            disabled={deleting}
-            enableEntityLinks
-            entityLinkSourceKind="note"
-            linkCandidates={linkCandidates}
-            onEntityLinkAction={onEntityLinkAction}
-            fileAttachments={{
-              workspaceId,
-              getWorkspaceKey: () => getWorkspaceKey(workspaceId),
-              onStorageLimit: (message) => setStorageLimitMessage(message),
-            }}
-          />
-          {storageLimitMessage ? (
-            <p className="text-sm text-amber-700 dark:text-amber-400">
-              {storageLimitMessage}
-            </p>
-          ) : null}
-          <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
-
-          <SaveStatus
-            status={status}
-            savedAt={savedAt}
-            onRetry={flush}
-          />
+            <div className="rounded-lg border border-border p-3">
+              <EntityColorPicker
+                value={color}
+                disabled={deleting}
+                onChange={setColor}
+              />
+            </div>
+          </aside>
         </div>
       )}
 

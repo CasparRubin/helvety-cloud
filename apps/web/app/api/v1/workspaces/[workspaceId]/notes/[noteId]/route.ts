@@ -26,7 +26,7 @@ type RouteContext = {
 };
 
 const NOTE_SELECT =
-  "id, workspace_id, project_id, encrypted_blob, sort_order, updated_at, deleted_at";
+  "id, workspace_id, project_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at";
 
 function toNoteResponse(
   row: {
@@ -35,6 +35,7 @@ function toNoteResponse(
     project_id: string | null;
     encrypted_blob: unknown;
     sort_order: number;
+    created_at: string;
     updated_at: string;
     deleted_at: string | null;
   },
@@ -47,6 +48,7 @@ function toNoteResponse(
     links,
     encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
     sortOrder: row.sort_order,
+    createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
   });

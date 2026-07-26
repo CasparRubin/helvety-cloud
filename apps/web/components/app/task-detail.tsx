@@ -13,8 +13,8 @@ import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
-import { SaveStatus } from "@/components/app/save-status";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useVaultEntityCache } from "@/components/vault/vault-entity-cache";
@@ -324,21 +324,13 @@ export function TaskDetail({
 
           <aside className="flex min-w-0 flex-col gap-3">
             {task ? (
-              <div className="flex flex-col gap-1 rounded-lg border border-border p-3 text-xs text-muted-foreground">
-                <p>
-                  <span className="font-medium text-foreground">Created</span>{" "}
-                  {formatDateTime(task.createdAt)}
-                </p>
-                <p>
-                  <span className="font-medium text-foreground">Modified</span>{" "}
-                  {formatDateTime(task.updatedAt)}
-                </p>
-                <SaveStatus
-                  status={status}
-                  savedAt={savedAt}
-                  onRetry={flush}
-                />
-              </div>
+              <EntityTimestampsCard
+                createdAt={task.createdAt}
+                updatedAt={task.updatedAt}
+                status={status}
+                savedAt={savedAt}
+                onRetry={flush}
+              />
             ) : null}
 
             <div className="flex flex-col gap-1.5 rounded-lg border border-border p-3">
@@ -419,15 +411,6 @@ export function TaskDetail({
       ) : null}
     </div>
   );
-}
-
-function formatDateTime(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString(undefined, {
-    dateStyle: "medium",
-    timeStyle: "short",
-  });
 }
 
 function RadioSection({

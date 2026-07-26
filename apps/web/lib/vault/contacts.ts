@@ -40,6 +40,7 @@ export type DecryptedContact = {
   color?: EntityColor;
   links: EntityLinkTarget[];
   sortOrder: number;
+  createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
 };
@@ -112,6 +113,7 @@ async function toDecrypted(
     color,
     links: row.links,
     sortOrder: row.sortOrder,
+    createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   };
