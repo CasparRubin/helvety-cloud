@@ -5,7 +5,6 @@ import {
   useMemo,
   useRef,
   useState,
-  type ReactNode,
 } from "react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -40,7 +39,7 @@ import {
 } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
 
-export type MilestoneFilter = "all" | "none" | string;
+export type MilestoneFilter = "all" | string;
 
 export function ProjectTitleEditor({
   workspaceId,
@@ -229,22 +228,6 @@ export function ProjectMilestonesPanel({
         <h2 className="text-xs font-medium text-muted-foreground">
           Milestones
         </h2>
-        <div className="flex flex-wrap gap-1">
-          <FilterChip
-            active={selectedFilter === "all"}
-            onClick={() => onSelectFilter("all")}
-          >
-            All
-          </FilterChip>
-          <FilterChip
-            active={selectedFilter === "none"}
-            onClick={() =>
-              onSelectFilter(selectedFilter === "none" ? "all" : "none")
-            }
-          >
-            Unassigned
-          </FilterChip>
-        </div>
         <CreateEntityDialog
           triggerLabel="Create milestone"
           dialogTitle="Create milestone"
@@ -331,31 +314,6 @@ export function ProjectMilestonesPanel({
         </p>
       ) : null}
     </div>
-  );
-}
-
-function FilterChip({
-  active,
-  onClick,
-  children,
-}: {
-  active: boolean;
-  onClick: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className={cn(
-        "rounded-md border px-2 py-1 text-xs transition-colors",
-        active
-          ? "border-foreground/30 bg-muted font-medium"
-          : "border-border/60 text-muted-foreground hover:bg-muted/40",
-      )}
-    >
-      {children}
-    </button>
   );
 }
 

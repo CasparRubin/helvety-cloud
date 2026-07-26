@@ -146,9 +146,6 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   const filteredTasks = useMemo(() => {
     if (milestoneFilter === "all") return tasks;
-    if (milestoneFilter === "none") {
-      return tasks.filter((t) => t.milestoneId == null);
-    }
     return tasks.filter((t) => t.milestoneId === milestoneFilter);
   }, [tasks, milestoneFilter]);
 
@@ -495,11 +492,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               onMilestonesChange={(next) => {
                 setMilestones(next);
                 const ids = new Set(next.map((m) => m.id));
-                if (
-                  milestoneFilter !== "all" &&
-                  milestoneFilter !== "none" &&
-                  !ids.has(milestoneFilter)
-                ) {
+                if (milestoneFilter !== "all" && !ids.has(milestoneFilter)) {
                   setMilestoneFilter("all");
                 }
               }}
