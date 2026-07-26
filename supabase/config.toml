@@ -39,13 +39,3 @@ enable_signup = true
 [auth.email]
 enable_signup = true
 enable_confirmations = false
-
-# Passkeys (WebAuthn). Local RP for CLI / P2 localhost testing.
-# Production hosted Auth must switch to helvety.cloud — see docs/architecture/AUTH.md.
-[auth.passkey]
-enabled = true
-
-[auth.webauthn]
-rp_display_name = "Helvety Cloud"
-rp_id = "localhost"
-rp_origins = ["http://localhost:3000", "http://127.0.0.1:3000"]

@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const privacyDoc: LegalDocument = {
   slug: "privacy",
   title: "Privacy Policy",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-26-v1",
   sections: [
     {
       heading: "Controller",
@@ -22,7 +22,7 @@ export const privacyDoc: LegalDocument = {
     {
       heading: "Data Helvety processes (account / metadata)",
       paragraphs: [
-        "Email address and authentication metadata (for example OTP delivery, passkey credentials managed via Supabase Auth).",
+        "Email address and authentication metadata (for example OTP delivery via Supabase Auth).",
         "Profile and membership records (user id, workspace membership roles, timestamps).",
         "Public cryptographic material needed for the product (for example user public keys) and wrapped or encrypted blobs that Helvety cannot decrypt.",
         "Policy acceptance records (which policy versions you accepted and when).",

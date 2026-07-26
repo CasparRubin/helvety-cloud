@@ -19,7 +19,6 @@ import {
   FieldError,
   FieldGroup,
   FieldLabel,
-  FieldSeparator,
 } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
@@ -102,30 +101,12 @@ export function LoginForm() {
     router.refresh();
   }
 
-  async function signInWithPasskey() {
-    setError(null);
-    setPending(true);
-
-    const supabase = createClient();
-    const { error: passkeyError } = await supabase.auth.signInWithPasskey();
-
-    setPending(false);
-
-    if (passkeyError) {
-      setError(formatAuthError(passkeyError));
-      return;
-    }
-
-    router.replace("/app");
-    router.refresh();
-  }
-
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
         <CardTitle>Sign in</CardTitle>
         <CardDescription>
-          Passwordless email code or passkey. No passwords.
+          Passwordless email code. No passwords.
         </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-4">
@@ -216,19 +197,6 @@ export function LoginForm() {
             </FieldGroup>
           </form>
         )}
-
-        <FieldSeparator>or</FieldSeparator>
-
-        <Button
-          type="button"
-          variant="outline"
-          className="w-full"
-          disabled={pending}
-          onClick={() => void signInWithPasskey()}
-        >
-          {pending ? <Spinner data-icon="inline-start" /> : null}
-          Sign in with passkey
-        </Button>
       </CardContent>
     </Card>
   );

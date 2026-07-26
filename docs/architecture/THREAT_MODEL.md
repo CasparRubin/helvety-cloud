@@ -15,8 +15,8 @@
 | **Honest-but-curious server** (Helvety staff, compromised admin, stolen DB dump) | All vault content encrypted client-side. Server stores ciphertext + public keys + wrapped key blobs only. Service role cannot decrypt. **Intentional metadata** also visible: membership, categorization soft-ref ids on tasks, and the `entity_links` UUID graph (which ids are linked — never titles, chip labels, or accent colors). |
 | **Network attacker** | TLS in transit; ciphertext still opaque if intercepted at rest on disk. |
 | **Malicious invitee** | Only receives keys sealed to their public key after claim; AUP + ToS; cannot escalate to other workspaces without membership. Invitation claim requires verified JWT email match. |
-| **Lost / stolen device** | Vault idle lock; passkey/OS unlock; user can revoke sessions; recovery key offline. |
-| **Phishing** | Passkeys (WebAuthn) for auth; RP ID bound to helvety.cloud. |
+| **Lost / stolen device** | Vault idle lock; vault unlock passkey/OS unlock; user can revoke sessions; recovery key offline. |
+| **Phishing** | Email OTP creates a session (phishable); vault unlock is a separate WebAuthn PRF credential bound to the page origin (RP ID from hostname). Session ≠ decrypt. |
 | **Compelled disclosure** | Helvety can produce account metadata, the entity link graph (UUID edges), categorization soft-ref ids, and ciphertext it holds; **cannot** produce plaintext vault content (titles, bodies, colors, option names) without user keys. Document this honestly in legal/E2EE notices. |
 
 ## Explicit non-goals (no backdoor)
@@ -25,9 +25,9 @@
 - No HSM escrow of user keys  
 - No “support can reset encryption”  
 - No plaintext search index of vault titles/bodies on the server  
-- No “forgot passkey → email link decrypts vault”
+- No “forgot unlock passkey → email link decrypts vault”
 
-Lost all unlock methods (passkeys + recovery key) ⇒ **permanent data loss**. Product must warn at setup.
+Lost all unlock methods (vault unlock passkey + recovery key) ⇒ **permanent data loss**. Product must warn at setup.
 
 ## Trust boundaries
 

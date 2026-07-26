@@ -32,8 +32,8 @@ export function SignedOutShell({
             </p>
             <ul className="mt-2 list-disc space-y-1 pl-4 text-xs">
               <li>
-                Remove Helvety Cloud passkeys from your password manager or
-                device (sign-in and vault-unlock entries if both exist).
+                Remove your Helvety Cloud vault unlock passkey from your password
+                manager or device.
               </li>
               <li>
                 Securely delete any{" "}

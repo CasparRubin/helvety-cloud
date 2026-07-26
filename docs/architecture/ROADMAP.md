@@ -49,7 +49,7 @@ email OTP → session → PRF passkey unlock → user keys
 | Web | **Next.js** App Router → **Vercel** Hobby |
 | DB | Supabase **`helvety-cloud`** · ref **`qnoeiurmyyyuawkcifmw`** · region **eu-central-2 (Zurich)** |
 | Forbidden DB | Old project **`bkdzeihxzvrkndjvyzye`** (`helvety`) — do not touch |
-| Auth | **Supabase Auth** — email **OTP** + passkeys; **disable passwords** |
+| Auth | **Supabase Auth** — email **OTP** only; **disable passwords**; **disable Auth passkeys** |
 | Vault unlock | WebAuthn **PRF** → HKDF unlock key (auth session ≠ vault decrypt) |
 | Crypto | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field |
 | Access model | **Everything workspace-scoped** — projects/tasks/notes/contacts under a workspace; no user-global contacts/notes; no `workspace_id = null`. See §4 access model |
@@ -163,14 +163,14 @@ helvety-cloud/
 - Init **shadcn/ui with Base UI** (current shadcn default as of July 2026). Do **not** use `shadcn init -b radix`. Dense tokens OK; wire `components.json` for Base UI.  
 - Disable Supabase password provider (dashboard).  
 - Email OTP flow (`signInWithOtp` / `verifyOtp`); email template with `{{ .Token }}`.  
-- Passkey register + `signInWithPasskey` where supported (Supabase Auth passkeys).  
 - Minimal auth pages (email → code → session) on shadcn/Base UI.  
+- No Supabase Auth passkeys (vault unlock PRF is separate, client-only).  
 - Gate app shell: signed-in vs signed-out.  
 - RP ID / origins for **helvety.cloud** (+ localhost for dev) documented.
 
 **Don’t:** PRF vault crypto persistence, encrypting tasks, PostgREST vault CRUD from client, **Radix-based shadcn**.
 
-**Done when:** User can create session via OTP (+ passkey sign-in); shadcn is Base UI; no content decryption yet.
+**Done when:** User can create session via OTP; shadcn is Base UI; no content decryption yet.
 
 ---
 
@@ -653,7 +653,7 @@ workspace_key / project_key (random)
 
 ## 8. Success criteria (foundation = P5 green)
 
-1. Passwords disabled; OTP + passkey/PRF path works.  
+1. Passwords disabled; OTP session + vault PRF unlock path works.  
 2. Service role cannot decrypt vault content.  
 3. No API returns plaintext content or raw private keys.  
 4. Vault I/O only via `/api/v1`.  

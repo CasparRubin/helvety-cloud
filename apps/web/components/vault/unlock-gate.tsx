@@ -54,22 +54,16 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
   const [vaultReadyStep, setVaultReadyStep] = useState<"locked" | "needs_setup">(
     "needs_setup",
   );
-  const [hasAuthPasskey, setHasAuthPasskey] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
     void (async () => {
       try {
-        const supabase = createClient();
-        const [policyStatus, exists, passkeyList] = await Promise.all([
+        const [policyStatus, exists] = await Promise.all([
           getMePolicyAcceptances(),
           hasUserCrypto(),
-          supabase.auth.passkey.list(),
         ]);
         if (cancelled) return;
-        if (!passkeyList.error) {
-          setHasAuthPasskey((passkeyList.data?.length ?? 0) > 0);
-        }
         const nextVaultStep = exists ? "locked" : "needs_setup";
         setVaultReadyStep(nextVaultStep);
         if (!policyStatus.allCurrentAccepted) {
@@ -89,21 +83,6 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       cancelled = true;
     };
   }, [userId]);
-
-  async function registerPasskey() {
-    setError(null);
-    setMessage(null);
-    setPending(true);
-    const supabase = createClient();
-    const { error: registerError } = await supabase.auth.registerPasskey();
-    setPending(false);
-    if (registerError) {
-      setError(registerError.message);
-      return;
-    }
-    setHasAuthPasskey(true);
-    setMessage("Auth passkey registered. You can use it to sign in next time.");
-  }
 
   async function signOut() {
     setError(null);
@@ -287,17 +266,6 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
 
             {step !== "loading" ? (
               <>
-                {!hasAuthPasskey ? (
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() => void registerPasskey()}
-                  >
-                    {pending ? <Spinner data-icon="inline-start" /> : null}
-                    Register auth passkey
-                  </Button>
-                ) : null}
                 <Button
                   type="button"
                   variant="outline"

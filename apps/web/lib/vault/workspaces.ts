@@ -87,7 +87,7 @@ export function invitationMailto(params: {
     [
       `You've been invited to the workspace "${params.workspaceName}" on Helvety Cloud.`,
       "",
-      "1. Open the app and sign in with this email (OTP / passkey).",
+      "1. Open the app and sign in with this email (OTP).",
       "2. Set up or unlock your vault.",
       "3. Open Invitations in the sidebar, claim the invite, then wait if the owner still needs to complete key handoff.",
       "4. Accept when the invite is ready.",

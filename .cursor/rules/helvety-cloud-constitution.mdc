@@ -10,7 +10,7 @@ Before any feature work, read `AGENTS.md` and `docs/architecture/ROADMAP.md`. Im
 ## Must
 
 - Zero knowledge: Helvety cannot decrypt vault content. No master key, escrow, or support content recovery.
-- No account passwords. Supabase Auth: email OTP + passkeys. Vault unlock: WebAuthn PRF (session ≠ decrypt).
+- No account passwords. Supabase Auth: email OTP only. Vault unlock: WebAuthn PRF (session ≠ decrypt).
 - Greenfield only in `helvety-cloud`. Never copy from `helvety` or `helvety-browser-extension-chromium`.
 - Free-tier only in foundation: Supabase Free, Vercel Hobby. Omit Redis, Sentry, paid CI, analytics, etc.
 - Vault I/O via `/api/v1` + Bearer JWT. Browser may use Supabase Auth SDK; must not use PostgREST for vault tables.

@@ -12,7 +12,7 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 
 | Shipped (P0–P9) | Don’t | Later |
 |------------------|--------|--------|
-| Passwordless auth (OTP + passkey) | Passwords; company master key / escrow | Milestone diagrams |
+| Passwordless auth (email OTP) | Passwords; company master key / escrow; Supabase Auth passkeys | Milestone diagrams |
 | Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Sync push/pull batch API |
 | Workspace-scoped projects/tasks/notes/contacts | Browser PostgREST for vault data | Extension, Tauri, calendar send-to |
 | `/api/v1` + TipTap + workspace sharing | Paid Redis/Sentry/analytics | Deprecate old helvety.com apps |

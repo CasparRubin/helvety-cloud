@@ -39,9 +39,8 @@ export function AccountGeneralSettings() {
       <p className="text-sm text-muted-foreground">
         Signed in as{" "}
         <span className="font-medium text-foreground">{account.email}</span>.
-        Auth is email OTP and optional sign-in passkeys — there is no account
-        password. Billing is per workspace (owner manages Plan in workspace
-        settings).
+        Auth is email OTP — there is no account password. Billing is per
+        workspace (owner manages Plan in workspace settings).
       </p>
     </div>
   );
@@ -92,8 +91,7 @@ export function AccountDangerSettings() {
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>
             Your auth account, profile, vault crypto metadata, policy
-            acceptances, sessions, and server-side sign-in passkey registrations
-            are permanently removed.
+            acceptances, and sessions are permanently removed.
           </li>
           <li>
             Solo workspaces you own (including Personal) and everything inside
@@ -177,14 +175,10 @@ export function AccountDangerSettings() {
       <section className="flex flex-col gap-3 rounded-lg border border-destructive/30 p-4">
         <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
         <p className="text-xs text-muted-foreground">
-          After deletion, remove Helvety Cloud passkeys from your device or
-          password manager (Apple Passwords, Google Password Manager, Windows
-          Hello, etc.). There are usually two kinds: a{" "}
-          <span className="font-medium text-foreground">sign-in</span> passkey
-          and a{" "}
-          <span className="font-medium text-foreground">vault unlock</span>{" "}
-          passkey. The site cannot erase them from your device. Also securely
-          delete any downloaded{" "}
+          After deletion, remove your Helvety Cloud vault unlock passkey from
+          your device or password manager (Apple Passwords, Google Password
+          Manager, Windows Hello, etc.). The site cannot erase it from your
+          device. Also securely delete any downloaded{" "}
           <code className="text-[11px]">helvety-recovery.json</code> or other
           recovery-key backups. Stale passkeys and recovery files cannot restore
           deleted server data.
@@ -198,9 +192,9 @@ export function AccountDangerSettings() {
             onCheckedChange={(value) => setCleanupAck(value === true)}
           />
           <Label htmlFor="cleanup-ack" className="text-xs leading-snug">
-            I understand deletion is permanent, and I will remove Helvety Cloud
-            passkeys from my devices/password managers and destroy any recovery
-            backups after deletion.
+            I understand deletion is permanent, and I will remove my Helvety
+            Cloud vault unlock passkey from my devices/password managers and
+            destroy any recovery backups after deletion.
           </Label>
         </div>
 

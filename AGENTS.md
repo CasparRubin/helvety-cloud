@@ -5,7 +5,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) before imple
 ## Non-negotiables
 
 1. **Zero knowledge.** Helvety (staff, DB admins, service role) must not be able to decrypt vault content. No master key, escrow, or support recovery of content.
-2. **No passwords.** Supabase Auth: email OTP + passkeys. Vault unlock via WebAuthn **PRF** (session ≠ decrypt).
+2. **No passwords.** Supabase Auth: email OTP only. Vault unlock via WebAuthn **PRF** (session ≠ decrypt).
 3. **Greenfield.** Never copy UI/crypto/catalogs from `helvety` or `helvety-browser-extension-chromium`.
 4. **Free-tier infra** — Prefer omit paid SaaS (Redis, Sentry, analytics, etc.). Stripe is allowed for customer billing (**P6f**).
 5. **Public API** = `/api/v1` + Bearer JWT. Browser may use Supabase **Auth** SDK; must **not** use PostgREST `from('…')` for vault tables.

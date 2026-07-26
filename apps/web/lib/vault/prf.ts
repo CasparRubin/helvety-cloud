@@ -1,6 +1,6 @@
 /**
  * WebAuthn PRF for vault unlock (session ≠ decrypt).
- * Dedicated discoverable credential with PRF — Supabase Auth passkeys do not expose PRF.
+ * Dedicated discoverable credential with PRF — not Supabase Auth.
  */
 
 import { deriveUnlockKey, fromBase64Url, generatePrfSalt, toBase64Url } from "@helvety-cloud/crypto";

@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const e2eeDoc: LegalDocument = {
   slug: "e2ee",
   title: "E2EE / zero-access notice",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-26-v1",
   sections: [
     {
       heading: "Acknowledgment required",
@@ -15,7 +15,7 @@ export const e2eeDoc: LegalDocument = {
       heading: "Zero knowledge for vault content",
       paragraphs: [
         "Helvety cannot decrypt your vault content. There is no company master key, no key escrow, and no support workflow that restores vault plaintext.",
-        "Authentication (email OTP / passkeys for session) is separate from vault unlock. A signed-in session does not mean Helvety can read encrypted workspace data.",
+        "Authentication (email OTP for session) is separate from vault unlock. A signed-in session does not mean Helvety can read encrypted workspace data.",
       ],
     },
     {

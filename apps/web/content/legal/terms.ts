@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const termsDoc: LegalDocument = {
   slug: "terms",
   title: "Terms of Service",
-  versionLabel: "2026-07-24-v1",
+  versionLabel: "2026-07-26-v1",
   sections: [
     {
       heading: "Agreement",
@@ -15,7 +15,7 @@ export const termsDoc: LegalDocument = {
     {
       heading: "The service",
       paragraphs: [
-        "Helvety Cloud is a passwordless, end-to-end encrypted (E2EE) workspace service. Authentication creates an account session. Vault unlock and decryption happen only on your device using keys derived from your passkey (WebAuthn PRF) and related client-held material.",
+        "Helvety Cloud is a passwordless, end-to-end encrypted (E2EE) workspace service. Authentication creates an account session via email one-time codes. Vault unlock and decryption happen only on your device using keys derived from your vault unlock passkey (WebAuthn PRF) and related client-held material.",
         "Helvety does not hold master keys, does not escrow vault keys, and cannot decrypt or restore vault content. Lost unlock credentials or recovery material can mean permanent loss of vault data.",
         "The Service may change over time. We may add, modify, or discontinue features. Material changes to these Terms will be reflected by a new policy version that you may need to accept again before continued vault use.",
       ],
@@ -23,9 +23,9 @@ export const termsDoc: LegalDocument = {
     {
       heading: "Account",
       paragraphs: [
-        "Access requires a valid email (one-time codes) and/or passkeys as configured. Helvety Cloud does not use account passwords.",
+        "Access requires a valid email and one-time codes. Helvety Cloud does not use account passwords. Vault unlock uses a separate passkey on your device and is not the same as signing in.",
         "You must be able to enter into binding contracts under applicable law. If you use the Service on behalf of an organization, you represent that you have authority to bind that organization.",
-        "You are responsible for keeping access to your email, passkeys, devices, and any recovery export under your control. Helvety cannot reset vault access for you and will not ask you to send recovery keys or unlock material to Helvety.",
+        "You are responsible for keeping access to your email, vault unlock passkey, devices, and any recovery export under your control. Helvety cannot reset vault access for you and will not ask you to send recovery keys or unlock material to Helvety.",
       ],
     },
     {

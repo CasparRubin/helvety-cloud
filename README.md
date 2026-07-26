@@ -19,7 +19,7 @@ bun run typecheck
 
 Env template: [`apps/web/.env.example`](apps/web/.env.example). Copy to `apps/web/.env.local` (never commit secrets).
 
-Auth (email OTP + passkeys, passwords off): [`docs/architecture/AUTH.md`](docs/architecture/AUTH.md) — includes RP ID / origins for `localhost` and `helvety.cloud`.
+Auth (email OTP only, passwords off; vault unlock via WebAuthn PRF): [`docs/architecture/AUTH.md`](docs/architecture/AUTH.md).
 
 UI: shadcn **Base UI** (`apps/web`, preset `base-nova`).
 
