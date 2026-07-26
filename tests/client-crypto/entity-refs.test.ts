@@ -46,7 +46,7 @@ describe("extractEntityRefsFromDoc", () => {
     ).toEqual([]);
   });
 
-  it("ignores entity kinds that the source cannot link to", () => {
+  it("ignores project refs from TipTap body (affiliations are not body links)", () => {
     expect(
       extractEntityRefsFromDoc("note", {
         type: "doc",

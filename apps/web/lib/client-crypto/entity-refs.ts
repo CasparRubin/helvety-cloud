@@ -28,7 +28,11 @@ export function extractEntityRefsFromDoc(
       typeof n.attrs?.id === "string"
     ) {
       const kindParsed = entityLinkKindSchema.safeParse(n.attrs.kind);
-      if (kindParsed.success && isAllowedLinkPair(sourceKind, kindParsed.data)) {
+      if (
+        kindParsed.success &&
+        kindParsed.data !== "project" &&
+        isAllowedLinkPair(sourceKind, kindParsed.data)
+      ) {
         const key = `${kindParsed.data}:${n.attrs.id}`;
         if (!seen.has(key)) {
           seen.add(key);

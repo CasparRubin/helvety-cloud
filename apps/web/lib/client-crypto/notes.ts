@@ -30,7 +30,6 @@ const textDecoder = new TextDecoder();
 export type DecryptedNote = {
   id: string;
   workspaceId: string;
-  projectId: string | null;
   links: EntityLinkTarget[];
   title: string;
   body: TaskBodyDoc;
@@ -95,7 +94,6 @@ async function toDecrypted(
   return {
     id: row.id,
     workspaceId: row.workspaceId,
-    projectId: row.projectId,
     links: row.links,
     title,
     body,
@@ -133,7 +131,6 @@ export async function createNote(
   content: {
     title: string;
     body?: TaskBodyDoc;
-    projectId?: string | null;
     links?: EntityLinkTarget[];
   },
   sortOrder = 0,
@@ -154,7 +151,6 @@ export async function createNote(
   const row = await putNote(workspaceId, noteId, {
     encryptedBlob,
     sortOrder,
-    projectId: content.projectId ?? null,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.body),
   });
@@ -167,7 +163,6 @@ export async function saveNote(
   note: DecryptedNote,
   content: NotePlaintext,
   options?: {
-    projectId?: string | null;
     /** When omitted, links are extracted from the TipTap body. */
     links?: EntityLinkTarget[];
   },
@@ -185,12 +180,25 @@ export async function saveNote(
     encryptedBlob,
     sortOrder: note.sortOrder,
     deletedAt: note.deletedAt,
-    projectId:
-      options?.projectId !== undefined ? options.projectId : note.projectId,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(content.body),
   });
   return toDecrypted(workspaceKey, row);
+}
+
+/** Replace project affiliations without re-encrypting (reuses stored ciphertext). */
+export async function setNoteProjectIds(
+  workspaceId: string,
+  noteId: string,
+  projectIds: string[],
+): Promise<NoteResponse> {
+  const row = await getNote(workspaceId, noteId);
+  return putNote(workspaceId, noteId, {
+    encryptedBlob: row.encryptedBlob,
+    sortOrder: row.sortOrder,
+    deletedAt: row.deletedAt,
+    projectIds,
+  });
 }
 
 export async function deleteNote(

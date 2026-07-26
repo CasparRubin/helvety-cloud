@@ -210,6 +210,11 @@ export function ContactDetail({
   }
 
   async function pickProjectForNewTask(): Promise<string | null> {
+    const cached = cache.contacts.find((c) => c.id === contactId);
+    const linkedProjects = (
+      cached?.links ?? contactRef.current?.links ?? []
+    ).filter((l) => l.kind === "project");
+    if (linkedProjects.length === 1) return linkedProjects[0]!.id;
     if (cache.projects.length === 1) return cache.projects[0]!.id;
     return new Promise((resolve) => {
       setPendingProjectPick({
@@ -267,11 +272,8 @@ export function ContactDetail({
     for (const n of cache.notes) {
       items.push({ kind: "note", id: n.id, label: n.title });
     }
-    for (const p of cache.projects) {
-      items.push({ kind: "project", id: p.id, label: p.name });
-    }
     return items;
-  }, [cache.tasks, cache.notes, cache.projects]);
+  }, [cache.tasks, cache.notes]);
 
   if (!userKeys) return null;
 

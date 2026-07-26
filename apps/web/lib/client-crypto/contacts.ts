@@ -210,6 +210,21 @@ export async function saveContact(
   return toDecrypted(workspaceKey, row);
 }
 
+/** Replace project affiliations without re-encrypting (reuses stored ciphertext). */
+export async function setContactProjectIds(
+  workspaceId: string,
+  contactId: string,
+  projectIds: string[],
+): Promise<ContactResponse> {
+  const row = await getContact(workspaceId, contactId);
+  return putContact(workspaceId, contactId, {
+    encryptedBlob: row.encryptedBlob,
+    sortOrder: row.sortOrder,
+    deletedAt: row.deletedAt,
+    projectIds,
+  });
+}
+
 export async function deleteContact(
   workspaceId: string,
   contact: DecryptedContact,

@@ -149,7 +149,7 @@ export async function listOutgoingLinksForSources(
   return map;
 }
 
-/** Replace all outgoing edges from a source with the given targets. */
+/** Replace non-project outgoing edges; project affiliations are preserved. */
 export async function replaceOutgoingLinks(
   supabase: Db,
   workspaceId: string,
@@ -158,7 +158,9 @@ export async function replaceOutgoingLinks(
   targets: EntityLinkTarget[],
 ): Promise<EntityLinkTarget[]> {
   const deduped = dedupeLinkTargets(targets).filter(
-    (t) => !(t.kind === sourceKind && t.id === sourceId),
+    (t) =>
+      t.kind !== "project" &&
+      !(t.kind === sourceKind && t.id === sourceId),
   );
 
   const { error: deleteError } = await supabase
@@ -166,7 +168,8 @@ export async function replaceOutgoingLinks(
     .delete()
     .eq("workspace_id", workspaceId)
     .eq("source_kind", sourceKind)
-    .eq("source_id", sourceId);
+    .eq("source_id", sourceId)
+    .neq("target_kind", "project");
   if (deleteError) throw new Error(deleteError.message);
 
   if (deduped.length > 0) {
@@ -183,7 +186,53 @@ export async function replaceOutgoingLinks(
     if (insertError) throw new Error(insertError.message);
   }
 
-  return deduped;
+  return listOutgoingLinks(supabase, workspaceId, sourceKind, sourceId);
+}
+
+/** Replace project affiliation edges only (0..n projects). */
+export async function replaceProjectLinks(
+  supabase: Db,
+  workspaceId: string,
+  sourceKind: EntityLinkKind,
+  sourceId: string,
+  projectIds: string[],
+): Promise<EntityLinkTarget[]> {
+  if (!isAllowedLinkPair(sourceKind, "project")) {
+    throw new Error(`${sourceKind} cannot link to project`);
+  }
+
+  const seen = new Set<string>();
+  const deduped: EntityLinkTarget[] = [];
+  for (const id of projectIds) {
+    if (seen.has(id)) continue;
+    seen.add(id);
+    deduped.push({ kind: "project", id });
+  }
+
+  const { error: deleteError } = await supabase
+    .from("entity_links")
+    .delete()
+    .eq("workspace_id", workspaceId)
+    .eq("source_kind", sourceKind)
+    .eq("source_id", sourceId)
+    .eq("target_kind", "project");
+  if (deleteError) throw new Error(deleteError.message);
+
+  if (deduped.length > 0) {
+    const rows = deduped.map((t) => ({
+      workspace_id: workspaceId,
+      source_kind: sourceKind,
+      source_id: sourceId,
+      target_kind: t.kind,
+      target_id: t.id,
+    }));
+    const { error: insertError } = await supabase
+      .from("entity_links")
+      .insert(rows);
+    if (insertError) throw new Error(insertError.message);
+  }
+
+  return listOutgoingLinks(supabase, workspaceId, sourceKind, sourceId);
 }
 
 /** Delete all entity_links where this entity is source or target. */
@@ -222,6 +271,22 @@ export async function findNoteIdsLinkedToTask(
     .eq("source_kind", "note")
     .eq("target_kind", "task")
     .eq("target_id", taskId);
+  if (error) throw new Error(error.message);
+  return (data ?? []).map((r) => r.source_id);
+}
+
+export async function findNoteIdsLinkedToProject(
+  supabase: Db,
+  workspaceId: string,
+  projectId: string,
+): Promise<string[]> {
+  const { data, error } = await supabase
+    .from("entity_links")
+    .select("source_id")
+    .eq("workspace_id", workspaceId)
+    .eq("source_kind", "note")
+    .eq("target_kind", "project")
+    .eq("target_id", projectId);
   if (error) throw new Error(error.message);
   return (data ?? []).map((r) => r.source_id);
 }

@@ -8,6 +8,7 @@ import {
 import {
   listOutgoingLinks,
   replaceOutgoingLinks,
+  replaceProjectLinks,
   validateLinkTargetsInWorkspace,
   deleteLinksTouching,
 } from "@/lib/api/entity-links";
@@ -26,13 +27,12 @@ type RouteContext = {
 };
 
 const NOTE_SELECT =
-  "id, workspace_id, project_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at";
+  "id, workspace_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at";
 
 function toNoteResponse(
   row: {
     id: string;
     workspace_id: string;
-    project_id: string | null;
     encrypted_blob: unknown;
     sort_order: number;
     created_at: string;
@@ -44,7 +44,6 @@ function toNoteResponse(
   return noteResponseSchema.parse({
     id: row.id,
     workspaceId: row.workspace_id,
-    projectId: row.project_id,
     links,
     encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
     sortOrder: row.sort_order,
@@ -134,61 +133,47 @@ export async function PUT(request: Request, context: RouteContext) {
     }
   }
 
-  const projectId =
-    data.projectId === undefined ? undefined : data.projectId;
-
-  if (projectId) {
-    const { data: project, error: projectError } = await supabase
-      .from("projects")
-      .select("id")
-      .eq("id", projectId)
-      .eq("workspace_id", workspaceId)
-      .maybeSingle();
-    if (projectError) {
-      return apiError("internal", projectError.message, 500);
-    }
-    if (!project) {
-      return apiError("invalid_body", "projectId not in workspace", 400);
-    }
-  }
-
   if (data.links !== undefined) {
+    const bodyLinks = data.links.filter((l) => l.kind !== "project");
     const validated = await validateLinkTargetsInWorkspace(
       supabase,
       workspaceId,
       "note",
-      data.links,
+      bodyLinks,
     );
     if (!validated.ok) {
       return apiError("invalid_body", validated.message, 400);
     }
   }
 
-  const upsertRow: {
-    id: string;
-    workspace_id: string;
-    encrypted_blob: typeof data.encryptedBlob;
-    sort_order: number;
-    deleted_at: string | null;
-    project_id?: string | null;
-  } = {
-    id: noteId,
-    workspace_id: workspaceId,
-    encrypted_blob: data.encryptedBlob,
-    sort_order: data.sortOrder ?? 0,
-    deleted_at: data.deletedAt ?? null,
-  };
-
-  if (projectId !== undefined) {
-    upsertRow.project_id = projectId;
-  }
-  if (!existing && projectId === undefined) {
-    upsertRow.project_id = null;
+  if (data.projectIds !== undefined) {
+    const projectLinks: EntityLinkTarget[] = data.projectIds.map((id) => ({
+      kind: "project" as const,
+      id,
+    }));
+    const validated = await validateLinkTargetsInWorkspace(
+      supabase,
+      workspaceId,
+      "note",
+      projectLinks,
+    );
+    if (!validated.ok) {
+      return apiError("invalid_body", validated.message, 400);
+    }
   }
 
   const { data: row, error } = await supabase
     .from("notes")
-    .upsert(upsertRow, { onConflict: "id" })
+    .upsert(
+      {
+        id: noteId,
+        workspace_id: workspaceId,
+        encrypted_blob: data.encryptedBlob,
+        sort_order: data.sortOrder ?? 0,
+        deleted_at: data.deletedAt ?? null,
+      },
+      { onConflict: "id" },
+    )
     .select(NOTE_SELECT)
     .single();
 
@@ -207,10 +192,19 @@ export async function PUT(request: Request, context: RouteContext) {
         workspaceId,
         "note",
         noteId,
-        data.links,
+        data.links.filter((l) => l.kind !== "project"),
       );
     } else {
       links = await listOutgoingLinks(supabase, workspaceId, "note", noteId);
+    }
+    if (data.projectIds !== undefined) {
+      links = await replaceProjectLinks(
+        supabase,
+        workspaceId,
+        "note",
+        noteId,
+        data.projectIds,
+      );
     }
   } catch (e) {
     return apiError(

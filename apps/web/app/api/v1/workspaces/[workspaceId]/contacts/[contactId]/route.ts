@@ -8,6 +8,7 @@ import {
 import {
   listOutgoingLinks,
   replaceOutgoingLinks,
+  replaceProjectLinks,
   validateLinkTargetsInWorkspace,
   deleteLinksTouching,
 } from "@/lib/api/entity-links";
@@ -138,11 +139,28 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   if (data.links !== undefined) {
+    const bodyLinks = data.links.filter((l) => l.kind !== "project");
     const validated = await validateLinkTargetsInWorkspace(
       supabase,
       workspaceId,
       "contact",
-      data.links,
+      bodyLinks,
+    );
+    if (!validated.ok) {
+      return apiError("invalid_body", validated.message, 400);
+    }
+  }
+
+  if (data.projectIds !== undefined) {
+    const projectLinks: EntityLinkTarget[] = data.projectIds.map((id) => ({
+      kind: "project" as const,
+      id,
+    }));
+    const validated = await validateLinkTargetsInWorkspace(
+      supabase,
+      workspaceId,
+      "contact",
+      projectLinks,
     );
     if (!validated.ok) {
       return apiError("invalid_body", validated.message, 400);
@@ -179,7 +197,7 @@ export async function PUT(request: Request, context: RouteContext) {
         workspaceId,
         "contact",
         contactId,
-        data.links,
+        data.links.filter((l) => l.kind !== "project"),
       );
     } else {
       links = await listOutgoingLinks(
@@ -187,6 +205,15 @@ export async function PUT(request: Request, context: RouteContext) {
         workspaceId,
         "contact",
         contactId,
+      );
+    }
+    if (data.projectIds !== undefined) {
+      links = await replaceProjectLinks(
+        supabase,
+        workspaceId,
+        "contact",
+        contactId,
+        data.projectIds,
       );
     }
   } catch (e) {

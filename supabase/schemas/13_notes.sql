@@ -1,10 +1,9 @@
--- notes: workspace-scoped ciphertext; optional project_id for filing filters.
--- Cross-entity task/contact links live in entity_links.
+-- notes: workspace-scoped ciphertext.
+-- Cross-entity task/contact/project links live in entity_links.
 
 create table public.notes (
   id uuid primary key,
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
-  project_id uuid references public.projects (id) on delete set null,
   encrypted_blob jsonb not null,
   sort_order bigint not null default 0,
   created_at timestamptz not null default now(),
@@ -14,7 +13,6 @@ create table public.notes (
 
 create index notes_workspace_id_idx on public.notes (workspace_id);
 create index notes_workspace_updated_idx on public.notes (workspace_id, updated_at);
-create index notes_workspace_project_idx on public.notes (workspace_id, project_id);
 
 create trigger notes_set_updated_at
   before update on public.notes

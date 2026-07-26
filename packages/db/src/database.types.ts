@@ -357,7 +357,6 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
-          project_id: string | null
           sort_order: number
           updated_at: string
           workspace_id: string
@@ -367,7 +366,6 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
-          project_id?: string | null
           sort_order?: number
           updated_at?: string
           workspace_id: string
@@ -377,19 +375,11 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
-          project_id?: string | null
           sort_order?: number
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "notes_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "notes_workspace_id_fkey"
             columns: ["workspace_id"]

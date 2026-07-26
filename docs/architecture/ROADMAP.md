@@ -357,7 +357,7 @@ Workspace  (members + per-member wrapped_keys)
 
 **Do:**
 
-- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership; optional nullable `project_id` on notes for filing.
+- Schema: `notes` and `contacts` with required `workspace_id`, `encrypted_blob`; RLS via membership. Project affiliation for notes/contacts is via `entity_links` (0..n), not a note column.
 - Notes: encrypted JSON (`title` + TipTap `body`); can link to project, task, both, or neither.  
 - Contacts: encrypted identity fields under **workspace_key**; same person in two workspaces = two rows (no global dedupe). Optional later: copy-to-workspace.  
 - `/api/v1` list/detail + UI in app shell (Personal + team workspaces).  
@@ -438,8 +438,8 @@ Workspace  (members + per-member wrapped_keys)
 **Do:**
 
 - Schema: `entity_links` (`workspace_id`, `source_kind`, `source_id`, `target_kind`, `target_id`); unique edge; indexes for forward + reverse lookup; RLS via membership.  
-- Migrate existing `notes.task_id` → `entity_links` (`note`→`task`); drop `notes.task_id`. Keep `notes.project_id` as filing metadata.  
-- API: note PUT accepts `links: [{ kind, id }]`, replaces that note’s outgoing edges after workspace ID validation; note responses include `links`; list notes by `taskId` via junction; `GET …/links` for reverse lookup (backlinks).  
+- Migrate existing `notes.task_id` → `entity_links` (`note`→`task`); drop `notes.task_id`. Note/contact → project affiliations also live in `entity_links` (0..n; no `notes.project_id`).
+- API: note PUT accepts `links: [{ kind, id }]`, replaces that note’s non-project outgoing edges after workspace ID validation; optional `projectIds` replaces project edges; note responses include `links`; list notes by `taskId` / `projectId` via junction; `GET …/links` for reverse lookup (backlinks).
 - UI: multi-link chips on note detail (outside editor OK); remove single-task dropdown.
 
 **Don’t:** TipTap EntityRef / BubbleMenu (P8b); entity colors / rich badges (P8c); cross-workspace links; titles/colors in junction rows.
@@ -458,7 +458,7 @@ Workspace  (members + per-member wrapped_keys)
 
 - TipTap atom node `entityRef` `{ kind, id }` inside encrypted note body.  
 - BubbleMenu: Create task (title = selection), Create contact (firstName = selection), Link existing… (typeahead over decrypted workspace cache).  
-- New tasks: default project = note’s `project_id`, else project picker.  
+- New tasks: default project = note’s single linked project when exactly one, else project picker.  
 - On save: walk TipTap doc → replace note’s outgoing `entity_links`.  
 - Optional `@` mention suggestion (same node).
 
@@ -616,8 +616,8 @@ Workspace  (members + per-member wrapped_keys)
 **Goal:** Reset development data and migration history, remove obsolete ciphertext fallbacks, and make entity relationships explicit.
 
 - One baseline migration generated from `supabase/schemas`.
-- Structural FKs: project → tasks/milestones, milestone → tasks, note → optional single project filing.
-- Cross links: note ↔ task and contact ↔ note/project/task only.
+- Structural FKs: project → tasks/milestones, milestone → tasks.
+- Cross links: note ↔ task/contact/project and contact ↔ note/project/task; notes/contacts may link to 0..n projects via `entity_links` (not TipTap body refs).
 - Note body selection → create/link task remains supported through encrypted TipTap `entityRef` nodes and plaintext UUID backlinks.
 
 ---

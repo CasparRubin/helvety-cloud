@@ -19,7 +19,6 @@ import { InlineTitle } from "@/components/app/inline-title";
 import { PageDangerActions } from "@/components/app/page-actions";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import {
   Dialog,
   DialogContent,
@@ -27,7 +26,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Label } from "@/components/ui/label";
 import { useEntityCache } from "@/components/unlock/entity-cache";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -54,7 +52,6 @@ type NoteDetailProps = {
 type NoteDraft = {
   title: string;
   body: TaskBodyDoc;
-  projectId: string;
 };
 
 export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
@@ -66,7 +63,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const [note, setNote] = useState<DecryptedNote | null>(null);
   const [title, setTitle] = useState("");
   const [body, setBody] = useState<TaskBodyDoc>(EMPTY_NOTE_BODY);
-  const [projectId, setProjectId] = useState<string>("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
@@ -79,15 +75,13 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   );
 
   const noteRef = useRef(note);
-  const projectIdRef = useRef(projectId);
   useEffect(() => {
     noteRef.current = note;
-    projectIdRef.current = projectId;
   });
 
   const draft = useMemo<NoteDraft>(
-    () => ({ title, body, projectId }),
-    [title, body, projectId],
+    () => ({ title, body }),
+    [title, body],
   );
 
   const { status, savedAt, flush } = useAutosave({
@@ -102,23 +96,18 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         key,
         current,
         toNotePlaintext(next.title, next.body),
-        {
-          projectId: next.projectId || null,
-        },
       );
       setNote(saved);
       cache.upsertNote(saved);
       return {
         title: saved.title,
         body: saved.body,
-        projectId: saved.projectId ?? "",
       };
     },
     onError: (message) => setError(message),
     onSaved: (canonical) => {
       setTitle(canonical.title);
       setBody(canonical.body);
-      setProjectId(canonical.projectId);
       setError(null);
     },
   });
@@ -135,7 +124,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
         setNote(loaded);
         setTitle(loaded.title);
         setBody(loaded.body);
-        setProjectId(loaded.projectId ?? "");
         setError(null);
         upsertNote(loaded);
       } catch (e) {
@@ -164,14 +152,18 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   }
 
   async function pickProjectForNewTask(): Promise<string | null> {
-    if (projectIdRef.current) return projectIdRef.current;
+    const cached = cache.notes.find((n) => n.id === noteId);
+    const linkedProjects = (
+      cached?.links ?? noteRef.current?.links ?? []
+    ).filter((l) => l.kind === "project");
+    if (linkedProjects.length === 1) return linkedProjects[0]!.id;
     if (cache.projects.length === 1) return cache.projects[0]!.id;
     return new Promise((resolve) => {
       setPendingProjectPick({
         title: "Choose a project for the new task",
-        resolve: (id) => {
+        resolve: (pickId) => {
           setPendingProjectPick(null);
-          resolve(id);
+          resolve(pickId);
         },
       });
     });
@@ -195,9 +187,6 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
           project?.categorizations,
         );
         cache.upsertTask(task);
-        if (!projectIdRef.current) {
-          setProjectId(projectForTask);
-        }
         return { kind: "task", id: task.id };
       }
       case "create-contact": {
@@ -282,43 +271,15 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
           </>
         }
         aside={
-          <>
-            {note ? (
-              <EntityTimestampsCard
-                createdAt={note.createdAt}
-                updatedAt={note.updatedAt}
-                status={status}
-                savedAt={savedAt}
-                onRetry={flush}
-              />
-            ) : null}
-
-            <Card size="sm">
-              <CardContent className="flex flex-col gap-1.5">
-                <Label
-                  htmlFor="note-detail-project"
-                  className="text-xs text-muted-foreground"
-                >
-                  Filed under project
-                </Label>
-                <select
-                  id="note-detail-project"
-                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                  value={projectId}
-                  disabled={deleting}
-                  onChange={(e) => setProjectId(e.target.value)}
-                  onBlur={flush}
-                >
-                  <option value="">None</option>
-                  {cache.projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </CardContent>
-            </Card>
-          </>
+          note ? (
+            <EntityTimestampsCard
+              createdAt={note.createdAt}
+              updatedAt={note.updatedAt}
+              status={status}
+              savedAt={savedAt}
+              onRetry={flush}
+            />
+          ) : null
         }
       />
 

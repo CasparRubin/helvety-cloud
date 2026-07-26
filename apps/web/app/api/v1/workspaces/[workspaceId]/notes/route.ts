@@ -7,6 +7,7 @@ import {
 } from "@helvety-cloud/api-contract";
 
 import {
+  findNoteIdsLinkedToProject,
   findNoteIdsLinkedToTask,
   listOutgoingLinksForSources,
 } from "@/lib/api/entity-links";
@@ -77,10 +78,43 @@ export async function GET(request: Request, context: RouteContext) {
     }
   }
 
+  if (projectId !== null) {
+    let projectNoteIds: string[];
+    try {
+      projectNoteIds = await findNoteIdsLinkedToProject(
+        supabase,
+        workspaceId,
+        projectId,
+      );
+    } catch (e) {
+      return apiError(
+        "internal",
+        e instanceof Error ? e.message : "Failed to resolve project links",
+        500,
+      );
+    }
+    if (projectNoteIds.length === 0) {
+      return jsonOk(
+        listNotesResponseSchema.parse({ notes: [], nextCursor: null }),
+      );
+    }
+    if (noteIdFilter !== null) {
+      const allowed = new Set(projectNoteIds);
+      noteIdFilter = noteIdFilter.filter((id) => allowed.has(id));
+      if (noteIdFilter.length === 0) {
+        return jsonOk(
+          listNotesResponseSchema.parse({ notes: [], nextCursor: null }),
+        );
+      }
+    } else {
+      noteIdFilter = projectNoteIds;
+    }
+  }
+
   let query = supabase
     .from("notes")
     .select(
-      "id, workspace_id, project_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at",
+      "id, workspace_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at",
     )
     .eq("workspace_id", workspaceId)
     .order("sort_order", { ascending: true })
@@ -89,9 +123,6 @@ export async function GET(request: Request, context: RouteContext) {
 
   if (!includeDeleted) {
     query = query.is("deleted_at", null);
-  }
-  if (projectId !== null) {
-    query = query.eq("project_id", projectId);
   }
   if (noteIdFilter !== null) {
     query = query.in("id", noteIdFilter);
@@ -141,7 +172,6 @@ export async function GET(request: Request, context: RouteContext) {
     noteResponseSchema.parse({
       id: row.id,
       workspaceId: row.workspace_id,
-      projectId: row.project_id,
       links: linksByNote.get(row.id) ?? [],
       encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
       sortOrder: row.sort_order,

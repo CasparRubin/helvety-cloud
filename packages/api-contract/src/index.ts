@@ -70,7 +70,7 @@ export const entityLinkKindSchema = z.enum(entityLinkKinds);
 export type EntityLinkKind = z.infer<typeof entityLinkKindSchema>;
 
 const allowedEntityLinkTargets = {
-  note: ["task", "contact"],
+  note: ["task", "contact", "project"],
   task: ["note", "contact"],
   contact: ["note", "project", "task"],
   project: [],
@@ -311,9 +311,10 @@ export const putNoteRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
-  projectId: uuidSchema.nullable().optional(),
-  /** Replace outgoing entity_links from this note when provided. */
+  /** Replace non-project outgoing entity_links when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
+  /** Replace project affiliation edges when provided (0..n). */
+  projectIds: z.array(uuidSchema).optional(),
   /** Replace TipTap fileAttachment links when provided. */
   attachmentIds: z.array(uuidSchema).optional(),
 });
@@ -322,7 +323,6 @@ export type PutNoteRequest = z.infer<typeof putNoteRequestSchema>;
 export const noteResponseSchema = z.object({
   id: uuidSchema,
   workspaceId: uuidSchema,
-  projectId: uuidSchema.nullable(),
   links: z.array(entityLinkTargetSchema),
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
@@ -360,8 +360,10 @@ export const putContactRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
   deletedAt: z.string().nullable().optional(),
-  /** Replace outgoing entity_links from this contact when provided. */
+  /** Replace non-project outgoing entity_links when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
+  /** Replace project affiliation edges when provided (0..n). */
+  projectIds: z.array(uuidSchema).optional(),
   /** Replace TipTap fileAttachment links when provided. */
   attachmentIds: z.array(uuidSchema).optional(),
 });

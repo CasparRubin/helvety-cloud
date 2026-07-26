@@ -20,6 +20,7 @@ create table public.entity_links (
       ('contact', 'note'),
       ('contact', 'project'),
       ('contact', 'task'),
+      ('note', 'project'),
       ('note', 'task')
     )
   ),
