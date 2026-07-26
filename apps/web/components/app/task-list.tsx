@@ -38,7 +38,6 @@ import {
   ProjectDescriptionEditor,
   ProjectMilestonesPanel,
   ProjectTitleEditor,
-  type MilestoneFilter,
 } from "@/components/app/project-overview";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -94,8 +93,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const [project, setProject] = useState<DecryptedProject | null>(null);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [milestones, setMilestones] = useState<DecryptedMilestone[]>([]);
-  const [milestoneFilter, setMilestoneFilter] =
-    useState<MilestoneFilter>("all");
+  const [milestoneFilter, setMilestoneFilter] = useState("all");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);

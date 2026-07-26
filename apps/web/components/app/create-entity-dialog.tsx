@@ -78,6 +78,8 @@ export function CreateEntityDialog({
     <>
       <Button
         type="button"
+        variant="outline"
+        size="sm"
         disabled={disabled || pending}
         onClick={() => handleOpenChange(true)}
       >

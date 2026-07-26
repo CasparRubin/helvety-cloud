@@ -34,9 +34,6 @@ import {
 } from "@/lib/vault/task-plaintext";
 import { cn } from "@/lib/utils";
 
-/** Either `"all"` or a milestone id. */
-export type MilestoneFilter = string;
-
 export function ProjectTitleEditor({
   workspaceId,
   project,
@@ -151,8 +148,9 @@ type ProjectMilestonesPanelProps = {
   workspaceId: string;
   projectId: string;
   milestones: DecryptedMilestone[];
-  selectedFilter: MilestoneFilter;
-  onSelectFilter: (filter: MilestoneFilter) => void;
+  /** `"all"` or a milestone id. */
+  selectedFilter: string;
+  onSelectFilter: (filter: string) => void;
   onMilestonesChange: (milestones: DecryptedMilestone[]) => void;
 };
 
