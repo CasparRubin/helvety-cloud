@@ -166,7 +166,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
 
   return (
     <PageActionsProvider>
-      <div className="flex min-h-svh flex-col bg-background text-foreground">
+      <div className="grain-bg relative flex min-h-svh flex-col bg-background text-foreground">
         <div className="sticky top-0 z-40 bg-background">
           <header className="flex h-12 shrink-0 items-center gap-2 border-b px-3">
             <Link
@@ -217,7 +217,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
             </div>
           </header>
         </div>
-        <div className="flex min-h-0 flex-1">
+        <div className="relative z-10 flex min-h-0 flex-1">
           <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">
               {workspaceBase ? (

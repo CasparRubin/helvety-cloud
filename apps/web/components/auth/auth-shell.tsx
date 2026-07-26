@@ -23,7 +23,7 @@ export function AuthShell({
   footer,
 }: AuthShellProps) {
   return (
-    <main className="auth-shell relative flex min-h-svh flex-col items-center justify-center bg-background p-6">
+    <main className="grain-bg relative flex min-h-svh flex-col items-center justify-center bg-background p-6">
       <Card className="relative z-10 w-full max-w-md">
         <CardHeader className="justify-items-center border-b border-border/50 text-center">
           <Image
