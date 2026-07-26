@@ -223,7 +223,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
             <EntityListRow key={contact.id}>
               <Link
                 href={`/app/w/${workspaceId}/contacts/${contact.id}`}
-                className="font-medium"
+                className="block w-full font-medium"
               >
                 {name}
                 {email ? (

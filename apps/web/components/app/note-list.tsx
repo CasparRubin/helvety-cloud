@@ -129,19 +129,17 @@ export function NoteList({ workspaceId }: NoteListProps) {
       >
         {notes.map((note) => (
           <EntityListRow key={note.id}>
-            <div className="flex flex-col gap-0.5">
-              <Link
-                href={`/app/w/${workspaceId}/notes/${note.id}`}
-                className="font-medium"
-              >
-                {note.title || "Untitled"}
-              </Link>
-              <p className="text-xs text-muted-foreground">
+            <Link
+              href={`/app/w/${workspaceId}/notes/${note.id}`}
+              className="flex w-full flex-col gap-0.5"
+            >
+              <span className="font-medium">{note.title || "Untitled"}</span>
+              <span className="text-xs text-muted-foreground">
                 Created {formatDateTime(note.createdAt)}
                 {" · "}
                 Modified {formatDateTime(note.updatedAt)}
-              </p>
-            </div>
+              </span>
+            </Link>
           </EntityListRow>
         ))}
       </EntityListShell>
