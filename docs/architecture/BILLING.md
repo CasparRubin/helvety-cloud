@@ -97,12 +97,12 @@ app-defined unlimited mode.
 
 ## Ops checklist
 
-1. Stripe Dashboard: Product `Helvety Cloud - Pro Workspace` + **yearly** Price → `STRIPE_PRICE_PRO_WORKSPACE_YEARLY` (`price_1TxkusKB4gmrwRzWBXSg80gl`).
-2. Product `Helvety Cloud - Pro Workspace - Capacity Increase` + **yearly** Price → `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` (`price_1Txl3hKB4gmrwRzWwSNDqHGJ`).
-3. Cloud webhook (live, separate from Store): `https://helvety.cloud/api/webhooks/stripe` with `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.payment_failed`. Save the endpoint secret as `STRIPE_WEBHOOK_SECRET`. Do not reuse the Store webhook (`store.helvety.com`).
-   - **Must not redirect.** Stripe does not follow 308/301 on webhook delivery. Keep Vercel primary on apex `helvety.cloud` (www → apex). Point the Cloud webhook at **apex**, never at a host that 308s. After Checkout, the app also calls `POST …/billing/sync` on `?billing=success` so a missed webhook cannot leave a paid workspace on Free.
-4. Customer Portal configuration for Cloud: cancel at period end, payment method update, and quantity updates on the Capacity Increase product.
-5. Vercel project `helvety-cloud-web`: set all eight env vars from `.env.example` (Supabase + Stripe + `NEXT_PUBLIC_APP_URL=https://helvety.cloud`).
+1. Stripe Dashboard: Product `Helvety Cloud - Pro Workspace` + **yearly** Price → set `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`.
+2. Product `Helvety Cloud - Pro Workspace - Capacity Increase` + **yearly** Price → set `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY`.
+3. Webhook endpoint: `https://helvety.cloud/api/webhooks/stripe` with `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.payment_failed`. Save the endpoint secret as `STRIPE_WEBHOOK_SECRET`. Use a dedicated Cloud endpoint; do not reuse another product’s Stripe webhook.
+   - **Must not redirect.** Stripe does not follow 308/301 on webhook delivery. Keep Vercel primary on apex `helvety.cloud` (www → apex). Point the webhook at **apex**, never at a host that 308s. After Checkout, the app also calls `POST …/billing/sync` on `?billing=success` so a missed webhook cannot leave a paid workspace on Free.
+4. Customer Portal: cancel at period end, payment method update, and quantity updates on the Capacity Increase product.
+5. Vercel: set env vars from `.env.example` (Supabase + Stripe + `NEXT_PUBLIC_APP_URL=https://helvety.cloud`).
 6. Optional: create Stripe coupons / promotion codes for testing or offers.
 
 ## Docs / UX

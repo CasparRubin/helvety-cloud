@@ -1,19 +1,8 @@
 # Helvety Cloud: Locked decisions & status
 
-> **Canonical:** this file (`docs/architecture/ROADMAP.md`).  
-> **Foundation + product through P14 are done.** P15 (i18n) was **reverted** (English only). P16 (encrypted comments) is **done**. Do not re-implement done phases unless docs need fixes.  
-> Stripe billing: **P6f** + **P12** (see [`BILLING.md`](./BILLING.md)).
-
----
-
-## 0. How agents should use this file
-
-1. Read **§1 Product** and **§2 Locked decisions**.  
-2. Implement **one scoped change per chat** (do not invent multi-phase roadmaps). Prefer omit over add.  
-3. Deep docs: [`DATA_MODEL.md`](./DATA_MODEL.md), [`API.md`](./API.md), [`AUTH.md`](./AUTH.md), [`BILLING.md`](./BILLING.md), [`KEY_HIERARCHY.md`](./KEY_HIERARCHY.md), [`SCHEMA_WORKFLOW.md`](./SCHEMA_WORKFLOW.md), [`LEGAL_REQUIREMENTS.md`](./LEGAL_REQUIREMENTS.md).  
-4. Extend schema/API/crypto via [`.cursor/skills/helvety-cloud-foundation/SKILL.md`](../../.cursor/skills/helvety-cloud-foundation/SKILL.md).  
-5. Prefer **Supabase MCP** / **Vercel MCP** over guessing.  
-6. Never copy from sibling repos `helvety` or `helvety-browser-extension-chromium`.
+> **Canonical** locked decisions and phase history. Product through **P16** is **done** (P15 i18n was **reverted**; English only). Do not re-implement done phases unless docs need fixes. Stripe billing: **P6f** + **P12** (see [`BILLING.md`](./BILLING.md)).
+>
+> AI contributors: see [`AGENTS.md`](../../AGENTS.md) and [`.cursor/rules/`](../../.cursor/rules/).
 
 ---
 
@@ -36,6 +25,8 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Still later (not shipped):** milestone diagrams, sync batch API, browser extension, Tauri, Outlook/Google send-to, deprecate old helvety.com apps, copy-contact-across-workspaces UX.
 
+Product north star: [`docs/VISION.md`](../VISION.md).
+
 ---
 
 ## 2. Locked decisions
@@ -57,7 +48,7 @@ email OTP → session → PRF passkey unlock → user keys
 | Public API | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>` |
 | Browser Supabase | **Auth SDK OK**; **`from('…')` for encrypted entity tables NOT OK**. Go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |
-| Types | Generated TS committed under `packages/db` so agents always see the model |
+| Types | Generated TS committed under `packages/db` so the model is always visible in git |
 | Billing | **Stripe** workspace subscriptions (**P6f** + **P12** Free/Pro/addons); discounts via Stripe only; no Clerk |
 | UI foundation | Minimal **dense shadcn/ui on Base UI** (current shadcn default; **not** Radix). Not helvety.com look |
 | Cost | Prefer free-tier infra. Stripe is allowed for customer billing. See §2.1 |
@@ -69,7 +60,7 @@ email OTP → session → PRF passkey unlock → user keys
 
 **Forbidden unless proven free AND necessary (default = omit):** Redis/KV/Upstash, Sentry/Datadog/analytics, Inngest/job platforms, paid email, Playwright clouds, mandatory heavy CI, Prisma/GraphQL/tRPC, Storybook/Chromatic.
 
-**Rule for agents:** omit before you subscribe. Do not add “best practice” SaaS that costs money.
+Omit before you subscribe. Do not add paid SaaS “for best practice.”
 
 ### 2.2 Explicit non-contradictions
 
@@ -172,21 +163,8 @@ API hard rules and route table: [`API.md`](./API.md). Later sync batch (`sync/pu
 
 ---
 
-## 8. Agent tooling cheatsheet
+## 8. Anti-patterns
 
-| Need | Use |
-|------|-----|
-| Schema change | Edit `supabase/schemas` → diff → migration → MCP `apply_migration` / `db push` → `generate_typescript_types` → `get_advisors` |
-| Inspect DB | MCP `list_tables`, `list_migrations` on `qnoeiurmyyyuawkcifmw` |
-| Hosting | Vercel MCP / skills (Hobby only) |
-| Auth config | Supabase dashboard + docs; passwords off |
-| Extend safely | `.cursor/skills/helvety-cloud-foundation/SKILL.md` |
-
----
-
-## 9. Anti-patterns
-
-- Inventing multi-phase roadmaps or shipping many unrelated changes in one chat  
 - Copying old Helvety apps  
 - Studio-only schema without git  
 - Browser PostgREST for encrypted entities  
