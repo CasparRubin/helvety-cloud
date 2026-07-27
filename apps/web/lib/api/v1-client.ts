@@ -641,6 +641,16 @@ export async function createBillingPortal(
   );
 }
 
+export async function syncWorkspaceBilling(
+  workspaceId: string,
+): Promise<GetWorkspaceBillingResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/billing/sync`,
+    getWorkspaceBillingResponseSchema,
+    { method: "POST" },
+  );
+}
+
 export async function listMyInvitations(): Promise<ListMyInvitationsResponse> {
   return apiFetch("/api/v1/me/invitations", listMyInvitationsResponseSchema);
 }

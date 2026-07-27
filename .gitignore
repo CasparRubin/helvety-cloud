@@ -5,6 +5,7 @@ node_modules/
 # build / tooling
 .next/
 .turbo/
+.vercel/
 dist/
 out/
 coverage/

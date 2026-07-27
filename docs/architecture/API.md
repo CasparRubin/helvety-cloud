@@ -54,6 +54,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (member-gated) |
 | GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits, usage, Capacity Increase quantity, `freeOverflowLocked` (any member) |
 | POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro Workspace (`allow_promotion_codes`) → `{ url }` |
+| POST | `/api/v1/workspaces/:workspaceId/billing/sync` | Owner-only: reconcile `subscriptions` from Stripe (post-Checkout self-heal) → same body as GET billing |
 | POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Owner-only: Stripe Customer Portal → `{ url }` |
 | PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set Capacity Increase quantity on a Pro Workspace Stripe subscription |
 | GET | `/api/v1/workspaces/:workspaceId/attachments` | List attachments (optional `parentKind` + `parentId` filter via `attachment_links`) |

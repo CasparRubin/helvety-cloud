@@ -4,6 +4,8 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
+  useRef,
   useState,
 } from "react";
 import { useRouter } from "next/navigation";
@@ -24,6 +26,7 @@ import {
   getWorkspaceBilling,
   listWorkspaceInvitations,
   listWorkspaceMembers,
+  syncWorkspaceBilling,
 } from "@/lib/api/v1-client";
 import {
   handoffInvitationSeal,
@@ -90,6 +93,7 @@ export function WorkspaceSettingsProvider({
   children: React.ReactNode;
 }) {
   const router = useRouter();
+  const billingSyncAttempted = useRef(false);
   const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace } =
     useCryptoSession();
 
@@ -156,6 +160,42 @@ export function WorkspaceSettingsProvider({
     setError(null);
     await refreshBilling();
   }, [billingLoaded, refreshBilling]);
+
+  useEffect(() => {
+    if (!isOwner || billingSyncAttempted.current) return;
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("billing") !== "success") return;
+    billingSyncAttempted.current = true;
+
+    let cancelled = false;
+    void (async () => {
+      setBillingLoading(true);
+      setError(null);
+      try {
+        const bill = await syncWorkspaceBilling(workspaceId);
+        if (!cancelled) {
+          setBilling(bill);
+          setBillingLoaded(true);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : "Could not refresh billing after checkout",
+          );
+          await refreshBilling();
+        }
+      } finally {
+        if (!cancelled) setBillingLoading(false);
+        router.replace(`/app/w/${workspaceId}/settings/billing`);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isOwner, refreshBilling, router, workspaceId]);
 
   const refreshMembers = useCallback(async () => {
     const [inv, mem] = await Promise.all([

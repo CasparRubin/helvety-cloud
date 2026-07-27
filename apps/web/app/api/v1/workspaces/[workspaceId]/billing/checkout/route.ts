@@ -63,8 +63,8 @@ export async function POST(request: Request, context: RouteContext) {
       metadata: { workspace_id: workspaceId },
       subscription_data: { metadata: { workspace_id: workspaceId } },
       allow_promotion_codes: true,
-      success_url: `${appUrl}/app?billing=success`,
-      cancel_url: `${appUrl}/app?billing=cancelled`,
+      success_url: `${appUrl}/app/w/${workspaceId}/settings/billing?billing=success`,
+      cancel_url: `${appUrl}/app/w/${workspaceId}/settings/billing?billing=cancelled`,
     });
 
     if (!session.url) {
