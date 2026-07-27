@@ -107,10 +107,9 @@ export function CreateEntityDialog({
         size="sm"
         disabled={disabled || pending}
         onClick={() => handleOpenChange(true)}
-        aria-label={triggerLabel}
       >
         <PlusIcon />
-        <span className="hidden sm:inline">{triggerLabel}</span>
+        {triggerLabel}
       </Button>
 
       <Dialog open={open} onOpenChange={handleOpenChange}>
