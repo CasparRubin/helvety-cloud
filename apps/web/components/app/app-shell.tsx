@@ -229,7 +229,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
           </header>
         </div>
         <div className="relative z-10 flex min-h-0 flex-1">
-          <aside className="hidden w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
+          <aside className="sticky top-12 hidden h-[calc(100svh-3rem)] w-48 shrink-0 flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground md:flex">
             <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 py-2 text-sm">
               {workspaceBase ? (
                 <>

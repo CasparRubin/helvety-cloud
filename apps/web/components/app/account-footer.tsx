@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CircleDollarSignIcon,
   LogOutIcon,
   MailIcon,
   ScaleIcon,
@@ -58,6 +59,8 @@ export function AccountFooter({
   const { lock } = useCryptoSession();
   const onAccount = pathname.startsWith("/app/account");
   const onInvitations = pathname.startsWith("/app/invitations");
+  const onPricing = pathname.startsWith("/pricing");
+  const onLegal = pathname.startsWith("/legal");
 
   async function signOut() {
     lock();
@@ -88,7 +91,15 @@ export function AccountFooter({
         >
           Invitations
         </FooterLink>
-        <FooterLink href="/legal" active={false} icon={ScaleIcon} compact>
+        <FooterLink
+          href="/pricing"
+          active={onPricing}
+          icon={CircleDollarSignIcon}
+          compact
+        >
+          Pricing
+        </FooterLink>
+        <FooterLink href="/legal" active={onLegal} icon={ScaleIcon} compact>
           Legal
         </FooterLink>
         <button
@@ -123,7 +134,14 @@ export function AccountFooter({
       >
         Invitations
       </FooterLink>
-      <FooterLink href="/legal" active={false} icon={ScaleIcon}>
+      <FooterLink
+        href="/pricing"
+        active={onPricing}
+        icon={CircleDollarSignIcon}
+      >
+        Pricing
+      </FooterLink>
+      <FooterLink href="/legal" active={onLegal} icon={ScaleIcon}>
         Legal
       </FooterLink>
       <button
