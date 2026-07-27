@@ -7,6 +7,7 @@ import { normalizeAddonQuantities } from "@/lib/billing/entitlements";
 import { syncWorkspaceFreeOverflowTag } from "@/lib/billing/free-overflow";
 import {
   addonQuantitiesFromSubscription,
+  getProPriceId,
   getStripe,
   getStripeWebhookSecret,
 } from "@/lib/stripe";
@@ -35,11 +36,28 @@ function stripeId(
   return typeof value === "string" ? value : value.id;
 }
 
+function primarySubscriptionItem(subscription: Stripe.Subscription) {
+  const items = subscription.items.data;
+  if (items.length === 0) {
+    return null;
+  }
+  try {
+    const proPriceId = getProPriceId();
+    const proItem = items.find((item) => item.price?.id === proPriceId);
+    if (proItem) {
+      return proItem;
+    }
+  } catch {
+    // Pro price env missing: fall back to first item.
+  }
+  return items[0] ?? null;
+}
+
 function subscriptionRowFromStripe(
   subscription: Stripe.Subscription,
   workspaceId: string,
 ): SubscriptionRow {
-  const item = subscription.items.data[0];
+  const item = primarySubscriptionItem(subscription);
   const periodEnd = item?.current_period_end;
   const isEnded =
     subscription.status === "canceled" ||
