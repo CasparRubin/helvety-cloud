@@ -281,20 +281,10 @@ export function pickDefaultWorkspaceId(
 
 const LAST_WORKSPACE_KEY = (userId: string) =>
   `helvety.crypto.lastWorkspaceId:${userId}`;
-const LEGACY_LAST_WORKSPACE_KEY = (userId: string) =>
-  `helvety.vault.lastWorkspaceId:${userId}`;
 
 export function loadLastWorkspaceId(userId: string): string | null {
   try {
-    const next = localStorage.getItem(LAST_WORKSPACE_KEY(userId));
-    if (next) return next;
-    const legacy = localStorage.getItem(LEGACY_LAST_WORKSPACE_KEY(userId));
-    if (legacy) {
-      localStorage.setItem(LAST_WORKSPACE_KEY(userId), legacy);
-      localStorage.removeItem(LEGACY_LAST_WORKSPACE_KEY(userId));
-      return legacy;
-    }
-    return null;
+    return localStorage.getItem(LAST_WORKSPACE_KEY(userId));
   } catch {
     return null;
   }
@@ -303,7 +293,6 @@ export function loadLastWorkspaceId(userId: string): string | null {
 export function storeLastWorkspaceId(userId: string, workspaceId: string): void {
   try {
     localStorage.setItem(LAST_WORKSPACE_KEY(userId), workspaceId);
-    localStorage.removeItem(LEGACY_LAST_WORKSPACE_KEY(userId));
   } catch {
     // ignore
   }

@@ -9,10 +9,6 @@ on conflict (id) do update
 
 -- No authenticated grants for this bucket; /api/v1 mints signed URLs with
 -- the service role after plan/membership checks.
-drop policy if exists vault_attachments_no_select on storage.objects;
-drop policy if exists vault_attachments_no_insert on storage.objects;
-drop policy if exists vault_attachments_no_update on storage.objects;
-drop policy if exists vault_attachments_no_delete on storage.objects;
 drop policy if exists encrypted_attachments_no_select on storage.objects;
 drop policy if exists encrypted_attachments_no_insert on storage.objects;
 drop policy if exists encrypted_attachments_no_update on storage.objects;

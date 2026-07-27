@@ -6,7 +6,6 @@
 import { deriveUnlockKey, fromBase64Url, generatePrfSalt, toBase64Url } from "@helvety-cloud/crypto";
 
 const CREDENTIAL_STORAGE_PREFIX = "helvety.crypto.prfCredentialId:";
-const LEGACY_CREDENTIAL_STORAGE_PREFIX = "helvety.vault.prfCredentialId:";
 
 type PrfExtensionResults = {
   prf?: {
@@ -27,6 +26,10 @@ function rpId(): string {
   const host = window.location.hostname;
   if (host === "localhost" || host === "127.0.0.1") {
     return "localhost";
+  }
+  // Apex RP ID so www and helvety.cloud share the same unlock passkey.
+  if (host === "helvety.cloud" || host === "www.helvety.cloud") {
+    return "helvety.cloud";
   }
   return host;
 }
@@ -49,17 +52,7 @@ function credentialIdToBase64Url(rawId: ArrayBuffer): string {
 
 function readStoredCredentialId(userId: string): string | null {
   try {
-    const next = localStorage.getItem(`${CREDENTIAL_STORAGE_PREFIX}${userId}`);
-    if (next) return next;
-    const legacy = localStorage.getItem(
-      `${LEGACY_CREDENTIAL_STORAGE_PREFIX}${userId}`,
-    );
-    if (legacy) {
-      localStorage.setItem(`${CREDENTIAL_STORAGE_PREFIX}${userId}`, legacy);
-      localStorage.removeItem(`${LEGACY_CREDENTIAL_STORAGE_PREFIX}${userId}`);
-      return legacy;
-    }
-    return null;
+    return localStorage.getItem(`${CREDENTIAL_STORAGE_PREFIX}${userId}`);
   } catch {
     return null;
   }
@@ -68,7 +61,6 @@ function readStoredCredentialId(userId: string): string | null {
 function storeCredentialId(userId: string, credentialId: string): void {
   try {
     localStorage.setItem(`${CREDENTIAL_STORAGE_PREFIX}${userId}`, credentialId);
-    localStorage.removeItem(`${LEGACY_CREDENTIAL_STORAGE_PREFIX}${userId}`);
   } catch {
     // localStorage may be unavailable; discoverable get still works.
   }
@@ -78,7 +70,6 @@ function storeCredentialId(userId: string, credentialId: string): void {
 export function clearStoredPrfCredentialId(userId: string): void {
   try {
     localStorage.removeItem(`${CREDENTIAL_STORAGE_PREFIX}${userId}`);
-    localStorage.removeItem(`${LEGACY_CREDENTIAL_STORAGE_PREFIX}${userId}`);
   } catch {
     // ignore
   }

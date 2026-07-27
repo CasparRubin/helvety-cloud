@@ -39,7 +39,7 @@ In the hosted dashboard (**Authentication → Email Templates → Magic Link**),
 
 Encryption unlock uses a **dedicated WebAuthn PRF** credential created in the browser (`apps/web/lib/client-crypto/prf.ts`). It is **not** configured in Supabase Auth.
 
-The RP ID is derived from `window.location.hostname` (`localhost` for local, `helvety.cloud` in production). Credentials enrolled under `localhost` do not work on `helvety.cloud` and vice versa. Users must set up / re-enroll the unlock passkey on the production origin.
+The RP ID is derived from `window.location.hostname`: `localhost` locally, and always `helvety.cloud` for both `helvety.cloud` and `www.helvety.cloud` so apex and www share the same unlock passkey. Credentials enrolled under `localhost` do not work on production and vice versa. Prefer apex (`https://helvety.cloud`) and keep a www → apex redirect.
 
 ## App routes
 

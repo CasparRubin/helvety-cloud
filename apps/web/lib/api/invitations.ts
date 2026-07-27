@@ -26,7 +26,7 @@ type InvitationRow = {
   updated_at: string;
 };
 
-export function invitationStatus(row: InvitationRow): InvitationStatus {
+function invitationStatus(row: InvitationRow): InvitationStatus {
   if (row.cancelled_at) return "cancelled";
   if (row.accepted_at) return "accepted";
   if (!row.claimed_by) return "waiting_for_recipient";

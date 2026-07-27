@@ -5,7 +5,7 @@
  */
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
-export const ATTACHMENTS_BUCKET = "encrypted-attachments";
+const ATTACHMENTS_BUCKET = "encrypted-attachments";
 
 const DOWNLOAD_URL_TTL_SECONDS = 60 * 10;
 
