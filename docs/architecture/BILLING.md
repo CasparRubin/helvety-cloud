@@ -32,7 +32,7 @@ owned by Stripe coupons / promotion codes, not by Helvety app tables.
 | Tables | `subscriptions`, `billing_events` (`supabase/schemas/16_billing.sql`) |
 | Plans/limits/addons | `apps/web/lib/billing/entitlements.ts` |
 | API gates | `apps/web/lib/api/entitlements.ts` + create paths in `/api/v1` |
-| Seat gate RPC | `public.workspace_seat_usage` |
+| Member-cap RPC | `public.workspace_seat_usage` |
 | Billing endpoints | `GET …/billing`, `POST …/checkout`, `POST …/portal`, `PUT …/addons` |
 | Webhook | `POST /api/webhooks/stripe` |
 
@@ -53,7 +53,12 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 | File storage (ciphertext bytes) | 0 | 5 GiB |
 | Max upload size | 0 | 25 MiB |
 
-**2nd+ owned workspace:** only by creating/upgrading that workspace to Pro (Checkout). Each paid workspace stands alone. Owning one Pro does not silently raise free slots.
+**2nd+ owned workspace:** create from the app switcher (New Pro workspace). The
+workspace is created with Pro intent, then Stripe Checkout opens for that
+workspace. You can also upgrade an existing free workspace from Workspace
+settings → Billing. Stripe promotion codes (including 100% off) can be entered
+at Checkout. Each paid workspace stands alone. Owning one Pro does not silently
+raise free slots.
 
 **Soft-lock overflow:** when Pro ends and the owner would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates return `limit_exceeded`. Locks clear automatically when the workspace returns to Pro or the owner is back within one free workspace.
 

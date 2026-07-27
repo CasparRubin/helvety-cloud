@@ -140,6 +140,8 @@ export const createWorkspaceRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   kind: workspaceKindSchema.default("standard"),
   wrappedKey: sealedKeyEnvelopeSchema,
+  /** Extra owned workspaces beyond the free slot; server allows create then Checkout. */
+  asPro: z.boolean().optional(),
 });
 export type CreateWorkspaceRequest = z.infer<
   typeof createWorkspaceRequestSchema

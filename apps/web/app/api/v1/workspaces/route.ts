@@ -100,9 +100,11 @@ export async function POST(request: Request) {
   if (!parsed.success) {
     return apiError("invalid_body", parsed.error.message, 400);
   }
-  const { id, encryptedBlob, kind, wrappedKey } = parsed.data;
+  const { id, encryptedBlob, kind, wrappedKey, asPro } = parsed.data;
 
-  const limitResponse = await assertOwnedWorkspaceAllowed(supabase, user.id);
+  const limitResponse = await assertOwnedWorkspaceAllowed(supabase, user.id, {
+    asPro: asPro === true,
+  });
   if (limitResponse) {
     return limitResponse;
   }

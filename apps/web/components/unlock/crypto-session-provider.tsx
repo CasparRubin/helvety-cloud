@@ -44,7 +44,10 @@ type CryptoSessionValue = {
   setupUserCrypto: (userId: string, email: string) => Promise<void>;
   unlockUserCrypto: (userId: string) => Promise<void>;
   refreshWorkspaces: () => Promise<DecryptedWorkspaceListItem[]>;
-  createWorkspace: (name: string) => Promise<DecryptedWorkspaceListItem>;
+  createWorkspace: (
+    name: string,
+    options?: { asPro?: boolean },
+  ) => Promise<DecryptedWorkspaceListItem>;
   renameWorkspace: (workspaceId: string, name: string) => Promise<void>;
   removeWorkspace: (workspaceId: string) => Promise<void>;
   getWorkspaceKey: (workspaceId: string) => Promise<Uint8Array>;
@@ -167,11 +170,11 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
   );
 
   const createWorkspace = useCallback(
-    async (name: string) => {
+    async (name: string, options?: { asPro?: boolean }) => {
       if (!userKeys) {
         throw new Error("Encryption is locked");
       }
-      const created = await createStandardWorkspace(userKeys, name);
+      const created = await createStandardWorkspace(userKeys, name, options);
       const key = await unwrapWorkspaceKey(
         userKeys,
         created.id,

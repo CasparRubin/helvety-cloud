@@ -181,6 +181,7 @@ export async function decryptWorkspaceListItem(
 export async function createStandardWorkspace(
   userKeys: UnlockedUserKeys,
   name: string,
+  options?: { asPro?: boolean },
 ): Promise<DecryptedWorkspaceListItem> {
   const id = crypto.randomUUID();
   const workspaceKey = randomKeyBytes();
@@ -201,6 +202,7 @@ export async function createStandardWorkspace(
     encryptedBlob,
     kind: "standard",
     wrappedKey,
+    ...(options?.asPro ? { asPro: true } : {}),
   });
   return {
     id: created.id,

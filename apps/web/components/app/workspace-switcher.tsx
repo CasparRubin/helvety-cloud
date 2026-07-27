@@ -24,6 +24,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
+import {
+  ApiClientError,
+  createBillingCheckout,
+} from "@/lib/api/v1-client";
 import { storeLastWorkspaceId } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
 
@@ -57,12 +61,30 @@ export function WorkspaceSwitcher({
     if (!trimmed) return;
     setPending(true);
     setError(null);
+    let createdId: string | null = null;
     try {
-      const created = await createWorkspace(trimmed);
-      setCreateOpen(false);
-      setName("");
-      selectWorkspace(created.id);
+      // Dialog creates standard workspaces beyond the free Personal slot.
+      const created = await createWorkspace(trimmed, { asPro: true });
+      createdId = created.id;
+      storeLastWorkspaceId(userId, created.id);
+      const { url } = await createBillingCheckout(created.id);
+      window.location.assign(url);
     } catch (err) {
+      if (createdId) {
+        const detail =
+          err instanceof ApiClientError
+            ? err.message
+            : err instanceof Error
+              ? err.message
+              : "Checkout failed";
+        setError(
+          `${detail} The workspace was created. Open Workspace settings → Billing to finish Pro checkout.`,
+        );
+        setCreateOpen(false);
+        setName("");
+        selectWorkspace(createdId);
+        return;
+      }
       setError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setPending(false);
@@ -135,7 +157,7 @@ export function WorkspaceSwitcher({
             }}
           >
             <PlusIcon className="size-3.5" />
-            New workspace
+            New Pro workspace
           </DropdownMenuItem>
           {active ? (
             <DropdownMenuItem
@@ -163,10 +185,12 @@ export function WorkspaceSwitcher({
       <Dialog open={createOpen} onOpenChange={setCreateOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>New workspace</DialogTitle>
+            <DialogTitle>New Pro Workspace</DialogTitle>
             <DialogDescription>
-              Creates a new workspace with its own key. The name is encrypted
-              with that key, so Helvety cannot read it.
+              Each account includes one Free Workspace (your Personal workspace).
+              Additional owned workspaces require Pro Workspace. After you create
+              this workspace, Stripe Checkout opens so you can start the yearly
+              subscription. Only you as owner can pay.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -203,7 +227,7 @@ export function WorkspaceSwitcher({
               onClick={() => void onCreate()}
             >
               {pending ? <Spinner data-icon="inline-start" /> : null}
-              Create
+              Create and checkout
             </Button>
           </DialogFooter>
         </DialogContent>
