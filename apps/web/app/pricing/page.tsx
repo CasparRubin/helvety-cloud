@@ -299,9 +299,8 @@ export default function PricingPage() {
             footer={
               <>
                 Requires an active Pro Workspace. Sign in as the workspace owner,
-                open Workspace settings → Billing, then choose Add or change
-                Capacity Increase (opens the Stripe billing portal) for that
-                workspace.
+                open Workspace settings → Billing → Add-ons, then choose Add or
+                change (opens the Stripe billing portal).
               </>
             }
           />
@@ -328,7 +327,7 @@ export default function PricingPage() {
                 Upgrade a Free Workspace in Workspace settings → Billing, or
                 create another workspace with New Pro workspace (Checkout opens
                 after create). For Capacity Increase packs, owners use Add or
-                change Capacity Increase (Stripe billing portal).
+                change under Add-ons (Stripe billing portal).
               </InfoBlock>
               <InfoBlock title="Pro Workspace Capacity Increase">
                 Pro Workspace Capacity Increase is an optional add-on for a paid Pro

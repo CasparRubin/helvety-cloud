@@ -498,15 +498,29 @@ export function WorkspaceBillingSettings() {
             <p className="text-xs font-medium text-foreground">Add-ons</p>
             {billing.plan === "pro" ? (
               <>
-                <div className="flex items-baseline justify-between gap-2 text-xs">
-                  <span className="text-muted-foreground">
-                    {CAPACITY_PACK.label}
-                  </span>
-                  <span className="tabular-nums text-foreground">
-                    {capacityQty > 0
-                      ? `${capacityQty} pack${capacityQty === 1 ? "" : "s"}`
-                      : "None"}
-                  </span>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="flex min-w-0 flex-col gap-0.5">
+                    <p className="text-sm font-medium text-foreground">
+                      {CAPACITY_PACK.label}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {capacityQty > 0
+                        ? `${capacityQty} pack${capacityQty === 1 ? "" : "s"}`
+                        : "No packs yet"}
+                    </p>
+                  </div>
+                  {isOwner && billing.hasStripeCustomer ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
+                      className="shrink-0"
+                      disabled={pending}
+                      onClick={() => void onManageBilling()}
+                    >
+                      Add or change
+                    </Button>
+                  ) : null}
                 </div>
                 <p className="text-xs text-muted-foreground">
                   Each pack adds {CAPACITY_PACK.deltas.projects} projects,{" "}
@@ -516,18 +530,6 @@ export function WorkspaceBillingSettings() {
                   {CAPACITY_PACK.deltas.members} members, and{" "}
                   {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
                 </p>
-                {isOwner && billing.hasStripeCustomer ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    className="self-start"
-                    disabled={pending}
-                    onClick={() => void onManageBilling()}
-                  >
-                    Add or change Capacity Increase
-                  </Button>
-                ) : null}
               </>
             ) : (
               <p className="text-xs text-muted-foreground">
