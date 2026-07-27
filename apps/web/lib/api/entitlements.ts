@@ -40,8 +40,6 @@ function subscriptionLikeFromRow(
   row: {
     plan: string;
     status: string;
-    billing_source?: string | null;
-    unmetered?: boolean | null;
     addon_quantities?: unknown;
   } | null,
 ): SubscriptionLike {
@@ -49,8 +47,6 @@ function subscriptionLikeFromRow(
   return {
     plan: row.plan,
     status: row.status,
-    billing_source: row.billing_source,
-    unmetered: row.unmetered,
     addon_quantities: normalizeAddonQuantities(row.addon_quantities),
   };
 }
@@ -90,7 +86,7 @@ export async function isWorkspaceFreeOverflowLocked(
   const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
     .select(
-      "workspace_id, plan, status, billing_source, unmetered, free_overflowed_at",
+      "workspace_id, plan, status, free_overflowed_at",
     )
     .in("workspace_id", ownedIds);
   if (subsError) {
@@ -217,7 +213,7 @@ export async function getWorkspaceSubscription(
 ): Promise<SubscriptionLike> {
   const { data } = await supabase
     .from("subscriptions")
-    .select("plan, status, billing_source, unmetered, addon_quantities")
+    .select("plan, status, addon_quantities")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
   return subscriptionLikeFromRow(data);
@@ -356,8 +352,6 @@ export async function assertAcceptMemberAllowed(
   const subscription = subscriptionLikeFromRow({
     plan: usage.plan,
     status: usage.status,
-    billing_source: usage.billing_source,
-    unmetered: usage.unmetered,
     addon_quantities: usage.addon_quantities,
   });
   const plan = resolvePlan(subscription);
@@ -465,7 +459,7 @@ export async function assertOwnedWorkspaceAllowed(
   const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
     .select(
-      "workspace_id, plan, status, billing_source, unmetered, addon_quantities",
+      "workspace_id, plan, status, addon_quantities",
     )
     .in("workspace_id", ownedIds);
   if (subsError) {
@@ -494,7 +488,7 @@ export async function assertOwnedWorkspaceAllowed(
   if (overflow >= 1) {
     return apiError(
       "limit_exceeded",
-      "Complete Pro checkout (or redeem a complimentary code) on your pending workspace before creating another.",
+      "Complete Pro checkout on your pending workspace before creating another.",
       403,
     );
   }

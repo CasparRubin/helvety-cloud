@@ -17,7 +17,8 @@ type RouteContext = {
 
 /**
  * Owner-only: start a Stripe Checkout session to upgrade this workspace to
- * Pro Workspace. Only billing metadata leaves the server.
+ * Pro Workspace. Promotion codes are entered on Stripe Checkout. Only billing
+ * metadata leaves the server.
  */
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -38,28 +39,18 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .select(
-      "plan, status, billing_source, stripe_customer_id, stripe_coupon_id",
-    )
+    .select("plan, status, stripe_customer_id")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
   if (subscriptionError) {
     return apiError("internal", subscriptionError.message, 500);
   }
   if (resolvePlan(subscription ?? null) === "pro") {
-    if (subscription?.billing_source === "comp") {
-      return apiError(
-        "conflict",
-        "Workspace already has complimentary Pro Workspace access",
-        409,
-      );
-    }
     return apiError("conflict", "Workspace is already on the Pro Workspace plan", 409);
   }
 
   const stripe = getStripe();
   const appUrl = getAppUrl();
-  const couponId = subscription?.stripe_coupon_id ?? null;
 
   try {
     const session = await stripe.checkout.sessions.create({
@@ -71,7 +62,7 @@ export async function POST(request: Request, context: RouteContext) {
       client_reference_id: workspaceId,
       metadata: { workspace_id: workspaceId },
       subscription_data: { metadata: { workspace_id: workspaceId } },
-      ...(couponId ? { discounts: [{ coupon: couponId }] } : {}),
+      allow_promotion_codes: true,
       success_url: `${appUrl}/app?billing=success`,
       cancel_url: `${appUrl}/app?billing=cancelled`,
     });

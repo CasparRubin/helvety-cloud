@@ -9,8 +9,6 @@ import {
   getMeCryptoResponseSchema,
   getMePolicyAcceptancesResponseSchema,
   getWorkspaceBillingResponseSchema,
-  redeemDiscountResponseSchema,
-  removeDiscountResponseSchema,
   taskResponseSchema,
   listContactsResponseSchema,
   listTasksResponseSchema,
@@ -52,8 +50,6 @@ import {
   type GetMeCryptoResponse,
   type GetMePolicyAcceptancesResponse,
   type GetWorkspaceBillingResponse,
-  type RedeemDiscountResponse,
-  type RemoveDiscountResponse,
   type TaskResponse,
   type ListContactsResponse,
   type ListTasksResponse,
@@ -642,27 +638,6 @@ export async function createBillingPortal(
     `/api/v1/workspaces/${workspaceId}/billing/portal`,
     billingRedirectResponseSchema,
     { method: "POST" },
-  );
-}
-
-export async function redeemBillingDiscount(
-  workspaceId: string,
-  code: string,
-): Promise<RedeemDiscountResponse> {
-  return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/billing/discount`,
-    redeemDiscountResponseSchema,
-    { method: "POST", body: JSON.stringify({ code }) },
-  );
-}
-
-export async function removeBillingDiscount(
-  workspaceId: string,
-): Promise<RemoveDiscountResponse> {
-  return apiFetch(
-    `/api/v1/workspaces/${workspaceId}/billing/discount`,
-    removeDiscountResponseSchema,
-    { method: "DELETE" },
   );
 }
 

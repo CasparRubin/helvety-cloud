@@ -40,12 +40,10 @@ begin
     raise exception 'cannot delete personal workspace' using errcode = 'P0001';
   end if;
 
-  -- Only Stripe-paid subscriptions block delete. Complimentary (comp) grants
-  -- have no Stripe customer to cancel in the Portal.
+  -- Active Stripe subscriptions must be cancelled in the Portal first.
   select s.status into sub_status
   from public.subscriptions s
   where s.workspace_id = ws_id
-    and s.billing_source = 'stripe'
     and s.stripe_subscription_id is not null
     and s.status in ('active', 'trialing', 'past_due', 'unpaid', 'paused')
     and s.cancel_at_period_end = false;

@@ -14,7 +14,7 @@
 
 | Plane | Examples |
 |-------|----------|
-| Control | `PUT /api/v1/me/crypto`, `DELETE /api/v1/me`, `POST /api/v1/workspaces`, workspace invitations, billing/Checkout/portal/addons/discounts (see [`BILLING.md`](./BILLING.md)) |
+| Control | `PUT /api/v1/me/crypto`, `DELETE /api/v1/me`, `POST /api/v1/workspaces`, workspace invitations, billing/Checkout/portal/addons (see [`BILLING.md`](./BILLING.md)) |
 | Data | Task/project/note/contact/milestone/attachment upserts with ciphertext envelopes; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=` |
 
 Realtime (optional later) = wake-up only, not a second write API.
@@ -52,11 +52,9 @@ Realtime (optional later) = wake-up only, not a second write API.
 | GET | `/api/v1/me/invitations` | Invitations addressed to the caller’s verified email |
 | POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches their `public_key` (must match their `user_crypto` row) |
 | POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (member-gated) |
-| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits (null = unlimited), usage, Capacity Increase quantity, `freeOverflowLocked` (any member) |
-| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro Workspace → `{ url }` |
+| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits, usage, Capacity Increase quantity, `freeOverflowLocked` (any member) |
+| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro Workspace (`allow_promotion_codes`) → `{ url }` |
 | POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Owner-only: Stripe Customer Portal → `{ url }` |
-| POST | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: redeem discount / complimentary code |
-| DELETE | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: remove applied discount / complimentary grant |
 | PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set Capacity Increase quantity on a Pro Workspace Stripe subscription |
 | GET | `/api/v1/workspaces/:workspaceId/attachments` | List attachments (optional `parentKind` + `parentId` filter via `attachment_links`) |
 | POST | `/api/v1/workspaces/:workspaceId/attachments` | Create pending attachment + signed upload URL (`encryptedMeta`, `wrappedDek`, `byteSize`) |
@@ -64,7 +62,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | DELETE | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId` | Soft-delete attachment + Storage cleanup |
 | POST | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId/complete` | Mark upload ready (or failed) after client PUT to signed URL |
 | POST | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId/download` | Signed download URL + meta/DEK envelopes |
-| POST | `/api/webhooks/stripe` | Stripe webhook (signature-verified); service-role upserts; never overwrites comps |
+| POST | `/api/webhooks/stripe` | Stripe webhook (signature-verified); service-role upserts `subscriptions` / `billing_events` |
 
 **Attachments (P11):** Client encrypts file bytes with a per-file DEK, wraps the DEK under `workspace_key`, and stores filename/mime in `encryptedMeta`. Server stores opaque envelopes + Storage ciphertext only. TipTap `fileAttachment` atoms and `attachment_links` join notes/tasks/contacts to attachment ids without decrypting bodies. Upload/create is entitlement-gated (storage + attachment counts); see [`BILLING.md`](./BILLING.md).
 
@@ -76,7 +74,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 
 **Entity links:** Note / task / contact PUT may include `links: [{ kind, id }]`. Allowed body pairs are note–task/contact and contact–note/task; project affiliations for notes and contacts use optional `projectIds: uuid[]` (0..n) and are stored as `entity_links` with `target_kind = project`. When `links` is provided, the server replaces **non-project** outgoing edges only. When `projectIds` is provided, it replaces **project** outgoing edges only. The server validates pair rules and workspace ownership. Responses include all outgoing links, and `GET …/links` supports backlinks. UUID edges are intentional metadata; titles and colors stay in ciphertext. Inline TipTap `entityRef` nodes remain inside note/task/contact body ciphertext and are extracted on save (project refs are not written from the body).
 
-**Entitlement gates (P6f / P12):** create mutations (new workspace/project/task/note/contact, invite create, invite accept, attachment upload / new attachment links) are gated by **effective** workspace limits (`BILLING.md`) and return `limit_exceeded` (403) at the cap. Tasks are per-project; complimentary (`unmetered`) workspaces skip countable caps. Soft-locked free-overflow workspaces (`freeOverflowLocked` on GET billing) also block those creates while leaving reads/updates/deletes/export available. Updates, soft-deletes, reads, seal/cancel, and billing actions are never gated by overflow. Meters are plaintext row counts only.
+**Entitlement gates (P6f / P12):** create mutations (new workspace/project/task/note/contact, invite create, invite accept, attachment upload / new attachment links) are gated by **effective** workspace limits (`BILLING.md`) and return `limit_exceeded` (403) at the cap. Tasks are per-project. Soft-locked free-overflow workspaces (`freeOverflowLocked` on GET billing) also block those creates while leaving reads/updates/deletes/export available. Updates, soft-deletes, reads, seal/cancel, and billing actions are never gated by overflow. Meters are plaintext row counts only.
 
 Exact paths nest under `/api/v1/workspaces/:workspaceId/...`. Keep stable once shipped; breaking changes → `/api/v2`.
 
@@ -86,10 +84,10 @@ Stable codes via `packages/api-contract`: `unauthorized`, `forbidden`, `limit_ex
 
 ## Server DB access
 
-Route handlers use Supabase client with the **user JWT**. Service role is used by `/api/webhooks/stripe` and discount redeem (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events` / `discount_codes` redemption counters, and by `DELETE /api/v1/me` for `auth.admin.deleteUser`, never to “helpfully” decrypt or touch encrypted entity tables.
+Route handlers use Supabase client with the **user JWT**. Service role is used by `/api/webhooks/stripe` (`apps/web/lib/supabase/service-role.ts`) to upsert `subscriptions` / `billing_events`, by attachment Storage admin helpers, and by `DELETE /api/v1/me` for `auth.admin.deleteUser`, never to “helpfully” decrypt or touch encrypted entity tables.
 
 **PostgREST / grants:** `authenticated` retains table GRANTs so API routes can query with the user JWT under RLS. The **browser must still never** call the Data API for encrypted entity tables. Entitlement gates (P6f) live only on `/api/v1`. Closing Data API entirely would require a larger “service-role-only API” redesign; not done in this wave.
 
-**Advisor lint `0029_authenticated_security_definer_function_executable`:** expected WARN for invitation / delete / membership / member-cap `SECURITY DEFINER` RPCs that `/api/v1` calls with the user JWT. Do **not** “fix” by revoking `authenticated` EXECUTE; that breaks those routes. Trigger helpers and `increment_discount_redemption` correctly revoke EXECUTE from `authenticated` (service-role or trigger-only).
+**Advisor lint `0029_authenticated_security_definer_function_executable`:** expected WARN for invitation / delete / membership / member-cap `SECURITY DEFINER` RPCs that `/api/v1` calls with the user JWT. Do **not** “fix” by revoking `authenticated` EXECUTE; that breaks those routes. Trigger helpers correctly revoke EXECUTE from `authenticated` (service-role or trigger-only).
 
 See [`ROADMAP.md`](ROADMAP.md) and [`BILLING.md`](BILLING.md).

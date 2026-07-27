@@ -52,7 +52,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) for locked d
 | P9 | Task stage board (DnD between stages) | **Done** |
 | P10 | Project descriptions + milestones | **Done** |
 | P11 | E2EE files & documents | **Done** |
-| P12 | Billing Free / Pro / addons / discounts | **Done** |
+| P12 | Billing Free / Pro / addons | **Done** |
 | P13 | Clean baseline + constrained entity links | **Done** |
 | P14 | Encrypted names + milestone dates + progress chart | **Done** |
 | P15 | i18n (en/de/fr/it) via next-intl | **Reverted** (English only) |

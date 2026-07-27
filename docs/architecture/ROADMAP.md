@@ -58,7 +58,7 @@ email OTP → session → PRF passkey unlock → user keys
 | Browser Supabase | **Auth SDK OK**; **`from('…')` for encrypted entity tables NOT OK**. Go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |
 | Types | Generated TS committed under `packages/db` so agents always see the model |
-| Billing | **Stripe** workspace subscriptions (**P6f** + **P12** Free/Pro/addons/discounts); no Clerk |
+| Billing | **Stripe** workspace subscriptions (**P6f** + **P12** Free/Pro/addons); discounts via Stripe only; no Clerk |
 | UI foundation | Minimal **dense shadcn/ui on Base UI** (current shadcn default; **not** Radix). Not helvety.com look |
 | Cost | Prefer free-tier infra. Stripe is allowed for customer billing. See §2.1 |
 | Legal | **P-legal2 production pack** live + acceptance gates; optional counsel for risk; see §6 |
@@ -127,7 +127,7 @@ helvety-cloud/
 | P9 | Task stage board (DnD between stages) | **Done** |
 | P10 | Project descriptions + milestones | **Done** |
 | P11 | E2EE files & documents | **Done** |
-| P12 | Billing Free / Pro / addons / discounts | **Done** · [`BILLING.md`](./BILLING.md) |
+| P12 | Billing Free / Pro / addons | **Done** · [`BILLING.md`](./BILLING.md) |
 | P13 | Clean baseline + constrained entity links | **Done** |
 | P14 | Encrypted names + milestone dates + progress chart | **Done** |
 | P15 | i18n (en/de/fr/it) via next-intl | **Reverted** (English only; do not re-add next-intl) |

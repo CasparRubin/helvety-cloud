@@ -47,6 +47,6 @@ Swiss FADP (nDSG); GDPR/UK GDPR principles when offering to those users; consume
 
 ## Status
 
-**P-legal2** production pack + acceptance gates are live (P-legal drafts superseded). Stripe Free/Pro Workspace/Capacity Increase/discounts live (**P6f** / **P12**; see [`BILLING.md`](BILLING.md)). Optional counsel review is recommended for risk reduction but is **not** a product gate.
+**P-legal2** production pack + acceptance gates are live (P-legal drafts superseded). Stripe Free/Pro Workspace/Capacity Increase live (**P6f** / **P12**; see [`BILLING.md`](BILLING.md)). Optional counsel review is recommended for risk reduction but is **not** a product gate.
 
 See [`ROADMAP.md`](ROADMAP.md).

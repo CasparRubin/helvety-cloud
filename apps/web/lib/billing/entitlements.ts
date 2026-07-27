@@ -6,8 +6,6 @@
 
 export type Plan = "free" | "pro";
 
-export type BillingSource = "stripe" | "comp";
-
 /** One capacity increase pack raises every paid workspace meter together. */
 export type AddonMeter = "capacity";
 
@@ -35,9 +33,6 @@ export type PlanLimits = {
 const PRO_STORAGE_BYTES = 5 * 1024 * 1024 * 1024; // 5 GiB
 const PRO_MAX_UPLOAD_BYTES = 25 * 1024 * 1024; // 25 MiB
 
-/** Sentinel for complimentary / unmetered workspaces. */
-export const UNLIMITED = Number.POSITIVE_INFINITY;
-
 /**
  * Tunable Free / Pro defaults. Adjust here (redeploy); do not hardcode
  * elsewhere. Lowering caps grandfather existing data (create gates only).
@@ -57,7 +52,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   },
   pro: {
     // Soft ceiling on how many Pro Workspaces one user may own; each pays
-    // (or is gifted) separately. Free slots remain PLAN_LIMITS.free.ownedWorkspaces.
+    // separately. Free slots remain PLAN_LIMITS.free.ownedWorkspaces.
     ownedWorkspaces: 50,
     projectsPerWorkspace: 25,
     membersPerWorkspace: 25,
@@ -118,15 +113,13 @@ export const ENTITLED_STATUSES = ["active", "trialing"] as const;
 export type SubscriptionLike = {
   plan: string;
   status: string;
-  billing_source?: string | null;
-  unmetered?: boolean | null;
   addon_quantities?: AddonQuantities | null;
 } | null;
 
 /**
  * Missing row, unknown plan, or a lapsed status (past_due, canceled, unpaid,
  * incomplete, paused, …) all resolve to free, never a silent paid plan.
- * Comp grants use plan=pro + status=active + billing_source=comp.
+ * Stripe discounts (including 100% off) still sync as normal Pro.
  */
 export function resolvePlan(subscription: SubscriptionLike): Plan {
   if (!subscription) {
@@ -139,14 +132,6 @@ export function resolvePlan(subscription: SubscriptionLike): Plan {
     return "pro";
   }
   return "free";
-}
-
-export function isUnmetered(subscription: SubscriptionLike): boolean {
-  return Boolean(
-    subscription &&
-      resolvePlan(subscription) === "pro" &&
-      subscription.unmetered,
-  );
 }
 
 export function limitsForPlan(plan: Plan): PlanLimits {
@@ -163,25 +148,8 @@ function capacityPackCount(quantities: AddonQuantities | null | undefined): numb
 
 /**
  * Effective limits for a workspace = plan base + purchased addon packs.
- * Complimentary (unmetered) workspaces get UNLIMITED on countable meters;
- * maxUploadBytes stays at the Pro catalog value (practical upload size).
  */
 export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
-  if (isUnmetered(subscription)) {
-    const pro = PLAN_LIMITS.pro;
-    return {
-      ownedWorkspaces: UNLIMITED,
-      projectsPerWorkspace: UNLIMITED,
-      membersPerWorkspace: UNLIMITED,
-      tasksPerProject: UNLIMITED,
-      notesPerWorkspace: UNLIMITED,
-      contactsPerWorkspace: UNLIMITED,
-      filesPerTask: UNLIMITED,
-      storageBytesPerWorkspace: UNLIMITED,
-      maxUploadBytes: pro.maxUploadBytes,
-    };
-  }
-
   const plan = resolvePlan(subscription);
   const base = PLAN_LIMITS[plan];
   const packCount = capacityPackCount(subscription?.addon_quantities ?? null);
@@ -232,12 +200,12 @@ export function workspaceMeterLimit(
   }
 }
 
-/** True when the limit is treated as unlimited (comp / unmetered). */
+/** True when a limit is treated as unbounded (not used by current Free/Pro). */
 export function isUnlimited(limit: number): boolean {
   return !Number.isFinite(limit) || limit >= Number.MAX_SAFE_INTEGER;
 }
 
-/** Serialize a limit for JSON APIs (Infinity → null). */
+/** Serialize a limit for JSON APIs (non-finite → null). */
 export function limitToApi(limit: number): number | null {
   return isUnlimited(limit) ? null : limit;
 }
@@ -275,7 +243,7 @@ export function memberLimitMessage(plan: Plan, limit: number): string {
 export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
   const upgradeHint =
     plan === "free"
-      ? " Create an additional workspace as Pro Workspace, redeem a complimentary code, or delete an unused workspace."
+      ? " Create an additional workspace as Pro Workspace, or delete an unused workspace."
       : "";
   const cap =
     isUnlimited(limit)

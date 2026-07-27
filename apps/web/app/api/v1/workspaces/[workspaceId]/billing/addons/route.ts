@@ -27,7 +27,7 @@ type RouteContext = {
 
 /**
  * Owner-only: set Capacity Increase quantity on a paid Pro Workspace
- * subscription. Complimentary (unmetered) workspaces do not need add-ons.
+ * subscription.
  */
 export async function PUT(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -63,9 +63,7 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")
-    .select(
-      "plan, status, billing_source, unmetered, stripe_subscription_id, addon_quantities",
-    )
+    .select("plan, status, stripe_subscription_id, addon_quantities")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
   if (subscriptionError) {
@@ -76,8 +74,6 @@ export async function PUT(request: Request, context: RouteContext) {
     ? {
         plan: subscription.plan,
         status: subscription.status,
-        billing_source: subscription.billing_source,
-        unmetered: subscription.unmetered,
         addon_quantities: normalizeAddonQuantities(
           subscription.addon_quantities,
         ),
@@ -89,13 +85,6 @@ export async function PUT(request: Request, context: RouteContext) {
       "forbidden",
       "Capacity Increase requires an active Pro Workspace subscription",
       403,
-    );
-  }
-  if (subscription?.billing_source === "comp" || subscription?.unmetered) {
-    return apiError(
-      "conflict",
-      "Complimentary workspaces already have unmetered limits",
-      409,
     );
   }
   if (!subscription?.stripe_subscription_id) {

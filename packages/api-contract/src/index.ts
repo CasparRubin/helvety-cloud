@@ -531,9 +531,6 @@ export type ListWorkspaceMembersResponse = z.infer<
 export const planIdSchema = z.enum(["free", "pro"]);
 export type PlanId = z.infer<typeof planIdSchema>;
 
-export const billingSourceSchema = z.enum(["stripe", "comp"]);
-export type BillingSource = z.infer<typeof billingSourceSchema>;
-
 export const addonMeterSchema = z.enum(["capacity"]);
 export type AddonMeterId = z.infer<typeof addonMeterSchema>;
 
@@ -549,7 +546,7 @@ export const subscriptionStatusSchema = z.enum([
 ]);
 export type SubscriptionStatus = z.infer<typeof subscriptionStatusSchema>;
 
-/** null = unlimited (complimentary / unmetered). */
+/** null reserved for unbounded limits (not used by current Free/Pro catalog). */
 export const workspaceLimitsSchema = z.object({
   projects: z.number().int().positive().nullable(),
   members: z.number().int().positive().nullable(),
@@ -588,13 +585,10 @@ export const getWorkspaceBillingResponseSchema = z.object({
   workspaceId: uuidSchema,
   plan: planIdSchema,
   status: subscriptionStatusSchema,
-  billingSource: billingSourceSchema,
-  unmetered: z.boolean(),
-  discountPercentOff: z.number().int().min(1).max(100).nullable(),
   cancelAtPeriodEnd: z.boolean(),
   currentPeriodEnd: z.string().nullable(),
   hasStripeCustomer: z.boolean(),
-  /** Soft-lock: owner exceeds free workspace allowance after Pro/comp ended. */
+  /** Soft-lock: owner exceeds free workspace allowance after Pro ended. */
   freeOverflowLocked: z.boolean(),
   limits: workspaceLimitsSchema,
   usage: workspaceUsageSchema,
@@ -609,28 +603,6 @@ export const billingRedirectResponseSchema = z.object({
 });
 export type BillingRedirectResponse = z.infer<
   typeof billingRedirectResponseSchema
->;
-
-export const redeemDiscountRequestSchema = z.object({
-  code: z.string().min(8).max(64),
-});
-export type RedeemDiscountRequest = z.infer<typeof redeemDiscountRequestSchema>;
-
-export const redeemDiscountResponseSchema = z.object({
-  kind: z.enum(["comp", "percent_off"]),
-  percentOff: z.number().int().min(1).max(100),
-  /** Present when kind=percent_off and Checkout should follow. */
-  checkoutUrl: z.string().url().optional(),
-});
-export type RedeemDiscountResponse = z.infer<
-  typeof redeemDiscountResponseSchema
->;
-
-export const removeDiscountResponseSchema = z.object({
-  ok: z.literal(true),
-});
-export type RemoveDiscountResponse = z.infer<
-  typeof removeDiscountResponseSchema
 >;
 
 export const updateBillingAddonsRequestSchema = z.object({

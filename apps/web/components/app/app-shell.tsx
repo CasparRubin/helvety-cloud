@@ -45,13 +45,8 @@ import { cn } from "@/lib/utils";
 
 function workspacePlanLabel(billing: {
   plan: "free" | "pro";
-  billingSource: "stripe" | "comp";
-  unmetered: boolean;
 }): string {
   if (billing.plan === "free") return "Free";
-  if (billing.billingSource === "comp" || billing.unmetered) {
-    return "Pro via 100% code";
-  }
   return "Pro";
 }
 

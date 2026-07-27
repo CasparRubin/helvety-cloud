@@ -18,14 +18,12 @@ type SubscriptionRow = {
   workspace_id: string;
   plan: string;
   status: string;
-  billing_source: "stripe";
   stripe_customer_id: string | null;
   stripe_subscription_id: string | null;
   stripe_price_id: string | null;
   current_period_end: string | null;
   cancel_at_period_end: boolean;
   addon_quantities: Record<string, number>;
-  unmetered: false;
 };
 
 function stripeId(
@@ -50,7 +48,6 @@ function subscriptionRowFromStripe(
     workspace_id: workspaceId,
     plan: isEnded ? "free" : "pro",
     status: subscription.status,
-    billing_source: "stripe",
     stripe_customer_id: stripeId(subscription.customer),
     stripe_subscription_id: subscription.id,
     stripe_price_id: item?.price?.id ?? null,
@@ -61,7 +58,6 @@ function subscriptionRowFromStripe(
     addon_quantities: normalizeAddonQuantities(
       addonQuantitiesFromSubscription(subscription),
     ),
-    unmetered: false,
   };
 }
 
@@ -75,27 +71,9 @@ async function upsertStripeSubscription(
   supabase: ServiceApi,
   row: SubscriptionRow,
 ): Promise<void> {
-  const { data: existing } = await supabase
-    .from("subscriptions")
-    .select(
-      "billing_source, discount_code_id, discount_percent_off, stripe_coupon_id",
-    )
-    .eq("workspace_id", row.workspace_id)
-    .maybeSingle();
-
-  if (existing?.billing_source === "comp") {
-    return;
-  }
-
-  const { error } = await supabase.from("subscriptions").upsert(
-    {
-      ...row,
-      discount_code_id: existing?.discount_code_id ?? null,
-      discount_percent_off: existing?.discount_percent_off ?? null,
-      stripe_coupon_id: existing?.stripe_coupon_id ?? null,
-    },
-    { onConflict: "workspace_id" },
-  );
+  const { error } = await supabase.from("subscriptions").upsert(row, {
+    onConflict: "workspace_id",
+  });
   if (error) {
     throw new Error(error.message);
   }
@@ -176,13 +154,13 @@ export async function POST(request: Request) {
         if (customerId) {
           const { data: existing, error: lookupError } = await supabase
             .from("subscriptions")
-            .select("workspace_id, billing_source")
+            .select("workspace_id")
             .eq("stripe_customer_id", customerId)
             .maybeSingle();
           if (lookupError) {
             throw new Error(lookupError.message);
           }
-          if (existing && existing.billing_source !== "comp") {
+          if (existing) {
             workspaceId = existing.workspace_id;
             const { error } = await supabase
               .from("subscriptions")

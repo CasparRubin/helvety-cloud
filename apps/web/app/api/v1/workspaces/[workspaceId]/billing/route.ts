@@ -40,7 +40,7 @@ export async function GET(request: Request, context: RouteContext) {
   const { data: subscription, error: subscriptionError } = await supabase
     .from("subscriptions")
     .select(
-      "plan, status, billing_source, unmetered, discount_percent_off, stripe_customer_id, current_period_end, cancel_at_period_end, addon_quantities",
+      "plan, status, stripe_customer_id, current_period_end, cancel_at_period_end, addon_quantities",
     )
     .eq("workspace_id", workspaceId)
     .maybeSingle();
@@ -52,8 +52,6 @@ export async function GET(request: Request, context: RouteContext) {
     ? {
         plan: subscription.plan,
         status: subscription.status,
-        billing_source: subscription.billing_source,
-        unmetered: subscription.unmetered,
         addon_quantities: normalizeAddonQuantities(
           subscription.addon_quantities,
         ),
@@ -74,17 +72,11 @@ export async function GET(request: Request, context: RouteContext) {
     subscription?.status ?? "active",
   );
 
-  const billingSource =
-    subscription?.billing_source === "comp" ? "comp" : "stripe";
-
   return jsonOk(
     getWorkspaceBillingResponseSchema.parse({
       workspaceId,
       plan,
       status: statusParsed.success ? statusParsed.data : "active",
-      billingSource,
-      unmetered: Boolean(subscription?.unmetered && plan === "pro"),
-      discountPercentOff: subscription?.discount_percent_off ?? null,
       cancelAtPeriodEnd: subscription?.cancel_at_period_end ?? false,
       currentPeriodEnd: subscription?.current_period_end ?? null,
       hasStripeCustomer: Boolean(subscription?.stripe_customer_id),

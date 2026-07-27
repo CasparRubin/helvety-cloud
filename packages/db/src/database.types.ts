@@ -176,48 +176,6 @@ export type Database = {
           },
         ]
       }
-      discount_codes: {
-        Row: {
-          active: boolean
-          code: string
-          created_at: string
-          expires_at: string | null
-          id: string
-          max_redemptions: number | null
-          note: string | null
-          percent_off: number
-          redemption_count: number
-          stripe_coupon_id: string | null
-          updated_at: string
-        }
-        Insert: {
-          active?: boolean
-          code: string
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          max_redemptions?: number | null
-          note?: string | null
-          percent_off: number
-          redemption_count?: number
-          stripe_coupon_id?: string | null
-          updated_at?: string
-        }
-        Update: {
-          active?: boolean
-          code?: string
-          created_at?: string
-          expires_at?: string | null
-          id?: string
-          max_redemptions?: number | null
-          note?: string | null
-          percent_off?: number
-          redemption_count?: number
-          stripe_coupon_id?: string | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       entity_links: {
         Row: {
           created_at: string
@@ -472,75 +430,47 @@ export type Database = {
       subscriptions: {
         Row: {
           addon_quantities: Json
-          applied_at: string | null
-          applied_by_user_id: string | null
-          billing_source: string
           cancel_at_period_end: boolean
           created_at: string
           current_period_end: string | null
-          discount_code_id: string | null
-          discount_percent_off: number | null
           free_overflowed_at: string | null
           plan: string
           status: string
-          stripe_coupon_id: string | null
           stripe_customer_id: string | null
           stripe_price_id: string | null
           stripe_subscription_id: string | null
-          unmetered: boolean
           updated_at: string
           workspace_id: string
         }
         Insert: {
           addon_quantities?: Json
-          applied_at?: string | null
-          applied_by_user_id?: string | null
-          billing_source?: string
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
-          discount_code_id?: string | null
-          discount_percent_off?: number | null
           free_overflowed_at?: string | null
           plan?: string
           status?: string
-          stripe_coupon_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
-          unmetered?: boolean
           updated_at?: string
           workspace_id: string
         }
         Update: {
           addon_quantities?: Json
-          applied_at?: string | null
-          applied_by_user_id?: string | null
-          billing_source?: string
           cancel_at_period_end?: boolean
           created_at?: string
           current_period_end?: string | null
-          discount_code_id?: string | null
-          discount_percent_off?: number | null
           free_overflowed_at?: string | null
           plan?: string
           status?: string
-          stripe_coupon_id?: string | null
           stripe_customer_id?: string | null
           stripe_price_id?: string | null
           stripe_subscription_id?: string | null
-          unmetered?: boolean
           updated_at?: string
           workspace_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "subscriptions_discount_code_id_fkey"
-            columns: ["discount_code_id"]
-            isOneToOne: false
-            referencedRelation: "discount_codes"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "subscriptions_workspace_id_fkey"
             columns: ["workspace_id"]
@@ -549,8 +479,8 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      }
-      user_crypto: {
+      },
+user_crypto: {
         Row: {
           created_at: string
           key_check: Json
@@ -842,10 +772,6 @@ export type Database = {
       }
       delete_account: { Args: never; Returns: undefined }
       delete_workspace: { Args: { ws_id: string }; Returns: undefined }
-      increment_discount_redemption: {
-        Args: { code_id: string }
-        Returns: boolean
-      }
       claim_workspace_invitation: {
         Args: { invitation_id: string; public_key: string }
         Returns: {
@@ -905,11 +831,9 @@ export type Database = {
         Args: { ws_id: string }
         Returns: {
           addon_quantities: Json
-          billing_source: string
           member_count: number
           plan: string
           status: string
-          unmetered: boolean
         }[]
       }
     }

@@ -1,5 +1,5 @@
 /**
- * P12 entitlements: Free/Pro catalog, effective limits + addons, unmetered comps.
+ * P12 entitlements: Free/Pro catalog, effective limits + addons.
  */
 import { describe, expect, it } from "vitest";
 
@@ -10,7 +10,6 @@ import {
   PLAN_LIMITS,
   effectiveLimits,
   freeOverflowLockMessage,
-  isUnmetered,
   isUnlimited,
   limitMessage,
   limitToApi,
@@ -165,18 +164,18 @@ describe("effective limits + addons", () => {
     );
   });
 
-  it("unmetered comps unlock countable meters", () => {
-    const sub = {
-      plan: "pro" as const,
+  it("pro without addons matches catalog base", () => {
+    const limits = effectiveLimits({
+      plan: "pro",
       status: "active",
-      billing_source: "comp",
-      unmetered: true,
-    };
-    expect(isUnmetered(sub)).toBe(true);
-    const limits = effectiveLimits(sub);
-    expect(isUnlimited(limits.projectsPerWorkspace)).toBe(true);
-    expect(limitToApi(limits.projectsPerWorkspace)).toBeNull();
-    expect(limits.maxUploadBytes).toBe(PLAN_LIMITS.pro.maxUploadBytes);
+    });
+    expect(limits.projectsPerWorkspace).toBe(
+      PLAN_LIMITS.pro.projectsPerWorkspace,
+    );
+    expect(limitToApi(limits.projectsPerWorkspace)).toBe(
+      PLAN_LIMITS.pro.projectsPerWorkspace,
+    );
+    expect(isUnlimited(limits.projectsPerWorkspace)).toBe(false);
   });
 });
 

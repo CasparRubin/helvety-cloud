@@ -18,7 +18,7 @@ export async function syncWorkspaceFreeOverflowTag(
 ): Promise<void> {
   const { data: sub } = await service
     .from("subscriptions")
-    .select("plan, status, billing_source, unmetered, free_overflowed_at")
+    .select("plan, status, free_overflowed_at")
     .eq("workspace_id", workspaceId)
     .maybeSingle();
 
@@ -62,7 +62,7 @@ export async function syncWorkspaceFreeOverflowTag(
 
   const { data: subs } = await service
     .from("subscriptions")
-    .select("workspace_id, plan, status, billing_source, unmetered")
+    .select("workspace_id, plan, status")
     .in("workspace_id", ownedIds);
 
   const entitled = new Set(

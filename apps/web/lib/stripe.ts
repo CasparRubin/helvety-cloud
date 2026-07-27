@@ -85,31 +85,3 @@ export function addonQuantitiesFromSubscription(
   return quantities;
 }
 
-/**
- * Ensure a Stripe Coupon exists for a discount code percent.
- * Returns the coupon id (creates one when missing).
- */
-export async function ensurePercentOffCoupon(
-  percentOff: number,
-  codeLabel: string,
-  existingCouponId: string | null,
-): Promise<string> {
-  const stripe = getStripe();
-  if (existingCouponId) {
-    try {
-      const existing = await stripe.coupons.retrieve(existingCouponId);
-      if (existing.valid && existing.percent_off === percentOff) {
-        return existing.id;
-      }
-    } catch {
-      // recreate below
-    }
-  }
-  const coupon = await stripe.coupons.create({
-    percent_off: percentOff,
-    duration: "forever",
-    name: `Helvety ${percentOff}% (${codeLabel.slice(0, 20)})`,
-    metadata: { helvety_discount: "1" },
-  });
-  return coupon.id;
-}

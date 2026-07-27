@@ -24,8 +24,6 @@ import {
   getWorkspaceBilling,
   listWorkspaceInvitations,
   listWorkspaceMembers,
-  redeemBillingDiscount,
-  removeBillingDiscount,
 } from "@/lib/api/v1-client";
 import {
   handoffInvitationSeal,
@@ -71,8 +69,6 @@ type WorkspaceSettingsContextValue = {
   onSaveName: () => Promise<void>;
   onUpgrade: () => Promise<void>;
   onManageBilling: () => Promise<void>;
-  onRedeemDiscount: (code: string) => Promise<void>;
-  onRemoveDiscount: () => Promise<void>;
   onInvite: (opts: {
     email: string;
     role: WorkspaceInviteRole;
@@ -214,52 +210,6 @@ export function WorkspaceSettingsProvider({
     }
   }
 
-  async function onRedeemDiscount(code: string) {
-    setPending(true);
-    setError(null);
-    try {
-      const result = await redeemBillingDiscount(workspaceId, code);
-      if (result.kind === "percent_off" && result.checkoutUrl) {
-        window.location.assign(result.checkoutUrl);
-        return;
-      }
-      await refreshBilling();
-    } catch (err) {
-      if (err instanceof ApiClientError && err.code === "conflict") {
-        await refreshBilling();
-        return;
-      }
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Could not redeem code",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
-  async function onRemoveDiscount() {
-    setPending(true);
-    setError(null);
-    try {
-      await removeBillingDiscount(workspaceId);
-      await refreshBilling();
-    } catch (err) {
-      setError(
-        err instanceof ApiClientError
-          ? err.message
-          : err instanceof Error
-            ? err.message
-            : "Could not remove discount",
-      );
-    } finally {
-      setPending(false);
-    }
-  }
-
   async function onInvite(opts: {
     email: string;
     role: WorkspaceInviteRole;
@@ -373,7 +323,6 @@ export function WorkspaceSettingsProvider({
     !isPersonal &&
     Boolean(
       billing &&
-        billing.billingSource === "stripe" &&
         billing.hasStripeCustomer &&
         BLOCKING_SUB_STATUSES.has(billing.status) &&
         !billing.cancelAtPeriodEnd,
@@ -407,8 +356,6 @@ export function WorkspaceSettingsProvider({
     onSaveName,
     onUpgrade,
     onManageBilling,
-    onRedeemDiscount,
-    onRemoveDiscount,
     onInvite,
     onSeal,
     onCancel,
