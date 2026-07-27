@@ -241,10 +241,14 @@ export default function PricingPage() {
                 Start with a Free Workspace, upgrade a workspace to Pro Workspace
                 when you need encrypted files and higher limits, then add Pro
                 Workspace Capacity Increase packs only when that workspace grows.
+                Workspace content (projects, tasks, notes, contacts, and names) is
+                end-to-end encrypted on every plan, including Free. Helvety cannot
+                decrypt it.
               </p>
             </div>
           </div>
           <ul className="flex flex-wrap gap-2">
+            <TrustPoint>E2EE on every plan</TrustPoint>
             <TrustPoint>Email OTP only</TrustPoint>
             <TrustPoint>Passkey unlock</TrustPoint>
             <TrustPoint>No master key</TrustPoint>
@@ -258,7 +262,7 @@ export default function PricingPage() {
             title="Free Workspace"
             price={{ amount: "0", currency: "CHF" }}
             summary="One free workspace per user."
-            subtitle="Your Personal workspace, with fair-use limits and no file uploads."
+            subtitle="Your Personal workspace. Content is end-to-end encrypted, with fair-use limits and no file uploads."
             rows={freeRows}
             footer={
               <>
