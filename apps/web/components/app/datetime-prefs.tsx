@@ -8,7 +8,7 @@ import {
 } from "react";
 
 import {
-  DEFAULT_DATETIME_PREFS,
+  getServerDateTimePrefs,
   loadDateTimePrefs,
   storeDateTimePrefs,
   subscribeDateTimePrefs,
@@ -28,15 +28,11 @@ export function DatetimePrefsProvider({ children }: { children: ReactNode }) {
   const prefs = useSyncExternalStore(
     subscribeDateTimePrefs,
     loadDateTimePrefs,
-    () => DEFAULT_DATETIME_PREFS,
+    getServerDateTimePrefs,
   );
 
-  function setPrefs(next: DateTimePrefs) {
-    storeDateTimePrefs(next);
-  }
-
   return (
-    <DateTimePrefsContext.Provider value={{ prefs, setPrefs }}>
+    <DateTimePrefsContext.Provider value={{ prefs, setPrefs: storeDateTimePrefs }}>
       {children}
     </DateTimePrefsContext.Provider>
   );

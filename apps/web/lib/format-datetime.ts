@@ -20,6 +20,10 @@ const STORAGE_KEY = "helvety.ui.datetimePrefs";
 
 const listeners = new Set<() => void>();
 
+let snapshot: DateTimePrefs = DEFAULT_DATETIME_PREFS;
+let snapshotRaw: string | null = null;
+let snapshotReady = false;
+
 function emitDateTimePrefs(): void {
   for (const listener of listeners) listener();
 }
@@ -35,31 +39,52 @@ function isPreset(value: unknown): value is DateTimePreset {
   return value === "european" || value === "us" || value === "iso";
 }
 
+function prefsEqual(a: DateTimePrefs, b: DateTimePrefs): boolean {
+  return a.preset === b.preset && a.relative === b.relative;
+}
+
+function parsePrefs(raw: string): DateTimePrefs {
+  const parsed: unknown = JSON.parse(raw);
+  if (!parsed || typeof parsed !== "object") return DEFAULT_DATETIME_PREFS;
+  const obj = parsed as { preset?: unknown; relative?: unknown };
+  return {
+    preset: isPreset(obj.preset) ? obj.preset : DEFAULT_DATETIME_PREFS.preset,
+    relative:
+      typeof obj.relative === "boolean"
+        ? obj.relative
+        : DEFAULT_DATETIME_PREFS.relative,
+  };
+}
+
+/** Cached snapshot for useSyncExternalStore (stable reference when unchanged). */
 export function loadDateTimePrefs(): DateTimePrefs {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return DEFAULT_DATETIME_PREFS;
-    const parsed: unknown = JSON.parse(raw);
-    if (!parsed || typeof parsed !== "object") return DEFAULT_DATETIME_PREFS;
-    const obj = parsed as { preset?: unknown; relative?: unknown };
-    return {
-      preset: isPreset(obj.preset) ? obj.preset : DEFAULT_DATETIME_PREFS.preset,
-      relative:
-        typeof obj.relative === "boolean"
-          ? obj.relative
-          : DEFAULT_DATETIME_PREFS.relative,
-    };
+    if (snapshotReady && raw === snapshotRaw) return snapshot;
+    snapshotReady = true;
+    snapshotRaw = raw;
+    const next = raw ? parsePrefs(raw) : DEFAULT_DATETIME_PREFS;
+    if (!prefsEqual(snapshot, next)) snapshot = next;
+    return snapshot;
   } catch {
     return DEFAULT_DATETIME_PREFS;
   }
 }
 
+export function getServerDateTimePrefs(): DateTimePrefs {
+  return DEFAULT_DATETIME_PREFS;
+}
+
 export function storeDateTimePrefs(prefs: DateTimePrefs): void {
+  const raw = JSON.stringify(prefs);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    localStorage.setItem(STORAGE_KEY, raw);
   } catch {
     // ignore
   }
+  snapshotReady = true;
+  snapshotRaw = raw;
+  if (!prefsEqual(snapshot, prefs)) snapshot = prefs;
   emitDateTimePrefs();
 }
 
