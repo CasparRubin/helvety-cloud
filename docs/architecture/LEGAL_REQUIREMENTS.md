@@ -32,7 +32,7 @@ Before encryption setup completes, require active accept and **store versions + 
 3. AUP  
 4. E2EE acknowledgment  
 
-Current versions: `2026-07-24-v1` (bump on material edits). `PUT /api/v1/me/crypto` rejects without current acceptances.
+Current gated versions live in `apps/web/lib/legal/policies.ts` (`CURRENT_POLICY_VERSIONS`; bump on material edits). `PUT /api/v1/me/crypto` rejects without current acceptances.
 
 ## Honesty rules (always)
 

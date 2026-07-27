@@ -26,6 +26,33 @@ create trigger attachments_set_updated_at
   before update on public.attachments
   for each row execute function public.set_updated_at();
 
+-- storage_path and workspace_id must stay fixed so signed download URLs
+-- cannot be redirected to another Storage object via a member UPDATE.
+create or replace function public.attachments_freeze_path_and_workspace()
+returns trigger
+language plpgsql
+set search_path = public
+as $$
+begin
+  if new.storage_path is distinct from old.storage_path then
+    raise exception 'attachments.storage_path is immutable'
+      using errcode = 'P0001';
+  end if;
+  if new.workspace_id is distinct from old.workspace_id then
+    raise exception 'attachments.workspace_id is immutable'
+      using errcode = 'P0001';
+  end if;
+  return new;
+end;
+$$;
+
+revoke execute on function public.attachments_freeze_path_and_workspace()
+  from public, anon, authenticated;
+
+create trigger attachments_freeze_path_and_workspace
+  before update on public.attachments
+  for each row execute function public.attachments_freeze_path_and_workspace();
+
 alter table public.attachments enable row level security;
 alter table public.attachments force row level security;
 

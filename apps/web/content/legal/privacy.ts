@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const privacyDoc: LegalDocument = {
   slug: "privacy",
   title: "Privacy Policy",
-  versionLabel: "2026-07-27-v3",
+  versionLabel: "2026-07-27-v4",
   sections: [
     {
       heading: "Controller",
@@ -57,7 +57,7 @@ export const privacyDoc: LegalDocument = {
     {
       heading: "International transfers",
       paragraphs: [
-        "Primary database and auth for this Service are hosted in the EU (Zurich / eu-central-2). Hosting and email tooling may involve processing in other regions depending on vendor configuration. Where required, Helvety relies on appropriate transfer mechanisms offered by those vendors (for example standard contractual clauses) and contractual safeguards.",
+        "Primary database and auth for this Service are hosted in Switzerland (Zurich / eu-central-2). Hosting and email tooling may involve processing in other regions depending on vendor configuration. Where required, Helvety relies on appropriate transfer mechanisms offered by those vendors (for example standard contractual clauses) and contractual safeguards.",
       ],
     },
     {

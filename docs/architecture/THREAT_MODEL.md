@@ -15,7 +15,7 @@
 | **Honest-but-curious server** (Helvety staff, compromised admin, stolen DB dump) | All encrypted content encrypted client-side. Server stores ciphertext + public keys + wrapped key blobs only. Service role cannot decrypt. **Intentional metadata** also visible: membership, categorization soft-ref ids on tasks, and the `entity_links` UUID graph (which ids are linked, never titles, chip labels, or accent colors). |
 | **Network attacker** | TLS in transit; ciphertext still opaque if intercepted at rest on disk. |
 | **Malicious invitee** | Only receives keys sealed to their public key after claim; AUP + ToS; cannot escalate to other workspaces without membership. Invitation claim requires verified JWT email match. |
-| **Lost / stolen device** | Idle lock; unlock passkey/OS unlock; user can revoke sessions; recovery key offline. |
+| **Lost / stolen device** | Unlock keys live in memory until explicit lock or sign-out; unlock passkey / OS unlock; user can revoke sessions; offline `helvety-recovery.json` for passkey loss. |
 | **Phishing** | Email OTP creates a session (phishable); encrypted unlock is a separate WebAuthn PRF credential bound to the page origin (RP ID from hostname). Session ≠ decrypt. |
 | **Compelled disclosure** | Helvety can produce account metadata, the entity link graph (UUID edges), categorization soft-ref ids, and ciphertext it holds; **cannot** produce plaintext encrypted content (titles, bodies, colors, option names) without user keys. Document this honestly in legal/E2EE notices. |
 

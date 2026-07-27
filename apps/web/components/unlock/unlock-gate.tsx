@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { AlertCircleIcon, CopyIcon } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { AlertCircleIcon } from "lucide-react";
 
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -38,8 +38,15 @@ function downloadRecoveryFile(recovery: RecoveryExport): void {
 }
 
 export function UnlockGate({ email, userId }: UnlockGateProps) {
-  const { recovery, setupUserCrypto, unlockUserCrypto, clearRecovery, lock } =
-    useCryptoSession();
+  const {
+    recovery,
+    setupUserCrypto,
+    unlockUserCrypto,
+    unlockUserCryptoWithRecoveryFile,
+    clearRecovery,
+    lock,
+  } = useCryptoSession();
+  const recoveryFileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
@@ -122,6 +129,32 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
     }
   }
 
+  async function onRecoveryFileSelected(file: File | undefined) {
+    if (!file) return;
+    setError(null);
+    setMessage(null);
+    setPending(true);
+    try {
+      await unlockUserCryptoWithRecoveryFile(userId, file);
+    } catch (err) {
+      if (err instanceof ApiClientError && err.status === 404) {
+        setStep("needs_setup");
+        setError("No encryption keys yet. Set up encryption first.");
+      } else {
+        setError(
+          err instanceof Error
+            ? err.message
+            : "Unlock with recovery file failed",
+        );
+      }
+    } finally {
+      setPending(false);
+      if (recoveryFileInputRef.current) {
+        recoveryFileInputRef.current.value = "";
+      }
+    }
+  }
+
   return (
     <AuthShell
       title="Unlock your data"
@@ -140,7 +173,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
         <AlertTitle>Helvety cannot unlock this</AlertTitle>
         <AlertDescription>
           Your data is encrypted on your device. Helvety cannot decrypt or
-          restore it. If you lose your unlock passkey and offline recovery key,
+          restore it. If you lose your unlock passkey and offline recovery file,
           your data is gone permanently.
         </AlertDescription>
       </Alert>
@@ -174,64 +207,12 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
 
       {recovery ? (
         <div className="flex flex-col gap-3 rounded-lg border border-border p-4">
-          <p className="text-sm font-medium">Recovery material (shown once)</p>
+          <p className="text-sm font-medium">Save your recovery file</p>
           <p className="text-sm text-muted-foreground">
-            Store both the recovery key and the recovery wrap offline. Neither is
-            logged or sent to Helvety. Losing these with your unlock passkey means
-            permanent data loss.
+            Download helvety-recovery.json and store it offline. It is not sent
+            to Helvety. Use it later if you lose your unlock passkey. Losing both
+            means permanent data loss.
           </p>
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-muted-foreground">
-              Recovery key
-            </p>
-            <div className="relative rounded-md bg-muted">
-              <code className="block break-all p-2 pr-10 text-xs">
-                {recovery.recoveryKeyExported}
-              </code>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                className="absolute top-1.5 right-1.5"
-                disabled={pending}
-                aria-label="Copy recovery key"
-                onClick={() => {
-                  void navigator.clipboard.writeText(
-                    recovery.recoveryKeyExported,
-                  );
-                  setMessage("Recovery key copied to clipboard (device only).");
-                }}
-              >
-                <CopyIcon />
-              </Button>
-            </div>
-          </div>
-          <div className="flex flex-col gap-1.5">
-            <p className="text-xs font-medium text-muted-foreground">
-              Recovery wrap
-            </p>
-            <div className="relative rounded-md bg-muted">
-              <code className="block max-h-32 overflow-auto break-all p-2 pr-10 text-xs">
-                {JSON.stringify(recovery.recoveryWrappedUserKey)}
-              </code>
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon-xs"
-                className="absolute top-1.5 right-1.5"
-                disabled={pending}
-                aria-label="Copy recovery wrap"
-                onClick={() => {
-                  void navigator.clipboard.writeText(
-                    JSON.stringify(recovery.recoveryWrappedUserKey),
-                  );
-                  setMessage("Recovery wrap copied to clipboard (device only).");
-                }}
-              >
-                <CopyIcon />
-              </Button>
-            </div>
-          </div>
           <Button
             type="button"
             variant="outline"
@@ -252,7 +233,7 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
             disabled={pending}
             onClick={clearRecovery}
           >
-            I saved both offline, continue
+            I saved the file offline, continue
           </Button>
         </div>
       ) : null}
@@ -278,15 +259,35 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
           ) : null}
 
           {step === "locked" ? (
-            <Button
-              type="button"
-              className="w-full"
-              disabled={pending}
-              onClick={() => void onUnlock()}
-            >
-              {pending ? <Spinner data-icon="inline-start" /> : null}
-              Unlock with passkey
-            </Button>
+            <>
+              <Button
+                type="button"
+                className="w-full"
+                disabled={pending}
+                onClick={() => void onUnlock()}
+              >
+                {pending ? <Spinner data-icon="inline-start" /> : null}
+                Unlock with passkey
+              </Button>
+              <input
+                ref={recoveryFileInputRef}
+                type="file"
+                accept="application/json,.json"
+                className="hidden"
+                onChange={(event) => {
+                  void onRecoveryFileSelected(event.target.files?.[0]);
+                }}
+              />
+              <Button
+                type="button"
+                variant="outline"
+                className="w-full"
+                disabled={pending}
+                onClick={() => recoveryFileInputRef.current?.click()}
+              >
+                Unlock with recovery file
+              </Button>
+            </>
           ) : null}
 
           {step !== "loading" ? (

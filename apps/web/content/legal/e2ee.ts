@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const e2eeDoc: LegalDocument = {
   slug: "e2ee",
   title: "E2EE / zero-access notice",
-  versionLabel: "2026-07-26-v2",
+  versionLabel: "2026-07-27-v3",
   sections: [
     {
       heading: "Acknowledgment required",
@@ -22,7 +22,7 @@ export const e2eeDoc: LegalDocument = {
       heading: "No recovery by Helvety",
       paragraphs: [
         "If you lose your unlock passkey/PRF capability and any recovery export you were shown, Helvety cannot recover your data. Lost keys mean permanent loss of that encrypted content.",
-        "Any recovery key and wrap shown during setup must be stored offline by you. Never email them to Helvety or paste them into support channels with an expectation of restoration.",
+        "Any recovery export shown during setup (helvety-recovery.json) must be stored offline by you. Never email it to Helvety or paste it into support channels with an expectation of restoration.",
       ],
     },
     {

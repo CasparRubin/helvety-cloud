@@ -42,7 +42,7 @@ See [`ROADMAP.md`](ROADMAP.md) locked decisions.
 | Sync helpers | `updated_at`, optional generation/cursor fields |
 | `subscriptions` (P6f/P12) | PK `workspace_id`; `plan` (`free`\|`pro`), Stripe `status`, `addon_quantities` jsonb, Stripe ids, period fields, optional `free_overflowed_at`. Members SELECT only; writes via service-role webhook |
 | `billing_events` (P6f) | Webhook audit + idempotency: unique `stripe_event_id`, `type`, nullable `workspace_id`, raw event `payload` (billing metadata only). No client grants; service-role only |
-| `attachments` (P11) | Workspace-scoped file ciphertext in Storage: plaintext `byte_size`, `storage_path`, `status` (`pending`\|`ready`\|`failed`), timestamps, tombstone; ciphertext `encrypted_meta` + `wrapped_dek` envelopes |
+| `attachments` (P11) | Workspace-scoped file ciphertext in Storage: plaintext `byte_size`, immutable `storage_path` + `workspace_id`, `status` (`pending`\|`ready`\|`failed`), timestamps, tombstone; ciphertext `encrypted_meta` + `wrapped_dek` envelopes |
 | `attachment_links` (P11) | Plaintext junction: `parent_kind`/`parent_id` (`note`\|`task`\|`contact`) → `attachment_id` for reverse lookup + cascade cleanup without decrypting TipTap bodies |
 | `policy_acceptances` | Plaintext signup gates: `user_id`, `policy` (`tos`/`privacy`/`aup`/`e2ee`), `version`, `accepted_at`; unique `(user_id, policy, version)`; append-only for clients |
 

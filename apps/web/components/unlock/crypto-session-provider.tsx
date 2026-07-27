@@ -18,11 +18,14 @@ import {
 import { createPrfUnlock, assertPrfUnlock } from "@/lib/client-crypto/prf";
 import {
   createRecoveryExport,
+  parseRecoveryFileJson,
+  unwrapUserSymmetricKeyFromRecovery,
   type RecoveryExport,
 } from "@/lib/client-crypto/recovery";
 import {
   setupUserKeys,
   unlockUserKeys,
+  unlockWithUserSymmetricKey,
   type UnlockedUserKeys,
 } from "@/lib/client-crypto/user-keys";
 import {
@@ -43,6 +46,10 @@ type CryptoSessionValue = {
   lock: () => void;
   setupUserCrypto: (userId: string, email: string) => Promise<void>;
   unlockUserCrypto: (userId: string) => Promise<void>;
+  unlockUserCryptoWithRecoveryFile: (
+    userId: string,
+    file: File,
+  ) => Promise<void>;
   refreshWorkspaces: () => Promise<DecryptedWorkspaceListItem[]>;
   createWorkspace: (
     name: string,
@@ -152,6 +159,24 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
     [afterUnlocked],
   );
 
+  const unlockUserCryptoWithRecoveryFile = useCallback(
+    async (userId: string, file: File) => {
+      const text = await file.text();
+      const parsed = parseRecoveryFileJson(text);
+      const userSymmetricKey = await unwrapUserSymmetricKeyFromRecovery(
+        userId,
+        parsed,
+      );
+      const unlocked = await unlockWithUserSymmetricKey(
+        userId,
+        parsed.recoveryKey,
+        userSymmetricKey,
+      );
+      await afterUnlocked(unlocked);
+    },
+    [afterUnlocked],
+  );
+
   const getWorkspaceKey = useCallback(
     async (workspaceId: string) => {
       if (!userKeys) {
@@ -226,6 +251,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
       lock,
       setupUserCrypto,
       unlockUserCrypto,
+      unlockUserCryptoWithRecoveryFile,
       refreshWorkspaces,
       createWorkspace,
       renameWorkspace,
@@ -241,6 +267,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
       lock,
       setupUserCrypto,
       unlockUserCrypto,
+      unlockUserCryptoWithRecoveryFile,
       refreshWorkspaces,
       createWorkspace,
       renameWorkspace,

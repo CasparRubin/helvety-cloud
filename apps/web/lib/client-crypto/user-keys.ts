@@ -98,6 +98,41 @@ export async function setupUserKeys(
   };
 }
 
+/**
+ * Finish unlock once user_symmetric_key is unwrapped (passkey or recovery).
+ */
+export async function unlockWithUserSymmetricKey(
+  userId: string,
+  sessionUnlockKey: Uint8Array,
+  userSymmetricKey: Uint8Array,
+  cryptoRow?: GetMeCryptoResponse,
+): Promise<UnlockedUserKeys> {
+  const row = cryptoRow ?? (await getMeCrypto());
+  if (row.userId !== userId) {
+    throw new Error("User crypto row does not match signed-in user");
+  }
+
+  const ok = await verifyKeyCheck(userSymmetricKey, row.keyCheck, userId);
+  if (!ok) {
+    throw new Error("Key check failed: wrong unlock material or corrupt data");
+  }
+
+  const privateKey = await unwrapKey(
+    userSymmetricKey,
+    row.wrappedPrivateKey,
+    wrappedPrivateKeyAad(userId),
+  );
+
+  return {
+    userId,
+    unlockKey: sessionUnlockKey,
+    userSymmetricKey,
+    publicKey: fromBase64Url(row.publicKey),
+    privateKey,
+    keyVersion: row.keyVersion,
+  };
+}
+
 export async function unlockUserKeys(
   userId: string,
   unlockKey: Uint8Array,
@@ -114,23 +149,10 @@ export async function unlockUserKeys(
     wrappedUserKeyAad(userId),
   );
 
-  const ok = await verifyKeyCheck(userSymmetricKey, row.keyCheck, userId);
-  if (!ok) {
-    throw new Error("Key check failed: wrong unlock material or corrupt data");
-  }
-
-  const privateKey = await unwrapKey(
-    userSymmetricKey,
-    row.wrappedPrivateKey,
-    wrappedPrivateKeyAad(userId),
-  );
-
-  return {
+  return unlockWithUserSymmetricKey(
     userId,
     unlockKey,
     userSymmetricKey,
-    publicKey: fromBase64Url(row.publicKey),
-    privateKey,
-    keyVersion: row.keyVersion,
-  };
+    row,
+  );
 }
