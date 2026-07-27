@@ -36,6 +36,7 @@ import {
 } from "@/components/app/entity-list-shell";
 import { MilestonePicker } from "@/components/app/milestone-picker";
 import {
+  ListRefreshButton,
   PageActions,
   PageSettingsActions,
 } from "@/components/app/page-actions";
@@ -121,6 +122,15 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     setTasks(allTasks);
     setMilestones(allMilestones);
   }, [getWorkspaceKey, workspaceId, projectId]);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      await reload();
+      setError(null);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to refresh");
+    }
+  }, [reload]);
 
   useEffect(() => {
     if (!userKeys) return;
@@ -299,6 +309,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   return (
     <>
       <PageActions>
+        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
         {!loading && project ? (
           <CreateEntityDialog
             triggerLabel="Create task"

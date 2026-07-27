@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -10,6 +10,7 @@ import {
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import {
+  ListRefreshButton,
   PageActions,
   WorkspaceSettingsAction,
 } from "@/components/app/page-actions";
@@ -55,14 +56,31 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [newPhones, setNewPhones] = useState("");
   const [newNotes, setNewNotes] = useState("");
 
+  const loadContacts = useCallback(async () => {
+    const key = await getWorkspaceKey(workspaceId);
+    return loadDecryptedContacts(workspaceId, key);
+  }, [getWorkspaceKey, workspaceId]);
+
+  const refresh = useCallback(async () => {
+    const page = await loadContacts();
+    setContacts([...page.contacts].sort(compareContactsByLastName));
+    setError(null);
+  }, [loadContacts]);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to refresh");
+    }
+  }, [refresh]);
+
   useEffect(() => {
     if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
-        const key = await getWorkspaceKey(workspaceId);
-        if (cancelled) return;
-        const page = await loadDecryptedContacts(workspaceId, key);
+        const page = await loadContacts();
         if (cancelled) return;
         setContacts([...page.contacts].sort(compareContactsByLastName));
         setError(null);
@@ -76,7 +94,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, workspaceId, getWorkspaceKey]);
+  }, [userKeys, loadContacts]);
 
   function resetCreateFields() {
     setNewLastName("");
@@ -126,6 +144,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
   return (
     <>
       <PageActions>
+        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
         <CreateEntityDialog
           triggerLabel="Create contact"
           dialogTitle="Create contact"

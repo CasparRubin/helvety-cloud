@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -10,6 +10,7 @@ import {
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import {
+  ListRefreshButton,
   PageActions,
   WorkspaceSettingsAction,
 } from "@/components/app/page-actions";
@@ -38,14 +39,31 @@ export function NoteList({ workspaceId }: NoteListProps) {
   const [busy, setBusy] = useState(false);
   const [newBody, setNewBody] = useState("");
 
+  const loadNotes = useCallback(async () => {
+    const key = await getWorkspaceKey(workspaceId);
+    return loadDecryptedNotes(workspaceId, key);
+  }, [getWorkspaceKey, workspaceId]);
+
+  const refresh = useCallback(async () => {
+    const page = await loadNotes();
+    setNotes(page.notes);
+    setError(null);
+  }, [loadNotes]);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to refresh");
+    }
+  }, [refresh]);
+
   useEffect(() => {
     if (!userKeys) return;
     let cancelled = false;
     void (async () => {
       try {
-        const key = await getWorkspaceKey(workspaceId);
-        if (cancelled) return;
-        const page = await loadDecryptedNotes(workspaceId, key);
+        const page = await loadNotes();
         if (cancelled) return;
         setNotes(page.notes);
         setError(null);
@@ -59,7 +77,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
     return () => {
       cancelled = true;
     };
-  }, [userKeys, workspaceId, getWorkspaceKey]);
+  }, [userKeys, loadNotes]);
 
   function resetCreateFields() {
     setNewBody("");
@@ -93,6 +111,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
   return (
     <>
       <PageActions>
+        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
         <CreateEntityDialog
           triggerLabel="Create note"
           dialogTitle="Create note"

@@ -11,6 +11,7 @@ import {
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import {
+  ListRefreshButton,
   PageActions,
   WorkspaceSettingsAction,
 } from "@/components/app/page-actions";
@@ -51,6 +52,14 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     setProjects(page.projects);
     setError(null);
   }, [loadProjects]);
+
+  const handleRefresh = useCallback(async () => {
+    try {
+      await refresh();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Failed to refresh");
+    }
+  }, [refresh]);
 
   useEffect(() => {
     if (!userKeys) return;
@@ -122,6 +131,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   return (
     <>
       <PageActions>
+        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
         <CreateEntityDialog
           triggerLabel="Create project"
           dialogTitle="Create project"

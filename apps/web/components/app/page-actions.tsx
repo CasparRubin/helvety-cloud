@@ -10,7 +10,7 @@ import {
   type ReactNode,
 } from "react";
 import { createPortal } from "react-dom";
-import { SettingsIcon } from "lucide-react";
+import { RefreshCwIcon, SettingsIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
@@ -116,6 +116,39 @@ export function WorkspaceSettingsAction({
         <span className="hidden sm:inline">Workspace settings</span>
       </Button>
     </PageSettingsActions>
+  );
+}
+
+export function ListRefreshButton({
+  onRefresh,
+  disabled,
+}: {
+  onRefresh: () => Promise<void>;
+  disabled?: boolean;
+}) {
+  const [refreshing, setRefreshing] = useState(false);
+
+  async function handleClick() {
+    setRefreshing(true);
+    try {
+      await onRefresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  return (
+    <Button
+      type="button"
+      variant="ghost"
+      size="sm"
+      disabled={disabled || refreshing}
+      aria-label="Refresh list"
+      onClick={() => void handleClick()}
+    >
+      <RefreshCwIcon className={refreshing ? "animate-spin" : undefined} />
+      <span className="hidden sm:inline">Refresh</span>
+    </Button>
   );
 }
 
