@@ -7,6 +7,7 @@ import { useEffect } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
+  SparklesIcon,
   StickyNoteIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -126,11 +127,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const activeWorkspace =
     workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
   const activeWorkspaceName = activeWorkspace?.name ?? null;
-  const planLabel = activeWorkspace
-    ? activeWorkspace.plan === "pro"
-      ? "Pro"
-      : "Free"
-    : null;
+  const isProWorkspace = activeWorkspace?.plan === "pro";
   const workspaceBase = location?.workspaceBase ?? null;
   const onWorkspaceHome = Boolean(
     workspaceBase && pathname === workspaceBase,
@@ -235,8 +232,22 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 <>
                   {activeWorkspaceName ? (
                     <div className="mb-1.5 flex flex-col gap-0.5">
-                      <p className="px-2 text-xs font-medium text-muted-foreground">
-                        Workspace
+                      <p
+                        className={cn(
+                          "flex items-center gap-1 px-2 text-xs font-medium",
+                          isProWorkspace
+                            ? "text-sky-700 dark:text-sky-400"
+                            : "text-muted-foreground",
+                        )}
+                      >
+                        {isProWorkspace ? (
+                          <SparklesIcon className="size-3 shrink-0" />
+                        ) : null}
+                        <span className="truncate">
+                          {isProWorkspace
+                            ? "Pro Workspace"
+                            : "Free Workspace"}
+                        </span>
                       </p>
                       <Link
                         href={workspaceBase}
@@ -250,11 +261,6 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                       >
                         {activeWorkspaceName}
                       </Link>
-                      {planLabel ? (
-                        <p className="px-2 text-xs text-muted-foreground">
-                          {planLabel}
-                        </p>
-                      ) : null}
                     </div>
                   ) : null}
                   {sections.map((section) => (
