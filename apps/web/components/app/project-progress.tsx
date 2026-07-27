@@ -47,9 +47,7 @@ export function ProjectProgress({
       aria-label="Project progress"
     >
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="text-xs font-medium tracking-wide text-muted-foreground">
-          Progress
-        </h3>
+        <h3 className="text-sm font-medium">Progress</h3>
         {view.scopeCount > 0 ? (
           <span className="text-[11px] tabular-nums text-muted-foreground">
             {view.weightedPercent}% done

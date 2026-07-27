@@ -3,6 +3,10 @@
 import { useEffect, useState } from "react";
 import type { CommentParentKind } from "@helvety-cloud/api-contract";
 
+import {
+  EntityErrorAlert,
+  EntityListEmpty,
+} from "@/components/app/entity-list-shell";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -176,8 +180,11 @@ export function CommentsSection({
       <li
         key={comment.id}
         className={cn(
-          "flex flex-col gap-2",
-          depth > 0 && "ml-4 border-l border-border pl-3",
+          "flex flex-col gap-1.5",
+          depth === 0 &&
+            "rounded-lg border border-border bg-muted/30 px-3 py-2.5",
+          depth > 0 &&
+            "ml-4 rounded-md border-l border-border bg-muted/20 py-2 pl-3 pr-2.5",
         )}
       >
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
@@ -293,7 +300,7 @@ export function CommentsSection({
           </div>
         ) : null}
         {replies.length > 0 ? (
-          <ul className="flex flex-col gap-3">
+          <ul className="flex flex-col gap-2">
             {replies.map((r) => renderComment(r, depth + 1))}
           </ul>
         ) : null}
@@ -304,21 +311,17 @@ export function CommentsSection({
   return (
     <section className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
       <h2 className="text-sm font-medium text-foreground">Comments</h2>
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <EntityErrorAlert message={error} /> : null}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading comments…</p>
       ) : roots.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No comments yet.</p>
+        <EntityListEmpty className="px-3 py-4">No comments yet.</EntityListEmpty>
       ) : (
-        <ul className="flex flex-col gap-4">
+        <ul className="flex flex-col gap-3">
           {roots.map((c) => renderComment(c, 0))}
         </ul>
       )}
-      <div className="flex flex-col gap-2">
+      <div className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2.5">
         <TaskBodyEditor
           content={composer}
           onChange={setComposer}

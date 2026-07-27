@@ -4,6 +4,10 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { WorkspaceInvitation } from "@helvety-cloud/api-contract";
 
+import {
+  EntityErrorAlert,
+  EntityListEmpty,
+} from "@/components/app/entity-list-shell";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -183,18 +187,16 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
         </p>
       </div>
 
-      {error ? (
-        <p className="text-sm text-destructive" role="alert">
-          {error}
-        </p>
-      ) : null}
+      {error ? <EntityErrorAlert message={error} /> : null}
 
       {loading ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">
           <Spinner /> Loading…
         </p>
       ) : invitations.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No pending invitations.</p>
+        <EntityListEmpty className="max-w-xl">
+          No pending invitations.
+        </EntityListEmpty>
       ) : (
         <ul className="flex max-w-xl flex-col gap-3">
           {invitations.map((invitation) => {

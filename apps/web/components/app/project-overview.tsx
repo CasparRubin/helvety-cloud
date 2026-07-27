@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { EntityListEmpty } from "@/components/app/entity-list-shell";
 import { InlineTitle } from "@/components/app/inline-title";
 import { PageActions } from "@/components/app/page-actions";
 import { SaveStatus } from "@/components/app/save-status";
@@ -317,7 +318,9 @@ export function ProjectMilestonesPanel({
       </PageActions>
 
       {milestones.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No milestones yet.</p>
+        <EntityListEmpty className="px-3 py-4 text-xs">
+          No milestones yet.
+        </EntityListEmpty>
       ) : (
         <ul className="flex flex-col gap-2">
           {milestones.map((m) => (
@@ -368,10 +371,10 @@ function MilestoneListItem({
   return (
     <div
       className={cn(
-        "rounded-md border bg-background",
+        "rounded-lg border bg-background",
         selected
           ? "border-foreground/40 ring-1 ring-foreground/15"
-          : "border-border/60",
+          : "border-border",
       )}
     >
       <button

@@ -9,6 +9,7 @@ import {
   useWorkspaceSettings,
 } from "@/components/app/workspace-settings/provider";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -250,7 +251,7 @@ export function WorkspaceMembersSettings() {
       )}
 
       {memberLimitHit && isOwner && billing?.plan === "free" ? (
-        <div className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5">
+        <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-2 py-1.5">
           <p className="text-xs text-muted-foreground">
             The free plan includes {formatLimit(billing.limits.members)} members
             per workspace.
@@ -277,7 +278,7 @@ export function WorkspaceMembersSettings() {
             {members.map((m) => (
               <li
                 key={m.userId}
-                className="flex items-center justify-between rounded-md border border-border px-2 py-1.5"
+                className="flex items-center justify-between rounded-lg border border-border px-2 py-1.5"
               >
                 <span className="truncate font-mono text-xs">
                   {m.userId.slice(0, 8)}…
@@ -301,7 +302,7 @@ export function WorkspaceMembersSettings() {
               {activeInvites.map((invitation) => (
                 <li
                   key={invitation.id}
-                  className="flex flex-col gap-1.5 rounded-md border border-border px-2 py-2"
+                  className="flex flex-col gap-1.5 rounded-lg border border-border px-2 py-2"
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm">{invitation.email}</p>
@@ -379,172 +380,178 @@ export function WorkspaceBillingSettings() {
         <p className="text-xs text-muted-foreground">Loading billing…</p>
       ) : billing ? (
         <>
-          <section className="flex flex-col gap-2 rounded-md border border-border px-3 py-3">
-            <div className="flex items-start justify-between gap-3">
-              <div className="flex min-w-0 flex-col gap-0.5">
-                <p className="text-sm font-medium text-foreground">
-                  {formatPlanTitle(billing.plan)}
-                </p>
-                <p className="text-xs text-muted-foreground">
-                  {formatBillingStatus(billing.status)}
-                  {periodSuffix(
-                    billing.currentPeriodEnd,
-                    billing.cancelAtPeriodEnd,
-                  )}
-                </p>
-              </div>
-              {isOwner ? (
-                billing.plan === "free" ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() => void onUpgrade()}
-                  >
-                    Upgrade to Pro
-                  </Button>
-                ) : billing.hasStripeCustomer ? (
-                  <Button
-                    type="button"
-                    size="sm"
-                    variant="outline"
-                    disabled={pending}
-                    onClick={() => void onManageBilling()}
-                  >
-                    Manage billing
-                  </Button>
-                ) : null
-              ) : (
-                <p className="shrink-0 text-xs text-muted-foreground">
-                  Only the owner can manage billing.
-                </p>
-              )}
-            </div>
-            {billing.freeOverflowLocked ? (
-              <p className="text-xs text-muted-foreground">
-                New creates are paused because this workspace is over the free
-                allowance (
-                {PLAN_LIMITS.free.ownedWorkspaces === 1
-                  ? "1 free workspace per account"
-                  : `${PLAN_LIMITS.free.ownedWorkspaces} free workspaces per account`}
-                ). Existing content stays available. Upgrade to Pro, or reduce
-                owned free workspaces to unlock creates again.
-              </p>
-            ) : null}
-            {isOwner && billing.plan === "free" ? (
-              <p className="border-t border-border pt-2 text-xs text-muted-foreground">
-                Promotion codes can be entered at Stripe Checkout after you
-                click Upgrade to Pro.
-              </p>
-            ) : null}
-          </section>
-
-          <section className="flex flex-col gap-3 rounded-md border border-border px-3 py-3">
-            <p className="text-xs font-medium text-foreground">Usage</p>
-            <UsageMeterRow
-              label="Projects"
-              used={billing.usage.projects}
-              limit={billing.limits.projects}
-            />
-            <UsageMeterRow
-              label="Members"
-              used={memberSeats}
-              limit={billing.limits.members}
-            />
-            <UsageMeterRow
-              label="Notes"
-              used={billing.usage.notes}
-              limit={billing.limits.notes}
-            />
-            <UsageMeterRow
-              label="Contacts"
-              used={billing.usage.contacts}
-              limit={billing.limits.contacts}
-            />
-            <UsageMeterRow
-              label="Comments"
-              used={billing.usage.comments}
-              limit={billing.limits.comments}
-            />
-            {billing.limits.storageBytes === 0 ? (
-              <CapRow label="File storage" value="Not included on Free" />
-            ) : (
-              <UsageMeterRow
-                label="File storage"
-                used={billing.usage.storageBytes}
-                limit={billing.limits.storageBytes}
-                formatValue={formatBytes}
-              />
-            )}
-            <div className="flex flex-col gap-1.5 border-t border-border pt-2">
-              <CapRow
-                label="Tasks per project"
-                value={`Up to ${formatLimit(billing.limits.tasks)}`}
-              />
-              <CapRow
-                label="Files per task"
-                value={
-                  billing.limits.filesPerTask === 0
-                    ? "Not included on Free"
-                    : `Up to ${formatLimit(billing.limits.filesPerTask)}`
-                }
-              />
-              {billing.limits.maxUploadBytes > 0 ? (
-                <CapRow
-                  label="Max upload size"
-                  value={formatBytes(billing.limits.maxUploadBytes)}
-                />
-              ) : null}
-            </div>
-          </section>
-
-          <section className="flex flex-col gap-2 rounded-md border border-border px-3 py-3">
-            <p className="text-xs font-medium text-foreground">Add-ons</p>
-            {billing.plan === "pro" ? (
-              <>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex min-w-0 flex-col gap-0.5">
-                    <p className="text-sm font-medium text-foreground">
-                      {CAPACITY_PACK.label}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {capacityQty > 0
-                        ? `${capacityQty} pack${capacityQty === 1 ? "" : "s"}`
-                        : "No packs yet"}
-                    </p>
-                  </div>
-                  {isOwner && billing.hasStripeCustomer ? (
+          <Card size="sm">
+            <CardContent className="flex flex-col gap-2">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex min-w-0 flex-col gap-0.5">
+                  <p className="text-sm font-medium text-foreground">
+                    {formatPlanTitle(billing.plan)}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {formatBillingStatus(billing.status)}
+                    {periodSuffix(
+                      billing.currentPeriodEnd,
+                      billing.cancelAtPeriodEnd,
+                    )}
+                  </p>
+                </div>
+                {isOwner ? (
+                  billing.plan === "free" ? (
                     <Button
                       type="button"
                       size="sm"
                       variant="outline"
-                      className="shrink-0"
+                      disabled={pending}
+                      onClick={() => void onUpgrade()}
+                    >
+                      Upgrade to Pro
+                    </Button>
+                  ) : billing.hasStripeCustomer ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="outline"
                       disabled={pending}
                       onClick={() => void onManageBilling()}
                     >
-                      Add or change
+                      Manage billing
                     </Button>
-                  ) : null}
-                </div>
+                  ) : null
+                ) : (
+                  <p className="shrink-0 text-xs text-muted-foreground">
+                    Only the owner can manage billing.
+                  </p>
+                )}
+              </div>
+              {billing.freeOverflowLocked ? (
                 <p className="text-xs text-muted-foreground">
-                  Each pack adds {CAPACITY_PACK.deltas.projects} projects,{" "}
-                  {CAPACITY_PACK.deltas.tasksPerProject} tasks per project,{" "}
-                  {CAPACITY_PACK.deltas.notes} notes,{" "}
-                  {CAPACITY_PACK.deltas.contacts} contacts,{" "}
-                  {CAPACITY_PACK.deltas.comments} comments and replies,{" "}
-                  {CAPACITY_PACK.deltas.members} members, and{" "}
-                  {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
+                  New creates are paused because this workspace is over the free
+                  allowance (
+                  {PLAN_LIMITS.free.ownedWorkspaces === 1
+                    ? "1 free workspace per account"
+                    : `${PLAN_LIMITS.free.ownedWorkspaces} free workspaces per account`}
+                  ). Existing content stays available. Upgrade to Pro, or reduce
+                  owned free workspaces to unlock creates again.
                 </p>
-              </>
-            ) : (
-              <p className="text-xs text-muted-foreground">
-                Capacity Increase is available on Pro Workspace. Each pack
-                raises projects, tasks, notes, contacts, comments, members, and
-                storage together.
-              </p>
-            )}
-          </section>
+              ) : null}
+              {isOwner && billing.plan === "free" ? (
+                <p className="border-t border-border pt-2 text-xs text-muted-foreground">
+                  Promotion codes can be entered at Stripe Checkout after you
+                  click Upgrade to Pro.
+                </p>
+              ) : null}
+            </CardContent>
+          </Card>
+
+          <Card size="sm">
+            <CardContent className="flex flex-col gap-3">
+              <p className="text-xs font-medium text-foreground">Usage</p>
+              <UsageMeterRow
+                label="Projects"
+                used={billing.usage.projects}
+                limit={billing.limits.projects}
+              />
+              <UsageMeterRow
+                label="Members"
+                used={memberSeats}
+                limit={billing.limits.members}
+              />
+              <UsageMeterRow
+                label="Notes"
+                used={billing.usage.notes}
+                limit={billing.limits.notes}
+              />
+              <UsageMeterRow
+                label="Contacts"
+                used={billing.usage.contacts}
+                limit={billing.limits.contacts}
+              />
+              <UsageMeterRow
+                label="Comments"
+                used={billing.usage.comments}
+                limit={billing.limits.comments}
+              />
+              {billing.limits.storageBytes === 0 ? (
+                <CapRow label="File storage" value="Not included on Free" />
+              ) : (
+                <UsageMeterRow
+                  label="File storage"
+                  used={billing.usage.storageBytes}
+                  limit={billing.limits.storageBytes}
+                  formatValue={formatBytes}
+                />
+              )}
+              <div className="flex flex-col gap-1.5 border-t border-border pt-2">
+                <CapRow
+                  label="Tasks per project"
+                  value={`Up to ${formatLimit(billing.limits.tasks)}`}
+                />
+                <CapRow
+                  label="Files per task"
+                  value={
+                    billing.limits.filesPerTask === 0
+                      ? "Not included on Free"
+                      : `Up to ${formatLimit(billing.limits.filesPerTask)}`
+                  }
+                />
+                {billing.limits.maxUploadBytes > 0 ? (
+                  <CapRow
+                    label="Max upload size"
+                    value={formatBytes(billing.limits.maxUploadBytes)}
+                  />
+                ) : null}
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card size="sm">
+            <CardContent className="flex flex-col gap-2">
+              <p className="text-xs font-medium text-foreground">Add-ons</p>
+              {billing.plan === "pro" ? (
+                <>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex min-w-0 flex-col gap-0.5">
+                      <p className="text-sm font-medium text-foreground">
+                        {CAPACITY_PACK.label}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {capacityQty > 0
+                          ? `${capacityQty} pack${capacityQty === 1 ? "" : "s"}`
+                          : "No packs yet"}
+                      </p>
+                    </div>
+                    {isOwner && billing.hasStripeCustomer ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        className="shrink-0"
+                        disabled={pending}
+                        onClick={() => void onManageBilling()}
+                      >
+                        Add or change
+                      </Button>
+                    ) : null}
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Each pack adds {CAPACITY_PACK.deltas.projects} projects,{" "}
+                    {CAPACITY_PACK.deltas.tasksPerProject} tasks per project,{" "}
+                    {CAPACITY_PACK.deltas.notes} notes,{" "}
+                    {CAPACITY_PACK.deltas.contacts} contacts,{" "}
+                    {CAPACITY_PACK.deltas.comments} comments and replies,{" "}
+                    {CAPACITY_PACK.deltas.members} members, and{" "}
+                    {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
+                  </p>
+                </>
+              ) : (
+                <p className="text-xs text-muted-foreground">
+                  Capacity Increase is available on Pro Workspace. Each pack
+                  raises projects, tasks, notes, contacts, comments, members, and
+                  storage together.
+                </p>
+              )}
+            </CardContent>
+          </Card>
         </>
       ) : (
         <p className="text-xs text-muted-foreground">

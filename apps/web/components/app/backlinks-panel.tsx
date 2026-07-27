@@ -7,6 +7,7 @@ import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 import { EntityChip } from "@/components/app/entity-chip";
 import { useEntityCache } from "@/components/unlock/entity-cache";
 import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
   Dialog,
@@ -120,120 +121,122 @@ export function BacklinksPanel({ workspaceId, kind, id }: BacklinksPanelProps) {
   }
 
   return (
-    <div className="rounded-lg border border-border p-3">
-      <div className="flex items-center justify-between gap-2">
-        <h2 className="text-sm font-medium">Linked</h2>
-        {manageProjects ? (
-          <Button
-            type="button"
-            size="sm"
-            variant="outline"
-            className="h-7"
-            disabled={loading || saving}
-            onClick={openProjectDialog}
-          >
-            Link project
-          </Button>
-        ) : null}
-      </div>
-
-      {loading ? (
-        <p className="mt-1 text-xs text-muted-foreground">Loading…</p>
-      ) : links.length === 0 ? (
-        <p className="mt-1 text-xs text-muted-foreground">
-          No linked entities yet.
-        </p>
-      ) : (
-        <ul className="mt-2 flex flex-wrap gap-1.5">
-          {links.map((link) => (
-            <li
-              key={`${link.kind}:${link.id}`}
-              className="inline-flex items-center gap-0.5"
+    <Card size="sm">
+      <CardContent className="flex flex-col gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <h2 className="text-sm font-medium">Linked</h2>
+          {manageProjects ? (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              className="h-7"
+              disabled={loading || saving}
+              onClick={openProjectDialog}
             >
-              <EntityChip kind={link.kind} id={link.id} />
-              {manageProjects && link.kind === "project" ? (
-                <button
-                  type="button"
-                  className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
-                  aria-label="Unlink project"
-                  disabled={saving}
-                  onClick={() =>
-                    void persistProjectIds(
-                      projectIds.filter((pid) => pid !== link.id),
-                    )
-                  }
-                >
-                  <XIcon className="size-3" />
-                </button>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
+              Link project
+            </Button>
+          ) : null}
+        </div>
 
-      {manageProjects ? (
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogContent className="sm:max-w-sm">
-            <DialogHeader>
-              <DialogTitle>Link projects</DialogTitle>
-            </DialogHeader>
-            {cache.projects.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                No projects in this workspace yet.
-              </p>
-            ) : (
-              <ul className="flex max-h-60 flex-col gap-2 overflow-auto">
-                {cache.projects.map((p) => {
-                  const checked = draftProjectIds.includes(p.id);
-                  return (
-                    <li key={p.id} className="flex items-center gap-2">
-                      <Checkbox
-                        id={`link-project-${p.id}`}
-                        checked={checked}
-                        onCheckedChange={(value) => {
-                          setDraftProjectIds((prev) => {
-                            if (value === true) {
-                              return prev.includes(p.id)
-                                ? prev
-                                : [...prev, p.id];
-                            }
-                            return prev.filter((pid) => pid !== p.id);
-                          });
-                        }}
-                      />
-                      <Label
-                        htmlFor={`link-project-${p.id}`}
-                        className="cursor-pointer text-sm font-normal"
-                      >
-                        {p.name}
-                      </Label>
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-            <DialogFooter>
-              <Button
-                type="button"
-                size="sm"
-                variant="outline"
-                disabled={saving}
-                onClick={() => setDialogOpen(false)}
+        {loading ? (
+          <p className="text-xs text-muted-foreground">Loading…</p>
+        ) : links.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No linked entities yet.
+          </p>
+        ) : (
+          <ul className="flex flex-wrap gap-1.5">
+            {links.map((link) => (
+              <li
+                key={`${link.kind}:${link.id}`}
+                className="inline-flex items-center gap-0.5"
               >
-                Cancel
-              </Button>
-              <Button
-                type="button"
-                size="sm"
-                disabled={saving || cache.projects.length === 0}
-                onClick={() => void persistProjectIds(draftProjectIds)}
-              >
-                {saving ? "Saving…" : "Save"}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      ) : null}
-    </div>
+                <EntityChip kind={link.kind} id={link.id} />
+                {manageProjects && link.kind === "project" ? (
+                  <button
+                    type="button"
+                    className="inline-flex size-5 items-center justify-center rounded-md text-muted-foreground hover:bg-muted hover:text-foreground"
+                    aria-label="Unlink project"
+                    disabled={saving}
+                    onClick={() =>
+                      void persistProjectIds(
+                        projectIds.filter((pid) => pid !== link.id),
+                      )
+                    }
+                  >
+                    <XIcon className="size-3" />
+                  </button>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        )}
+
+        {manageProjects ? (
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogContent className="sm:max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Link projects</DialogTitle>
+              </DialogHeader>
+              {cache.projects.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  No projects in this workspace yet.
+                </p>
+              ) : (
+                <ul className="flex max-h-60 flex-col gap-2 overflow-auto">
+                  {cache.projects.map((p) => {
+                    const checked = draftProjectIds.includes(p.id);
+                    return (
+                      <li key={p.id} className="flex items-center gap-2">
+                        <Checkbox
+                          id={`link-project-${p.id}`}
+                          checked={checked}
+                          onCheckedChange={(value) => {
+                            setDraftProjectIds((prev) => {
+                              if (value === true) {
+                                return prev.includes(p.id)
+                                  ? prev
+                                  : [...prev, p.id];
+                              }
+                              return prev.filter((pid) => pid !== p.id);
+                            });
+                          }}
+                        />
+                        <Label
+                          htmlFor={`link-project-${p.id}`}
+                          className="cursor-pointer text-sm font-normal"
+                        >
+                          {p.name}
+                        </Label>
+                      </li>
+                    );
+                  })}
+                </ul>
+              )}
+              <DialogFooter>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={saving}
+                  onClick={() => setDialogOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  size="sm"
+                  disabled={saving || cache.projects.length === 0}
+                  onClick={() => void persistProjectIds(draftProjectIds)}
+                >
+                  {saving ? "Saving…" : "Save"}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
