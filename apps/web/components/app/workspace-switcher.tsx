@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckIcon, ChevronsUpDownIcon, PlusIcon, SparklesIcon } from "lucide-react";
+import { CheckIcon, ChevronsUpDownIcon, CrownIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -142,8 +142,8 @@ export function WorkspaceSwitcher({
               />
               <span className="truncate">{workspace.name}</span>
               {workspace.plan === "pro" ? (
-                <span className="ml-auto flex items-center gap-0.5 text-[10px] text-sky-700 dark:text-sky-400">
-                  <SparklesIcon className="size-3 shrink-0" />
+                <span className="ml-auto flex items-center gap-0.5 text-[10px] text-muted-foreground">
+                  <CrownIcon className="size-3 shrink-0" />
                   Pro
                 </span>
               ) : (

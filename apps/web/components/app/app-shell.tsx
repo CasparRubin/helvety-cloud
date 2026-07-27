@@ -7,7 +7,7 @@ import { useEffect } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
-  SparklesIcon,
+  CrownIcon,
   StickyNoteIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -232,16 +232,9 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                 <>
                   {activeWorkspaceName ? (
                     <div className="mb-1.5 flex flex-col gap-0.5">
-                      <p
-                        className={cn(
-                          "flex items-center gap-1 px-2 text-xs font-medium",
-                          isProWorkspace
-                            ? "text-sky-700 dark:text-sky-400"
-                            : "text-muted-foreground",
-                        )}
-                      >
+                      <p className="flex items-center gap-1 px-2 text-xs font-medium text-muted-foreground">
                         {isProWorkspace ? (
-                          <SparklesIcon className="size-3 shrink-0" />
+                          <CrownIcon className="size-3 shrink-0" />
                         ) : null}
                         <span className="truncate">
                           {isProWorkspace
