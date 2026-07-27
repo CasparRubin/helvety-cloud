@@ -3,10 +3,7 @@
 import { useEffect, useState } from "react";
 import type { CommentParentKind } from "@helvety-cloud/api-contract";
 
-import {
-  EntityErrorAlert,
-  EntityListEmpty,
-} from "@/components/app/entity-list-shell";
+import { EntityErrorAlert } from "@/components/app/entity-list-shell";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -59,6 +56,7 @@ export function CommentsSection({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [composer, setComposer] = useState<TaskBodyDoc>(EMPTY_COMMENT_BODY);
+  const [composerKey, setComposerKey] = useState(0);
   const [replyToId, setReplyToId] = useState<string | null>(null);
   const [replyBody, setReplyBody] = useState<TaskBodyDoc>(EMPTY_COMMENT_BODY);
   const [busy, setBusy] = useState(false);
@@ -123,6 +121,7 @@ export function CommentsSection({
         setReplyBody(EMPTY_COMMENT_BODY);
       } else {
         setComposer(EMPTY_COMMENT_BODY);
+        setComposerKey((k) => k + 1);
       }
     } catch (e) {
       setError(
@@ -314,15 +313,14 @@ export function CommentsSection({
       {error ? <EntityErrorAlert message={error} /> : null}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading comments…</p>
-      ) : roots.length === 0 ? (
-        <EntityListEmpty className="px-3 py-4">No comments yet.</EntityListEmpty>
-      ) : (
+      ) : roots.length > 0 ? (
         <ul className="flex flex-col gap-3">
           {roots.map((c) => renderComment(c, 0))}
         </ul>
-      )}
+      ) : null}
       <div className="flex flex-col gap-2 rounded-lg border border-border px-3 py-2.5">
         <TaskBodyEditor
+          key={composerKey}
           content={composer}
           onChange={setComposer}
           disabled={busy}

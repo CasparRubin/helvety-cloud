@@ -85,6 +85,9 @@ export function TaskBodyEditor({
     uploadingRef.current = uploading;
   }, [uploading]);
 
+  const compactMinHeight =
+    compact && disabled ? "min-h-0" : compact ? "min-h-[96px]" : "min-h-[240px]";
+
   const editor = useEditor({
     extensions: [
       StarterKit.configure({
@@ -111,7 +114,7 @@ export function TaskBodyEditor({
     editorProps: {
       attributes: {
         class: cn(
-          compact ? "min-h-[96px]" : "min-h-[240px]",
+          compactMinHeight,
           "px-1.5 pt-1 pb-2 text-sm outline-none",
           "prose prose-sm max-w-none dark:prose-invert",
           "[&_h2]:mt-3 [&_h2]:mb-1 [&_h2]:text-base [&_h2]:font-semibold",
@@ -229,7 +232,7 @@ export function TaskBodyEditor({
     return (
       <div
         className={cn(
-          compact ? "min-h-[96px]" : "min-h-[240px]",
+          compactMinHeight,
           className,
         )}
       />
