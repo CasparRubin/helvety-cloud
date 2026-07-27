@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Pricing · Helvety Cloud",
   description:
-    "Compare Free, Pro Workspace, and Capacity Increase limits for Helvety Cloud.",
+    "Compare Free Workspace, Pro Workspace, and Workspace Capacity Increase limits for Helvety Cloud.",
 };
 
 type PricingRow = {
@@ -238,9 +238,9 @@ export default function PricingPage() {
                 Private work stays simple. Billing does too.
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Start on Free, upgrade a workspace to Pro Workspace when you need
-                encrypted files and higher limits, then add Capacity Increase packs
-                only when that workspace grows.
+                Start with a Free Workspace, upgrade a workspace to Pro Workspace
+                when you need encrypted files and higher limits, then add Workspace
+                Capacity Increase packs only when that workspace grows.
               </p>
             </div>
           </div>
@@ -255,15 +255,15 @@ export default function PricingPage() {
           <PricingCard
             tone="free"
             eyebrow="No card"
-            title="Free"
+            title="Free Workspace"
             price={{ amount: "0", currency: "CHF" }}
-            summary="Start with the essentials."
-            subtitle="For personal use and early workspace setup."
+            summary="One free workspace per user."
+            subtitle="Your Personal workspace, with fair-use limits and no file uploads."
             rows={freeRows}
             footer={
               <>
-                Includes one owned free-tier workspace per account (your Personal
-                workspace). Additional owned workspaces require Pro.
+                Billing is per workspace. Each user gets one free workspace.
+                Additional owned workspaces require Pro Workspace.
               </>
             }
           />
@@ -285,7 +285,7 @@ export default function PricingPage() {
           <PricingCard
             tone="capacity"
             eyebrow="Optional add-on"
-            title="Capacity Increase"
+            title="Workspace Capacity Increase"
             price={{ amount: "99", currency: "CHF", suffix: "/ YEARLY" }}
             summary="Per extra pack, billed yearly."
             subtitle="Additional room for a paid Pro Workspace."
@@ -306,9 +306,9 @@ export default function PricingPage() {
                 How billing works
               </CardTitle>
               <CardDescription className="max-w-2xl leading-relaxed">
-                Billing is workspace-scoped. Free limits apply per workspace, Pro
-                Workspace is yearly, and Capacity Increase stacks on the workspace
-                that needs more room.
+                Billing is workspace-scoped. Free Workspace limits apply per
+                workspace, Pro Workspace is yearly, and Workspace Capacity
+                Increase stacks on the workspace that needs more room.
               </CardDescription>
             </CardHeader>
             <CardContent className="grid gap-4 pt-5 md:grid-cols-3">
@@ -320,8 +320,8 @@ export default function PricingPage() {
                 Pro Workspace renews yearly. The checkout and billing portal show
                 pricing, taxes, discounts, and renewal details before payment.
               </InfoBlock>
-              <InfoBlock title="Capacity Increase">
-                Capacity Increase is an optional add-on for a paid Pro Workspace.
+              <InfoBlock title="Workspace Capacity Increase">
+                Workspace Capacity Increase is an optional add-on for a paid Pro Workspace.
                 Each extra pack adds the same bundle of limits again.
               </InfoBlock>
             </CardContent>
@@ -347,7 +347,7 @@ export default function PricingPage() {
                   className: "w-full",
                 })}
               >
-                Start with Free
+                Start with Free Workspace
               </Link>
               <Link
                 href="/legal/billing"
@@ -362,8 +362,8 @@ export default function PricingPage() {
             </CardContent>
             <CardFooter className="items-start border-t border-border/70 bg-transparent">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Free limits, renewals, Capacity Increase behavior, and soft-lock
-                rules are documented in Billing terms.
+                Free Workspace limits, renewals, Workspace Capacity Increase
+                behavior, and soft-lock rules are documented in Billing terms.
               </p>
             </CardFooter>
           </Card>
