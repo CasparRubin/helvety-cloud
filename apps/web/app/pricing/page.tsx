@@ -16,7 +16,7 @@ import { cn } from "@/lib/utils";
 export const metadata: Metadata = {
   title: "Pricing · Helvety Cloud",
   description:
-    "Compare Free Workspace, Pro Workspace, and Workspace Capacity Increase limits for Helvety Cloud.",
+    "Compare Free Workspace, Pro Workspace, and Pro Workspace Capacity Increase limits for Helvety Cloud.",
 };
 
 type PricingRow = {
@@ -239,8 +239,8 @@ export default function PricingPage() {
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
                 Start with a Free Workspace, upgrade a workspace to Pro Workspace
-                when you need encrypted files and higher limits, then add Workspace
-                Capacity Increase packs only when that workspace grows.
+                when you need encrypted files and higher limits, then add Pro
+                Workspace Capacity Increase packs only when that workspace grows.
               </p>
             </div>
           </div>
@@ -286,7 +286,7 @@ export default function PricingPage() {
           <PricingCard
             tone="capacity"
             eyebrow="Optional add-on"
-            title="Workspace Capacity Increase"
+            title="Pro Workspace Capacity Increase"
             price={{ amount: "99", currency: "CHF", suffix: "/ YEARLY" }}
             summary="Per extra pack, billed yearly."
             subtitle="Additional room for a paid Pro Workspace."
@@ -309,7 +309,7 @@ export default function PricingPage() {
               </CardTitle>
               <CardDescription className="max-w-2xl leading-relaxed">
                 Billing is workspace-scoped. Free Workspace limits apply per
-                workspace, Pro Workspace is yearly, and Workspace Capacity
+                workspace, Pro Workspace is yearly, and Pro Workspace Capacity
                 Increase stacks on the workspace that needs more room.
               </CardDescription>
             </CardHeader>
@@ -320,11 +320,11 @@ export default function PricingPage() {
               </InfoBlock>
               <InfoBlock title="Where to buy">
                 Sign in, open a workspace, then go to Workspace settings →
-                Billing. Owners upgrade to Pro there, and manage Workspace
+                Billing. Owners upgrade to Pro there, and manage Pro Workspace
                 Capacity Increase packs through Manage billing.
               </InfoBlock>
-              <InfoBlock title="Workspace Capacity Increase">
-                Workspace Capacity Increase is an optional add-on for a paid Pro
+              <InfoBlock title="Pro Workspace Capacity Increase">
+                Pro Workspace Capacity Increase is an optional add-on for a paid Pro
                 Workspace. Each extra pack adds the same bundle of limits again.
               </InfoBlock>
             </CardContent>
