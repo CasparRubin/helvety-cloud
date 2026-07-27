@@ -106,9 +106,15 @@ export function LoginForm() {
           : `Enter the 6-digit code sent to ${email}.`
       }
       footer={
-        <a href="/legal" className="underline underline-offset-4">
-          Legal
-        </a>
+        <>
+          <a href="/legal" className="underline underline-offset-4">
+            Legal
+          </a>
+          {" · "}
+          <a href="/pricing" className="underline underline-offset-4">
+            Pricing
+          </a>
+        </>
       }
     >
       {error ? (
