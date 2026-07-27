@@ -262,8 +262,8 @@ export default function PricingPage() {
             rows={freeRows}
             footer={
               <>
-                Billing is per workspace. Each user gets one free workspace.
-                Additional owned workspaces require Pro Workspace.
+                Sign in to start. Billing is per workspace: each user gets one
+                free workspace. Additional owned workspaces require Pro Workspace.
               </>
             }
           />
@@ -277,8 +277,9 @@ export default function PricingPage() {
             rows={proRows}
             footer={
               <>
-                Pricing, discounts, taxes, and renewals are shown clearly at
-                checkout and in the billing portal.
+                Sign in, open the workspace you want to upgrade, then go to
+                Workspace settings → Billing and choose Upgrade to Pro. Only the
+                workspace owner can start checkout.
               </>
             }
           />
@@ -292,8 +293,9 @@ export default function PricingPage() {
             rows={capacityRows}
             footer={
               <>
-                Buy as many packs as you need. Each pack raises the listed limits
-                together on the same workspace.
+                Requires an active Pro Workspace. Sign in as the workspace owner,
+                open Workspace settings → Billing, then use Manage billing to add
+                packs for that workspace.
               </>
             }
           />
@@ -316,13 +318,14 @@ export default function PricingPage() {
                 One workspace can stay on Free while another is on Pro Workspace.
                 Upgrades never silently change the rest of your account.
               </InfoBlock>
-              <InfoBlock title="Yearly Pro Workspace">
-                Pro Workspace renews yearly. The checkout and billing portal show
-                pricing, taxes, discounts, and renewal details before payment.
+              <InfoBlock title="Where to buy">
+                Sign in, open a workspace, then go to Workspace settings →
+                Billing. Owners upgrade to Pro there, and manage Workspace
+                Capacity Increase packs through Manage billing.
               </InfoBlock>
               <InfoBlock title="Workspace Capacity Increase">
-                Workspace Capacity Increase is an optional add-on for a paid Pro Workspace.
-                Each extra pack adds the same bundle of limits again.
+                Workspace Capacity Increase is an optional add-on for a paid Pro
+                Workspace. Each extra pack adds the same bundle of limits again.
               </InfoBlock>
             </CardContent>
           </Card>
@@ -362,8 +365,9 @@ export default function PricingPage() {
             </CardContent>
             <CardFooter className="items-start border-t border-border/70 bg-transparent">
               <p className="text-sm leading-relaxed text-muted-foreground">
-                Free Workspace limits, renewals, Workspace Capacity Increase
-                behavior, and soft-lock rules are documented in Billing terms.
+                After you sign in, purchases happen in Workspace settings →
+                Billing for that workspace. Free Workspace limits, renewals, and
+                soft-lock rules are documented in Billing terms.
               </p>
             </CardFooter>
           </Card>
