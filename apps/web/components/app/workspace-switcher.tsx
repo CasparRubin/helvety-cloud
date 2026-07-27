@@ -141,11 +141,9 @@ export function WorkspaceSwitcher({
                 )}
               />
               <span className="truncate">{workspace.name}</span>
-              {workspace.kind === "personal" ? (
-                <span className="ml-auto text-[10px] text-muted-foreground">
-                  Personal
-                </span>
-              ) : null}
+              <span className="ml-auto text-[10px] text-muted-foreground">
+                {workspace.plan === "pro" ? "Pro" : "Free"}
+              </span>
             </DropdownMenuItem>
           ))}
           <DropdownMenuSeparator />

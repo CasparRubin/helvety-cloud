@@ -102,6 +102,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
             role: item.role,
             wrappedKey: item.wrappedKey,
             updatedAt: item.updatedAt,
+            plan: item.plan,
           };
         }
       }),

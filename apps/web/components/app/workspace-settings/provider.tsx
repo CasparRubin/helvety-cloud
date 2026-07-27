@@ -94,7 +94,7 @@ export function WorkspaceSettingsProvider({
 }) {
   const router = useRouter();
   const billingSyncAttempted = useRef(false);
-  const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace } =
+  const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace, refreshWorkspaces } =
     useCryptoSession();
 
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
@@ -176,6 +176,7 @@ export function WorkspaceSettingsProvider({
         if (!cancelled) {
           setBilling(bill);
           setBillingLoaded(true);
+          void refreshWorkspaces().catch(() => {});
         }
       } catch (err) {
         if (!cancelled) {
@@ -195,7 +196,7 @@ export function WorkspaceSettingsProvider({
     return () => {
       cancelled = true;
     };
-  }, [isOwner, refreshBilling, router, workspaceId]);
+  }, [isOwner, refreshBilling, refreshWorkspaces, router, workspaceId]);
 
   const refreshMembers = useCallback(async () => {
     const [inv, mem] = await Promise.all([

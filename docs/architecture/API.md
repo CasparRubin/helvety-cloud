@@ -30,7 +30,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material (requires current policy acceptances) |
 | GET | `/api/v1/me` | Account deletion preview (solo / leaving / blocking workspace **ids**; names resolve client-side after unlock) |
 | DELETE | `/api/v1/me` | Hard-delete account (cancels solo-owned Stripe subs; blocks if owns shared workspaces; then `auth.admin.deleteUser`) |
-| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, `encryptedBlob`, kind, role, wrapped key) |
+| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, `encryptedBlob`, kind, role, wrapped key, resolved `plan`) |
 | POST | `/api/v1/workspaces` | Create workspace + owner wrapped key (`encryptedBlob`, `kind`, sealed key) |
 | GET | `/api/v1/workspaces/:workspaceId` | Workspace id/`encryptedBlob`/kind + caller’s wrapped key |
 | PATCH | `/api/v1/workspaces/:workspaceId` | Update workspace ciphertext (`encryptedBlob` only; `kind` immutable) |

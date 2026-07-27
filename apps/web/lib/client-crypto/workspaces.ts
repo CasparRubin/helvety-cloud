@@ -156,6 +156,7 @@ export type DecryptedWorkspaceListItem = {
   role: WorkspaceListItem["role"];
   wrappedKey: WorkspaceListItem["wrappedKey"];
   updatedAt: string;
+  plan: WorkspaceListItem["plan"];
 };
 
 export async function decryptWorkspaceListItem(
@@ -175,6 +176,7 @@ export async function decryptWorkspaceListItem(
     role: item.role,
     wrappedKey: item.wrappedKey,
     updatedAt: item.updatedAt,
+    plan: item.plan,
   };
 }
 
@@ -211,6 +213,7 @@ export async function createStandardWorkspace(
     role: "owner",
     wrappedKey,
     updatedAt: new Date().toISOString(),
+    plan: "free",
   };
 }
 
@@ -256,6 +259,7 @@ export async function ensurePersonalWorkspace(
       role: "owner",
       wrappedKey,
       updatedAt: new Date().toISOString(),
+      plan: "free",
     };
   } catch (error) {
     if (error instanceof ApiClientError && error.status === 409) {

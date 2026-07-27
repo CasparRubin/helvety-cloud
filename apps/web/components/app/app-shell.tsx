@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
@@ -35,20 +35,12 @@ import {
   useCryptoSession,
   CryptoSessionProvider,
 } from "@/components/unlock/crypto-session-provider";
-import { getWorkspaceBilling } from "@/lib/api/v1-client";
 import {
   loadLastWorkspaceId,
   pickDefaultWorkspaceId,
   storeLastWorkspaceId,
 } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
-
-function workspacePlanLabel(billing: {
-  plan: "free" | "pro";
-}): string {
-  if (billing.plan === "free") return "Free";
-  return "Pro";
-}
 
 type AppShellProps = {
   email: string;
@@ -128,19 +120,17 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const { userKeys, recovery, workspaces } = useCryptoSession();
-  const [planByWorkspace, setPlanByWorkspace] = useState<{
-    id: string;
-    label: string;
-  } | null>(null);
 
   const location = parseAppNavPath(pathname);
   const activeWorkspaceId = location?.workspaceId ?? null;
-  const activeWorkspaceName =
-    workspaces.find((w) => w.id === activeWorkspaceId)?.name ?? null;
-  const planLabel =
-    activeWorkspaceId && planByWorkspace?.id === activeWorkspaceId
-      ? planByWorkspace.label
-      : null;
+  const activeWorkspace =
+    workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
+  const activeWorkspaceName = activeWorkspace?.name ?? null;
+  const planLabel = activeWorkspace
+    ? activeWorkspace.plan === "pro"
+      ? "Pro"
+      : "Free"
+    : null;
   const workspaceBase = location?.workspaceBase ?? null;
   const onWorkspaceHome = Boolean(
     workspaceBase && pathname === workspaceBase,
@@ -173,23 +163,6 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
     storeLastWorkspaceId(userId, id);
     router.replace(`/app/w/${id}`);
   }, [shouldRedirectToWorkspace, userId, workspaces, router]);
-
-  useEffect(() => {
-    if (!activeWorkspaceId) return;
-    let cancelled = false;
-    void getWorkspaceBilling(activeWorkspaceId)
-      .then((billing) => {
-        if (cancelled) return;
-        setPlanByWorkspace({
-          id: activeWorkspaceId,
-          label: workspacePlanLabel(billing),
-        });
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [activeWorkspaceId]);
 
   if (!userKeys || recovery) {
     return <UnlockGate email={email} userId={userId} />;

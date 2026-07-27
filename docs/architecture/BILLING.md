@@ -107,7 +107,10 @@ app-defined unlimited mode.
 ## Docs / UX
 
 Free limits are stated in the product before a gate blocks an action and in
-`/legal/billing`. Cancel is one click in the Portal for paid subs. No dark patterns.
+`/legal/billing`. Cancel is one click in the Portal for paid subs. No dark
+patterns. Capacity Increase: Workspace settings → Billing → **Add or change
+Capacity Increase** (Stripe Customer Portal). **Manage billing** covers cancel,
+payment method, and invoices.
 
 ## Capacity Increase bundle
 

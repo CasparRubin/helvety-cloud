@@ -12,10 +12,98 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
-import { PLAN_LIMITS, formatBytes } from "@/lib/billing/entitlements";
+import { PLAN_LIMITS, CAPACITY_PACK, formatBytes } from "@/lib/billing/entitlements";
+import { cn } from "@/lib/utils";
 
 function formatLimit(value: number | null): string {
   return value === null ? "∞" : String(value);
+}
+
+function formatPlanTitle(plan: "free" | "pro"): string {
+  return plan === "pro" ? "Pro Workspace" : "Free";
+}
+
+function formatBillingStatus(status: string): string {
+  if (status === "trialing") return "Trialing";
+  if (status === "active") return "Active";
+  return status.replaceAll("_", " ");
+}
+
+function formatPeriodDate(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function periodSuffix(
+  currentPeriodEnd: string | null,
+  cancelAtPeriodEnd: boolean,
+): string | null {
+  if (currentPeriodEnd) {
+    const when = formatPeriodDate(currentPeriodEnd);
+    return cancelAtPeriodEnd ? ` · Cancels ${when}` : ` · Renews ${when}`;
+  }
+  if (cancelAtPeriodEnd) return " · Cancels at period end";
+  return null;
+}
+
+function meterPercent(used: number, limit: number | null): number | null {
+  if (limit === null || limit <= 0) return null;
+  return Math.min(100, Math.round((used / limit) * 100));
+}
+
+function UsageMeterRow({
+  label,
+  used,
+  limit,
+  formatValue = (n: number) => String(n),
+}: {
+  label: string;
+  used: number;
+  limit: number | null;
+  formatValue?: (n: number) => string;
+}) {
+  const percent = meterPercent(used, limit);
+  const atLimit = percent !== null && percent >= 100;
+  const limitLabel = limit === null ? "∞" : formatValue(limit);
+
+  return (
+    <div className="flex flex-col gap-1">
+      <div className="flex items-baseline justify-between gap-2 text-xs">
+        <span className="text-muted-foreground">{label}</span>
+        <span className="tabular-nums text-foreground">
+          {formatValue(used)}
+          <span className="text-muted-foreground"> / {limitLabel}</span>
+        </span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+        <div
+          className={cn(
+            "h-full rounded-full",
+            percent === null
+              ? "w-0 bg-transparent"
+              : atLimit
+                ? "bg-destructive"
+                : "bg-foreground/40",
+          )}
+          style={percent === null ? undefined : { width: `${percent}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function CapRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-baseline justify-between gap-2 text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="tabular-nums text-foreground">{value}</span>
+    </div>
+  );
 }
 
 function SettingsError({ error }: { error: string | null }) {
@@ -278,23 +366,33 @@ export function WorkspaceBillingSettings() {
     void ensureBillingLoaded();
   }, [ensureBillingLoaded]);
 
+  const capacityQty =
+    billing?.addons.find((a) => a.meter === "capacity")?.quantity ?? 0;
+  const memberSeats = billing
+    ? billing.usage.members + billing.usage.pendingInvitations
+    : 0;
+
   return (
-    <div className="flex max-w-xl flex-col gap-3">
+    <div className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
       {billingLoading && !billing ? (
         <p className="text-xs text-muted-foreground">Loading billing…</p>
       ) : billing ? (
-        <div className="flex flex-col gap-3">
-          <div className="flex flex-col gap-2 rounded-md border border-border px-3 py-2">
-            <div className="flex items-center justify-between gap-2">
-              <p className="text-xs text-muted-foreground">
-                Plan: <span className="uppercase">{billing.plan}</span>
-                {" · "}
-                Members{" "}
-                {billing.usage.members + billing.usage.pendingInvitations}/
-                {formatLimit(billing.limits.members)}
-                {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
-              </p>
+        <>
+          <section className="flex flex-col gap-2 rounded-md border border-border px-3 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <p className="text-sm font-medium text-foreground">
+                  {formatPlanTitle(billing.plan)}
+                </p>
+                <p className="text-xs text-muted-foreground">
+                  {formatBillingStatus(billing.status)}
+                  {periodSuffix(
+                    billing.currentPeriodEnd,
+                    billing.cancelAtPeriodEnd,
+                  )}
+                </p>
+              </div>
               {isOwner ? (
                 billing.plan === "free" ? (
                   <Button
@@ -318,7 +416,7 @@ export function WorkspaceBillingSettings() {
                   </Button>
                 ) : null
               ) : (
-                <p className="text-xs text-muted-foreground">
+                <p className="shrink-0 text-xs text-muted-foreground">
                   Only the owner can manage billing.
                 </p>
               )}
@@ -334,33 +432,112 @@ export function WorkspaceBillingSettings() {
                 owned free workspaces to unlock creates again.
               </p>
             ) : null}
-            <p className="text-xs text-muted-foreground">
-              Projects {billing.usage.projects}/
-              {formatLimit(billing.limits.projects)}
-              {" · "}
-              Notes {billing.usage.notes}/{formatLimit(billing.limits.notes)}
-              {" · "}
-              Contacts {billing.usage.contacts}/
-              {formatLimit(billing.limits.contacts)}
-              {" · "}
-              Tasks/project cap {formatLimit(billing.limits.tasks)}
-            </p>
-            <p className="text-xs text-muted-foreground">
-              File storage:{" "}
-              {billing.limits.storageBytes === null
-                ? `${formatBytes(billing.usage.storageBytes)} used (max ${formatBytes(billing.limits.maxUploadBytes)} per file)`
-                : billing.limits.storageBytes === 0
-                  ? "not included on Free (upgrade to attach files)"
-                  : `${formatBytes(billing.usage.storageBytes)} / ${formatBytes(billing.limits.storageBytes)} (max ${formatBytes(billing.limits.maxUploadBytes)} per file; ${formatLimit(billing.limits.filesPerTask)} files/task)`}
-            </p>
             {isOwner && billing.plan === "free" ? (
               <p className="border-t border-border pt-2 text-xs text-muted-foreground">
                 Promotion codes can be entered at Stripe Checkout after you
                 click Upgrade to Pro.
               </p>
             ) : null}
-          </div>
-        </div>
+          </section>
+
+          <section className="flex flex-col gap-3 rounded-md border border-border px-3 py-3">
+            <p className="text-xs font-medium text-foreground">Usage</p>
+            <UsageMeterRow
+              label="Projects"
+              used={billing.usage.projects}
+              limit={billing.limits.projects}
+            />
+            <UsageMeterRow
+              label="Members"
+              used={memberSeats}
+              limit={billing.limits.members}
+            />
+            <UsageMeterRow
+              label="Notes"
+              used={billing.usage.notes}
+              limit={billing.limits.notes}
+            />
+            <UsageMeterRow
+              label="Contacts"
+              used={billing.usage.contacts}
+              limit={billing.limits.contacts}
+            />
+            {billing.limits.storageBytes === 0 ? (
+              <CapRow label="File storage" value="Not included on Free" />
+            ) : (
+              <UsageMeterRow
+                label="File storage"
+                used={billing.usage.storageBytes}
+                limit={billing.limits.storageBytes}
+                formatValue={formatBytes}
+              />
+            )}
+            <div className="flex flex-col gap-1.5 border-t border-border pt-2">
+              <CapRow
+                label="Tasks per project"
+                value={`Up to ${formatLimit(billing.limits.tasks)}`}
+              />
+              <CapRow
+                label="Files per task"
+                value={
+                  billing.limits.filesPerTask === 0
+                    ? "Not included on Free"
+                    : `Up to ${formatLimit(billing.limits.filesPerTask)}`
+                }
+              />
+              {billing.limits.maxUploadBytes > 0 ? (
+                <CapRow
+                  label="Max upload size"
+                  value={formatBytes(billing.limits.maxUploadBytes)}
+                />
+              ) : null}
+            </div>
+          </section>
+
+          <section className="flex flex-col gap-2 rounded-md border border-border px-3 py-3">
+            <p className="text-xs font-medium text-foreground">Add-ons</p>
+            {billing.plan === "pro" ? (
+              <>
+                <div className="flex items-baseline justify-between gap-2 text-xs">
+                  <span className="text-muted-foreground">
+                    {CAPACITY_PACK.label}
+                  </span>
+                  <span className="tabular-nums text-foreground">
+                    {capacityQty > 0
+                      ? `${capacityQty} pack${capacityQty === 1 ? "" : "s"}`
+                      : "None"}
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Each pack adds {CAPACITY_PACK.deltas.projects} projects,{" "}
+                  {CAPACITY_PACK.deltas.tasksPerProject} tasks per project,{" "}
+                  {CAPACITY_PACK.deltas.notes} notes,{" "}
+                  {CAPACITY_PACK.deltas.contacts} contacts,{" "}
+                  {CAPACITY_PACK.deltas.members} members, and{" "}
+                  {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
+                </p>
+                {isOwner && billing.hasStripeCustomer ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="self-start"
+                    disabled={pending}
+                    onClick={() => void onManageBilling()}
+                  >
+                    Add or change Capacity Increase
+                  </Button>
+                ) : null}
+              </>
+            ) : (
+              <p className="text-xs text-muted-foreground">
+                Capacity Increase is available on Pro Workspace. Each pack
+                raises projects, tasks, notes, contacts, members, and storage
+                together.
+              </p>
+            )}
+          </section>
+        </>
       ) : (
         <p className="text-xs text-muted-foreground">
           Billing information unavailable.

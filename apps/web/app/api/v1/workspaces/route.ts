@@ -10,6 +10,7 @@ import {
 
 import { assertOwnedWorkspaceAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
+import { resolvePlan } from "@/lib/billing/entitlements";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
 export async function GET(request: Request) {
@@ -62,6 +63,26 @@ export async function GET(request: Request) {
     (wraps ?? []).map((w) => [w.subject_id, w.wrapped_key] as const),
   );
 
+  const { data: subscriptions, error: subscriptionError } = await supabase
+    .from("subscriptions")
+    .select("workspace_id, plan, status")
+    .in("workspace_id", workspaceIds);
+  if (subscriptionError) {
+    return apiError("internal", subscriptionError.message, 500);
+  }
+  const planByWorkspace = new Map(
+    (subscriptions ?? []).map(
+      (row) =>
+        [
+          row.workspace_id,
+          resolvePlan({
+            plan: row.plan,
+            status: row.status,
+          }),
+        ] as const,
+    ),
+  );
+
   const items = [];
   for (const workspace of workspaces ?? []) {
     const wrappedKey = wrapByWorkspace.get(workspace.id);
@@ -76,6 +97,7 @@ export async function GET(request: Request) {
       role: workspaceRoleSchema.parse(role),
       wrappedKey: sealedKeyEnvelopeSchema.parse(wrappedKey),
       updatedAt: workspace.updated_at,
+      plan: planByWorkspace.get(workspace.id) ?? "free",
     });
   }
 

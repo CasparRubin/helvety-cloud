@@ -133,6 +133,10 @@ export type WorkspaceKind = z.infer<typeof workspaceKindSchema>;
 export const workspaceRoleSchema = z.enum(["owner", "admin", "member"]);
 export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
 
+/** Resolved billing plan for a workspace (active/trialing Pro only). */
+export const planIdSchema = z.enum(["free", "pro"]);
+export type PlanId = z.infer<typeof planIdSchema>;
+
 export const workspaceNameSchema = z.string().trim().min(1).max(120);
 
 export const createWorkspaceRequestSchema = z.object({
@@ -163,6 +167,8 @@ export const workspaceListItemSchema = z.object({
   role: workspaceRoleSchema,
   wrappedKey: sealedKeyEnvelopeSchema,
   updatedAt: z.string(),
+  /** Entitled plan (missing/lapsed subscription → free). */
+  plan: planIdSchema,
 });
 export type WorkspaceListItem = z.infer<typeof workspaceListItemSchema>;
 
@@ -530,9 +536,6 @@ export type ListWorkspaceMembersResponse = z.infer<
 >;
 
 /** P6f / P12 billing: plaintext entitlements only; never encryption keys or content. */
-export const planIdSchema = z.enum(["free", "pro"]);
-export type PlanId = z.infer<typeof planIdSchema>;
-
 export const addonMeterSchema = z.enum(["capacity"]);
 export type AddonMeterId = z.infer<typeof addonMeterSchema>;
 
