@@ -17,7 +17,7 @@ type RouteContext = {
 
 /**
  * Owner-only: start a Stripe Checkout session to upgrade this workspace to
- * Pro (annual price). Only billing metadata leaves the server.
+ * Pro Workspace. Only billing metadata leaves the server.
  */
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -50,11 +50,11 @@ export async function POST(request: Request, context: RouteContext) {
     if (subscription?.billing_source === "comp") {
       return apiError(
         "conflict",
-        "Workspace already has complimentary Pro access",
+        "Workspace already has complimentary Pro Workspace access",
         409,
       );
     }
-    return apiError("conflict", "Workspace is already on the Pro plan", 409);
+    return apiError("conflict", "Workspace is already on the Pro Workspace plan", 409);
   }
 
   const stripe = getStripe();

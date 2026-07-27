@@ -17,7 +17,7 @@
 | **Privacy Policy** | `/legal/privacy` | Controller; account vs ciphertext; processors; rights; transfers |
 | **Acceptable Use Policy** | `/legal/aup` | Illegal content, abuse; enforcement without reading encrypted |
 | **E2EE / zero-access notice** | `/legal/e2ee` | No decrypt; no recovery; lost keys = permanent loss |
-| **Billing terms** | `/legal/billing` | Free + Stripe Pro/addons; Stripe never sees encrypted plaintext |
+| **Billing terms** | `/legal/billing` | Free + Stripe Pro Workspace/Capacity Increase; Stripe never sees encrypted plaintext |
 | **Subprocessors list** | `/legal/subprocessors` | Living list with regions |
 | **DPA / AVV** | Later | When selling B2B |
 
@@ -47,6 +47,6 @@ Swiss FADP (nDSG); GDPR/UK GDPR principles when offering to those users; consume
 
 ## Status
 
-**P-legal2** production pack + acceptance gates are live (P-legal drafts superseded). Stripe Free/Pro/addons/discounts live (**P6f** / **P12**; see [`BILLING.md`](BILLING.md)). Optional counsel review is recommended for risk reduction but is **not** a product gate.
+**P-legal2** production pack + acceptance gates are live (P-legal drafts superseded). Stripe Free/Pro Workspace/Capacity Increase/discounts live (**P6f** / **P12**; see [`BILLING.md`](BILLING.md)). Optional counsel review is recommended for risk reduction but is **not** a product gate.
 
 See [`ROADMAP.md`](ROADMAP.md).

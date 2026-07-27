@@ -8,15 +8,8 @@ export type Plan = "free" | "pro";
 
 export type BillingSource = "stripe" | "comp";
 
-/** Meters that addons (and workspace create gates) can raise. */
-export type AddonMeter =
-  | "projects"
-  | "tasksPerProject"
-  | "notes"
-  | "contacts"
-  | "members"
-  | "storageBytes"
-  | "filesPerTask";
+/** One capacity increase pack raises every paid workspace meter together. */
+export type AddonMeter = "capacity";
 
 /** Workspace create gates that map 1:1 onto a catalog meter (except tasks). */
 export type WorkspaceMeter = "projects" | "tasks" | "notes" | "contacts";
@@ -62,7 +55,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     maxUploadBytes: 0,
   },
   pro: {
-    // Soft ceiling on how many Pro workspaces one user may own; each pays
+    // Soft ceiling on how many Pro Workspaces one user may own; each pays
     // (or is gifted) separately. Free slots remain PLAN_LIMITS.free.ownedWorkspaces.
     ownedWorkspaces: 50,
     projectsPerWorkspace: 25,
@@ -78,61 +71,43 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
 
 export type AddonPackDef = {
   meter: AddonMeter;
-  /** How much one purchased quantity unit adds to the effective limit. */
+  /** UI quantity unit for this add-on definition. */
   packSize: number;
   /** Env var holding the Stripe Price ID for this pack. */
   priceEnv: string;
   label: string;
+  deltas: {
+    projects: number;
+    tasksPerProject: number;
+    notes: number;
+    contacts: number;
+    members: number;
+    storageBytes: number;
+    filesPerTask: number;
+  };
 };
 
 /**
- * À-la-carte packs (Pro only). Quantity N on the Stripe subscription item
- * adds N * packSize to the corresponding meter.
+ * One recurring Stripe add-on. Quantity N adds the same bundle of capacity N
+ * times, keeping billing simple in code and in the product.
  */
-export const ADDON_PACKS: readonly AddonPackDef[] = [
-  {
-    meter: "projects",
-    packSize: 10,
-    priceEnv: "STRIPE_PRICE_ADDON_PROJECTS",
-    label: "+10 projects",
+export const CAPACITY_PACK: AddonPackDef = {
+  meter: "capacity",
+  packSize: 1,
+  priceEnv: "STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY",
+  label: "Capacity Increase",
+  deltas: {
+    projects: 10,
+    tasksPerProject: 100,
+    notes: 100,
+    contacts: 100,
+    members: 5,
+    storageBytes: 5 * 1024 * 1024 * 1024,
+    filesPerTask: 5,
   },
-  {
-    meter: "tasksPerProject",
-    packSize: 100,
-    priceEnv: "STRIPE_PRICE_ADDON_TASKS",
-    label: "+100 tasks per project",
-  },
-  {
-    meter: "notes",
-    packSize: 100,
-    priceEnv: "STRIPE_PRICE_ADDON_NOTES",
-    label: "+100 notes",
-  },
-  {
-    meter: "contacts",
-    packSize: 100,
-    priceEnv: "STRIPE_PRICE_ADDON_CONTACTS",
-    label: "+100 contacts",
-  },
-  {
-    meter: "members",
-    packSize: 5,
-    priceEnv: "STRIPE_PRICE_ADDON_MEMBERS",
-    label: "+5 seats",
-  },
-  {
-    meter: "storageBytes",
-    packSize: 5 * 1024 * 1024 * 1024,
-    priceEnv: "STRIPE_PRICE_ADDON_STORAGE",
-    label: "+5 GiB storage",
-  },
-  {
-    meter: "filesPerTask",
-    packSize: 5,
-    priceEnv: "STRIPE_PRICE_ADDON_FILES_PER_TASK",
-    label: "+5 files per task",
-  },
-] as const;
+};
+
+export const ADDON_PACKS: readonly AddonPackDef[] = [CAPACITY_PACK] as const;
 
 export type AddonQuantities = Partial<Record<AddonMeter, number>>;
 
@@ -177,19 +152,12 @@ export function limitsForPlan(plan: Plan): PlanLimits {
   return PLAN_LIMITS[plan];
 }
 
-function addonDelta(
-  quantities: AddonQuantities | null | undefined,
-  meter: AddonMeter,
-): number {
-  const qty = quantities?.[meter] ?? 0;
+function capacityPackCount(quantities: AddonQuantities | null | undefined): number {
+  const qty = quantities?.capacity ?? 0;
   if (!Number.isFinite(qty) || qty <= 0) {
     return 0;
   }
-  const pack = ADDON_PACKS.find((p) => p.meter === meter);
-  if (!pack) {
-    return 0;
-  }
-  return Math.floor(qty) * pack.packSize;
+  return Math.floor(qty);
 }
 
 /**
@@ -215,9 +183,9 @@ export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
 
   const plan = resolvePlan(subscription);
   const base = PLAN_LIMITS[plan];
-  const q = subscription?.addon_quantities ?? null;
+  const packCount = capacityPackCount(subscription?.addon_quantities ?? null);
 
-  // Addons only apply on entitled Pro (paid or would-be; free never gets them).
+  // Capacity increases only apply on entitled Pro. Free never gets them.
   if (plan !== "pro") {
     return { ...base };
   }
@@ -225,15 +193,19 @@ export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
   return {
     ownedWorkspaces: base.ownedWorkspaces,
     projectsPerWorkspace:
-      base.projectsPerWorkspace + addonDelta(q, "projects"),
-    membersPerWorkspace: base.membersPerWorkspace + addonDelta(q, "members"),
-    tasksPerProject: base.tasksPerProject + addonDelta(q, "tasksPerProject"),
-    notesPerWorkspace: base.notesPerWorkspace + addonDelta(q, "notes"),
+      base.projectsPerWorkspace + packCount * CAPACITY_PACK.deltas.projects,
+    membersPerWorkspace:
+      base.membersPerWorkspace + packCount * CAPACITY_PACK.deltas.members,
+    tasksPerProject:
+      base.tasksPerProject + packCount * CAPACITY_PACK.deltas.tasksPerProject,
+    notesPerWorkspace:
+      base.notesPerWorkspace + packCount * CAPACITY_PACK.deltas.notes,
     contactsPerWorkspace:
-      base.contactsPerWorkspace + addonDelta(q, "contacts"),
-    filesPerTask: base.filesPerTask + addonDelta(q, "filesPerTask"),
+      base.contactsPerWorkspace + packCount * CAPACITY_PACK.deltas.contacts,
+    filesPerTask:
+      base.filesPerTask + packCount * CAPACITY_PACK.deltas.filesPerTask,
     storageBytesPerWorkspace:
-      base.storageBytesPerWorkspace + addonDelta(q, "storageBytes"),
+      base.storageBytesPerWorkspace + packCount * CAPACITY_PACK.deltas.storageBytes,
     maxUploadBytes: base.maxUploadBytes,
   };
 }
@@ -283,7 +255,9 @@ export function limitMessage(
   limit: number,
 ): string {
   const upgradeHint =
-    plan === "free" ? " Upgrade this workspace to Pro for higher limits." : "";
+    plan === "free"
+      ? " Upgrade this workspace to Pro Workspace for higher limits."
+      : "";
   const scope =
     meter === "tasks" ? " per project" : " per workspace";
   return `${capitalize(METER_LABEL[meter])} limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit}${scope}).${upgradeHint}`;
@@ -291,14 +265,16 @@ export function limitMessage(
 
 export function seatLimitMessage(plan: Plan, limit: number): string {
   const upgradeHint =
-    plan === "free" ? " Upgrade this workspace to Pro for more seats." : "";
+    plan === "free"
+      ? " Upgrade this workspace to Pro Workspace for more seats."
+      : "";
   return `Member limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit} seats per workspace, including pending invitations).${upgradeHint}`;
 }
 
 export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
   const upgradeHint =
     plan === "free"
-      ? " Create an additional workspace as Pro, redeem a complimentary code, or delete an unused workspace."
+      ? " Create an additional workspace as Pro Workspace, redeem a complimentary code, or delete an unused workspace."
       : "";
   return `Workspace limit reached (${isUnlimited(limit) ? "unlimited" : limit} owned workspaces on the ${plan} plan).${upgradeHint}`;
 }
@@ -307,7 +283,7 @@ export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
  * Soft-lock copy when a workspace is over the free owned-workspace allowance.
  */
 export function freeOverflowLockMessage(freeSlots: number): string {
-  return `This workspace is over the free allowance (${freeSlots} free workspaces per account). Existing content stays available; new creates are paused until you upgrade this workspace to Pro or reduce owned free workspaces.`;
+  return `This workspace is over the free allowance (${freeSlots} free workspaces per account). Existing content stays available; new creates are paused until you upgrade this workspace to Pro Workspace or reduce owned free workspaces.`;
 }
 
 export type FreeOverflowCandidate = {
@@ -342,7 +318,7 @@ export function selectFreeOverflowLockedIds(
 /** Honest copy when free workspaces (or over-quota Pro) cannot upload files. */
 export function storageLimitMessage(plan: Plan, limitBytes: number): string {
   if (plan === "free" || limitBytes === 0) {
-    return "File uploads require a Pro workspace. Upgrade this workspace to Pro to attach files.";
+    return "File uploads require a Pro Workspace. Upgrade this workspace to Pro Workspace to attach files.";
   }
   if (isUnlimited(limitBytes)) {
     return "Storage limit reached.";
@@ -352,7 +328,7 @@ export function storageLimitMessage(plan: Plan, limitBytes: number): string {
 
 export function maxUploadLimitMessage(plan: Plan, limitBytes: number): string {
   if (plan === "free" || limitBytes === 0) {
-    return "File uploads require a Pro workspace. Upgrade this workspace to Pro to attach files.";
+    return "File uploads require a Pro Workspace. Upgrade this workspace to Pro Workspace to attach files.";
   }
   return `File is too large for the ${plan} plan (max ${formatBytes(limitBytes)} per file).`;
 }
@@ -360,7 +336,7 @@ export function maxUploadLimitMessage(plan: Plan, limitBytes: number): string {
 export function filesPerTaskLimitMessage(plan: Plan, limit: number): string {
   const upgradeHint =
     plan === "free"
-      ? " Upgrade this workspace to Pro to attach files to tasks."
+      ? " Upgrade this workspace to Pro Workspace to attach files to tasks."
       : "";
   return `File limit reached for this task (${isUnlimited(limit) ? "unlimited" : limit} files on the ${plan} plan).${upgradeHint}`;
 }
@@ -385,8 +361,7 @@ export function normalizeAddonQuantities(
   for (const pack of ADDON_PACKS) {
     const value = (raw as Record<string, unknown>)[pack.meter];
     if (typeof value === "number" && Number.isFinite(value) && value > 0) {
-      // Cap pack quantity to limit abuse / Stripe line-item bloat.
-      out[pack.meter] = Math.min(100, Math.floor(value));
+      out[pack.meter] = Math.floor(value);
     }
   }
   return out;

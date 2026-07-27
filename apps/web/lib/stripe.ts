@@ -18,17 +18,12 @@ export function getStripe(): Stripe {
   return new Stripe(key);
 }
 
-/** Prefer yearly Pro price; fall back to legacy monthly env for existing deploys. */
 export function getProPriceId(): string {
-  const yearly = process.env.STRIPE_PRICE_PRO_YEARLY;
+  const yearly = process.env.STRIPE_PRICE_PRO_WORKSPACE_YEARLY;
   if (yearly) {
     return yearly;
   }
-  const monthly = process.env.STRIPE_PRICE_PRO_MONTHLY;
-  if (monthly) {
-    return monthly;
-  }
-  throw new Error("Missing STRIPE_PRICE_PRO_YEARLY (or STRIPE_PRICE_PRO_MONTHLY)");
+  throw new Error("Missing STRIPE_PRICE_PRO_WORKSPACE_YEARLY");
 }
 
 export function getStripeWebhookSecret(): string {
@@ -45,9 +40,7 @@ export function getAppUrl(): string {
 
 export function isStripeConfigured(): boolean {
   return Boolean(
-    process.env.STRIPE_SECRET_KEY &&
-      (process.env.STRIPE_PRICE_PRO_YEARLY ||
-        process.env.STRIPE_PRICE_PRO_MONTHLY),
+    process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_PRO_WORKSPACE_YEARLY,
   );
 }
 

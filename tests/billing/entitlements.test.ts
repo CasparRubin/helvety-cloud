@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   ADDON_PACKS,
+  CAPACITY_PACK,
   ENTITLED_STATUSES,
   PLAN_LIMITS,
   effectiveLimits,
@@ -97,16 +98,35 @@ describe("plan limits", () => {
 });
 
 describe("effective limits + addons", () => {
-  it("adds pack quantities onto Pro base", () => {
-    const projectsPack = ADDON_PACKS.find((p) => p.meter === "projects");
-    expect(projectsPack).toBeTruthy();
+  it("adds capacity increase quantities onto every Pro meter", () => {
+    expect(ADDON_PACKS).toHaveLength(1);
     const limits = effectiveLimits({
       plan: "pro",
       status: "active",
-      addon_quantities: { projects: 2 },
+      addon_quantities: { capacity: 2 },
     });
     expect(limits.projectsPerWorkspace).toBe(
-      PLAN_LIMITS.pro.projectsPerWorkspace + 2 * (projectsPack?.packSize ?? 0),
+      PLAN_LIMITS.pro.projectsPerWorkspace + 2 * CAPACITY_PACK.deltas.projects,
+    );
+    expect(limits.tasksPerProject).toBe(
+      PLAN_LIMITS.pro.tasksPerProject +
+        2 * CAPACITY_PACK.deltas.tasksPerProject,
+    );
+    expect(limits.notesPerWorkspace).toBe(
+      PLAN_LIMITS.pro.notesPerWorkspace + 2 * CAPACITY_PACK.deltas.notes,
+    );
+    expect(limits.contactsPerWorkspace).toBe(
+      PLAN_LIMITS.pro.contactsPerWorkspace + 2 * CAPACITY_PACK.deltas.contacts,
+    );
+    expect(limits.membersPerWorkspace).toBe(
+      PLAN_LIMITS.pro.membersPerWorkspace + 2 * CAPACITY_PACK.deltas.members,
+    );
+    expect(limits.filesPerTask).toBe(
+      PLAN_LIMITS.pro.filesPerTask + 2 * CAPACITY_PACK.deltas.filesPerTask,
+    );
+    expect(limits.storageBytesPerWorkspace).toBe(
+      PLAN_LIMITS.pro.storageBytesPerWorkspace +
+        2 * CAPACITY_PACK.deltas.storageBytes,
     );
   });
 
@@ -114,7 +134,7 @@ describe("effective limits + addons", () => {
     const limits = effectiveLimits({
       plan: "free",
       status: "active",
-      addon_quantities: { projects: 99 },
+      addon_quantities: { capacity: 99 },
     });
     expect(limits.projectsPerWorkspace).toBe(
       PLAN_LIMITS.free.projectsPerWorkspace,

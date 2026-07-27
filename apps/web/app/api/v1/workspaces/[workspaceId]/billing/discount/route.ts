@@ -31,7 +31,7 @@ type RouteContext = {
 
 /**
  * Owner-only: redeem an admin-issued discount code.
- * 100% → complimentary Pro (no card). 1–99% → attach coupon + Checkout.
+ * 100% → complimentary Pro Workspace (no card). 1–99% → attach coupon + Checkout.
  * Invalid codes return a generic error (no enumeration). Codes are never logged.
  */
 export async function POST(request: Request, context: RouteContext) {

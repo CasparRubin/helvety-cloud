@@ -1,7 +1,8 @@
 # Billing (P6f + P12)
 
-Stripe workspace subscriptions with plaintext entitlements, à-la-carte addons,
-and admin discount / complimentary codes. Charges only happen when a workspace
+Stripe workspace subscriptions with plaintext entitlements, one recurring
+Capacity Increase add-on, and admin discount / complimentary codes. Charges
+only happen when a workspace
 owner completes Stripe Checkout (unless a **100%** code grants Pro with no card).
 
 ## Principles (unchanged)
@@ -58,10 +59,11 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 
 **Soft-lock overflow:** when Pro or complimentary access ends and the owner would then have more than two non-Pro workspaces, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 2`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates (projects, tasks, notes, contacts, invites, accept, uploads, new attachment links, further free workspace creation) return `limit_exceeded`. Ciphertext and wrapped keys are never deleted or withheld. Locks clear automatically when the workspace returns to Pro or the owner is back within two free workspaces.
 
-**Addons (Pro + Stripe only):** pack quantities on the same subscription. Effective limit =
+**Capacity Increase (Pro + Stripe only):** add-on quantity lives on the same
+subscription. Effective limit =
 
 ```text
-catalog[plan][meter] + sum(quantity × packSize)
+catalog[plan][meter] + (capacity_quantity × pack_delta)
 ```
 
 Complimentary (`unmetered`) workspaces skip countable caps (upload max size still uses Pro catalog).
@@ -88,9 +90,9 @@ Admin inserts rows into `discount_codes` (service role / Dashboard only; no clie
 ## Stripe shape
 
 - One subscription per workspace.
-- Line items: Pro base (qty 1) + zero or more addon Prices (qty ≥ 1).
-- Prefer `STRIPE_PRICE_PRO_YEARLY` (falls back to `STRIPE_PRICE_PRO_MONTHLY`).
-- Addon env vars: `STRIPE_PRICE_ADDON_PROJECTS`, `_TASKS`, `_NOTES`, `_CONTACTS`, `_MEMBERS`, `_STORAGE`, `_FILES_PER_TASK`.
+- Line items: Pro Workspace base (qty 1) + zero or more Capacity Increase packs (qty ≥ 1).
+- Use `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`.
+- Capacity Increase env var: `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY`.
 
 ## Environment (server-only unless NEXT_PUBLIC_)
 
@@ -98,16 +100,15 @@ Admin inserts rows into `discount_codes` (service role / Dashboard only; no clie
 |-----|-----|
 | `STRIPE_SECRET_KEY` | Server Stripe client |
 | `STRIPE_WEBHOOK_SECRET` | Webhook signature verification |
-| `STRIPE_PRICE_PRO_YEARLY` | Preferred Pro price |
-| `STRIPE_PRICE_PRO_MONTHLY` | Legacy fallback |
-| `STRIPE_PRICE_ADDON_*` | Addon pack Prices |
+| `STRIPE_PRICE_PRO_WORKSPACE_YEARLY` | Preferred Pro Workspace price |
+| `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` | Capacity Increase yearly Price |
 | `SUPABASE_SERVICE_ROLE_KEY` | Webhook + redeem writes ONLY |
 | `NEXT_PUBLIC_APP_URL` | Checkout success/cancel + portal return URLs |
 
 ## Ops checklist
 
-1. Stripe Dashboard: Product “Helvety Pro” + **yearly** Price → `STRIPE_PRICE_PRO_YEARLY`.
-2. Create addon Prices (recurring, same interval as Pro) → set each `STRIPE_PRICE_ADDON_*`.
+1. Stripe Dashboard: Product `Helvety Cloud - Pro Workspace` + **yearly** Price → `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`.
+2. Product `Helvety Cloud - Pro Workspace - Capacity Increase` + **yearly** Price → `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY`.
 3. Webhooks: `checkout.session.completed`, `customer.subscription.*`, `invoice.payment_failed`.
 4. Enable Customer Portal (cancel + payment method).
 5. Create discount codes in Supabase SQL, e.g.
@@ -125,3 +126,15 @@ values ('COMPANION100GIFT', 100, 'Full complimentary Pro');
 Free limits are stated in the product before a gate blocks an action and in
 `/legal/billing`. Complimentary workspaces show as Pro without a Stripe portal.
 Cancel is one click in the Portal for paid subs. No dark patterns.
+
+## Capacity Increase bundle
+
+Each purchased Capacity Increase pack adds:
+
+- 10 projects
+- 100 tasks per project
+- 100 notes
+- 100 contacts
+- 5 seats
+- 5 GiB encrypted file storage
+- 5 files per task

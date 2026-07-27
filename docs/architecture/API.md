@@ -52,12 +52,12 @@ Realtime (optional later) = wake-up only, not a second write API.
 | GET | `/api/v1/me/invitations` | Invitations addressed to the caller’s verified email |
 | POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches their `public_key` (must match their `user_crypto` row) |
 | POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (seat-gated) |
-| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits (null = unlimited), usage, addons, `freeOverflowLocked` (any member) |
-| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro → `{ url }` |
+| GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits (null = unlimited), usage, Capacity Increase quantity, `freeOverflowLocked` (any member) |
+| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro Workspace → `{ url }` |
 | POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Owner-only: Stripe Customer Portal → `{ url }` |
 | POST | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: redeem discount / complimentary code |
 | DELETE | `/api/v1/workspaces/:workspaceId/billing/discount` | Owner-only: remove applied discount / complimentary grant |
-| PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set addon pack quantities on Pro Stripe sub |
+| PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set Capacity Increase quantity on a Pro Workspace Stripe subscription |
 | GET | `/api/v1/workspaces/:workspaceId/attachments` | List attachments (optional `parentKind` + `parentId` filter via `attachment_links`) |
 | POST | `/api/v1/workspaces/:workspaceId/attachments` | Create pending attachment + signed upload URL (`encryptedMeta`, `wrappedDek`, `byteSize`) |
 | GET | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId` | Fetch attachment metadata envelopes |

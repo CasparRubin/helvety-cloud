@@ -534,15 +534,7 @@ export type PlanId = z.infer<typeof planIdSchema>;
 export const billingSourceSchema = z.enum(["stripe", "comp"]);
 export type BillingSource = z.infer<typeof billingSourceSchema>;
 
-export const addonMeterSchema = z.enum([
-  "projects",
-  "tasksPerProject",
-  "notes",
-  "contacts",
-  "members",
-  "storageBytes",
-  "filesPerTask",
-]);
+export const addonMeterSchema = z.enum(["capacity"]);
 export type AddonMeterId = z.infer<typeof addonMeterSchema>;
 
 export const subscriptionStatusSchema = z.enum([
@@ -642,7 +634,7 @@ export type RemoveDiscountResponse = z.infer<
 >;
 
 export const updateBillingAddonsRequestSchema = z.object({
-  quantities: z.record(addonMeterSchema, z.number().int().min(0).max(100)),
+  quantities: z.record(addonMeterSchema, z.number().int().nonnegative()),
 });
 export type UpdateBillingAddonsRequest = z.infer<
   typeof updateBillingAddonsRequestSchema

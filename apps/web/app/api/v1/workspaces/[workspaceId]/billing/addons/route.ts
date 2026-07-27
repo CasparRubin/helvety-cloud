@@ -26,8 +26,8 @@ type RouteContext = {
 };
 
 /**
- * Owner-only: set à-la-carte addon pack quantities on a Pro Stripe subscription.
- * Complimentary (unmetered) workspaces do not need addons.
+ * Owner-only: set Capacity Increase quantity on a paid Pro Workspace
+ * subscription. Complimentary (unmetered) workspaces do not need add-ons.
  */
 export async function PUT(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -87,7 +87,7 @@ export async function PUT(request: Request, context: RouteContext) {
   if (resolvePlan(subscriptionLike) !== "pro") {
     return apiError(
       "forbidden",
-      "Addons require an active Pro workspace",
+      "Capacity Increase requires an active Pro Workspace subscription",
       403,
     );
   }
@@ -109,7 +109,7 @@ export async function PUT(request: Request, context: RouteContext) {
   const desired: AddonQuantities = {};
   for (const [meter, qty] of Object.entries(parsed.data.quantities)) {
     if (qty > 0) {
-      desired[meter as AddonMeter] = Math.min(100, qty);
+      desired[meter as AddonMeter] = qty;
     }
   }
 
@@ -155,7 +155,7 @@ export async function PUT(request: Request, context: RouteContext) {
       if (!priceId) {
         return apiError(
           "internal",
-          `Addon price not configured for ${pack.meter}`,
+          "Capacity Increase price is not configured",
           500,
         );
       }
@@ -195,6 +195,6 @@ export async function PUT(request: Request, context: RouteContext) {
       }),
     );
   } catch {
-    return apiError("internal", "Addon update failed", 500);
+    return apiError("internal", "Capacity Increase update failed", 500);
   }
 }
