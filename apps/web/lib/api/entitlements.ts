@@ -16,7 +16,7 @@ import {
   normalizeAddonQuantities,
   ownedWorkspacesLimitMessage,
   resolvePlan,
-  seatLimitMessage,
+  memberLimitMessage,
   selectFreeOverflowLockedIds,
   storageLimitMessage,
   workspaceMeterLimit,
@@ -290,10 +290,10 @@ export async function assertWorkspaceCreateAllowed(
 }
 
 /**
- * Seat gate for inviting: accepted members + pending (uncancelled,
- * unaccepted) invitations must stay under the plan's seat cap.
+ * Member gate for inviting: accepted members + pending (uncancelled,
+ * unaccepted) invitations must stay under the plan's member cap.
  */
-export async function assertInviteSeatAllowed(
+export async function assertInviteMemberAllowed(
   supabase: Api,
   workspaceId: string,
 ): Promise<NextResponse | null> {
@@ -325,18 +325,18 @@ export async function assertInviteSeatAllowed(
   if (membersResult.error || invitesResult.error) {
     return null;
   }
-  const seatsUsed = (membersResult.count ?? 0) + (invitesResult.count ?? 0);
-  if (seatsUsed >= limit) {
-    return apiError("limit_exceeded", seatLimitMessage(plan, limit), 403);
+  const membersUsed = (membersResult.count ?? 0) + (invitesResult.count ?? 0);
+  if (membersUsed >= limit) {
+    return apiError("limit_exceeded", memberLimitMessage(plan, limit), 403);
   }
   return null;
 }
 
 /**
- * Seat gate for accepting an invitation. The acceptor is not a member yet,
+ * Member gate for accepting an invitation. The acceptor is not a member yet,
  * so counts come from the workspace_seat_usage RPC (members + invitees only).
  */
-export async function assertAcceptSeatAllowed(
+export async function assertAcceptMemberAllowed(
   supabase: Api,
   workspaceId: string,
 ): Promise<NextResponse | null> {
@@ -366,7 +366,7 @@ export async function assertAcceptSeatAllowed(
     return null;
   }
   if (usage.member_count >= limit) {
-    return apiError("limit_exceeded", seatLimitMessage(plan, limit), 403);
+    return apiError("limit_exceeded", memberLimitMessage(plan, limit), 403);
   }
   return null;
 }

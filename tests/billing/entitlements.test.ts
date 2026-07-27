@@ -17,7 +17,7 @@ import {
   limitsForPlan,
   ownedWorkspacesLimitMessage,
   resolvePlan,
-  seatLimitMessage,
+  memberLimitMessage,
   selectFreeOverflowLockedIds,
   storageLimitMessage,
   workspaceMeterLimit,
@@ -80,10 +80,24 @@ describe("plan limits", () => {
     expect(PLAN_LIMITS.pro.maxUploadBytes).toBeGreaterThan(0);
   });
 
-  it("free plan keeps at least the Personal workspace plus one", () => {
-    expect(PLAN_LIMITS.free.ownedWorkspaces).toBeGreaterThanOrEqual(2);
-    expect(PLAN_LIMITS.free.membersPerWorkspace).toBeGreaterThanOrEqual(1);
-    expect(PLAN_LIMITS.free.projectsPerWorkspace).toBe(1);
+  it("matches the configured free and pro catalog", () => {
+    expect(PLAN_LIMITS.free.ownedWorkspaces).toBe(1);
+    expect(PLAN_LIMITS.free.projectsPerWorkspace).toBe(2);
+    expect(PLAN_LIMITS.free.membersPerWorkspace).toBe(3);
+    expect(PLAN_LIMITS.free.tasksPerProject).toBe(50);
+    expect(PLAN_LIMITS.free.notesPerWorkspace).toBe(25);
+    expect(PLAN_LIMITS.free.contactsPerWorkspace).toBe(25);
+
+    expect(PLAN_LIMITS.pro.projectsPerWorkspace).toBe(25);
+    expect(PLAN_LIMITS.pro.membersPerWorkspace).toBe(25);
+    expect(PLAN_LIMITS.pro.tasksPerProject).toBe(1000);
+    expect(PLAN_LIMITS.pro.notesPerWorkspace).toBe(500);
+    expect(PLAN_LIMITS.pro.contactsPerWorkspace).toBe(500);
+    expect(PLAN_LIMITS.pro.filesPerTask).toBe(5);
+    expect(PLAN_LIMITS.pro.storageBytesPerWorkspace).toBe(
+      5 * 1024 * 1024 * 1024,
+    );
+    expect(PLAN_LIMITS.pro.maxUploadBytes).toBe(25 * 1024 * 1024);
   });
 
   it("maps every workspace meter to its plan cap", () => {
@@ -98,6 +112,16 @@ describe("plan limits", () => {
 });
 
 describe("effective limits + addons", () => {
+  it("defines the configured capacity increase bundle", () => {
+    expect(CAPACITY_PACK.deltas.projects).toBe(10);
+    expect(CAPACITY_PACK.deltas.tasksPerProject).toBe(500);
+    expect(CAPACITY_PACK.deltas.notes).toBe(250);
+    expect(CAPACITY_PACK.deltas.contacts).toBe(250);
+    expect(CAPACITY_PACK.deltas.members).toBe(10);
+    expect(CAPACITY_PACK.deltas.storageBytes).toBe(2.5 * 1024 * 1024 * 1024);
+    expect(CAPACITY_PACK.deltas.filesPerTask).toBe(0);
+  });
+
   it("adds capacity increase quantities onto every Pro meter", () => {
     expect(ADDON_PACKS).toHaveLength(1);
     const limits = effectiveLimits({
@@ -158,9 +182,9 @@ describe("effective limits + addons", () => {
 
 describe("limit copy", () => {
   it("states plan and cap, and only suggests upgrading from free", () => {
-    const freeMsg = limitMessage("free", "projects", 1);
+    const freeMsg = limitMessage("free", "projects", 2);
     expect(freeMsg).toContain("free plan");
-    expect(freeMsg).toContain("1");
+    expect(freeMsg).toContain("2");
     expect(freeMsg).toContain("Upgrade");
 
     const proMsg = limitMessage("pro", "projects", 25);
@@ -169,17 +193,17 @@ describe("limit copy", () => {
   });
 
   it("task copy is per project", () => {
-    expect(limitMessage("pro", "tasks", 500)).toContain("per project");
+    expect(limitMessage("pro", "tasks", 1000)).toContain("per project");
   });
 
-  it("seat copy counts pending invitations honestly", () => {
-    const msg = seatLimitMessage("free", 4);
-    expect(msg).toContain("4 seats");
+  it("member copy counts pending invitations honestly", () => {
+    const msg = memberLimitMessage("free", 3);
+    expect(msg).toContain("3 members");
     expect(msg).toContain("pending invitations");
   });
 
   it("owned workspace copy never promises recovery or data access", () => {
-    const msg = ownedWorkspacesLimitMessage("free", 2);
+    const msg = ownedWorkspacesLimitMessage("free", 1);
     expect(msg.toLowerCase()).not.toContain("recover");
     expect(msg.toLowerCase()).not.toContain("decrypt");
   });
@@ -192,7 +216,8 @@ describe("limit copy", () => {
   });
 
   it("overflow lock copy keeps existing content available and never claims recovery", () => {
-    const msg = freeOverflowLockMessage(2);
+    const msg = freeOverflowLockMessage(1);
+    expect(msg).toContain("1 free workspace per account");
     expect(msg).toContain("Existing content stays available");
     expect(msg.toLowerCase()).not.toContain("recover");
     expect(msg.toLowerCase()).not.toContain("decrypt");
@@ -204,11 +229,8 @@ describe("selectFreeOverflowLockedIds", () => {
   it("locks nothing at or under the free allowance", () => {
     expect(
       selectFreeOverflowLockedIds(
-        [
-          { workspaceId: "a", freeOverflowedAt: "2026-07-01T00:00:00Z" },
-          { workspaceId: "b", freeOverflowedAt: null },
-        ],
-        2,
+        [{ workspaceId: "a", freeOverflowedAt: "2026-07-01T00:00:00Z" }],
+        1,
       ).size,
     ).toBe(0);
   });
@@ -221,9 +243,9 @@ describe("selectFreeOverflowLockedIds", () => {
           { workspaceId: "new", freeOverflowedAt: "2026-07-01T00:00:00Z" },
           { workspaceId: "untagged", freeOverflowedAt: null },
         ],
-        2,
+        1,
       ),
-    ).toEqual(new Set(["new"]));
+    ).toEqual(new Set(["new", "old"]));
 
     expect(
       selectFreeOverflowLockedIds(
@@ -233,8 +255,8 @@ describe("selectFreeOverflowLockedIds", () => {
           { workspaceId: "c", freeOverflowedAt: "2026-05-01T00:00:00Z" },
           { workspaceId: "d", freeOverflowedAt: "2026-07-01T00:00:00Z" },
         ],
-        2,
+        1,
       ),
-    ).toEqual(new Set(["d", "c"]));
+    ).toEqual(new Set(["d", "c", "b"]));
   });
 });

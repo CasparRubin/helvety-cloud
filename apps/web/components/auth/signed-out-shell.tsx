@@ -41,11 +41,9 @@ export function SignedOutShell({
             Pricing
           </a>
           {" · "}
-          Free plan limits are listed in the{" "}
           <a href="/legal/billing" className="underline underline-offset-4">
             Billing terms
           </a>
-          .
         </>
       }
     >

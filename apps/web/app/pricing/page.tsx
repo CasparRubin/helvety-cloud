@@ -1,7 +1,15 @@
 import Link from "next/link";
 import type { Metadata } from "next";
 
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { CAPACITY_PACK, PLAN_LIMITS, formatBytes } from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 
@@ -16,23 +24,69 @@ type PricingRow = {
   value: string;
 };
 
+type PriceDisplay = {
+  amount: string;
+  currency?: string;
+  suffix?: string;
+};
+
+type PricingTone = "free" | "pro" | "capacity";
+
+const TONE_STYLES: Record<
+  PricingTone,
+  {
+    card: string;
+    eyebrow: string;
+    amount: string;
+    meta: string;
+  }
+> = {
+  free: {
+    card: "border-emerald-500/25 bg-emerald-50/50 ring-emerald-600/10 dark:bg-emerald-950/25 dark:ring-emerald-400/15",
+    eyebrow: "text-emerald-700 dark:text-emerald-400",
+    amount: "text-emerald-700 dark:text-emerald-400",
+    meta: "text-emerald-700/70 dark:text-emerald-400/70",
+  },
+  pro: {
+    card: "border-sky-500/25 bg-sky-50/50 ring-sky-600/10 dark:bg-sky-950/25 dark:ring-sky-400/15",
+    eyebrow: "text-sky-700 dark:text-sky-400",
+    amount: "text-sky-700 dark:text-sky-400",
+    meta: "text-sky-700/70 dark:text-sky-400/70",
+  },
+  capacity: {
+    card: "border-amber-500/25 bg-amber-50/45 ring-amber-600/10 dark:bg-amber-950/20 dark:ring-amber-400/15",
+    eyebrow: "text-amber-800 dark:text-amber-400",
+    amount: "text-amber-800 dark:text-amber-400",
+    meta: "text-amber-800/70 dark:text-amber-400/70",
+  },
+};
+
 const freeRows: PricingRow[] = [
   { label: "Projects", value: String(PLAN_LIMITS.free.projectsPerWorkspace) },
   { label: "Members", value: String(PLAN_LIMITS.free.membersPerWorkspace) },
-  { label: "Tasks per project", value: String(PLAN_LIMITS.free.tasksPerProject) },
+  {
+    label: "Tasks per project",
+    value: String(PLAN_LIMITS.free.tasksPerProject),
+  },
   { label: "Notes", value: String(PLAN_LIMITS.free.notesPerWorkspace) },
   { label: "Contacts", value: String(PLAN_LIMITS.free.contactsPerWorkspace) },
-  { label: "Files per task", value: "Not included" },
-  { label: "Encrypted file storage", value: "Not included" },
+  { label: "Encrypted files per task", value: "Not included on Free" },
+  { label: "Encrypted file storage", value: "Not included on Free" },
 ];
 
 const proRows: PricingRow[] = [
   { label: "Projects", value: String(PLAN_LIMITS.pro.projectsPerWorkspace) },
   { label: "Members", value: String(PLAN_LIMITS.pro.membersPerWorkspace) },
-  { label: "Tasks per project", value: String(PLAN_LIMITS.pro.tasksPerProject) },
+  {
+    label: "Tasks per project",
+    value: String(PLAN_LIMITS.pro.tasksPerProject),
+  },
   { label: "Notes", value: String(PLAN_LIMITS.pro.notesPerWorkspace) },
   { label: "Contacts", value: String(PLAN_LIMITS.pro.contactsPerWorkspace) },
-  { label: "Files per task", value: String(PLAN_LIMITS.pro.filesPerTask) },
+  {
+    label: "Encrypted files per task",
+    value: String(PLAN_LIMITS.pro.filesPerTask),
+  },
   {
     label: "Encrypted file storage",
     value: formatBytes(PLAN_LIMITS.pro.storageBytesPerWorkspace),
@@ -45,53 +99,91 @@ const proRows: PricingRow[] = [
 
 const capacityRows: PricingRow[] = [
   { label: "Projects", value: `+${CAPACITY_PACK.deltas.projects}` },
-  { label: "Tasks per project", value: `+${CAPACITY_PACK.deltas.tasksPerProject}` },
+  {
+    label: "Tasks per project",
+    value: `+${CAPACITY_PACK.deltas.tasksPerProject}`,
+  },
   { label: "Notes", value: `+${CAPACITY_PACK.deltas.notes}` },
   { label: "Contacts", value: `+${CAPACITY_PACK.deltas.contacts}` },
-  { label: "Seats", value: `+${CAPACITY_PACK.deltas.members}` },
+  { label: "Members", value: `+${CAPACITY_PACK.deltas.members}` },
   {
     label: "Encrypted file storage",
     value: `+${formatBytes(CAPACITY_PACK.deltas.storageBytes)}`,
   },
-  { label: "Files per task", value: `+${CAPACITY_PACK.deltas.filesPerTask}` },
 ];
 
 function PricingCard({
   title,
   subtitle,
   eyebrow,
+  price,
+  summary,
   rows,
-  highlight = false,
+  tone,
   footer,
 }: {
   title: string;
   subtitle: string;
   eyebrow: string;
+  price: PriceDisplay;
+  summary: string;
   rows: PricingRow[];
-  highlight?: boolean;
+  tone: PricingTone;
   footer: React.ReactNode;
 }) {
+  const styles = TONE_STYLES[tone];
+
   return (
-    <Card
-      className={cn(
-        "h-full ring-1 ring-foreground/10",
-        highlight && "ring-2 ring-foreground/20",
-      )}
-    >
-      <CardHeader className="gap-3">
-        <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-          {eyebrow}
-        </p>
-        <div className="space-y-1">
-          <CardTitle className="text-lg font-semibold tracking-tight">
-            {title}
-          </CardTitle>
-          <CardDescription className="leading-relaxed">
-            {subtitle}
-          </CardDescription>
+    <Card className={cn("h-full border ring-1", styles.card)}>
+      <CardHeader className="gap-4 border-b border-border/70 pb-5">
+        <div className="space-y-3">
+          <div className="space-y-1">
+            <p
+              className={cn(
+                "text-xs font-medium tracking-wide uppercase",
+                styles.eyebrow,
+              )}
+            >
+              {eyebrow}
+            </p>
+            <CardTitle className="text-xl font-semibold tracking-tight">
+              {title}
+            </CardTitle>
+          </div>
+          <div className="space-y-2">
+            <div className="flex items-end gap-2">
+              <p
+                className={cn(
+                  "text-4xl font-semibold tracking-tight sm:text-5xl",
+                  styles.amount,
+                )}
+              >
+                {price.amount}
+              </p>
+              {price.currency || price.suffix ? (
+                <p
+                  className={cn(
+                    "pb-1 text-xs font-medium tracking-wide uppercase",
+                    styles.meta,
+                  )}
+                >
+                  {[price.currency, price.suffix].filter(Boolean).join(" ")}
+                </p>
+              ) : null}
+            </div>
+            <p className="text-sm font-medium text-foreground">{summary}</p>
+            <CardDescription className="leading-relaxed">
+              {subtitle}
+            </CardDescription>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="pt-5">
+        <div className="mb-3">
+          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+            Includes
+          </p>
+        </div>
         <dl className="grid gap-3">
           {rows.map((row) => (
             <div
@@ -104,112 +196,177 @@ function PricingCard({
           ))}
         </dl>
       </CardContent>
-      <CardFooter className="items-start">
+      <CardFooter className="items-start border-t border-border/70 bg-muted/35">
         <p className="text-sm leading-relaxed text-muted-foreground">{footer}</p>
       </CardFooter>
     </Card>
   );
 }
 
-function CtaLink({
-  href,
+function TrustPoint({ children }: { children: React.ReactNode }) {
+  return (
+    <li className="rounded-full border border-border/80 bg-card/80 px-3 py-1.5 text-xs text-muted-foreground">
+      {children}
+    </li>
+  );
+}
+
+function InfoBlock({
+  title,
   children,
-  primary = false,
 }: {
-  href: string;
+  title: string;
   children: React.ReactNode;
-  primary?: boolean;
 }) {
   return (
-    <Link
-      href={href}
-      className={cn(
-        "inline-flex h-9 items-center justify-center rounded-lg px-3 text-sm font-medium transition-colors",
-        primary
-          ? "bg-primary text-primary-foreground hover:bg-primary/85"
-          : "border border-border bg-background hover:bg-muted",
-      )}
-    >
-      {children}
-    </Link>
+    <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card/80 p-4">
+      <h3 className="text-sm font-medium text-foreground">{title}</h3>
+      <p className="text-sm leading-relaxed text-muted-foreground">{children}</p>
+    </div>
   );
 }
 
 export default function PricingPage() {
   return (
     <main className="min-h-svh bg-background text-foreground">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 sm:py-10">
-        <header className="flex max-w-3xl flex-col gap-4">
-          <p className="text-sm font-medium text-muted-foreground">Pricing</p>
-          <h1 className="text-3xl font-semibold tracking-tight sm:text-4xl">
-            Simple workspace pricing.
-          </h1>
-          <p className="text-sm leading-relaxed text-muted-foreground sm:text-base">
-            Helvety Cloud keeps billing straightforward: start on Free, upgrade a
-            workspace to Pro Workspace when you need encrypted files and higher
-            limits, then add Capacity Increase packs if that workspace grows.
-          </p>
+      <div className="mx-auto flex w-full max-w-6xl flex-col gap-10 px-4 py-8 sm:px-6 sm:py-10">
+        <header className="flex max-w-4xl flex-col gap-6">
+          <div className="space-y-4">
+            <p className="text-sm font-medium text-muted-foreground">Pricing</p>
+            <div className="space-y-3">
+              <h1 className="max-w-3xl text-3xl font-semibold tracking-tight sm:text-4xl">
+                Private work stays simple. Billing does too.
+              </h1>
+              <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
+                Start on Free, upgrade a workspace to Pro Workspace when you need
+                encrypted files and higher limits, then add Capacity Increase packs
+                only when that workspace grows.
+              </p>
+            </div>
+          </div>
+          <ul className="flex flex-wrap gap-2">
+            <TrustPoint>Email OTP only</TrustPoint>
+            <TrustPoint>Passkey unlock</TrustPoint>
+            <TrustPoint>No master key</TrustPoint>
+          </ul>
         </header>
 
         <section className="grid gap-4 lg:grid-cols-3">
           <PricingCard
+            tone="free"
             eyebrow="No card"
             title="Free"
+            price={{ amount: "0", currency: "CHF" }}
+            summary="Start with the essentials."
             subtitle="For personal use and early workspace setup."
             rows={freeRows}
             footer={
               <>
-                Includes up to two owned free-tier workspaces per account,
-                including your Personal workspace.
+                Includes one owned free-tier workspace per account (your Personal
+                workspace). Additional owned workspaces require Pro.
               </>
             }
           />
           <PricingCard
+            tone="pro"
             eyebrow="Workspace subscription"
             title="Pro Workspace"
+            price={{ amount: "250", currency: "CHF", suffix: "/ YEARLY" }}
+            summary="One paid workspace, billed yearly."
             subtitle="Higher limits plus encrypted file and document storage."
             rows={proRows}
-            highlight
             footer={
               <>
-                Billed yearly. Pricing, discounts, taxes, and renewals are shown
-                at checkout and in the billing portal.
+                Pricing, discounts, taxes, and renewals are shown clearly at
+                checkout and in the billing portal.
               </>
             }
           />
           <PricingCard
+            tone="capacity"
             eyebrow="Optional add-on"
             title="Capacity Increase"
-            subtitle="One extra bundle of capacity for a paid Pro Workspace."
+            price={{ amount: "99", currency: "CHF", suffix: "/ YEARLY" }}
+            summary="Per extra pack, billed yearly."
+            subtitle="Additional room for a paid Pro Workspace."
             rows={capacityRows}
             footer={
               <>
-                Buy as many packs as you need. Each pack raises all listed limits
+                Buy as many packs as you need. Each pack raises the listed limits
                 together on the same workspace.
               </>
             }
           />
         </section>
 
-        <section className="rounded-2xl border border-border bg-muted/30 p-4 sm:p-5">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <div className="space-y-1">
-              <h2 className="text-base font-medium tracking-tight">
+        <section className="grid gap-4 lg:grid-cols-[1.3fr_0.7fr]">
+          <Card className="border border-border/80 bg-card/95 ring-1 ring-foreground/10">
+            <CardHeader className="gap-2 border-b border-border/70">
+              <CardTitle className="text-lg font-semibold tracking-tight">
+                How billing works
+              </CardTitle>
+              <CardDescription className="max-w-2xl leading-relaxed">
+                Billing is workspace-scoped. Free limits apply per workspace, Pro
+                Workspace is yearly, and Capacity Increase stacks on the workspace
+                that needs more room.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-4 pt-5 md:grid-cols-3">
+              <InfoBlock title="Workspace-scoped">
+                One workspace can stay on Free while another is on Pro Workspace.
+                Upgrades never silently change the rest of your account.
+              </InfoBlock>
+              <InfoBlock title="Yearly Pro Workspace">
+                Pro Workspace renews yearly. The checkout and billing portal show
+                pricing, taxes, discounts, and renewal details before payment.
+              </InfoBlock>
+              <InfoBlock title="Capacity Increase">
+                Capacity Increase is an optional add-on for a paid Pro Workspace.
+                Each extra pack adds the same bundle of limits again.
+              </InfoBlock>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-border/80 bg-muted/35 ring-1 ring-foreground/10">
+            <CardHeader className="gap-2 border-b border-border/70">
+              <CardTitle className="text-lg font-semibold tracking-tight">
                 Billing stays honest
-              </h2>
-              <p className="text-sm leading-relaxed text-muted-foreground">
+              </CardTitle>
+              <CardDescription className="leading-relaxed">
                 Helvety never sends encryption keys or encrypted plaintext to
-                Stripe. Limits, renewals, discounts, and billing terms are shown
-                clearly before payment.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              <CtaLink href="/login" primary>
+                Stripe. Billing only uses operational counts and ciphertext size
+                meters.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="flex flex-col gap-3 pt-5">
+              <Link
+                href="/login"
+                className={buttonVariants({
+                  variant: "default",
+                  size: "lg",
+                  className: "w-full",
+                })}
+              >
                 Start with Free
-              </CtaLink>
-              <CtaLink href="/legal/billing">See billing terms</CtaLink>
-            </div>
-          </div>
+              </Link>
+              <Link
+                href="/legal/billing"
+                className={buttonVariants({
+                  variant: "outline",
+                  size: "lg",
+                  className: "w-full",
+                })}
+              >
+                See billing terms
+              </Link>
+            </CardContent>
+            <CardFooter className="items-start border-t border-border/70 bg-transparent">
+              <p className="text-sm leading-relaxed text-muted-foreground">
+                Free limits, renewals, Capacity Increase behavior, and soft-lock
+                rules are documented in Billing terms.
+              </p>
+            </CardFooter>
+          </Card>
         </section>
 
         <footer className="border-t pt-6 text-sm text-muted-foreground">

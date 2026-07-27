@@ -3,7 +3,7 @@ import {
   workspaceInvitationSchema,
 } from "@helvety-cloud/api-contract";
 
-import { assertAcceptSeatAllowed } from "@/lib/api/entitlements";
+import { assertAcceptMemberAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { mapInvitationRow } from "@/lib/api/invitations";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -29,7 +29,7 @@ export async function POST(request: Request, context: RouteContext) {
     return apiError("internal", invitationError.message, 500);
   }
   if (invitation) {
-    const limitResponse = await assertAcceptSeatAllowed(
+    const limitResponse = await assertAcceptMemberAllowed(
       supabase,
       invitation.workspace_id,
     );

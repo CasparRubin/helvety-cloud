@@ -114,6 +114,10 @@ export function LoginForm() {
           <a href="/pricing" className="underline underline-offset-4">
             Pricing
           </a>
+          {" · "}
+          <a href="/legal/billing" className="underline underline-offset-4">
+            Billing terms
+          </a>
         </>
       }
     >

@@ -18,7 +18,7 @@ export type PlanLimits = {
   /** Workspaces where the user has the `owner` role (free slots only). */
   ownedWorkspaces: number;
   projectsPerWorkspace: number;
-  /** Seats: accepted members + pending invitations count toward this. */
+  /** Members: accepted members + pending invitations count toward this. */
   membersPerWorkspace: number;
   /** Tasks allowed per project (not workspace-wide). */
   tasksPerProject: number;
@@ -44,12 +44,13 @@ export const UNLIMITED = Number.POSITIVE_INFINITY;
  */
 export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
   free: {
-    ownedWorkspaces: 2,
-    projectsPerWorkspace: 1,
-    membersPerWorkspace: 4,
+    // Personal workspace only; further owned workspaces require Pro.
+    ownedWorkspaces: 1,
+    projectsPerWorkspace: 2,
+    membersPerWorkspace: 3,
     tasksPerProject: 50,
-    notesPerWorkspace: 50,
-    contactsPerWorkspace: 50,
+    notesPerWorkspace: 25,
+    contactsPerWorkspace: 25,
     filesPerTask: 0,
     storageBytesPerWorkspace: 0,
     maxUploadBytes: 0,
@@ -60,7 +61,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     ownedWorkspaces: 50,
     projectsPerWorkspace: 25,
     membersPerWorkspace: 25,
-    tasksPerProject: 500,
+    tasksPerProject: 1000,
     notesPerWorkspace: 500,
     contactsPerWorkspace: 500,
     filesPerTask: 5,
@@ -88,8 +89,8 @@ export type AddonPackDef = {
 };
 
 /**
- * One recurring Stripe add-on. Quantity N adds the same bundle of capacity N
- * times, keeping billing simple in code and in the product.
+ * One recurring Stripe add-on (CHF 99 / year). Quantity N adds the same
+ * bundle of capacity N times.
  */
 export const CAPACITY_PACK: AddonPackDef = {
   meter: "capacity",
@@ -98,12 +99,12 @@ export const CAPACITY_PACK: AddonPackDef = {
   label: "Capacity Increase",
   deltas: {
     projects: 10,
-    tasksPerProject: 100,
-    notes: 100,
-    contacts: 100,
-    members: 5,
-    storageBytes: 5 * 1024 * 1024 * 1024,
-    filesPerTask: 5,
+    tasksPerProject: 500,
+    notes: 250,
+    contacts: 250,
+    members: 10,
+    storageBytes: 2.5 * 1024 * 1024 * 1024, // 2.5 GiB
+    filesPerTask: 0,
   },
 };
 
@@ -263,12 +264,12 @@ export function limitMessage(
   return `${capitalize(METER_LABEL[meter])} limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit}${scope}).${upgradeHint}`;
 }
 
-export function seatLimitMessage(plan: Plan, limit: number): string {
+export function memberLimitMessage(plan: Plan, limit: number): string {
   const upgradeHint =
     plan === "free"
-      ? " Upgrade this workspace to Pro Workspace for more seats."
+      ? " Upgrade this workspace to Pro Workspace for more members."
       : "";
-  return `Member limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit} seats per workspace, including pending invitations).${upgradeHint}`;
+  return `Member limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit} members per workspace, including pending invitations).${upgradeHint}`;
 }
 
 export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
@@ -276,14 +277,24 @@ export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
     plan === "free"
       ? " Create an additional workspace as Pro Workspace, redeem a complimentary code, or delete an unused workspace."
       : "";
-  return `Workspace limit reached (${isUnlimited(limit) ? "unlimited" : limit} owned workspaces on the ${plan} plan).${upgradeHint}`;
+  const cap =
+    isUnlimited(limit)
+      ? "unlimited owned workspaces"
+      : limit === 1
+        ? "1 owned workspace"
+        : `${limit} owned workspaces`;
+  return `Workspace limit reached (${cap} on the ${plan} plan).${upgradeHint}`;
 }
 
 /**
  * Soft-lock copy when a workspace is over the free owned-workspace allowance.
  */
 export function freeOverflowLockMessage(freeSlots: number): string {
-  return `This workspace is over the free allowance (${freeSlots} free workspaces per account). Existing content stays available; new creates are paused until you upgrade this workspace to Pro Workspace or reduce owned free workspaces.`;
+  const allowance =
+    freeSlots === 1
+      ? "1 free workspace per account"
+      : `${freeSlots} free workspaces per account`;
+  return `This workspace is over the free allowance (${allowance}). Existing content stays available; new creates are paused until you upgrade this workspace to Pro Workspace or reduce owned free workspaces.`;
 }
 
 export type FreeOverflowCandidate = {
@@ -348,7 +359,8 @@ export function formatBytes(bytes: number): string {
   if (bytes < 1024 * 1024 * 1024) {
     return `${(bytes / (1024 * 1024)).toFixed(0)} MB`;
   }
-  return `${(bytes / (1024 * 1024 * 1024)).toFixed(0)} GB`;
+  const gb = bytes / (1024 * 1024 * 1024);
+  return `${Number.isInteger(gb) ? gb.toFixed(0) : gb.toFixed(1)} GB`;
 }
 
 export function normalizeAddonQuantities(

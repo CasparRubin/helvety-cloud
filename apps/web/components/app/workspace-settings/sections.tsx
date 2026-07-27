@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
-import { formatBytes } from "@/lib/billing/entitlements";
+import { PLAN_LIMITS, formatBytes } from "@/lib/billing/entitlements";
 
 function formatLimit(value: number | null): string {
   return value === null ? "∞" : String(value);
@@ -89,7 +89,7 @@ export function WorkspaceMembersSettings() {
     pending,
     membersLoading,
     error,
-    seatLimitHit,
+    memberLimitHit,
     copiedId,
     activeInvites,
     ensureMembersLoaded,
@@ -108,8 +108,8 @@ export function WorkspaceMembersSettings() {
   }, [ensureMembersLoaded]);
 
   useEffect(() => {
-    if (seatLimitHit) void ensureBillingLoaded();
-  }, [seatLimitHit, ensureBillingLoaded]);
+    if (memberLimitHit) void ensureBillingLoaded();
+  }, [memberLimitHit, ensureBillingLoaded]);
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
@@ -161,10 +161,10 @@ export function WorkspaceMembersSettings() {
         </p>
       )}
 
-      {seatLimitHit && isOwner && billing?.plan === "free" ? (
+      {memberLimitHit && isOwner && billing?.plan === "free" ? (
         <div className="flex items-center justify-between gap-2 rounded-md border border-border px-2 py-1.5">
           <p className="text-xs text-muted-foreground">
-            The free plan includes {formatLimit(billing.limits.members)} seats
+            The free plan includes {formatLimit(billing.limits.members)} members
             per workspace.
           </p>
           <Button
@@ -302,7 +302,7 @@ export function WorkspaceBillingSettings() {
                   ? ` · ${billing.discountPercentOff}% off`
                   : ""}
                 {" · "}
-                Seats {billing.usage.members + billing.usage.pendingInvitations}/
+                Members {billing.usage.members + billing.usage.pendingInvitations}/
                 {formatLimit(billing.limits.members)}
                 {billing.cancelAtPeriodEnd ? " · cancels at period end" : ""}
               </p>
@@ -338,9 +338,12 @@ export function WorkspaceBillingSettings() {
             {billing.freeOverflowLocked ? (
               <p className="text-xs text-muted-foreground">
                 New creates are paused because this workspace is over the free
-                allowance (two free workspaces per account). Existing content
-                stays available. Upgrade to Pro, or reduce owned free workspaces
-                to unlock creates again.
+                allowance (
+                {PLAN_LIMITS.free.ownedWorkspaces === 1
+                  ? "1 free workspace per account"
+                  : `${PLAN_LIMITS.free.ownedWorkspaces} free workspaces per account`}
+                ). Existing content stays available. Upgrade to Pro, or reduce
+                owned free workspaces to unlock creates again.
               </p>
             ) : null}
             {isComplimentary ? (

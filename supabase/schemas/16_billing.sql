@@ -126,7 +126,7 @@ revoke all on table public.billing_events from anon, public;
 revoke all on table public.billing_events from authenticated;
 grant select, insert, update, delete on table public.billing_events to service_role;
 
--- Seat usage for entitlement gates. Members and active invitees may read the
+-- Member usage for entitlement gates. Members and active invitees may read the
 -- member count + plan (plaintext metadata only); limits stay in app code.
 create or replace function public.workspace_seat_usage(ws_id uuid)
 returns table (

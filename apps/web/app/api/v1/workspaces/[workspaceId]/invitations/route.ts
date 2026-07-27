@@ -4,7 +4,7 @@ import {
   workspaceInvitationSchema,
 } from "@helvety-cloud/api-contract";
 
-import { assertInviteSeatAllowed } from "@/lib/api/entitlements";
+import { assertInviteMemberAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { mapInvitationRow } from "@/lib/api/invitations";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -83,7 +83,7 @@ export async function POST(request: Request, context: RouteContext) {
     return apiError("forbidden", "Not allowed to invite", 403);
   }
 
-  const limitResponse = await assertInviteSeatAllowed(supabase, workspaceId);
+  const limitResponse = await assertInviteMemberAllowed(supabase, workspaceId);
   if (limitResponse) {
     return limitResponse;
   }

@@ -34,7 +34,7 @@ owner completes Stripe Checkout (unless a **100%** code grants Pro with no card)
 | Plans/limits/addons | `apps/web/lib/billing/entitlements.ts` |
 | Discount redeem | `apps/web/lib/billing/discount-codes.ts` + `POST …/billing/discount` |
 | API gates | `apps/web/lib/api/entitlements.ts` + create paths in `/api/v1` |
-| Seat gate RPC | `public.workspace_seat_usage` |
+| Member-cap RPC | `public.workspace_seat_usage` |
 | Billing endpoints | `GET …/billing`, `POST …/checkout`, `POST …/portal`, `POST …/discount`, `PUT …/addons` |
 | Webhook | `POST /api/webhooks/stripe` (never overwrites `billing_source=comp`) |
 
@@ -44,20 +44,20 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 
 | Meter | Free | Pro base |
 |-------|-----:|---------:|
-| Owned free-tier workspaces / user | 2 | n/a |
+| Owned free-tier workspaces / user | 1 | n/a |
 | Soft owned Pro ceiling / user | n/a | 50 |
-| Projects / workspace | 1 | 25 |
-| Members (incl. pending invites) | 4 | 25 |
-| Tasks / **project** | 50 | 500 |
-| Notes / workspace | 50 | 500 |
-| Contacts / workspace | 50 | 500 |
+| Projects / workspace | 2 | 25 |
+| Members (incl. pending invites) | 3 | 25 |
+| Tasks / **project** | 50 | 1000 |
+| Notes / workspace | 25 | 500 |
+| Contacts / workspace | 25 | 500 |
 | Files / task | 0 | 5 |
 | File storage (ciphertext bytes) | 0 | 5 GiB |
 | Max upload size | 0 | 25 MiB |
 
-**3rd+ owned workspace:** only by creating/upgrading that workspace to Pro (Checkout) or redeeming a 100% code / admin comp. Each paid (or gifted) workspace stands alone. Owning one Pro does not silently raise free slots.
+**2nd+ owned workspace:** only by creating/upgrading that workspace to Pro (Checkout) or redeeming a 100% code / admin comp. Each paid (or gifted) workspace stands alone. Owning one Pro does not silently raise free slots.
 
-**Soft-lock overflow:** when Pro or complimentary access ends and the owner would then have more than two non-Pro workspaces, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 2`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates (projects, tasks, notes, contacts, invites, accept, uploads, new attachment links, further free workspace creation) return `limit_exceeded`. Ciphertext and wrapped keys are never deleted or withheld. Locks clear automatically when the workspace returns to Pro or the owner is back within two free workspaces.
+**Soft-lock overflow:** when Pro or complimentary access ends and the owner would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates (projects, tasks, notes, contacts, invites, accept, uploads, new attachment links, further free workspace creation) return `limit_exceeded`. Ciphertext and wrapped keys are never deleted or withheld. Locks clear automatically when the workspace returns to Pro or the owner is back within one free workspace.
 
 **Capacity Increase (Pro + Stripe only):** add-on quantity lives on the same
 subscription. Effective limit =
@@ -129,12 +129,11 @@ Cancel is one click in the Portal for paid subs. No dark patterns.
 
 ## Capacity Increase bundle
 
-Each purchased Capacity Increase pack adds:
+Each purchased Capacity Increase pack (CHF 99 / year) adds:
 
 - 10 projects
-- 100 tasks per project
-- 100 notes
-- 100 contacts
-- 5 seats
-- 5 GiB encrypted file storage
-- 5 files per task
+- 500 tasks per project
+- 250 notes
+- 250 contacts
+- 10 members
+- 2.5 GiB encrypted file storage

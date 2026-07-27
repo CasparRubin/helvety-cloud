@@ -58,7 +58,7 @@ type WorkspaceSettingsContextValue = {
   membersLoading: boolean;
   billingLoading: boolean;
   error: string | null;
-  seatLimitHit: boolean;
+  memberLimitHit: boolean;
   copiedId: string | null;
   deleteOpen: boolean;
   setDeleteOpen: (open: boolean) => void;
@@ -116,7 +116,7 @@ export function WorkspaceSettingsProvider({
   const [membersLoaded, setMembersLoaded] = useState(false);
   const [billingLoaded, setBillingLoaded] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [seatLimitHit, setSeatLimitHit] = useState(false);
+  const [memberLimitHit, setMemberLimitHit] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
@@ -269,7 +269,7 @@ export function WorkspaceSettingsProvider({
     if (!trimmed) return;
     setPending(true);
     setError(null);
-    setSeatLimitHit(false);
+    setMemberLimitHit(false);
     try {
       const created = await createWorkspaceInvitation(workspaceId, {
         id: crypto.randomUUID(),
@@ -285,7 +285,7 @@ export function WorkspaceSettingsProvider({
       window.open(mail.href, "_blank", "noopener,noreferrer");
     } catch (err) {
       if (err instanceof ApiClientError && err.code === "limit_exceeded") {
-        setSeatLimitHit(true);
+        setMemberLimitHit(true);
         await ensureBillingLoaded();
       }
       const message =
@@ -394,7 +394,7 @@ export function WorkspaceSettingsProvider({
     membersLoading,
     billingLoading,
     error,
-    seatLimitHit,
+    memberLimitHit,
     copiedId,
     deleteOpen,
     setDeleteOpen,
