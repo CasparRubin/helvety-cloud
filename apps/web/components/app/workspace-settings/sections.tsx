@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import {
   invitationStatusLabel,
   useWorkspaceSettings,
@@ -14,6 +15,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { PLAN_LIMITS, CAPACITY_PACK, formatBytes } from "@/lib/billing/entitlements";
+import { formatDate, type DateTimePrefs } from "@/lib/format-datetime";
 import { cn } from "@/lib/utils";
 
 function formatLimit(value: number | null): string {
@@ -30,22 +32,13 @@ function formatBillingStatus(status: string): string {
   return status.replaceAll("_", " ");
 }
 
-function formatPeriodDate(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
-}
-
 function periodSuffix(
   currentPeriodEnd: string | null,
   cancelAtPeriodEnd: boolean,
+  prefs: DateTimePrefs,
 ): string | null {
   if (currentPeriodEnd) {
-    const when = formatPeriodDate(currentPeriodEnd);
+    const when = formatDate(currentPeriodEnd, prefs);
     return cancelAtPeriodEnd ? ` · Cancels ${when}` : ` · Renews ${when}`;
   }
   if (cancelAtPeriodEnd) return " · Cancels at period end";
@@ -352,6 +345,7 @@ export function WorkspaceMembersSettings() {
 }
 
 export function WorkspaceBillingSettings() {
+  const { prefs } = useDateTimePrefs();
   const {
     isOwner,
     billing,
@@ -392,6 +386,7 @@ export function WorkspaceBillingSettings() {
                     {periodSuffix(
                       billing.currentPeriodEnd,
                       billing.cancelAtPeriodEnd,
+                      prefs,
                     )}
                   </p>
                 </div>

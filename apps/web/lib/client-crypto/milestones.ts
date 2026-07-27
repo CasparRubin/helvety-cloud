@@ -127,28 +127,6 @@ function compareNullableDates(a: string | null, b: string | null): number {
   return 0;
 }
 
-function formatIsoDateShort(iso: string): string {
-  const [y, m, d] = iso.split("-").map(Number);
-  if (!y || !m || !d) return iso;
-  return new Date(y, m - 1, d).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
-
-/** Display helper: `Jul 1 – Aug 1`, a single date, or `No dates`. */
-export function formatMilestoneDateRange(
-  startDate: string | null,
-  endDate: string | null,
-): string {
-  if (startDate && endDate) {
-    return `${formatIsoDateShort(startDate)} – ${formatIsoDateShort(endDate)}`;
-  }
-  if (startDate) return formatIsoDateShort(startDate);
-  if (endDate) return formatIsoDateShort(endDate);
-  return "No dates";
-}
-
 export async function loadAllDecryptedMilestones(
   workspaceId: string,
   projectId: string,

@@ -31,6 +31,7 @@ import {
 
 import { CategorizationPicker } from "@/components/app/categorization-picker";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import {
   EntityListEmpty,
   EntityListShell,
@@ -64,7 +65,6 @@ import {
 } from "@/lib/client-crypto/categorizations";
 import { ENTITY_COLOR_CLASSES } from "@/lib/client-crypto/entity-colors";
 import {
-  formatMilestoneDateRange,
   loadAllDecryptedMilestones,
   type DecryptedMilestone,
 } from "@/lib/client-crypto/milestones";
@@ -81,6 +81,7 @@ import {
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
 import { todayIsoDate } from "@/lib/client-crypto/project-progress";
+import { formatDate, formatDateRange } from "@/lib/format-datetime";
 import { matchesQuery } from "@/lib/list-search";
 import { cn } from "@/lib/utils";
 
@@ -804,11 +805,13 @@ function TaskCardContent({
   moveActions?: ReactNode;
   overlay?: boolean;
 }) {
+  const { prefs } = useDateTimePrefs();
   const stageId = task.stageId ?? "";
   const priorityId = task.priorityId ?? "";
   const milestoneRange = milestone
-    ? formatMilestoneDateRange(milestone.startDate, milestone.endDate)
+    ? formatDateRange(milestone.startDate, milestone.endDate, prefs)
     : null;
+  const dueLabel = task.dueDate ? formatDate(task.dueDate, prefs) : null;
 
   return (
     <article
@@ -840,15 +843,17 @@ function TaskCardContent({
           {milestone.title}
         </span>
       ) : null}
-      {task.dueDate ? (
+      {dueLabel ? (
         <span
           className={cn(
             "shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground",
-            task.dueDate < todayIsoDate() && "bg-destructive/10 text-destructive",
+            task.dueDate &&
+              task.dueDate < todayIsoDate() &&
+              "bg-destructive/10 text-destructive",
           )}
-          title={`Due ${task.dueDate}`}
+          title={`Due ${dueLabel}`}
         >
-          {task.dueDate}
+          {dueLabel}
         </span>
       ) : null}
       {onUpdateIds ? (

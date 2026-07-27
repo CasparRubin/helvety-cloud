@@ -5,10 +5,8 @@ import {
   resolveCompletionPercent,
   type ProjectCategorizations,
 } from "@/lib/client-crypto/categorizations";
-import {
-  formatMilestoneDateRange,
-  type DecryptedMilestone,
-} from "@/lib/client-crypto/milestones";
+import type { DecryptedMilestone } from "@/lib/client-crypto/milestones";
+import { formatDateRange, type DateTimePrefs } from "@/lib/format-datetime";
 
 export type ProjectProgressView = {
   scopeCount: number;
@@ -120,11 +118,14 @@ export function scheduleProgressFraction(
   return Math.min(1, Math.max(0, (isoMs - startMs) / (endMs - startMs)));
 }
 
-export function progressWindowCaption(window: {
-  startDate: string;
-  endDate: string;
-  label: string | null;
-}): string {
-  const range = formatMilestoneDateRange(window.startDate, window.endDate);
+export function progressWindowCaption(
+  window: {
+    startDate: string;
+    endDate: string;
+    label: string | null;
+  },
+  prefs?: DateTimePrefs,
+): string {
+  const range = formatDateRange(window.startDate, window.endDate, prefs);
   return window.label ? `${window.label} · ${range}` : range;
 }

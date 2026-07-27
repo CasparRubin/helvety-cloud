@@ -9,7 +9,8 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { formatMilestoneDateRange } from "@/lib/client-crypto/milestones";
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
+import { formatDateRange } from "@/lib/format-datetime";
 import { cn } from "@/lib/utils";
 
 type MilestoneOption = {
@@ -40,6 +41,7 @@ export function MilestonePicker({
   className,
   "aria-label": ariaLabel,
 }: MilestonePickerProps) {
+  const { prefs } = useDateTimePrefs();
   const [open, setOpen] = useState(false);
   const selected =
     value == null || value === ""
@@ -90,9 +92,10 @@ export function MilestonePicker({
             </li>
           ) : null}
           {options.map((option) => {
-            const range = formatMilestoneDateRange(
+            const range = formatDateRange(
               option.startDate,
               option.endDate,
+              prefs,
             );
             return (
               <li key={option.id}>

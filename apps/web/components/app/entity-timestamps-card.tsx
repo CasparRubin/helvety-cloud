@@ -1,5 +1,6 @@
 "use client";
 
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import { SaveStatus } from "@/components/app/save-status";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatDateTime } from "@/lib/format-datetime";
@@ -20,16 +21,18 @@ export function EntityTimestampsCard({
   savedAt,
   onRetry,
 }: EntityTimestampsCardProps) {
+  const { prefs } = useDateTimePrefs();
+
   return (
     <Card size="sm">
       <CardContent className="flex flex-col gap-1 text-xs text-muted-foreground">
         <p>
           <span className="font-medium text-foreground">Created</span>{" "}
-          {formatDateTime(createdAt)}
+          {formatDateTime(createdAt, prefs)}
         </p>
         <p>
           <span className="font-medium text-foreground">Modified</span>{" "}
-          {formatDateTime(updatedAt)}
+          {formatDateTime(updatedAt, prefs)}
         </p>
         <SaveStatus status={status} savedAt={savedAt} onRetry={onRetry} />
       </CardContent>

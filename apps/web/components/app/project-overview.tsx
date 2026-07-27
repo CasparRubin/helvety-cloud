@@ -4,6 +4,7 @@ import { useEffect, useId, useRef, useState } from "react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import { EntityListEmpty } from "@/components/app/entity-list-shell";
 import { InlineTitle } from "@/components/app/inline-title";
 import { PageActions } from "@/components/app/page-actions";
@@ -26,11 +27,11 @@ import { useAutosave } from "@/lib/hooks/use-autosave";
 import {
   createMilestone,
   deleteMilestone,
-  formatMilestoneDateRange,
   saveMilestone,
   sortMilestones,
   type DecryptedMilestone,
 } from "@/lib/client-crypto/milestones";
+import { formatDateRange } from "@/lib/format-datetime";
 import {
   projectPlaintextFrom,
   renameProject,
@@ -366,6 +367,7 @@ function MilestoneListItem({
   onSelect: () => void;
   onEdit: () => void;
 }) {
+  const { prefs } = useDateTimePrefs();
   const preview = taskBodyPlainText(milestone.description ?? EMPTY_TASK_BODY);
 
   return (
@@ -386,7 +388,11 @@ function MilestoneListItem({
         <div className="flex items-baseline justify-between gap-2">
           <span className="truncate text-sm font-medium">{milestone.title}</span>
           <span className="shrink-0 text-[10px] text-muted-foreground">
-            {formatMilestoneDateRange(milestone.startDate, milestone.endDate)}
+            {formatDateRange(
+              milestone.startDate,
+              milestone.endDate,
+              prefs,
+            )}
           </span>
         </div>
         <p

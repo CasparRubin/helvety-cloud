@@ -15,6 +15,7 @@ import {
   PageActions,
   WorkspaceSettingsAction,
 } from "@/components/app/page-actions";
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -33,6 +34,7 @@ type NoteListProps = {
 
 export function NoteList({ workspaceId }: NoteListProps) {
   const router = useRouter();
+  const { prefs } = useDateTimePrefs();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
 
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
@@ -174,9 +176,9 @@ export function NoteList({ workspaceId }: NoteListProps) {
             >
               <span className="font-medium">{note.title || "Untitled"}</span>
               <span className="text-xs text-muted-foreground">
-                Created {formatDateTime(note.createdAt)}
+                Created {formatDateTime(note.createdAt, prefs)}
                 {" · "}
-                Modified {formatDateTime(note.updatedAt)}
+                Modified {formatDateTime(note.updatedAt, prefs)}
               </span>
             </Link>
           </EntityListRow>

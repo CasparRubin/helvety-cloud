@@ -93,7 +93,7 @@ export function useAutosave<T>(opts: {
         onSavedRef.current?.(canonical);
       }
 
-      setSavedAt(new Date().toLocaleTimeString());
+      setSavedAt(new Date().toISOString());
       setStatus("saved");
     } catch (err) {
       if (!mountedRef.current) return;

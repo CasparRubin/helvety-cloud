@@ -1,5 +1,7 @@
 "use client";
 
+import { useDateTimePrefs } from "@/components/app/datetime-prefs";
+import { formatTime } from "@/lib/format-datetime";
 import type { AutosaveStatus } from "@/lib/hooks/use-autosave";
 
 type SaveStatusProps = {
@@ -9,6 +11,8 @@ type SaveStatusProps = {
 };
 
 export function SaveStatus({ status, savedAt, onRetry }: SaveStatusProps) {
+  const { prefs } = useDateTimePrefs();
+
   switch (status) {
     case "idle":
       return null;
@@ -21,7 +25,7 @@ export function SaveStatus({ status, savedAt, onRetry }: SaveStatusProps) {
     case "saved":
       return (
         <span className="text-xs text-muted-foreground">
-          {savedAt ? `Saved ${savedAt}` : "Saved"}
+          {savedAt ? `Saved ${formatTime(savedAt, prefs)}` : "Saved"}
         </span>
       );
     case "error":
