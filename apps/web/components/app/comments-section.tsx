@@ -3,8 +3,8 @@
 import { useEffect, useState } from "react";
 import type { CommentParentKind } from "@helvety-cloud/api-contract";
 
+import { DateTimeText } from "@/components/app/datetime-text";
 import { EntityErrorAlert } from "@/components/app/entity-list-shell";
-import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -20,7 +20,6 @@ import {
   saveComment,
   type DecryptedComment,
 } from "@/lib/client-crypto/comments";
-import { formatDateTime } from "@/lib/format-datetime";
 import { cn } from "@/lib/utils";
 
 type CommentsSectionProps = {
@@ -46,7 +45,6 @@ export function CommentsSection({
   parentKind,
   parentId,
 }: CommentsSectionProps) {
-  const { prefs } = useDateTimePrefs();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
   const [comments, setComments] = useState<DecryptedComment[]>([]);
   const [loading, setLoading] = useState(true);
@@ -184,7 +182,7 @@ export function CommentsSection({
       >
         <div className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
           <span className="font-medium text-foreground">{author}</span>
-          <span>{formatDateTime(comment.createdAt, prefs)}</span>
+          <DateTimeText value={comment.createdAt} />
         </div>
         {editing ? (
           <div className="flex flex-col gap-2">

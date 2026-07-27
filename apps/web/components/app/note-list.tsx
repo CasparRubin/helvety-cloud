@@ -5,17 +5,18 @@ import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
+import { DateTimeText } from "@/components/app/datetime-text";
 import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { ListSearchInput } from "@/components/app/list-search-input";
+import { ListSortToggle } from "@/components/app/list-sort-toggle";
 import {
   ListRefreshButton,
   PageActions,
   WorkspaceSettingsAction,
 } from "@/components/app/page-actions";
-import { useDateTimePrefs } from "@/components/app/datetime-prefs";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -25,8 +26,21 @@ import {
   type DecryptedNote,
 } from "@/lib/client-crypto/notes";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
-import { formatDateTime } from "@/lib/format-datetime";
 import { matchesQuery } from "@/lib/list-search";
+
+type NoteSort = "created" | "modified";
+
+const NOTE_SORT_OPTIONS = [
+  { id: "created" as const, label: "Created" },
+  { id: "modified" as const, label: "Modified" },
+];
+
+function compareNotes(a: DecryptedNote, b: DecryptedNote, sort: NoteSort) {
+  const field = sort === "created" ? "createdAt" : "updatedAt";
+  const byDate = b[field].localeCompare(a[field]);
+  if (byDate !== 0) return byDate;
+  return a.id.localeCompare(b.id);
+}
 
 type NoteListProps = {
   workspaceId: string;
@@ -34,7 +48,6 @@ type NoteListProps = {
 
 export function NoteList({ workspaceId }: NoteListProps) {
   const router = useRouter();
-  const { prefs } = useDateTimePrefs();
   const { userKeys, getWorkspaceKey } = useCryptoSession();
 
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
@@ -43,6 +56,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
   const [busy, setBusy] = useState(false);
   const [newBody, setNewBody] = useState("");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<NoteSort>("created");
   const deferredQuery = useDeferredValue(query);
 
   const loadNotes = useCallback(async () => {
@@ -115,9 +129,9 @@ export function NoteList({ workspaceId }: NoteListProps) {
   if (!userKeys) return null;
 
   const filtering = deferredQuery.trim().length > 0;
-  const filteredNotes = notes.filter((n) =>
-    matchesQuery([n.title], deferredQuery),
-  );
+  const filteredNotes = notes
+    .filter((n) => matchesQuery([n.title], deferredQuery))
+    .sort((a, b) => compareNotes(a, b, sort));
 
   return (
     <>
@@ -152,12 +166,20 @@ export function NoteList({ workspaceId }: NoteListProps) {
       <EntityListShell
         title="Notes"
         belowTitle={
-          <ListSearchInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder="Filter notes…"
-            disabled={loading || notes.length === 0}
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <ListSearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Filter notes…"
+              disabled={loading || notes.length === 0}
+            />
+            <ListSortToggle
+              value={sort}
+              onValueChange={setSort}
+              options={NOTE_SORT_OPTIONS}
+              disabled={loading || notes.length === 0}
+            />
+          </div>
         }
         error={error}
         loading={loading}
@@ -168,21 +190,25 @@ export function NoteList({ workspaceId }: NoteListProps) {
         }
         emptyLabel={notes.length === 0 ? "No notes yet." : "No matching notes."}
       >
-        {filteredNotes.map((note) => (
-          <EntityListRow key={note.id}>
-            <Link
-              href={`/app/w/${workspaceId}/notes/${note.id}`}
-              className="flex w-full flex-col gap-0.5"
-            >
-              <span className="font-medium">{note.title || "Untitled"}</span>
-              <span className="text-xs text-muted-foreground">
-                Created {formatDateTime(note.createdAt, prefs)}
-                {" · "}
-                Modified {formatDateTime(note.updatedAt, prefs)}
-              </span>
-            </Link>
-          </EntityListRow>
-        ))}
+        {filteredNotes.map((note) => {
+          const dateIso =
+            sort === "created" ? note.createdAt : note.updatedAt;
+          const dateLabel = sort === "created" ? "Created" : "Modified";
+          return (
+            <EntityListRow key={note.id}>
+              <Link
+                href={`/app/w/${workspaceId}/notes/${note.id}`}
+                className="flex w-full flex-col gap-1"
+              >
+                <span className="font-medium">{note.title || "Untitled"}</span>
+                <span className="text-xs text-muted-foreground">
+                  {dateLabel}{" "}
+                  <DateTimeText value={dateIso} />
+                </span>
+              </Link>
+            </EntityListRow>
+          );
+        })}
       </EntityListShell>
     </>
   );

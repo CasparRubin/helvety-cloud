@@ -9,8 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { useDateTimePrefs } from "@/components/app/datetime-prefs";
-import { formatDateRange } from "@/lib/format-datetime";
+import { DateTimeText } from "@/components/app/datetime-text";
 import { cn } from "@/lib/utils";
 
 type MilestoneOption = {
@@ -41,7 +40,6 @@ export function MilestonePicker({
   className,
   "aria-label": ariaLabel,
 }: MilestonePickerProps) {
-  const { prefs } = useDateTimePrefs();
   const [open, setOpen] = useState(false);
   const selected =
     value == null || value === ""
@@ -92,11 +90,7 @@ export function MilestonePicker({
             </li>
           ) : null}
           {options.map((option) => {
-            const range = formatDateRange(
-              option.startDate,
-              option.endDate,
-              prefs,
-            );
+            const hasDates = Boolean(option.startDate || option.endDate);
             return (
               <li key={option.id}>
                 <button
@@ -111,10 +105,13 @@ export function MilestonePicker({
                   }}
                 >
                   <span className="truncate font-medium">{option.title}</span>
-                  {range !== "No dates" ? (
-                    <span className="text-xs text-muted-foreground">
-                      {range}
-                    </span>
+                  {hasDates ? (
+                    <DateTimeText
+                      mode="range"
+                      startDate={option.startDate}
+                      endDate={option.endDate}
+                      className="text-xs text-muted-foreground"
+                    />
                   ) : null}
                 </button>
               </li>

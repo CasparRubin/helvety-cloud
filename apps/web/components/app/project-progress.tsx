@@ -2,12 +2,11 @@
 
 import { useId, useMemo } from "react";
 
-import { useDateTimePrefs } from "@/components/app/datetime-prefs";
+import { DateTimeText } from "@/components/app/datetime-text";
 import type { ProjectCategorizations } from "@/lib/client-crypto/categorizations";
 import type { DecryptedMilestone } from "@/lib/client-crypto/milestones";
 import {
   computeProjectProgressView,
-  progressWindowCaption,
   scheduleProgressFraction,
 } from "@/lib/client-crypto/project-progress";
 import type { DecryptedTask } from "@/lib/client-crypto/tasks";
@@ -28,7 +27,6 @@ export function ProjectProgress({
   milestoneFilter,
   className,
 }: ProjectProgressProps) {
-  const { prefs } = useDateTimePrefs();
   const view = useMemo(
     () =>
       computeProjectProgressView(
@@ -73,7 +71,18 @@ export function ProjectProgress({
             scopeCount={view.scopeCount}
           />
           <p className="mt-2 truncate text-[11px] text-muted-foreground">
-            {progressWindowCaption(view.window, prefs)}
+            {view.window.label ? (
+              <>
+                {view.window.label}
+                {" · "}
+              </>
+            ) : null}
+            <DateTimeText
+              mode="range"
+              startDate={view.window.startDate}
+              endDate={view.window.endDate}
+              className="text-[11px]"
+            />
             {view.scopeCount > 0
               ? ` · ${view.scopeCount} task${view.scopeCount === 1 ? "" : "s"}`
               : " · No tasks in scope"}

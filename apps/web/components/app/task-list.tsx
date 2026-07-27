@@ -31,7 +31,7 @@ import {
 
 import { CategorizationPicker } from "@/components/app/categorization-picker";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
-import { useDateTimePrefs } from "@/components/app/datetime-prefs";
+import { DateTimeText } from "@/components/app/datetime-text";
 import {
   EntityListEmpty,
   EntityListShell,
@@ -81,7 +81,6 @@ import {
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
 import { todayIsoDate } from "@/lib/client-crypto/project-progress";
-import { formatDate, formatDateRange } from "@/lib/format-datetime";
 import { matchesQuery } from "@/lib/list-search";
 import { cn } from "@/lib/utils";
 
@@ -805,13 +804,8 @@ function TaskCardContent({
   moveActions?: ReactNode;
   overlay?: boolean;
 }) {
-  const { prefs } = useDateTimePrefs();
   const stageId = task.stageId ?? "";
   const priorityId = task.priorityId ?? "";
-  const milestoneRange = milestone
-    ? formatDateRange(milestone.startDate, milestone.endDate, prefs)
-    : null;
-  const dueLabel = task.dueDate ? formatDate(task.dueDate, prefs) : null;
 
   return (
     <article
@@ -834,26 +828,20 @@ function TaskCardContent({
       {milestone ? (
         <span
           className="max-w-[7rem] truncate rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground"
-          title={
-            milestoneRange && milestoneRange !== "No dates"
-              ? `${milestone.title} · ${milestoneRange}`
-              : milestone.title
-          }
+          title={milestone.title}
         >
           {milestone.title}
         </span>
       ) : null}
-      {dueLabel ? (
+      {task.dueDate ? (
         <span
           className={cn(
             "shrink-0 rounded bg-muted px-1.5 py-0.5 text-[10px] text-muted-foreground",
-            task.dueDate &&
-              task.dueDate < todayIsoDate() &&
+            task.dueDate < todayIsoDate() &&
               "bg-destructive/10 text-destructive",
           )}
-          title={`Due ${dueLabel}`}
         >
-          {dueLabel}
+          <DateTimeText mode="date" value={task.dueDate} className="text-[10px]" />
         </span>
       ) : null}
       {onUpdateIds ? (

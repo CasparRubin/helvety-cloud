@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
-import { useDateTimePrefs } from "@/components/app/datetime-prefs";
+import { DateTimeText } from "@/components/app/datetime-text";
 import {
   invitationStatusLabel,
   useWorkspaceSettings,
@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { PLAN_LIMITS, CAPACITY_PACK, formatBytes } from "@/lib/billing/entitlements";
-import { formatDate, type DateTimePrefs } from "@/lib/format-datetime";
 import { cn } from "@/lib/utils";
 
 function formatLimit(value: number | null): string {
@@ -32,16 +31,23 @@ function formatBillingStatus(status: string): string {
   return status.replaceAll("_", " ");
 }
 
-function periodSuffix(
-  currentPeriodEnd: string | null,
-  cancelAtPeriodEnd: boolean,
-  prefs: DateTimePrefs,
-): string | null {
+function PeriodSuffix({
+  currentPeriodEnd,
+  cancelAtPeriodEnd,
+}: {
+  currentPeriodEnd: string | null;
+  cancelAtPeriodEnd: boolean;
+}) {
   if (currentPeriodEnd) {
-    const when = formatDate(currentPeriodEnd, prefs);
-    return cancelAtPeriodEnd ? ` · Cancels ${when}` : ` · Renews ${when}`;
+    return (
+      <>
+        {" · "}
+        {cancelAtPeriodEnd ? "Cancels " : "Renews "}
+        <DateTimeText mode="date" value={currentPeriodEnd} />
+      </>
+    );
   }
-  if (cancelAtPeriodEnd) return " · Cancels at period end";
+  if (cancelAtPeriodEnd) return <> · Cancels at period end</>;
   return null;
 }
 
@@ -345,7 +351,6 @@ export function WorkspaceMembersSettings() {
 }
 
 export function WorkspaceBillingSettings() {
-  const { prefs } = useDateTimePrefs();
   const {
     isOwner,
     billing,
@@ -383,11 +388,10 @@ export function WorkspaceBillingSettings() {
                   </p>
                   <p className="text-xs text-muted-foreground">
                     {formatBillingStatus(billing.status)}
-                    {periodSuffix(
-                      billing.currentPeriodEnd,
-                      billing.cancelAtPeriodEnd,
-                      prefs,
-                    )}
+                    <PeriodSuffix
+                      currentPeriodEnd={billing.currentPeriodEnd}
+                      cancelAtPeriodEnd={billing.cancelAtPeriodEnd}
+                    />
                   </p>
                 </div>
                 {isOwner ? (

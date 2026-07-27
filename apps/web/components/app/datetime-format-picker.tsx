@@ -3,6 +3,7 @@
 import { CalendarClockIcon } from "lucide-react";
 
 import { useDateTimePrefs } from "@/components/app/datetime-prefs";
+import { DateTimeText } from "@/components/app/datetime-text";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Label } from "@/components/ui/label";
@@ -13,7 +14,7 @@ import {
   PopoverTitle,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { DATETIME_PRESETS, formatDateTime } from "@/lib/format-datetime";
+import { DATETIME_PRESETS } from "@/lib/format-datetime";
 import { cn } from "@/lib/utils";
 
 export function DatetimeFormatPicker() {
@@ -54,12 +55,14 @@ export function DatetimeFormatPicker() {
                   onClick={() => setPrefs({ ...prefs, preset: preset.id })}
                 >
                   <span className="text-sm font-medium">{preset.label}</span>
-                  <span className="truncate text-[11px] tabular-nums text-muted-foreground">
-                    {formatDateTime(previewIso, {
+                  <DateTimeText
+                    className="truncate text-[11px] text-muted-foreground"
+                    value={previewIso}
+                    prefs={{
                       preset: preset.id,
                       relative: prefs.relative,
-                    })}
-                  </span>
+                    }}
+                  />
                 </button>
               </li>
             );

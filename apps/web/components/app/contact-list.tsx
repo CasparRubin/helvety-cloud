@@ -5,11 +5,13 @@ import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
+import { DateTimeText } from "@/components/app/datetime-text";
 import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
 import { ListSearchInput } from "@/components/app/list-search-input";
+import { ListSortToggle } from "@/components/app/list-sort-toggle";
 import {
   ListRefreshButton,
   PageActions,
@@ -28,21 +30,63 @@ import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 import { matchesQuery } from "@/lib/list-search";
 
+type ContactSort = "lastName" | "firstName" | "created" | "modified";
+
+const CONTACT_SORT_OPTIONS = [
+  { id: "lastName" as const, label: "Last name" },
+  { id: "firstName" as const, label: "First name" },
+  { id: "created" as const, label: "Created" },
+  { id: "modified" as const, label: "Modified" },
+];
+
+function compareContacts(
+  a: DecryptedContact,
+  b: DecryptedContact,
+  sort: ContactSort,
+) {
+  switch (sort) {
+    case "lastName": {
+      const byLast = a.lastName.localeCompare(b.lastName, undefined, {
+        sensitivity: "base",
+      });
+      if (byLast !== 0) return byLast;
+      const byFirst = a.firstName.localeCompare(b.firstName, undefined, {
+        sensitivity: "base",
+      });
+      if (byFirst !== 0) return byFirst;
+      return a.id.localeCompare(b.id);
+    }
+    case "firstName": {
+      const byFirst = a.firstName.localeCompare(b.firstName, undefined, {
+        sensitivity: "base",
+      });
+      if (byFirst !== 0) return byFirst;
+      const byLast = a.lastName.localeCompare(b.lastName, undefined, {
+        sensitivity: "base",
+      });
+      if (byLast !== 0) return byLast;
+      return a.id.localeCompare(b.id);
+    }
+    case "created": {
+      const byDate = b.createdAt.localeCompare(a.createdAt);
+      if (byDate !== 0) return byDate;
+      return a.id.localeCompare(b.id);
+    }
+    case "modified": {
+      const byDate = b.updatedAt.localeCompare(a.updatedAt);
+      if (byDate !== 0) return byDate;
+      return a.id.localeCompare(b.id);
+    }
+    default: {
+      const _exhaustive: never = sort;
+      return _exhaustive;
+    }
+  }
+}
+
 type ContactListProps = {
   workspaceId: string;
 };
-
-function compareContactsByLastName(a: DecryptedContact, b: DecryptedContact) {
-  const byLast = a.lastName.localeCompare(b.lastName, undefined, {
-    sensitivity: "base",
-  });
-  if (byLast !== 0) return byLast;
-  const byFirst = a.firstName.localeCompare(b.firstName, undefined, {
-    sensitivity: "base",
-  });
-  if (byFirst !== 0) return byFirst;
-  return a.id.localeCompare(b.id);
-}
 
 export function ContactList({ workspaceId }: ContactListProps) {
   const router = useRouter();
@@ -58,6 +102,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [newPhones, setNewPhones] = useState("");
   const [newNotes, setNewNotes] = useState("");
   const [query, setQuery] = useState("");
+  const [sort, setSort] = useState<ContactSort>("lastName");
   const deferredQuery = useDeferredValue(query);
 
   const loadContacts = useCallback(async () => {
@@ -67,7 +112,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
 
   const refresh = useCallback(async () => {
     const page = await loadContacts();
-    setContacts([...page.contacts].sort(compareContactsByLastName));
+    setContacts(page.contacts);
     setError(null);
   }, [loadContacts]);
 
@@ -86,7 +131,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
       try {
         const page = await loadContacts();
         if (cancelled) return;
-        setContacts([...page.contacts].sort(compareContactsByLastName));
+        setContacts(page.contacts);
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -146,9 +191,13 @@ export function ContactList({ workspaceId }: ContactListProps) {
   if (!userKeys) return null;
 
   const filtering = deferredQuery.trim().length > 0;
-  const filteredContacts = contacts.filter((c) =>
-    matchesQuery([formatContactName(c), ...c.emails], deferredQuery),
-  );
+  const filteredContacts = contacts
+    .filter((c) =>
+      matchesQuery([formatContactName(c), ...c.emails], deferredQuery),
+    )
+    .sort((a, b) => compareContacts(a, b, sort));
+
+  const showDateMeta = sort === "created" || sort === "modified";
 
   return (
     <>
@@ -229,12 +278,20 @@ export function ContactList({ workspaceId }: ContactListProps) {
       <EntityListShell
         title="Contacts"
         belowTitle={
-          <ListSearchInput
-            value={query}
-            onValueChange={setQuery}
-            placeholder="Filter contacts…"
-            disabled={loading || contacts.length === 0}
-          />
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <ListSearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Filter contacts…"
+              disabled={loading || contacts.length === 0}
+            />
+            <ListSortToggle
+              value={sort}
+              onValueChange={setSort}
+              options={CONTACT_SORT_OPTIONS}
+              disabled={loading || contacts.length === 0}
+            />
+          </div>
         }
         error={error}
         loading={loading}
@@ -255,12 +312,24 @@ export function ContactList({ workspaceId }: ContactListProps) {
             <EntityListRow key={contact.id}>
               <Link
                 href={`/app/w/${workspaceId}/contacts/${contact.id}`}
-                className="block w-full font-medium"
+                className="flex w-full flex-col gap-1"
               >
-                {name}
-                {email ? (
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {email}
+                <span className="font-medium">{name}</span>
+                {email || showDateMeta ? (
+                  <span className="flex flex-wrap items-baseline gap-x-2 gap-y-0.5 text-xs text-muted-foreground">
+                    {email ? <span>{email}</span> : null}
+                    {showDateMeta ? (
+                      <span>
+                        {sort === "created" ? "Created" : "Modified"}{" "}
+                        <DateTimeText
+                          value={
+                            sort === "created"
+                              ? contact.createdAt
+                              : contact.updatedAt
+                          }
+                        />
+                      </span>
+                    ) : null}
                   </span>
                 ) : null}
               </Link>

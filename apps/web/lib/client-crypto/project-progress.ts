@@ -6,7 +6,6 @@ import {
   type ProjectCategorizations,
 } from "@/lib/client-crypto/categorizations";
 import type { DecryptedMilestone } from "@/lib/client-crypto/milestones";
-import { formatDateRange, type DateTimePrefs } from "@/lib/format-datetime";
 
 export type ProjectProgressView = {
   scopeCount: number;
@@ -116,16 +115,4 @@ export function scheduleProgressFraction(
   const isoMs = Date.parse(`${iso}T00:00:00`);
   if (endMs <= startMs) return iso >= end ? 1 : 0;
   return Math.min(1, Math.max(0, (isoMs - startMs) / (endMs - startMs)));
-}
-
-export function progressWindowCaption(
-  window: {
-    startDate: string;
-    endDate: string;
-    label: string | null;
-  },
-  prefs?: DateTimePrefs,
-): string {
-  const range = formatDateRange(window.startDate, window.endDate, prefs);
-  return window.label ? `${window.label} · ${range}` : range;
 }
