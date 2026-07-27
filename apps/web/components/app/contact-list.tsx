@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -9,6 +9,7 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { ListSearchInput } from "@/components/app/list-search-input";
 import {
   ListRefreshButton,
   PageActions,
@@ -25,6 +26,7 @@ import {
 } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
+import { matchesQuery } from "@/lib/list-search";
 
 type ContactListProps = {
   workspaceId: string;
@@ -55,6 +57,8 @@ export function ContactList({ workspaceId }: ContactListProps) {
   const [newEmails, setNewEmails] = useState("");
   const [newPhones, setNewPhones] = useState("");
   const [newNotes, setNewNotes] = useState("");
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
 
   const loadContacts = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
@@ -141,6 +145,11 @@ export function ContactList({ workspaceId }: ContactListProps) {
 
   if (!userKeys) return null;
 
+  const filtering = deferredQuery.trim().length > 0;
+  const filteredContacts = contacts.filter((c) =>
+    matchesQuery([formatContactName(c), ...c.emails], deferredQuery),
+  );
+
   return (
     <>
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
@@ -219,13 +228,27 @@ export function ContactList({ workspaceId }: ContactListProps) {
       <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
         title="Contacts"
+        belowTitle={
+          <ListSearchInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder="Filter contacts…"
+            disabled={loading || contacts.length === 0}
+          />
+        }
         error={error}
         loading={loading}
         loadingLabel="Loading contacts…"
-        empty={!loading && contacts.length === 0}
-        emptyLabel="No contacts yet."
+        empty={
+          !loading &&
+          (contacts.length === 0 ||
+            (filtering && filteredContacts.length === 0))
+        }
+        emptyLabel={
+          contacts.length === 0 ? "No contacts yet." : "No matching contacts."
+        }
       >
-        {contacts.map((contact) => {
+        {filteredContacts.map((contact) => {
           const name = formatContactName(contact) || "Untitled";
           const email = contact.emails[0] || null;
           return (

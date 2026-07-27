@@ -3,6 +3,7 @@
 import Link from "next/link";
 import {
   useCallback,
+  useDeferredValue,
   useEffect,
   useMemo,
   useState,
@@ -34,6 +35,7 @@ import {
   EntityListEmpty,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { ListSearchInput } from "@/components/app/list-search-input";
 import { MilestonePicker } from "@/components/app/milestone-picker";
 import {
   ListRefreshButton,
@@ -79,6 +81,7 @@ import {
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
 import { todayIsoDate } from "@/lib/client-crypto/project-progress";
+import { matchesQuery } from "@/lib/list-search";
 import { cn } from "@/lib/utils";
 
 type TaskListProps = {
@@ -94,6 +97,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [milestones, setMilestones] = useState<DecryptedMilestone[]>([]);
   const [milestoneFilter, setMilestoneFilter] = useState("all");
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -152,9 +157,12 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   }, [userKeys, reload]);
 
   const filteredTasks = useMemo(() => {
-    if (milestoneFilter === "all") return tasks;
-    return tasks.filter((t) => t.milestoneId === milestoneFilter);
-  }, [tasks, milestoneFilter]);
+    const byMilestone =
+      milestoneFilter === "all"
+        ? tasks
+        : tasks.filter((t) => t.milestoneId === milestoneFilter);
+    return byMilestone.filter((t) => matchesQuery([t.title], deferredQuery));
+  }, [tasks, milestoneFilter, deferredQuery]);
 
   const columns = useMemo(() => {
     if (!project) return [];
@@ -432,13 +440,21 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         }
         belowTitle={
           !loading && project ? (
-            <ProjectDescriptionEditor
-              key={project.id}
-              workspaceId={workspaceId}
-              project={project}
-              onProjectChange={setProject}
-              onError={setError}
-            />
+            <div className="flex flex-col gap-3">
+              <ProjectDescriptionEditor
+                key={project.id}
+                workspaceId={workspaceId}
+                project={project}
+                onProjectChange={setProject}
+                onError={setError}
+              />
+              <ListSearchInput
+                value={query}
+                onValueChange={setQuery}
+                placeholder="Filter tasks…"
+                disabled={tasks.length === 0}
+              />
+            </div>
           ) : null
         }
         error={error}
@@ -449,48 +465,53 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         {!loading && project ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
             <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto pb-2 lg:flex-[3]">
-              <DndContext
-                sensors={sensors}
-                collisionDetection={closestCorners}
-                onDragStart={onDragStart}
-                onDragEnd={onDragEnd}
-                onDragCancel={() => setActiveTaskId(null)}
-              >
-                <div className="flex flex-col gap-3">
-                  {columns.map((col, index) => (
-                    <StageRow
-                      key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
-                      stage={col.stage}
-                      prevStage={columns[index - 1]?.stage ?? null}
-                      nextStage={columns[index + 1]?.stage ?? null}
-                      tasks={col.tasks}
-                      cats={project.categorizations}
-                      milestoneById={milestoneById}
-                      workspaceId={workspaceId}
-                      projectId={projectId}
-                      busy={busy}
-                      savingTaskId={savingTaskId}
-                      onUpdateIds={updateTaskIds}
-                    />
-                  ))}
-                </div>
-                <DragOverlay dropAnimation={null}>
-                  {activeTask && project ? (
-                    <TaskCardContent
-                      task={activeTask}
-                      cats={project.categorizations}
-                      milestone={
-                        activeTask.milestoneId
-                          ? (milestoneById.get(activeTask.milestoneId) ?? null)
-                          : null
-                      }
-                      workspaceId={workspaceId}
-                      projectId={projectId}
-                      overlay
-                    />
-                  ) : null}
-                </DragOverlay>
-              </DndContext>
+              {tasks.length > 0 && filteredTasks.length === 0 ? (
+                <EntityListEmpty>No matching tasks.</EntityListEmpty>
+              ) : (
+                <DndContext
+                  sensors={sensors}
+                  collisionDetection={closestCorners}
+                  onDragStart={onDragStart}
+                  onDragEnd={onDragEnd}
+                  onDragCancel={() => setActiveTaskId(null)}
+                >
+                  <div className="flex flex-col gap-3">
+                    {columns.map((col, index) => (
+                      <StageRow
+                        key={`${col.stage.id}:${resolveMaxVisibleTasks(col.stage)}`}
+                        stage={col.stage}
+                        prevStage={columns[index - 1]?.stage ?? null}
+                        nextStage={columns[index + 1]?.stage ?? null}
+                        tasks={col.tasks}
+                        cats={project.categorizations}
+                        milestoneById={milestoneById}
+                        workspaceId={workspaceId}
+                        projectId={projectId}
+                        busy={busy}
+                        savingTaskId={savingTaskId}
+                        onUpdateIds={updateTaskIds}
+                      />
+                    ))}
+                  </div>
+                  <DragOverlay dropAnimation={null}>
+                    {activeTask && project ? (
+                      <TaskCardContent
+                        task={activeTask}
+                        cats={project.categorizations}
+                        milestone={
+                          activeTask.milestoneId
+                            ? (milestoneById.get(activeTask.milestoneId) ??
+                              null)
+                            : null
+                        }
+                        workspaceId={workspaceId}
+                        projectId={projectId}
+                        overlay
+                      />
+                    ) : null}
+                  </DragOverlay>
+                </DndContext>
+              )}
             </div>
 
             <aside className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-t border-border/60 pt-4 lg:flex-[1] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4">

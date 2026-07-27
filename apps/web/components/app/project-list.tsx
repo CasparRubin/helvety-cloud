@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SettingsIcon } from "lucide-react";
 
@@ -10,6 +10,7 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { ListSearchInput } from "@/components/app/list-search-input";
 import {
   ListRefreshButton,
   PageActions,
@@ -26,6 +27,7 @@ import {
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
+import { matchesQuery } from "@/lib/list-search";
 
 type ProjectListProps = {
   workspaceId: string;
@@ -41,6 +43,8 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newDescription, setNewDescription] = useState("");
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
 
   const loadProjects = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
@@ -128,6 +132,11 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
 
   if (!userKeys) return null;
 
+  const filtering = deferredQuery.trim().length > 0;
+  const filteredProjects = projects.filter((p) =>
+    matchesQuery([p.name], deferredQuery),
+  );
+
   return (
     <>
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
@@ -160,13 +169,27 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
         title={workspace?.name ?? "Workspace"}
+        belowTitle={
+          <ListSearchInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder="Filter projects…"
+            disabled={loading || projects.length === 0}
+          />
+        }
         error={error}
         loading={loading}
         loadingLabel="Loading projects…"
-        empty={!loading && projects.length === 0}
-        emptyLabel="No projects yet."
+        empty={
+          !loading &&
+          (projects.length === 0 ||
+            (filtering && filteredProjects.length === 0))
+        }
+        emptyLabel={
+          projects.length === 0 ? "No projects yet." : "No matching projects."
+        }
       >
-        {projects.map((project, index) => (
+        {filteredProjects.map((project, index) => (
           <EntityListRow
             key={project.id}
             className="flex items-center gap-2"
@@ -182,7 +205,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={busy || index === 0}
+                disabled={busy || filtering || index === 0}
                 onClick={() => void onReorder(index, "up")}
                 aria-label="Move up"
               >
@@ -192,7 +215,9 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                 type="button"
                 variant="ghost"
                 size="sm"
-                disabled={busy || index === projects.length - 1}
+                disabled={
+                  busy || filtering || index === filteredProjects.length - 1
+                }
                 onClick={() => void onReorder(index, "down")}
                 aria-label="Move down"
               >

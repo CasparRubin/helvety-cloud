@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -9,6 +9,7 @@ import {
   EntityListRow,
   EntityListShell,
 } from "@/components/app/entity-list-shell";
+import { ListSearchInput } from "@/components/app/list-search-input";
 import {
   ListRefreshButton,
   PageActions,
@@ -24,6 +25,7 @@ import {
 } from "@/lib/client-crypto/notes";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 import { formatDateTime } from "@/lib/format-datetime";
+import { matchesQuery } from "@/lib/list-search";
 
 type NoteListProps = {
   workspaceId: string;
@@ -38,6 +40,8 @@ export function NoteList({ workspaceId }: NoteListProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newBody, setNewBody] = useState("");
+  const [query, setQuery] = useState("");
+  const deferredQuery = useDeferredValue(query);
 
   const loadNotes = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
@@ -108,6 +112,11 @@ export function NoteList({ workspaceId }: NoteListProps) {
 
   if (!userKeys) return null;
 
+  const filtering = deferredQuery.trim().length > 0;
+  const filteredNotes = notes.filter((n) =>
+    matchesQuery([n.title], deferredQuery),
+  );
+
   return (
     <>
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
@@ -140,13 +149,24 @@ export function NoteList({ workspaceId }: NoteListProps) {
       <WorkspaceSettingsAction workspaceId={workspaceId} />
       <EntityListShell
         title="Notes"
+        belowTitle={
+          <ListSearchInput
+            value={query}
+            onValueChange={setQuery}
+            placeholder="Filter notes…"
+            disabled={loading || notes.length === 0}
+          />
+        }
         error={error}
         loading={loading}
         loadingLabel="Loading notes…"
-        empty={!loading && notes.length === 0}
-        emptyLabel="No notes yet."
+        empty={
+          !loading &&
+          (notes.length === 0 || (filtering && filteredNotes.length === 0))
+        }
+        emptyLabel={notes.length === 0 ? "No notes yet." : "No matching notes."}
       >
-        {notes.map((note) => (
+        {filteredNotes.map((note) => (
           <EntityListRow key={note.id}>
             <Link
               href={`/app/w/${workspaceId}/notes/${note.id}`}
