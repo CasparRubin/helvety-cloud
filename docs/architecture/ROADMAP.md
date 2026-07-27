@@ -1,7 +1,7 @@
 # Helvety Cloud: Locked decisions & status
 
 > **Canonical:** this file (`docs/architecture/ROADMAP.md`).  
-> **Foundation + product through P14 are done.** P15 (i18n) was **reverted** (English only). Do not re-implement done phases unless docs need fixes.  
+> **Foundation + product through P14 are done.** P15 (i18n) was **reverted** (English only). P16 (encrypted comments) is **done**. Do not re-implement done phases unless docs need fixes.  
 > Stripe billing: **P6f** + **P12** (see [`BILLING.md`](./BILLING.md)).
 
 ---
@@ -131,6 +131,7 @@ helvety-cloud/
 | P13 | Clean baseline + constrained entity links | **Done** |
 | P14 | Encrypted names + milestone dates + progress chart | **Done** |
 | P15 | i18n (en/de/fr/it) via next-intl | **Reverted** (English only; do not re-add next-intl) |
+| P16 | Encrypted comments on tasks/notes/contacts (+ Free/Pro/Capacity meter) | **Done** |
 
 **P14** encrypts workspace names, milestone start/end dates, stage completion weights, and the project progress chart.
 

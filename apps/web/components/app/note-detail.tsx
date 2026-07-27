@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
+import { CommentsSection } from "@/components/app/comments-section";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
@@ -230,7 +231,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
           disabled={deleting}
           busy={deleting}
           dialogTitle="Delete this note?"
-          dialogDescription="This permanently deletes the note, its attached files, and its links to other items. This cannot be undone."
+          dialogDescription="This permanently deletes the note, its comments, attached files, and its links to other items. This cannot be undone."
           onConfirm={onDelete}
         />
       </PageDangerActions>
@@ -267,19 +268,26 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
                 <AlertDescription>{storageLimitMessage}</AlertDescription>
               </Alert>
             ) : null}
-            <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
+            <CommentsSection
+              workspaceId={workspaceId}
+              parentKind="note"
+              parentId={noteId}
+            />
           </>
         }
         aside={
-          note ? (
-            <EntityTimestampsCard
-              createdAt={note.createdAt}
-              updatedAt={note.updatedAt}
-              status={status}
-              savedAt={savedAt}
-              onRetry={flush}
-            />
-          ) : null
+          <>
+            {note ? (
+              <EntityTimestampsCard
+                createdAt={note.createdAt}
+                updatedAt={note.updatedAt}
+                status={status}
+                savedAt={savedAt}
+                onRetry={flush}
+              />
+            ) : null}
+            <BacklinksPanel workspaceId={workspaceId} kind="note" id={noteId} />
+          </>
         }
       />
 

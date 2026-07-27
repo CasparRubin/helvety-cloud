@@ -17,6 +17,7 @@ import {
   replaceAttachmentLinks,
   softDeleteAttachmentsForParent,
 } from "@/lib/api/attachment-links";
+import { deleteCommentsForParent } from "@/lib/api/comments";
 import { removeAttachmentObject } from "@/lib/api/attachment-storage";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
@@ -249,6 +250,7 @@ export async function DELETE(request: Request, context: RouteContext) {
   // Drop edges before deleting the note.
   try {
     await deleteLinksTouching(supabase, workspaceId, "note", noteId);
+    await deleteCommentsForParent(supabase, workspaceId, "note", noteId);
     const orphanIds = await softDeleteAttachmentsForParent(
       supabase,
       workspaceId,

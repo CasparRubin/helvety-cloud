@@ -2,6 +2,7 @@ import {
   apiErrorSchema,
   billingRedirectResponseSchema,
   contactResponseSchema,
+  commentResponseSchema,
   createWorkspaceInvitationRequestSchema,
   createWorkspaceRequestSchema,
   createWorkspaceResponseSchema,
@@ -11,6 +12,7 @@ import {
   getWorkspaceBillingResponseSchema,
   taskResponseSchema,
   listContactsResponseSchema,
+  listCommentsResponseSchema,
   listTasksResponseSchema,
   listMilestonesResponseSchema,
   listMyInvitationsResponseSchema,
@@ -26,6 +28,7 @@ import {
   patchWorkspaceResponseSchema,
   projectResponseSchema,
   putContactRequestSchema,
+  putCommentRequestSchema,
   putTaskRequestSchema,
   putMilestoneRequestSchema,
   putMeCryptoRequestSchema,
@@ -43,6 +46,8 @@ import {
   attachmentResponseSchema,
   type BillingRedirectResponse,
   type ContactResponse,
+  type CommentResponse,
+  type CommentParentKind,
   type CreateWorkspaceInvitationRequest,
   type CreateWorkspaceRequest,
   type CreateWorkspaceResponse,
@@ -52,6 +57,7 @@ import {
   type GetWorkspaceBillingResponse,
   type TaskResponse,
   type ListContactsResponse,
+  type ListCommentsResponse,
   type ListTasksResponse,
   type ListMilestonesResponse,
   type ListMyInvitationsResponse,
@@ -67,6 +73,7 @@ import {
   type ProjectResponse,
   type MilestoneResponse,
   type PutContactRequest,
+  type PutCommentRequest,
   type PutTaskRequest,
   type PutMilestoneRequest,
   type PutMeCryptoRequest,
@@ -550,6 +557,52 @@ export async function deleteContact(
 ): Promise<void> {
   await apiFetchNoContent(
     `/api/v1/workspaces/${workspaceId}/contacts/${contactId}`,
+    { method: "DELETE" },
+  );
+}
+
+export type ListCommentsParams = {
+  parentKind: CommentParentKind;
+  parentId: string;
+  includeDeleted?: boolean;
+};
+
+export async function listComments(
+  workspaceId: string,
+  params: ListCommentsParams,
+): Promise<ListCommentsResponse> {
+  const q = new URLSearchParams({
+    parentKind: params.parentKind,
+    parentId: params.parentId,
+  });
+  if (params.includeDeleted) q.set("includeDeleted", "true");
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/comments?${q.toString()}`,
+    listCommentsResponseSchema,
+  );
+}
+
+export async function putComment(
+  workspaceId: string,
+  commentId: string,
+  body: PutCommentRequest,
+): Promise<CommentResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/comments/${commentId}`,
+    commentResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putCommentRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function deleteComment(
+  workspaceId: string,
+  commentId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/comments/${commentId}`,
     { method: "DELETE" },
   );
 }

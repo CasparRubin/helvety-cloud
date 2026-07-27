@@ -17,6 +17,7 @@ import {
   replaceAttachmentLinks,
   softDeleteAttachmentsForParent,
 } from "@/lib/api/attachment-links";
+import { deleteCommentsForParent } from "@/lib/api/comments";
 import { removeAttachmentObject } from "@/lib/api/attachment-storage";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
@@ -258,6 +259,7 @@ export async function DELETE(request: Request, context: RouteContext) {
 
   try {
     await deleteLinksTouching(supabase, workspaceId, "contact", contactId);
+    await deleteCommentsForParent(supabase, workspaceId, "contact", contactId);
     const orphanIds = await softDeleteAttachmentsForParent(
       supabase,
       workspaceId,

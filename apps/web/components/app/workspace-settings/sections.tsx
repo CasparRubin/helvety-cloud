@@ -462,6 +462,11 @@ export function WorkspaceBillingSettings() {
               used={billing.usage.contacts}
               limit={billing.limits.contacts}
             />
+            <UsageMeterRow
+              label="Comments"
+              used={billing.usage.comments}
+              limit={billing.limits.comments}
+            />
             {billing.limits.storageBytes === 0 ? (
               <CapRow label="File storage" value="Not included on Free" />
             ) : (
@@ -527,6 +532,7 @@ export function WorkspaceBillingSettings() {
                   {CAPACITY_PACK.deltas.tasksPerProject} tasks per project,{" "}
                   {CAPACITY_PACK.deltas.notes} notes,{" "}
                   {CAPACITY_PACK.deltas.contacts} contacts,{" "}
+                  {CAPACITY_PACK.deltas.comments} comments and replies,{" "}
                   {CAPACITY_PACK.deltas.members} members, and{" "}
                   {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
                 </p>
@@ -534,8 +540,8 @@ export function WorkspaceBillingSettings() {
             ) : (
               <p className="text-xs text-muted-foreground">
                 Capacity Increase is available on Pro Workspace. Each pack
-                raises projects, tasks, notes, contacts, members, and storage
-                together.
+                raises projects, tasks, notes, contacts, comments, members, and
+                storage together.
               </p>
             )}
           </section>

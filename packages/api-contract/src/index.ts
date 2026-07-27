@@ -401,6 +401,38 @@ export const listContactsResponseSchema = z.object({
 });
 export type ListContactsResponse = z.infer<typeof listContactsResponseSchema>;
 
+export const commentParentKindSchema = z.enum(["task", "note", "contact"]);
+export type CommentParentKind = z.infer<typeof commentParentKindSchema>;
+
+export const putCommentRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  parentKind: commentParentKindSchema,
+  parentId: uuidSchema,
+  /** Null/omitted = top-level comment; set = reply to another comment. */
+  parentCommentId: uuidSchema.nullable().optional(),
+  deletedAt: z.string().nullable().optional(),
+});
+export type PutCommentRequest = z.infer<typeof putCommentRequestSchema>;
+
+export const commentResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  parentKind: commentParentKindSchema,
+  parentId: uuidSchema,
+  parentCommentId: uuidSchema.nullable(),
+  authorId: uuidSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type CommentResponse = z.infer<typeof commentResponseSchema>;
+
+export const listCommentsResponseSchema = z.object({
+  comments: z.array(commentResponseSchema),
+});
+export type ListCommentsResponse = z.infer<typeof listCommentsResponseSchema>;
+
 /** Signup-gated policy IDs (ToS, Privacy, AUP, E2EE acknowledgment). */
 export const signupPolicyIds = ["tos", "privacy", "aup", "e2ee"] as const;
 export const signupPolicyIdSchema = z.enum(signupPolicyIds);
@@ -558,6 +590,7 @@ export const workspaceLimitsSchema = z.object({
   tasks: z.number().int().positive().nullable(),
   notes: z.number().int().positive().nullable(),
   contacts: z.number().int().positive().nullable(),
+  comments: z.number().int().positive().nullable(),
   filesPerTask: z.number().int().nonnegative().nullable(),
   /** Ciphertext bytes; free plan is 0 (no uploads). */
   storageBytes: z.number().int().nonnegative().nullable(),
@@ -573,6 +606,7 @@ export const workspaceUsageSchema = z.object({
   tasks: z.number().int().nonnegative(),
   notes: z.number().int().nonnegative(),
   contacts: z.number().int().nonnegative(),
+  comments: z.number().int().nonnegative(),
   /** Sum of ready (+ reserved pending) attachment ciphertext bytes. */
   storageBytes: z.number().int().nonnegative(),
 });

@@ -12,6 +12,7 @@ import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
+import { CommentsSection } from "@/components/app/comments-section";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import {
   EntityDetailLayout,
@@ -289,7 +290,7 @@ export function TaskDetail({
           disabled={deleting}
           busy={deleting}
           dialogTitle="Delete this task?"
-          dialogDescription="This permanently deletes the task, its attached files, and its links to other items. This cannot be undone."
+          dialogDescription="This permanently deletes the task, its comments, attached files, and its links to other items. This cannot be undone."
           onConfirm={onDelete}
         />
       </PageDangerActions>
@@ -326,10 +327,10 @@ export function TaskDetail({
                 <AlertDescription>{storageLimitMessage}</AlertDescription>
               </Alert>
             ) : null}
-            <BacklinksPanel
+            <CommentsSection
               workspaceId={workspaceId}
-              kind="task"
-              id={taskId}
+              parentKind="task"
+              parentId={taskId}
             />
           </>
         }
@@ -414,6 +415,11 @@ export function TaskDetail({
                 </RadioSection>
               </>
             ) : null}
+            <BacklinksPanel
+              workspaceId={workspaceId}
+              kind="task"
+              id={taskId}
+            />
           </>
         }
       />

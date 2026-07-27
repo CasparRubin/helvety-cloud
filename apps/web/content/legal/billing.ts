@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const billingDoc: LegalDocument = {
   slug: "billing",
   title: "Billing terms",
-  versionLabel: "2026-07-27-v7",
+  versionLabel: "2026-07-27-v8",
   sections: [
     {
       heading: "Status",
@@ -16,7 +16,7 @@ export const billingDoc: LegalDocument = {
     {
       heading: "Free plan",
       paragraphs: [
-        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks per project, notes, and contacts). File uploads and document storage are not available on the free plan, including in free Personal workspaces. Current limits are shown in the product where they apply, before a limit blocks an action, not after payment.",
+        "The free plan applies fair-use limits per workspace (for example counts of projects, members, tasks per project, notes, contacts, and comments and replies). File uploads and document storage are not available on the free plan, including in free Personal workspaces. Current limits are shown in the product where they apply, before a limit blocks an action, not after payment.",
         "Each account may own one free-tier workspace (the Personal workspace). Additional owned workspaces require Pro Workspace access for that workspace.",
         "If a paid Pro Workspace ends and you would then own more than one free-tier workspace, Helvety may soft-lock the overflow workspace(s): existing encrypted content stays available to open, edit, download, export, and delete, but creating new resources in that workspace is paused until you upgrade it to Pro Workspace or reduce owned free workspaces back within the allowance. Helvety does not delete ciphertext or withhold wrapped keys solely because a workspace is soft-locked.",
         "Helvety may change free limits with notice in the product. Continued use after a change means you accept the updated limits. Lowered caps do not delete your data; new creates may be blocked until you are under the new cap or upgrade.",
@@ -27,7 +27,7 @@ export const billingDoc: LegalDocument = {
       paragraphs: [
         "Subscriptions are workspace-scoped: the workspace owner pays for that workspace’s Pro Workspace plan and any add-ons on that workspace.",
         "Pro Workspace includes higher operational limits and encrypted file and document storage for that workspace, within the storage, per-file size, and per-task file limits shown in the product. Uploaded files are end-to-end encrypted on your device; Helvety stores ciphertext and operational size meters only and cannot decrypt file contents.",
-        "Capacity Increase adds one extra bundle of capacity each time you buy it. Each pack adds 10 projects, 500 tasks per project, 250 notes, 250 contacts, 10 members, and 2.5 GiB encrypted file storage. Capacity Increase requires an active Pro Workspace subscription on that workspace.",
+        "Capacity Increase adds one extra bundle of capacity each time you buy it. Each pack adds 10 projects, 500 tasks per project, 250 notes, 250 contacts, 500 comments and replies, 10 members, and 2.5 GiB encrypted file storage. Capacity Increase requires an active Pro Workspace subscription on that workspace.",
         "Prices, billing intervals (including annual Pro billing), renewals, taxes, and any Stripe-applied discount are shown at Stripe Checkout or in the billing portal. Unless stated otherwise, subscriptions renew automatically until cancelled.",
         "You may cancel renewal at any time in the Stripe billing portal (available from workspace billing settings); access to paid limits continues through the paid period already purchased unless stated otherwise. No cancellation fees, no retention tricks. Free limits and, where applicable, soft-lock create gates may then apply.",
         "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs encrypted plaintext or raw encryption keys for billing. Meters use plaintext operational counts and ciphertext byte sizes only.",

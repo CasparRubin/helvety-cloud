@@ -63,6 +63,7 @@ describe("plan limits", () => {
     expect(pro.tasksPerProject).toBeGreaterThan(free.tasksPerProject);
     expect(pro.notesPerWorkspace).toBeGreaterThan(free.notesPerWorkspace);
     expect(pro.contactsPerWorkspace).toBeGreaterThan(free.contactsPerWorkspace);
+    expect(pro.commentsPerWorkspace).toBeGreaterThan(free.commentsPerWorkspace);
     expect(pro.filesPerTask).toBeGreaterThan(free.filesPerTask);
     expect(pro.storageBytesPerWorkspace).toBeGreaterThan(
       free.storageBytesPerWorkspace,
@@ -85,12 +86,14 @@ describe("plan limits", () => {
     expect(PLAN_LIMITS.free.tasksPerProject).toBe(50);
     expect(PLAN_LIMITS.free.notesPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.free.contactsPerWorkspace).toBe(25);
+    expect(PLAN_LIMITS.free.commentsPerWorkspace).toBe(50);
 
     expect(PLAN_LIMITS.pro.projectsPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.pro.membersPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.pro.tasksPerProject).toBe(1000);
     expect(PLAN_LIMITS.pro.notesPerWorkspace).toBe(500);
     expect(PLAN_LIMITS.pro.contactsPerWorkspace).toBe(500);
+    expect(PLAN_LIMITS.pro.commentsPerWorkspace).toBe(1000);
     expect(PLAN_LIMITS.pro.filesPerTask).toBe(5);
     expect(PLAN_LIMITS.pro.storageBytesPerWorkspace).toBe(
       5 * 1024 * 1024 * 1024,
@@ -99,7 +102,13 @@ describe("plan limits", () => {
   });
 
   it("maps every workspace meter to its plan cap", () => {
-    const meters: WorkspaceMeter[] = ["projects", "tasks", "notes", "contacts"];
+    const meters: WorkspaceMeter[] = [
+      "projects",
+      "tasks",
+      "notes",
+      "contacts",
+      "comments",
+    ];
     for (const meter of meters) {
       expect(workspaceMeterLimit(null, meter)).toBeGreaterThan(0);
       expect(
@@ -115,6 +124,7 @@ describe("effective limits + addons", () => {
     expect(CAPACITY_PACK.deltas.tasksPerProject).toBe(500);
     expect(CAPACITY_PACK.deltas.notes).toBe(250);
     expect(CAPACITY_PACK.deltas.contacts).toBe(250);
+    expect(CAPACITY_PACK.deltas.comments).toBe(500);
     expect(CAPACITY_PACK.deltas.members).toBe(10);
     expect(CAPACITY_PACK.deltas.storageBytes).toBe(2.5 * 1024 * 1024 * 1024);
     expect(CAPACITY_PACK.deltas.filesPerTask).toBe(0);
@@ -139,6 +149,9 @@ describe("effective limits + addons", () => {
     );
     expect(limits.contactsPerWorkspace).toBe(
       PLAN_LIMITS.pro.contactsPerWorkspace + 2 * CAPACITY_PACK.deltas.contacts,
+    );
+    expect(limits.commentsPerWorkspace).toBe(
+      PLAN_LIMITS.pro.commentsPerWorkspace + 2 * CAPACITY_PACK.deltas.comments,
     );
     expect(limits.membersPerWorkspace).toBe(
       PLAN_LIMITS.pro.membersPerWorkspace + 2 * CAPACITY_PACK.deltas.members,

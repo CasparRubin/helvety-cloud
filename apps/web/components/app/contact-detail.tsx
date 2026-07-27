@@ -5,6 +5,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
+import { CommentsSection } from "@/components/app/comments-section";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import {
   EntityDetailLayout,
@@ -275,7 +276,7 @@ export function ContactDetail({
           disabled={deleting}
           busy={deleting}
           dialogTitle="Delete this contact?"
-          dialogDescription="This permanently deletes the contact, its attached files, and its links to other items. This cannot be undone."
+          dialogDescription="This permanently deletes the contact, its comments, attached files, and its links to other items. This cannot be undone."
           onConfirm={onDelete}
         />
       </PageDangerActions>
@@ -336,10 +337,10 @@ export function ContactDetail({
                 <AlertDescription>{storageLimitMessage}</AlertDescription>
               </Alert>
             ) : null}
-            <BacklinksPanel
+            <CommentsSection
               workspaceId={workspaceId}
-              kind="contact"
-              id={contactId}
+              parentKind="contact"
+              parentId={contactId}
             />
           </>
         }
@@ -412,6 +413,11 @@ export function ContactDetail({
                 />
               </CardContent>
             </Card>
+            <BacklinksPanel
+              workspaceId={workspaceId}
+              kind="contact"
+              id={contactId}
+            />
           </>
         }
       />

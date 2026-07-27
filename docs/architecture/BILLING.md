@@ -49,6 +49,7 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 | Tasks / **project** | 50 | 1000 |
 | Notes / workspace | 25 | 500 |
 | Contacts / workspace | 25 | 500 |
+| Comments + replies / workspace | 50 | 1000 |
 | Files / task | 0 | 5 |
 | File storage (ciphertext bytes) | 0 | 5 GiB |
 | Max upload size | 0 | 25 MiB |
@@ -120,5 +121,6 @@ Each purchased Capacity Increase pack adds:
 - 500 tasks per project
 - 250 notes
 - 250 contacts
+- 500 comments and replies
 - 10 members
 - 2.5 GiB encrypted file storage

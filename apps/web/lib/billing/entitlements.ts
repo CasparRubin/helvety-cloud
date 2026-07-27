@@ -10,7 +10,12 @@ export type Plan = "free" | "pro";
 export type AddonMeter = "capacity";
 
 /** Workspace create gates that map 1:1 onto a catalog meter (except tasks). */
-export type WorkspaceMeter = "projects" | "tasks" | "notes" | "contacts";
+export type WorkspaceMeter =
+  | "projects"
+  | "tasks"
+  | "notes"
+  | "contacts"
+  | "comments";
 
 export type PlanLimits = {
   /** Workspaces where the user has the `owner` role (free slots only). */
@@ -22,6 +27,8 @@ export type PlanLimits = {
   tasksPerProject: number;
   notesPerWorkspace: number;
   contactsPerWorkspace: number;
+  /** Comments + replies (every comments row) per workspace. */
+  commentsPerWorkspace: number;
   /** Max ready/pending attachments linked to a single task. Free = 0. */
   filesPerTask: number;
   /** Total ciphertext bytes allowed in Supabase Storage for the workspace. */
@@ -46,6 +53,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     tasksPerProject: 50,
     notesPerWorkspace: 25,
     contactsPerWorkspace: 25,
+    commentsPerWorkspace: 50,
     filesPerTask: 0,
     storageBytesPerWorkspace: 0,
     maxUploadBytes: 0,
@@ -59,6 +67,7 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     tasksPerProject: 1000,
     notesPerWorkspace: 500,
     contactsPerWorkspace: 500,
+    commentsPerWorkspace: 1000,
     filesPerTask: 5,
     storageBytesPerWorkspace: PRO_STORAGE_BYTES,
     maxUploadBytes: PRO_MAX_UPLOAD_BYTES,
@@ -77,6 +86,7 @@ export type AddonPackDef = {
     tasksPerProject: number;
     notes: number;
     contacts: number;
+    comments: number;
     members: number;
     storageBytes: number;
     filesPerTask: number;
@@ -97,6 +107,7 @@ export const CAPACITY_PACK: AddonPackDef = {
     tasksPerProject: 500,
     notes: 250,
     contacts: 250,
+    comments: 500,
     members: 10,
     storageBytes: 2.5 * 1024 * 1024 * 1024, // 2.5 GiB
     filesPerTask: 0,
@@ -167,6 +178,8 @@ export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
       base.notesPerWorkspace + packCount * CAPACITY_PACK.deltas.notes,
     contactsPerWorkspace:
       base.contactsPerWorkspace + packCount * CAPACITY_PACK.deltas.contacts,
+    commentsPerWorkspace:
+      base.commentsPerWorkspace + packCount * CAPACITY_PACK.deltas.comments,
     filesPerTask:
       base.filesPerTask + packCount * CAPACITY_PACK.deltas.filesPerTask,
     storageBytesPerWorkspace:
@@ -189,6 +202,8 @@ export function workspaceMeterLimit(
       return limits.notesPerWorkspace;
     case "contacts":
       return limits.contactsPerWorkspace;
+    case "comments":
+      return limits.commentsPerWorkspace;
     default: {
       const _exhaustive: never = meter;
       return _exhaustive;
@@ -211,6 +226,7 @@ const METER_LABEL: Record<WorkspaceMeter, string> = {
   tasks: "tasks",
   notes: "notes",
   contacts: "contacts",
+  comments: "comments and replies",
 };
 
 /** Honest, dark-pattern-free limit copy for API errors and UI. */
