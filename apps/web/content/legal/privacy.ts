@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const privacyDoc: LegalDocument = {
   slug: "privacy",
   title: "Privacy Policy",
-  versionLabel: "2026-07-26-v2",
+  versionLabel: "2026-07-27-v3",
   sections: [
     {
       heading: "Controller",
@@ -27,7 +27,7 @@ export const privacyDoc: LegalDocument = {
         "Public cryptographic material needed for the product (for example user public keys) and wrapped or encrypted blobs that Helvety cannot decrypt.",
         "Policy acceptance records (which policy versions you accepted and when).",
         "Technical logs reasonably needed to operate and secure the Service (for example IP addresses in hosting/auth logs, request metadata).",
-        "Billing metadata when paid plans are enabled (for example subscription status and meter counts). Billing never includes encrypted plaintext or raw encryption keys.",
+        "Billing metadata when you use paid plans (for example subscription status and meter counts). Billing never includes encrypted plaintext or raw encryption keys.",
       ],
     },
     {
@@ -45,13 +45,13 @@ export const privacyDoc: LegalDocument = {
         "Record policy acceptances (legal obligation / contract / legitimate interests in proving consent and terms acceptance).",
         "Communicate service-related notices (contract / legitimate interests).",
         "Comply with law and respond to lawful requests limited to data Helvety holds (legal obligation).",
-        "Billing and accounting when paid plans apply (contract / legal obligation).",
+        "Billing and accounting for paid plans (contract / legal obligation).",
       ],
     },
     {
       heading: "Processors",
       paragraphs: [
-        "Helvety uses processors listed in the Subprocessors page (including Supabase for auth/database in Zurich, Vercel for hosting, email delivery used for auth OTPs, and Stripe when billing is enabled). Processors act on Helvety’s instructions for the Service.",
+        "Helvety uses processors listed in the Subprocessors page (including Supabase for auth/database in Zurich, Vercel for hosting, email delivery used for auth OTPs, and Stripe for payment processing). Processors act on Helvety’s instructions for the Service.",
       ],
     },
     {

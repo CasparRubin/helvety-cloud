@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const termsDoc: LegalDocument = {
   slug: "terms",
   title: "Terms of Service",
-  versionLabel: "2026-07-26-v2",
+  versionLabel: "2026-07-27-v3",
   sections: [
     {
       heading: "Agreement",
@@ -46,7 +46,7 @@ export const termsDoc: LegalDocument = {
       heading: "What the service is not",
       paragraphs: [
         "Helvety Cloud is not a plaintext backup of your data, not a key-recovery or forensic recovery service, and not a content host that can inspect or restore your encrypted workspace content.",
-        "Free-tier limits, if any, are stated in the product and in the Billing terms. Paid features, when offered, are governed by the Billing terms and these Terms.",
+        "Free-tier limits are stated in the product and in the Billing terms. Paid Pro Workspace plans and add-ons are governed by the Billing terms and these Terms.",
       ],
     },
     {

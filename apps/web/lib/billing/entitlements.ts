@@ -134,10 +134,6 @@ export function resolvePlan(subscription: SubscriptionLike): Plan {
   return "free";
 }
 
-export function limitsForPlan(plan: Plan): PlanLimits {
-  return PLAN_LIMITS[plan];
-}
-
 function capacityPackCount(quantities: AddonQuantities | null | undefined): number {
   const qty = quantities?.capacity ?? 0;
   if (!Number.isFinite(qty) || qty <= 0) {

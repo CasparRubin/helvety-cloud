@@ -13,7 +13,6 @@ import {
   isUnlimited,
   limitMessage,
   limitToApi,
-  limitsForPlan,
   ownedWorkspacesLimitMessage,
   resolvePlan,
   memberLimitMessage,
@@ -56,8 +55,8 @@ describe("resolvePlan", () => {
 
 describe("plan limits", () => {
   it("pro raises every cap above free", () => {
-    const free = limitsForPlan("free");
-    const pro = limitsForPlan("pro");
+    const free = PLAN_LIMITS.free;
+    const pro = PLAN_LIMITS.pro;
     expect(pro.ownedWorkspaces).toBeGreaterThan(free.ownedWorkspaces);
     expect(pro.projectsPerWorkspace).toBeGreaterThan(free.projectsPerWorkspace);
     expect(pro.membersPerWorkspace).toBeGreaterThan(free.membersPerWorkspace);

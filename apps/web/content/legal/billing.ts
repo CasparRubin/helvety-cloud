@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const billingDoc: LegalDocument = {
   slug: "billing",
   title: "Billing terms",
-  versionLabel: "2026-07-27-v6",
+  versionLabel: "2026-07-27-v7",
   sections: [
     {
       heading: "Status",
@@ -28,7 +28,7 @@ export const billingDoc: LegalDocument = {
         "Subscriptions are workspace-scoped: the workspace owner pays for that workspace’s Pro Workspace plan and any add-ons on that workspace.",
         "Pro Workspace includes higher operational limits and encrypted file and document storage for that workspace, within the storage, per-file size, and per-task file limits shown in the product. Uploaded files are end-to-end encrypted on your device; Helvety stores ciphertext and operational size meters only and cannot decrypt file contents.",
         "Capacity Increase adds one extra bundle of capacity each time you buy it. Each pack adds 10 projects, 500 tasks per project, 250 notes, 250 contacts, 10 members, and 2.5 GiB encrypted file storage. Capacity Increase requires an active Pro Workspace subscription on that workspace.",
-        "Prices, billing intervals (including annual Pro billing when offered), renewals, taxes, and any Stripe-applied discount are shown at Stripe Checkout or in the billing portal. Unless stated otherwise, subscriptions renew automatically until cancelled.",
+        "Prices, billing intervals (including annual Pro billing), renewals, taxes, and any Stripe-applied discount are shown at Stripe Checkout or in the billing portal. Unless stated otherwise, subscriptions renew automatically until cancelled.",
         "You may cancel renewal at any time in the Stripe billing portal (available from workspace billing settings); access to paid limits continues through the paid period already purchased unless stated otherwise. No cancellation fees, no retention tricks. Free limits and, where applicable, soft-lock create gates may then apply.",
         "Invoices and payment processing use Stripe (see Subprocessors). Helvety never needs encrypted plaintext or raw encryption keys for billing. Meters use plaintext operational counts and ciphertext byte sizes only.",
       ],

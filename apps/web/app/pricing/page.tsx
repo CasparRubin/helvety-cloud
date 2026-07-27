@@ -277,8 +277,9 @@ export default function PricingPage() {
             rows={proRows}
             footer={
               <>
-                Sign in, open the workspace you want to upgrade, then go to
-                Workspace settings → Billing and choose Upgrade to Pro. Only the
+                To upgrade your Free Workspace, open it, go to Workspace settings
+                → Billing, and choose Upgrade to Pro. To add another workspace,
+                use New Pro workspace (Checkout opens after create). Only the
                 workspace owner can start checkout.
               </>
             }
@@ -319,9 +320,10 @@ export default function PricingPage() {
                 Upgrades never silently change the rest of your account.
               </InfoBlock>
               <InfoBlock title="Where to buy">
-                Sign in, open a workspace, then go to Workspace settings →
-                Billing. Owners upgrade to Pro there, and manage Pro Workspace
-                Capacity Increase packs through Manage billing.
+                Upgrade a Free Workspace in Workspace settings → Billing, or
+                create another workspace with New Pro workspace (Checkout opens
+                after create). Owners manage Capacity Increase packs through
+                Manage billing.
               </InfoBlock>
               <InfoBlock title="Pro Workspace Capacity Increase">
                 Pro Workspace Capacity Increase is an optional add-on for a paid Pro
