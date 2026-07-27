@@ -16,9 +16,11 @@ import { Button } from "@/components/ui/button";
 import { ButtonGroup } from "@/components/ui/button-group";
 
 type PageActionsContextValue = {
+  refreshEl: HTMLElement | null;
   actionsEl: HTMLElement | null;
   dangerEl: HTMLElement | null;
   settingsEl: HTMLElement | null;
+  setRefreshEl: (el: HTMLElement | null) => void;
   setActionsEl: (el: HTMLElement | null) => void;
   setDangerEl: (el: HTMLElement | null) => void;
   setSettingsEl: (el: HTMLElement | null) => void;
@@ -27,9 +29,14 @@ type PageActionsContextValue = {
 const PageActionsContext = createContext<PageActionsContextValue | null>(null);
 
 export function PageActionsProvider({ children }: { children: ReactNode }) {
+  const [refreshEl, setRefreshElState] = useState<HTMLElement | null>(null);
   const [actionsEl, setActionsElState] = useState<HTMLElement | null>(null);
   const [dangerEl, setDangerElState] = useState<HTMLElement | null>(null);
   const [settingsEl, setSettingsElState] = useState<HTMLElement | null>(null);
+
+  const setRefreshEl = useCallback((el: HTMLElement | null) => {
+    setRefreshElState((prev) => (prev === el ? prev : el));
+  }, []);
 
   const setActionsEl = useCallback((el: HTMLElement | null) => {
     setActionsElState((prev) => (prev === el ? prev : el));
@@ -45,17 +52,21 @@ export function PageActionsProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo(
     () => ({
+      refreshEl,
       actionsEl,
       dangerEl,
       settingsEl,
+      setRefreshEl,
       setActionsEl,
       setDangerEl,
       setSettingsEl,
     }),
     [
+      refreshEl,
       actionsEl,
       dangerEl,
       settingsEl,
+      setRefreshEl,
       setActionsEl,
       setDangerEl,
       setSettingsEl,
@@ -77,7 +88,7 @@ function usePageActionsContext(): PageActionsContextValue {
   return ctx;
 }
 
-/** Portals create actions into the sticky secondary bar (left, after Back). */
+/** Portals primary actions (create, etc.) into the sticky bar after Refresh. */
 export function PageActions({ children }: { children: ReactNode }) {
   const { actionsEl } = usePageActionsContext();
   if (!actionsEl) return null;
@@ -119,6 +130,7 @@ export function WorkspaceSettingsAction({
   );
 }
 
+/** Standalone refresh control; portals next to Back, outside the create ButtonGroup. */
 export function ListRefreshButton({
   onRefresh,
   disabled,
@@ -126,6 +138,7 @@ export function ListRefreshButton({
   onRefresh: () => Promise<void>;
   disabled?: boolean;
 }) {
+  const { refreshEl } = usePageActionsContext();
   const [refreshing, setRefreshing] = useState(false);
 
   async function handleClick() {
@@ -137,7 +150,9 @@ export function ListRefreshButton({
     }
   }
 
-  return (
+  if (!refreshEl) return null;
+
+  return createPortal(
     <Button
       type="button"
       variant="ghost"
@@ -148,14 +163,17 @@ export function ListRefreshButton({
     >
       <RefreshCwIcon className={refreshing ? "animate-spin" : undefined} />
       <span className="hidden sm:inline">Refresh</span>
-    </Button>
+    </Button>,
+    refreshEl,
   );
 }
 
 export function PageActionsSlot() {
-  const { setActionsEl, setDangerEl, setSettingsEl } = usePageActionsContext();
+  const { setRefreshEl, setActionsEl, setDangerEl, setSettingsEl } =
+    usePageActionsContext();
   return (
     <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">
+      <div ref={setRefreshEl} className="shrink-0" />
       <ButtonGroup ref={setActionsEl} className="shrink-0" />
       <div className="ml-auto flex shrink-0 items-stretch gap-2">
         <ButtonGroup ref={setDangerEl} />

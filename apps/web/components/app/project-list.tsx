@@ -130,8 +130,8 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
 
   return (
     <>
+      <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
       <PageActions>
-        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
         <CreateEntityDialog
           triggerLabel="Create project"
           dialogTitle="Create project"

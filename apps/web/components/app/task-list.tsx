@@ -308,9 +308,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
 
   return (
     <>
-      <PageActions>
-        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
-        {!loading && project ? (
+      <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
+      {!loading && project ? (
+        <PageActions>
           <CreateEntityDialog
             triggerLabel="Create task"
             dialogTitle="Create task"
@@ -398,8 +398,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               </div>
             </div>
           </CreateEntityDialog>
-        ) : null}
-      </PageActions>
+        </PageActions>
+      ) : null}
       <PageSettingsActions>
         <Button
           variant="ghost"

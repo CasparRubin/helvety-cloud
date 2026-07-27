@@ -143,8 +143,8 @@ export function ContactList({ workspaceId }: ContactListProps) {
 
   return (
     <>
+      <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
       <PageActions>
-        <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
         <CreateEntityDialog
           triggerLabel="Create contact"
           dialogTitle="Create contact"
