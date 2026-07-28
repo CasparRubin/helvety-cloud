@@ -1,5 +1,6 @@
 "use client";
 
+import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
 import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import { useProjectSettings } from "@/components/app/project-settings/provider";
@@ -44,6 +45,7 @@ export function ProjectGeneralSettings() {
     setNameDraft,
     onRename,
     onSetColor,
+    onSetIcon,
   } = useProjectSettings();
 
   const status = (
@@ -70,6 +72,13 @@ export function ProjectGeneralSettings() {
           Save
         </Button>
       </form>
+      <CategorizationIconPicker
+        value={project.icon}
+        disabled={busy}
+        onChange={(next) => {
+          void onSetIcon(next);
+        }}
+      />
       <EntityColorPicker
         value={project.color}
         disabled={busy}

@@ -9,6 +9,7 @@ import {
 import { useRouter } from "next/navigation";
 
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
+import type { CategorizationIcon } from "@/lib/client-crypto/categorization-icons";
 import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import {
   deleteProject,
@@ -29,6 +30,7 @@ type ProjectSettingsContextValue = {
   onRename: (e: React.FormEvent) => Promise<void>;
   onDeleteProject: () => Promise<void>;
   onSetColor: (color: EntityColor | undefined) => Promise<void>;
+  onSetIcon: (icon: CategorizationIcon | undefined) => Promise<void>;
 };
 
 const ProjectSettingsContext =
@@ -131,6 +133,22 @@ export function ProjectSettingsProvider({
         ),
       );
       setProject(saved);
+      window.dispatchEvent(new Event("helvety:projects-changed"));
+    });
+  }
+
+  async function onSetIcon(icon: CategorizationIcon | undefined) {
+    if (!project) return;
+    await withBusy(async () => {
+      const key = await getWorkspaceKey(workspaceId);
+      const saved = await saveProjectContent(
+        workspaceId,
+        key,
+        project,
+        projectPlaintextFrom(project, icon ? { icon } : { clearIcon: true }),
+      );
+      setProject(saved);
+      window.dispatchEvent(new Event("helvety:projects-changed"));
     });
   }
 
@@ -146,6 +164,7 @@ export function ProjectSettingsProvider({
     onRename,
     onDeleteProject,
     onSetColor,
+    onSetIcon,
   };
 
   return (

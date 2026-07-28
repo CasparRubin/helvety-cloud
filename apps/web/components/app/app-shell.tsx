@@ -6,8 +6,8 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import {
   ContactIcon,
-  FolderKanbanIcon,
   CrownIcon,
+  FolderKanbanIcon,
   ListTodoIcon,
   StickyNoteIcon,
   type LucideIcon,
@@ -40,10 +40,18 @@ import {
   CryptoSessionProvider,
 } from "@/components/unlock/crypto-session-provider";
 import { loadDecryptedContacts } from "@/lib/client-crypto/contacts";
+import { CATEGORIZATION_ICON_COMPONENTS } from "@/lib/client-crypto/categorization-icons";
+import {
+  ENTITY_COLOR_CLASSES,
+  KIND_FALLBACK_COLOR,
+} from "@/lib/client-crypto/entity-colors";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import { loadDecryptedNotes } from "@/lib/client-crypto/notes";
 import { pinnedTop } from "@/lib/client-crypto/pins";
-import { loadDecryptedProjects } from "@/lib/client-crypto/projects";
+import {
+  loadDecryptedProjects,
+  resolveProjectIcon,
+} from "@/lib/client-crypto/projects";
 import {
   loadLastWorkspaceId,
   pickDefaultWorkspaceId,
@@ -58,6 +66,13 @@ type AppShellProps = {
 };
 
 type SectionId = "projects" | "tasks" | "notes" | "contacts";
+type ProjectPinnedPreview = {
+  id: string;
+  label: string;
+  href: string;
+  icon: LucideIcon;
+  textClassName: string;
+};
 
 function workspaceSections(workspaceBase: string): {
   id: SectionId;
@@ -132,31 +147,64 @@ function SectionLink({
 }
 
 function WorkspacePinnedPreview({
+  kind,
   items,
 }: {
-  items: Array<{ id: string; label: string; href: string }>;
+  kind: "projects" | "notes" | "contacts";
+  items: Array<{
+    id: string;
+    label: string;
+    href: string;
+    icon?: LucideIcon;
+    textClassName?: string;
+  }>;
 }) {
   if (items.length === 0) return null;
 
   return (
     <div className="mb-1.5 ml-6 mt-0.5 flex flex-col gap-0.5">
-      {items.map((item) => (
-        <Link
-          key={item.id}
-          href={item.href}
-          className="truncate rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-        >
-          {item.label}
-        </Link>
-      ))}
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <Link
+            key={item.id}
+            href={item.href}
+            className={cn(
+              "flex items-center gap-1.5 truncate rounded-md px-2 py-1 text-xs hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              kind === "projects"
+                ? item.textClassName
+                : "text-muted-foreground",
+            )}
+          >
+            {Icon ? <Icon className="size-3 shrink-0" aria-hidden /> : null}
+            <span className="truncate">{item.label}</span>
+          </Link>
+        );
+      })}
     </div>
   );
+}
+
+function projectPinnedPreview(
+  workspaceId: string,
+  project: Awaited<
+    ReturnType<typeof loadDecryptedProjects>
+  >["projects"][number],
+): ProjectPinnedPreview {
+  return {
+    id: project.id,
+    label: project.name,
+    href: `/app/w/${workspaceId}/p/${project.id}`,
+    icon: CATEGORIZATION_ICON_COMPONENTS[resolveProjectIcon(project.icon)],
+    textClassName:
+      ENTITY_COLOR_CLASSES[project.color ?? KIND_FALLBACK_COLOR.project].text,
+  };
 }
 
 function useWorkspacePinnedPreviews(workspaceId: string | null) {
   const { userKeys, getWorkspaceKey } = useCryptoSession();
   const [previews, setPreviews] = useState<{
-    projects: Array<{ id: string; label: string; href: string }>;
+    projects: ProjectPinnedPreview[];
     notes: Array<{ id: string; label: string; href: string }>;
     contacts: Array<{ id: string; label: string; href: string }>;
   }>({
@@ -177,11 +225,9 @@ function useWorkspacePinnedPreviews(workspaceId: string | null) {
       loadDecryptedContacts(workspaceId, key, { limit: 100 }),
     ]);
     setPreviews({
-      projects: pinnedTop(projectsPage.projects, 3).map((project) => ({
-        id: project.id,
-        label: project.name,
-        href: `/app/w/${workspaceId}/p/${project.id}`,
-      })),
+      projects: pinnedTop(projectsPage.projects, 3).map((project) =>
+        projectPinnedPreview(workspaceId, project),
+      ),
       notes: pinnedTop(notesPage.notes, 3).map((note) => ({
         id: note.id,
         label: note.title || "Untitled",
@@ -214,11 +260,9 @@ function useWorkspacePinnedPreviews(workspaceId: string | null) {
         ]);
         if (cancelled) return;
         setPreviews({
-          projects: pinnedTop(projectsPage.projects, 3).map((project) => ({
-            id: project.id,
-            label: project.name,
-            href: `/app/w/${workspaceId}/p/${project.id}`,
-          })),
+          projects: pinnedTop(projectsPage.projects, 3).map((project) =>
+            projectPinnedPreview(workspaceId, project),
+          ),
           notes: pinnedTop(notesPage.notes, 3).map((note) => ({
             id: note.id,
             label: note.title || "Untitled",
@@ -415,6 +459,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                         section.id === "notes" ||
                         section.id === "contacts" ? (
                           <WorkspacePinnedPreview
+                            kind={section.id}
                             items={pinnedPreviews[section.id]}
                           />
                         ) : null}

@@ -14,6 +14,10 @@ import {
   type ListParams,
 } from "@/lib/api/v1-client";
 import {
+  isCategorizationIcon,
+  type CategorizationIcon,
+} from "@/lib/client-crypto/categorization-icons";
+import {
   isEntityColor,
   type EntityColor,
 } from "@/lib/client-crypto/entity-colors";
@@ -34,6 +38,7 @@ export type ProjectPlaintext = {
   name: string;
   description: TaskBodyDoc;
   color?: EntityColor;
+  icon?: CategorizationIcon;
 };
 
 export type DecryptedProject = {
@@ -42,6 +47,7 @@ export type DecryptedProject = {
   name: string;
   description: TaskBodyDoc;
   color?: EntityColor;
+  icon?: CategorizationIcon;
   sortOrder: number;
   isPinned: boolean;
   pinSortOrder: number | null;
@@ -49,9 +55,20 @@ export type DecryptedProject = {
   deletedAt: string | null;
 };
 
+export const DEFAULT_PROJECT_ICON: CategorizationIcon = "folder-kanban";
+
+export function resolveProjectIcon(
+  icon?: CategorizationIcon,
+): CategorizationIcon {
+  return icon ?? DEFAULT_PROJECT_ICON;
+}
+
 export function projectPlaintextFrom(
   project: DecryptedProject,
-  overrides?: Partial<ProjectPlaintext> & { clearColor?: boolean },
+  overrides?: Partial<ProjectPlaintext> & {
+    clearColor?: boolean;
+    clearIcon?: boolean;
+  },
 ): ProjectPlaintext {
   const color =
     overrides?.clearColor
@@ -59,10 +76,17 @@ export function projectPlaintextFrom(
       : overrides?.color !== undefined
         ? overrides.color
         : project.color;
+  const icon =
+    overrides?.clearIcon
+      ? undefined
+      : overrides?.icon !== undefined
+        ? overrides.icon
+        : project.icon;
   return {
     name: overrides?.name ?? project.name,
     description: overrides?.description ?? project.description,
     ...(color ? { color } : {}),
+    ...(icon ? { icon } : {}),
   };
 }
 
@@ -94,6 +118,7 @@ export async function encryptProjectContent(
     name: content.name.trim(),
     description: content.description,
     ...(content.color ? { color: content.color } : {}),
+    ...(content.icon ? { icon: content.icon } : {}),
   };
   return encrypt({
     key: workspaceKey,
@@ -117,6 +142,7 @@ export async function decryptProjectPlaintext(
     name?: unknown;
     description?: unknown;
     color?: unknown;
+    icon?: unknown;
   };
   if (typeof parsed.name !== "string") {
     throw new Error("Invalid project plaintext");
@@ -125,11 +151,16 @@ export async function decryptProjectPlaintext(
   if (parsed.color !== undefined && isEntityColor(parsed.color)) {
     color = parsed.color;
   }
+  let icon: CategorizationIcon | undefined;
+  if (parsed.icon !== undefined && isCategorizationIcon(parsed.icon)) {
+    icon = parsed.icon;
+  }
   const description = parseDescription(parsed.description);
   return {
     name: parsed.name,
     description,
     ...(color ? { color } : {}),
+    ...(icon ? { icon } : {}),
   };
 }
 
@@ -140,6 +171,7 @@ async function toDecrypted(
   let name = "Untitled project";
   let description: TaskBodyDoc = EMPTY_TASK_BODY;
   let color: EntityColor | undefined;
+  let icon: CategorizationIcon | undefined;
   try {
     const plain = await decryptProjectPlaintext(
       workspaceKey,
@@ -149,6 +181,7 @@ async function toDecrypted(
     name = plain.name;
     description = plain.description;
     color = plain.color;
+    icon = plain.icon;
   } catch {
     name = "Unable to decrypt";
   }
@@ -158,6 +191,7 @@ async function toDecrypted(
     name,
     description,
     color,
+    icon,
     sortOrder: row.sortOrder,
     isPinned: row.isPinned,
     pinSortOrder: row.pinSortOrder,
@@ -213,7 +247,11 @@ export async function createProject(
   workspaceKey: Uint8Array,
   name: string,
   sortOrder = 0,
-  content?: { description?: TaskBodyDoc },
+  content?: {
+    description?: TaskBodyDoc;
+    color?: EntityColor;
+    icon?: CategorizationIcon;
+  },
 ): Promise<DecryptedProject> {
   const projectId = crypto.randomUUID();
   const encryptedBlob = await encryptProjectContent(
@@ -222,6 +260,8 @@ export async function createProject(
     {
       name,
       description: content?.description ?? EMPTY_TASK_BODY,
+      ...(content?.color ? { color: content.color } : {}),
+      ...(content?.icon ? { icon: content.icon } : {}),
     },
   );
   const row = await putProject(workspaceId, projectId, {

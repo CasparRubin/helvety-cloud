@@ -5,7 +5,9 @@ import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { PinIcon, SettingsIcon } from "lucide-react";
 
+import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
+import { EntityColorPicker } from "@/components/app/entity-color-picker";
 import {
   EntityListRow,
   EntityListShell,
@@ -21,10 +23,20 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
+  CATEGORIZATION_ICON_COMPONENTS,
+  type CategorizationIcon,
+} from "@/lib/client-crypto/categorization-icons";
+import {
+  ENTITY_COLOR_CLASSES,
+  KIND_FALLBACK_COLOR,
+  type EntityColor,
+} from "@/lib/client-crypto/entity-colors";
+import {
   createProject,
   loadDecryptedProjects,
   reorderPinnedProjects,
   reorderProjects,
+  resolveProjectIcon,
   setProjectPinned,
   sortProjectsForDisplay,
   type DecryptedProject,
@@ -46,6 +58,10 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [newDescription, setNewDescription] = useState("");
+  const [newColor, setNewColor] = useState<EntityColor | undefined>(undefined);
+  const [newIcon, setNewIcon] = useState<CategorizationIcon | undefined>(
+    undefined,
+  );
   const [query, setQuery] = useState("");
   const deferredQuery = useDeferredValue(query);
 
@@ -98,6 +114,8 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       const description = newDescription.trim();
       const created = await createProject(workspaceId, key, name, nextOrder, {
         description: description ? textToTaskBody(description) : undefined,
+        color: newColor,
+        icon: newIcon,
       });
       window.dispatchEvent(new Event("helvety:projects-changed"));
       router.push(`/app/w/${workspaceId}/p/${created.id}`);
@@ -208,7 +226,11 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
           disabled={busy}
           onCreate={onCreate}
           onOpenChange={(open) => {
-            if (open) setNewDescription("");
+            if (open) {
+              setNewDescription("");
+              setNewColor(undefined);
+              setNewIcon(undefined);
+            }
           }}
         >
           <div className="flex flex-col gap-2">
@@ -220,6 +242,18 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
               placeholder="Add a project description…"
               disabled={busy}
               rows={3}
+            />
+          </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+            <CategorizationIconPicker
+              value={newIcon}
+              disabled={busy}
+              onChange={setNewIcon}
+            />
+            <EntityColorPicker
+              value={newColor}
+              disabled={busy}
+              onChange={setNewColor}
             />
           </div>
         </CreateEntityDialog>
@@ -247,101 +281,108 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
           projects.length === 0 ? "No projects yet." : "No matching projects."
         }
       >
-        {filteredProjects.map((project, index) => (
-          <EntityListRow
-            key={project.id}
-            className="flex items-center gap-2"
-          >
-            <Link
-              href={`/app/w/${workspaceId}/p/${project.id}`}
-              className="min-w-0 flex-1 truncate font-medium hover:underline"
-            >
-              {project.name}
-            </Link>
-            <div className="flex shrink-0 gap-1">
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={busy}
-                onClick={() => void onTogglePinned(project)}
-                aria-label={project.isPinned ? "Unpin project" : "Pin project"}
+        {filteredProjects.map((project, index) => {
+          const Icon =
+            CATEGORIZATION_ICON_COMPONENTS[resolveProjectIcon(project.icon)];
+          const colorClasses =
+            ENTITY_COLOR_CLASSES[project.color ?? KIND_FALLBACK_COLOR.project];
+          return (
+            <EntityListRow key={project.id} className="flex items-center gap-2">
+              <Icon
+                className={`size-4 shrink-0 ${colorClasses.text}`}
+                aria-hidden="true"
+              />
+              <Link
+                href={`/app/w/${workspaceId}/p/${project.id}`}
+                className={`min-w-0 flex-1 truncate font-medium hover:underline ${colorClasses.text}`}
               >
-                <PinIcon
-                  className="size-4"
-                  aria-hidden="true"
-                  fill={project.isPinned ? "currentColor" : "none"}
-                />
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={
-                  busy ||
-                  filtering ||
-                  !project.isPinned ||
-                  (pinnedIndexById.get(project.id) ?? 0) === 0
-                }
-                onClick={() => void onReorderPinned(project.id, "up")}
-                aria-label="Move pin up"
-              >
-                ⇡
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={
-                  busy ||
-                  filtering ||
-                  !project.isPinned ||
-                  (pinnedIndexById.get(project.id) ?? -1) ===
-                    pinnedProjects.length - 1
-                }
-                onClick={() => void onReorderPinned(project.id, "down")}
-                aria-label="Move pin down"
-              >
-                ⇣
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={busy || filtering || index === 0}
-                onClick={() => void onReorder(index, "up")}
-                aria-label="Move up"
-              >
-                ↑
-              </Button>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={
-                  busy || filtering || index === filteredProjects.length - 1
-                }
-                onClick={() => void onReorder(index, "down")}
-                aria-label="Move down"
-              >
-                ↓
-              </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label={`Project settings for ${project.name}`}
-                render={
-                  <Link
-                    href={`/app/w/${workspaceId}/p/${project.id}/settings/general`}
+                {project.name}
+              </Link>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => void onTogglePinned(project)}
+                  aria-label={project.isPinned ? "Unpin project" : "Pin project"}
+                >
+                  <PinIcon
+                    className="size-4"
+                    aria-hidden="true"
+                    fill={project.isPinned ? "currentColor" : "none"}
                   />
-                }
-                nativeButton={false}
-              >
-                <SettingsIcon className="size-4" aria-hidden="true" />
-              </Button>
-            </div>
-          </EntityListRow>
-        ))}
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={
+                    busy ||
+                    filtering ||
+                    !project.isPinned ||
+                    (pinnedIndexById.get(project.id) ?? 0) === 0
+                  }
+                  onClick={() => void onReorderPinned(project.id, "up")}
+                  aria-label="Move pin up"
+                >
+                  ⇡
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={
+                    busy ||
+                    filtering ||
+                    !project.isPinned ||
+                    (pinnedIndexById.get(project.id) ?? -1) ===
+                      pinnedProjects.length - 1
+                  }
+                  onClick={() => void onReorderPinned(project.id, "down")}
+                  aria-label="Move pin down"
+                >
+                  ⇣
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy || filtering || index === 0}
+                  onClick={() => void onReorder(index, "up")}
+                  aria-label="Move up"
+                >
+                  ↑
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={
+                    busy || filtering || index === filteredProjects.length - 1
+                  }
+                  onClick={() => void onReorder(index, "down")}
+                  aria-label="Move down"
+                >
+                  ↓
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  aria-label={`Project settings for ${project.name}`}
+                  render={
+                    <Link
+                      href={`/app/w/${workspaceId}/p/${project.id}/settings/general`}
+                    />
+                  }
+                  nativeButton={false}
+                >
+                  <SettingsIcon className="size-4" aria-hidden="true" />
+                </Button>
+              </div>
+            </EntityListRow>
+          );
+        })}
       </EntityListShell>
     </>
   );
