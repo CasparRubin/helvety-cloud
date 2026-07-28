@@ -170,8 +170,8 @@ export function WorkspaceGeneralSettings() {
         </div>
         {isPersonal ? (
           <p className="text-xs text-muted-foreground">
-            Personal workspace. It stays attached to your account and cannot be
-            deleted.
+            Personal workspace. It cannot be left or deleted here. It is removed
+            only when you delete your account.
           </p>
         ) : null}
       </div>
@@ -346,6 +346,9 @@ export function WorkspaceMembersSettings() {
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [leaveSuccessorId, setLeaveSuccessorId] = useState("");
   const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null);
+  const [transferTarget, setTransferTarget] = useState<WorkspaceMember | null>(
+    null,
+  );
 
   const otherMembers = members.filter((m) => m.userId !== userKeys?.userId);
   const isSolo = members.length <= 1;
@@ -364,16 +367,12 @@ export function WorkspaceMembersSettings() {
       <SettingsError error={error} />
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-medium">Workspace access</h2>
-        <p className="text-sm text-muted-foreground">
-          Invite people by email and complete the encryption handoff after they
-          join.
+        <p className="text-xs leading-5 text-muted-foreground">
+          Invite by email. After they sign in and set up encryption, complete key
+          handoff on an unlocked device. Helvety never sees the workspace key or
+          your data.
         </p>
       </div>
-      <p className="text-xs leading-5 text-muted-foreground">
-        Invite by email. After they sign in and set up encryption, complete key
-        handoff on an unlocked device. Helvety never sees the workspace key or
-        your data.
-      </p>
 
       {canManage ? (
         <CreateEntityDialog
@@ -463,7 +462,7 @@ export function WorkspaceMembersSettings() {
                         size="sm"
                         variant="outline"
                         disabled={pending}
-                        onClick={() => void onTransferOwnership(m.userId)}
+                        onClick={() => setTransferTarget(m)}
                       >
                         Make owner
                       </Button>
@@ -494,7 +493,7 @@ export function WorkspaceMembersSettings() {
               ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, files, and sharing."
               : isOwner
                 ? "To leave, choose another member as the new owner. The workspace stays for everyone else."
-                : "Leaving removes your access. Nothing is deleted for other members."}
+                : "Leaving removes your access and your wrapped keys. Nothing is deleted for other members."}
           </p>
           <Button
             type="button"
@@ -510,8 +509,8 @@ export function WorkspaceMembersSettings() {
         </div>
       ) : (
         <p className="text-xs text-muted-foreground">
-          Your personal workspace cannot be left. It is removed only when you
-          delete your account.
+          Your personal workspace cannot be left or deleted here. It is removed
+          only when you delete your account.
         </p>
       )}
 
@@ -587,10 +586,11 @@ export function WorkspaceMembersSettings() {
           isSolo
             ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             : needsSuccessor
-              ? "Pick a new owner, then you will leave. The workspace stays for remaining members."
-              : "You will lose access. Other members keep the workspace. Helvety cannot restore your access without a new invite."
+              ? "Pick a new owner, then you will leave. The workspace stays for remaining members. Helvety does not rotate keys for remaining members."
+              : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
         }
         confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
+        busyLabel={isSolo ? "Deleting…" : "Leaving…"}
         busy={pending}
         onConfirm={async () => {
           if (needsSuccessor) {
@@ -631,13 +631,31 @@ export function WorkspaceMembersSettings() {
           if (!open) setRemoveTarget(null);
         }}
         title="Remove member?"
-        description="They lose access immediately. Their wrapped keys for this workspace are removed. Content stays for remaining members."
+        description="They lose access immediately. Their wrapped keys for this workspace are removed. Content stays for remaining members. Helvety does not rotate keys for remaining members."
         confirmLabel="Remove member"
+        busyLabel="Removing…"
         busy={pending}
         onConfirm={async () => {
           if (!removeTarget) return;
           await onRemoveMember(removeTarget.userId);
           setRemoveTarget(null);
+        }}
+      />
+
+      <ConfirmDeleteDialog
+        open={transferTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setTransferTarget(null);
+        }}
+        title="Transfer ownership?"
+        description="They become the owner. You stay as an admin."
+        confirmLabel="Make owner"
+        busyLabel="Transferring…"
+        busy={pending}
+        onConfirm={async () => {
+          if (!transferTarget) return;
+          await onTransferOwnership(transferTarget.userId);
+          setTransferTarget(null);
         }}
       />
     </div>
@@ -911,8 +929,8 @@ export function WorkspaceDangerSettings() {
       <SettingsError error={error} />
       {isPersonal ? (
         <p className="text-xs leading-5 text-muted-foreground">
-          Your personal workspace cannot be deleted. It is created with your
-          encryption setup and anchors your account.
+          Your personal workspace cannot be left or deleted here. It is removed
+          only when you delete your account.
         </p>
       ) : (
         <>
@@ -924,7 +942,7 @@ export function WorkspaceDangerSettings() {
           {hasOtherMembers ? (
             <p className="text-xs leading-5 text-muted-foreground">
               Other members will lose access. To keep the workspace, transfer
-              ownership and leave from Members instead.
+              ownership then leave from Members instead.
             </p>
           ) : null}
           {needsBillingCancel ? (

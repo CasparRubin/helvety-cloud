@@ -26,9 +26,9 @@ import {
 function statusCopy(status: WorkspaceInvitation["status"]): string {
   switch (status) {
     case "waiting_for_recipient":
-      return "Claim this invitation to share your public key with the owner.";
+      return "Claim this invitation to share your public key with the owner or an admin.";
     case "waiting_for_owner_seal":
-      return "Waiting for the owner to complete key handoff on their unlocked device.";
+      return "Waiting for the owner or an admin to complete key handoff on their unlocked device.";
     case "ready_to_accept":
       return "Key handoff is complete. Accept to join the workspace.";
     case "accepted":
@@ -43,8 +43,8 @@ function statusCopy(status: WorkspaceInvitation["status"]): string {
 }
 
 /**
- * Workspace names live in ciphertext; readable once the owner sealed the
- * workspace key to this user's keys.
+ * Workspace names live in ciphertext; readable once an owner or admin sealed
+ * the workspace key to this user's keys.
  */
 async function decryptWorkspaceNames(
   userKeys: UnlockedUserKeys,
@@ -182,8 +182,8 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
         <h1 className="text-lg font-semibold tracking-tight">Invitations</h1>
         <p className="mt-1 text-sm text-muted-foreground">
           Invitations addressed to your signed-in email. Helvety cannot decrypt
-          workspace content; the owner seals the workspace key to your public
-          key on their device.
+          workspace content; the owner or an admin seals the workspace key to
+          your public key on their device.
         </p>
       </div>
 

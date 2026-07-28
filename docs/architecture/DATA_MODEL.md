@@ -17,7 +17,7 @@ Workspace  (members + per-member wrapped_keys)
 ```
 
 - **Personal workspace**: created/ensured on first encryption setup (P6a); home for “general” notes/contacts.  
-- Invite (P6e) = email invitation → invitee claims with their `public_key` → owner seals `workspace_key` (AAD `wrapped_keys:{workspaceId}:wrapped_key`) → accept inserts membership + wrap. Members decrypt **all** ciphertext in that workspace.
+- Invite (P6e) = email invitation → invitee claims with their `public_key` → owner or admin seals `workspace_key` (AAD `wrapped_keys:{workspaceId}:wrapped_key`) → accept inserts membership + wrap. Members decrypt **all** ciphertext in that workspace.
 - Same person in two workspaces ⇒ **two contact rows**. Later softener: copy-to-workspace (client re-encrypts).  
 - **Reject:** user-global contact graph; notes with `workspace_id = null`; project-level key ACLs for contacts.
 - Structural relationships use FKs: project → tasks/milestones, milestone → tasks.
@@ -32,8 +32,8 @@ See [`ROADMAP.md`](ROADMAP.md) locked decisions.
 | `profiles` | `id` = `auth.users.id`; non-secret profile fields if any |
 | `user_crypto` | `public_key`, wrapped user/private key blobs, `prf_salt`, `key_check`, versions |
 | `workspaces` | Workspace ids, `kind` (`personal` \| `standard`), owner/timestamps; at most one Personal per owner. `encrypted_blob` holds the workspace name plus workspace-scoped task categorizations. |
-| `workspace_members` | `workspace_id`, `user_id`, `role` (`owner`\|`admin`\|`member`). Leave: solo leave wipes the workspace; owner+others must transfer then leave; non-owners soft-leave (wraps removed, no key rotation). |
-| `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key`; always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
+| `workspace_members` | `workspace_id`, `user_id`, `role` (`owner`\|`admin`\|`member`). Leave: solo leave wipes the workspace; owner+others must transfer then leave; non-owners soft-leave (wraps removed, no key rotation). Account delete: wipe solo-owned (incl. Personal); soft-leave non-owned memberships; block while you own a multi-member workspace (see [`API.md`](API.md) `GET`/`DELETE /me`). |
+| `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key`; always the claimer’s `user_crypto.public_key`), owner-or-admin-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
 | `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
 | `milestones` (P10) | `id`, `project_id`, sort, timestamps, tombstone |
 | `notes` | `id`, `workspace_id`, sort, timestamps, tombstone |

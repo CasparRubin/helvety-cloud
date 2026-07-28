@@ -119,9 +119,9 @@ export function AccountDangerSettings() {
             Pro subscriptions on those deleted solo workspaces are cancelled.
           </li>
           <li>
-            Shared workspaces you do not solely own remain. You leave them: your
-            membership and wrapped keys are removed, so you lose access while
-            other members keep the workspace.
+            Workspaces where you are a member but not the owner remain for
+            others. You leave them: your membership and wrapped keys are
+            removed, so you lose access while other members keep the workspace.
           </li>
           <li>Pending invitations tied to you are removed or cancelled.</li>
         </ul>
@@ -241,7 +241,7 @@ export function AccountDangerSettings() {
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
           title="Delete your Helvety Cloud account?"
-          description="This permanently deletes your account and solo-owned workspaces. Shared workspaces you leave stay for other members. Helvety cannot recover your data. This cannot be undone."
+          description="This permanently deletes your account and solo-owned workspaces. Workspaces where you are only a member stay for others. Helvety cannot recover your data. This cannot be undone."
           confirmLabel="Delete account permanently"
           busy={pending}
           onConfirm={onDeleteAccount}

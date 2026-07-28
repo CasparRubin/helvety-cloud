@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const termsDoc: LegalDocument = {
   slug: "terms",
   title: "Terms of Service",
-  versionLabel: "2026-07-27-v3",
+  versionLabel: "2026-07-28-v4",
   sections: [
     {
       heading: "Agreement",
@@ -26,6 +26,15 @@ export const termsDoc: LegalDocument = {
         "Access requires a valid email and one-time codes. Helvety Cloud does not use account passwords. Encryption unlock uses a separate passkey on your device and is not the same as signing in.",
         "You must be able to enter into binding contracts under applicable law. If you use the Service on behalf of an organization, you represent that you have authority to bind that organization.",
         "You are responsible for keeping access to your email, unlock passkey, devices, and any recovery export under your control. Helvety cannot reset encryption access for you and will not ask you to send recovery keys or unlock material to Helvety.",
+      ],
+    },
+    {
+      heading: "Workspaces",
+      paragraphs: [
+        "Encrypted content lives in workspaces. A workspace has an owner and may have admins and members. Owners and admins can invite people and manage membership as shown in the product.",
+        "Leaving a workspace as a non-owner, or being removed, drops your membership and wrapped keys for that workspace. Content stays for remaining members. Helvety does not rotate workspace keys when someone leaves or is removed.",
+        "If you are the only member and leave, or if the owner deletes the workspace, its ciphertext is permanently deleted for everyone. Your Personal workspace cannot be left or deleted except by deleting your account.",
+        "Deleting your account permanently removes your account data and solo-owned workspaces (including Personal). If you still own a workspace with other members, you must transfer ownership and leave, or delete that workspace, before account deletion. Support cannot restore access or keys.",
       ],
     },
     {
