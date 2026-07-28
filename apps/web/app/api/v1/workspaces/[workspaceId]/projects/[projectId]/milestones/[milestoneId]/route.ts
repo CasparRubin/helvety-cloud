@@ -114,6 +114,18 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("not_found", "Project not found", 404);
   }
 
+  const { data: existing, error: existingError } = await supabase
+    .from("milestones")
+    .select("id, project_id")
+    .eq("id", milestoneId)
+    .maybeSingle();
+  if (existingError) {
+    return apiError("internal", existingError.message, 500);
+  }
+  if (existing && existing.project_id !== projectId) {
+    return apiError("conflict", "Milestone id belongs to another project", 409);
+  }
+
   const { data: row, error } = await supabase
     .from("milestones")
     .upsert(

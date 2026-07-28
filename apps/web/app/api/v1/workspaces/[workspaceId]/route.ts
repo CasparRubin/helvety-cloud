@@ -125,8 +125,6 @@ export async function DELETE(request: Request, context: RouteContext) {
   const { supabase } = auth;
   const { workspaceId } = await context.params;
 
-  await wipeWorkspaceAttachmentStorage(workspaceId);
-
   const { error } = await supabase.rpc("delete_workspace", {
     ws_id: workspaceId,
   });
@@ -150,6 +148,8 @@ export async function DELETE(request: Request, context: RouteContext) {
     }
     return apiError("internal", error.message, 500);
   }
+
+  await wipeWorkspaceAttachmentStorage(workspaceId);
 
   return new Response(null, { status: 204 });
 }

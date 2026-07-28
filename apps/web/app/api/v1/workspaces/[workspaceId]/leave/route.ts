@@ -10,7 +10,7 @@ type RouteContext = {
 
 /**
  * Leave-centric membership exit:
- * - Solo member → wipe workspace (same as delete; Storage cleared first)
+ * - Solo member → wipe workspace (same as delete; Storage cleared after DB delete)
  * - Owner + others → require newOwnerId, transfer then soft-leave
  * - Non-owner → soft-leave only
  */
@@ -48,9 +48,7 @@ export async function POST(request: Request, context: RouteContext) {
     return apiError("forbidden", "Not a workspace member", 403);
   }
 
-  if ((members ?? []).length === 1) {
-    await wipeWorkspaceAttachmentStorage(workspaceId);
-  }
+  const isSolo = (members ?? []).length === 1;
 
   const { error } = await supabase.rpc("leave_workspace", {
     ws_id: workspaceId,
@@ -88,6 +86,10 @@ export async function POST(request: Request, context: RouteContext) {
       return apiError("conflict", error.message, 409);
     }
     return apiError("internal", error.message, 500);
+  }
+
+  if (isSolo) {
+    await wipeWorkspaceAttachmentStorage(workspaceId);
   }
 
   return new Response(null, { status: 204 });

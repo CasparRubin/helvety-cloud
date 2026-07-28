@@ -14,15 +14,24 @@ export type WorkspacePlaintext = {
   categorizations: WorkspaceCategorizations;
 };
 
-export function parseWorkspacePlaintext(raw: unknown): WorkspacePlaintext {
+export type ParsedWorkspacePlaintext = WorkspacePlaintext & {
+  /** False when categorizations were missing/invalid and defaults were filled in. */
+  hadCategorizations: boolean;
+};
+
+export function parseWorkspacePlaintext(raw: unknown): ParsedWorkspacePlaintext {
   if (typeof raw !== "object" || raw === null) {
     throw new Error("Invalid workspace plaintext");
   }
   const obj = raw as Record<string, unknown>;
   const name = workspaceNameSchema.parse(obj.name);
-  const categorizations =
-    parseCategorizations(obj.categorizations) ?? defaultCategorizations();
-  return { version: 1, name, categorizations };
+  const parsed = parseCategorizations(obj.categorizations);
+  return {
+    version: 1,
+    name,
+    categorizations: parsed ?? defaultCategorizations(),
+    hadCategorizations: parsed !== null,
+  };
 }
 
 export function toWorkspacePlaintext(

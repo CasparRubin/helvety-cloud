@@ -300,7 +300,7 @@ export async function saveTask(
   return toDecrypted(workspaceKey, row);
 }
 
-/** Persist only categorization id columns (keeps ciphertext). */
+/** Persist only categorization id columns. */
 export async function saveTaskCategorizationIds(
   workspaceId: string,
   projectId: string,
@@ -313,20 +313,16 @@ export async function saveTaskCategorizationIds(
     milestoneId?: string | null;
   },
 ): Promise<DecryptedTask> {
-  const encryptedBlob = await encryptTaskContent(
-    workspaceKey,
-    task.id,
-    toTaskPlaintext(task.title, task.body, task.dueDate),
-  );
+  const existing = await getTask(workspaceId, projectId, task.id);
   const row = await putTask(workspaceId, projectId, task.id, {
-    encryptedBlob,
-    sortOrder: task.sortOrder,
-    deletedAt: task.deletedAt,
+    encryptedBlob: existing.encryptedBlob,
+    sortOrder: existing.sortOrder,
+    deletedAt: existing.deletedAt,
     labelId: ids.labelId,
     stageId: ids.stageId ?? undefined,
     priorityId: ids.priorityId ?? undefined,
     milestoneId:
-      ids.milestoneId !== undefined ? ids.milestoneId : task.milestoneId,
+      ids.milestoneId !== undefined ? ids.milestoneId : existing.milestoneId,
   });
   return toDecrypted(workspaceKey, row);
 }

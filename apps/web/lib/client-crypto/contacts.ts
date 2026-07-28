@@ -253,19 +253,13 @@ export async function setContactPinned(
   contact: DecryptedContact,
   pinned: boolean,
 ): Promise<DecryptedContact> {
-  const encryptedBlob = await encryptContactContent(
-    workspaceKey,
-    contact.id,
-    toContactPlaintext(contact),
-  );
+  const existing = await getContact(workspaceId, contact.id);
   const row = await putContact(workspaceId, contact.id, {
-    encryptedBlob,
-    sortOrder: contact.sortOrder,
+    encryptedBlob: existing.encryptedBlob,
+    sortOrder: existing.sortOrder,
     isPinned: pinned,
     pinSortOrder: pinned ? nextPinSortOrder(contacts) : null,
-    deletedAt: contact.deletedAt,
-    links: contact.links,
-    attachmentIds: extractFileAttachmentIdsFromDoc(contact.notes),
+    deletedAt: existing.deletedAt,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -290,19 +284,13 @@ export async function reorderPinnedContacts(
 
   const rows = await Promise.all(
     changed.map(async (contact) => {
-      const encryptedBlob = await encryptContactContent(
-        workspaceKey,
-        contact.id,
-        toContactPlaintext(contact),
-      );
+      const existing = await getContact(workspaceId, contact.id);
       return putContact(workspaceId, contact.id, {
-        encryptedBlob,
-        sortOrder: contact.sortOrder,
+        encryptedBlob: existing.encryptedBlob,
+        sortOrder: existing.sortOrder,
         isPinned: contact.isPinned,
         pinSortOrder: contact.pinSortOrder,
-        deletedAt: contact.deletedAt,
-        links: contact.links,
-        attachmentIds: extractFileAttachmentIdsFromDoc(contact.notes),
+        deletedAt: existing.deletedAt,
       });
     }),
   );

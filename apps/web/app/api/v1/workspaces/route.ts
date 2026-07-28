@@ -12,6 +12,7 @@ import { assertOwnedWorkspaceAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { resolvePlan } from "@/lib/billing/entitlements";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 export async function GET(request: Request) {
   const auth = await requireUser(request);
@@ -171,6 +172,20 @@ export async function POST(request: Request) {
   });
   if (wrapError) {
     return apiError("invalid_ciphertext", wrapError.message, 400);
+  }
+
+  // Soft-lock prefers this pending Pro workspace if checkout is abandoned.
+  if (asPro === true) {
+    const service = createServiceRoleClient();
+    const { error: subError } = await service.from("subscriptions").insert({
+      workspace_id: id,
+      plan: "free",
+      status: "incomplete",
+      free_overflowed_at: new Date().toISOString(),
+    });
+    if (subError) {
+      return apiError("internal", subError.message, 500);
+    }
   }
 
   return jsonOk(

@@ -100,10 +100,6 @@ export async function DELETE(request: Request) {
     }
   }
 
-  for (const workspaceId of soloOwnedIds) {
-    await wipeWorkspaceAttachmentStorage(workspaceId);
-  }
-
   const { error: rpcError } = await supabase.rpc("delete_account");
   if (rpcError) {
     const message = rpcError.message.toLowerCase();
@@ -114,6 +110,10 @@ export async function DELETE(request: Request) {
       return apiError("conflict", SHARED_OWNERSHIP_MESSAGE, 409);
     }
     return apiError("internal", rpcError.message, 500);
+  }
+
+  for (const workspaceId of soloOwnedIds) {
+    await wipeWorkspaceAttachmentStorage(workspaceId);
   }
 
   try {

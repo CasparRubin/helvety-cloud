@@ -18,6 +18,10 @@ import {
   type CategorizationIcon,
 } from "@/lib/client-crypto/categorization-icons";
 import {
+  parseCategorizations,
+  type WorkspaceCategorizations,
+} from "@/lib/client-crypto/categorizations";
+import {
   isEntityColor,
   type EntityColor,
 } from "@/lib/client-crypto/entity-colors";
@@ -164,6 +168,27 @@ export async function decryptProjectPlaintext(
   };
 }
 
+/** Read pre-move categorizations still nested in project ciphertext. */
+export async function extractLegacyCategorizationsFromProject(
+  workspaceKey: Uint8Array,
+  projectId: string,
+  envelope: CiphertextEnvelope,
+): Promise<WorkspaceCategorizations | null> {
+  try {
+    const bytes = await decrypt({
+      key: workspaceKey,
+      envelope,
+      aad: projectAad(projectId),
+    });
+    const parsed = JSON.parse(textDecoder.decode(bytes)) as {
+      categorizations?: unknown;
+    };
+    return parseCategorizations(parsed.categorizations);
+  } catch {
+    return null;
+  }
+}
+
 async function toDecrypted(
   workspaceKey: Uint8Array,
   row: ProjectResponse,
@@ -304,33 +329,25 @@ export async function reorderProjects(
   const aOrder = a.sortOrder;
   const bOrder = b.sortOrder;
 
-  const [aBlob, bBlob] = await Promise.all([
-    encryptProjectContent(
-      workspaceKey,
-      a.id,
-      projectPlaintextFrom(a),
-    ),
-    encryptProjectContent(
-      workspaceKey,
-      b.id,
-      projectPlaintextFrom(b),
-    ),
+  const [aExisting, bExisting] = await Promise.all([
+    getProject(workspaceId, a.id),
+    getProject(workspaceId, b.id),
   ]);
 
   const [aRow, bRow] = await Promise.all([
     putProject(workspaceId, a.id, {
-      encryptedBlob: aBlob,
+      encryptedBlob: aExisting.encryptedBlob,
       sortOrder: bOrder,
-      isPinned: a.isPinned,
-      pinSortOrder: a.pinSortOrder,
-      deletedAt: a.deletedAt,
+      isPinned: aExisting.isPinned,
+      pinSortOrder: aExisting.pinSortOrder,
+      deletedAt: aExisting.deletedAt,
     }),
     putProject(workspaceId, b.id, {
-      encryptedBlob: bBlob,
+      encryptedBlob: bExisting.encryptedBlob,
       sortOrder: aOrder,
-      isPinned: b.isPinned,
-      pinSortOrder: b.pinSortOrder,
-      deletedAt: b.deletedAt,
+      isPinned: bExisting.isPinned,
+      pinSortOrder: bExisting.pinSortOrder,
+      deletedAt: bExisting.deletedAt,
     }),
   ]);
 
@@ -358,17 +375,13 @@ export async function setProjectPinned(
   project: DecryptedProject,
   pinned: boolean,
 ): Promise<DecryptedProject> {
-  const encryptedBlob = await encryptProjectContent(
-    workspaceKey,
-    project.id,
-    projectPlaintextFrom(project),
-  );
+  const existing = await getProject(workspaceId, project.id);
   const row = await putProject(workspaceId, project.id, {
-    encryptedBlob,
-    sortOrder: project.sortOrder,
+    encryptedBlob: existing.encryptedBlob,
+    sortOrder: existing.sortOrder,
     isPinned: pinned,
     pinSortOrder: pinned ? nextPinSortOrder(projects) : null,
-    deletedAt: project.deletedAt,
+    deletedAt: existing.deletedAt,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -394,17 +407,13 @@ export async function reorderPinnedProjects(
 
   const rows = await Promise.all(
     changed.map(async (project) => {
-      const encryptedBlob = await encryptProjectContent(
-        workspaceKey,
-        project.id,
-        projectPlaintextFrom(project),
-      );
+      const existing = await getProject(workspaceId, project.id);
       return putProject(workspaceId, project.id, {
-        encryptedBlob,
-        sortOrder: project.sortOrder,
+        encryptedBlob: existing.encryptedBlob,
+        sortOrder: existing.sortOrder,
         isPinned: project.isPinned,
         pinSortOrder: project.pinSortOrder,
-        deletedAt: project.deletedAt,
+        deletedAt: existing.deletedAt,
       });
     }),
   );

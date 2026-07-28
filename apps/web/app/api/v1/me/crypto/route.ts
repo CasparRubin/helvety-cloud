@@ -92,19 +92,31 @@ export async function PUT(request: Request) {
     return apiError("internal", profileError.message, 500);
   }
 
-  const { error: cryptoError } = await supabase.from("user_crypto").upsert(
-    {
-      user_id: user.id,
-      public_key: data.publicKey,
-      wrapped_user_key: data.wrappedUserKey,
-      wrapped_private_key: data.wrappedPrivateKey,
-      prf_salt: data.prfSalt,
-      key_check: data.keyCheck,
-      key_version: data.keyVersion,
-    },
-    { onConflict: "user_id" },
-  );
+  const { data: existingCrypto, error: existingCryptoError } = await supabase
+    .from("user_crypto")
+    .select("user_id")
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (existingCryptoError) {
+    return apiError("internal", existingCryptoError.message, 500);
+  }
+  if (existingCrypto) {
+    return apiError("conflict", "User crypto already set up", 409);
+  }
+
+  const { error: cryptoError } = await supabase.from("user_crypto").insert({
+    user_id: user.id,
+    public_key: data.publicKey,
+    wrapped_user_key: data.wrappedUserKey,
+    wrapped_private_key: data.wrappedPrivateKey,
+    prf_salt: data.prfSalt,
+    key_check: data.keyCheck,
+    key_version: data.keyVersion,
+  });
   if (cryptoError) {
+    if (cryptoError.code === "23505") {
+      return apiError("conflict", "User crypto already set up", 409);
+    }
     return apiError("invalid_ciphertext", cryptoError.message, 400);
   }
 

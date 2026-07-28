@@ -235,19 +235,13 @@ export async function setNotePinned(
   note: DecryptedNote,
   pinned: boolean,
 ): Promise<DecryptedNote> {
-  const encryptedBlob = await encryptNoteContent(
-    workspaceKey,
-    note.id,
-    toNotePlaintext(note.title, note.body),
-  );
+  const existing = await getNote(workspaceId, note.id);
   const row = await putNote(workspaceId, note.id, {
-    encryptedBlob,
-    sortOrder: note.sortOrder,
+    encryptedBlob: existing.encryptedBlob,
+    sortOrder: existing.sortOrder,
     isPinned: pinned,
     pinSortOrder: pinned ? nextPinSortOrder(notes) : null,
-    deletedAt: note.deletedAt,
-    links: note.links,
-    attachmentIds: extractFileAttachmentIdsFromDoc(note.body),
+    deletedAt: existing.deletedAt,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -272,19 +266,13 @@ export async function reorderPinnedNotes(
 
   const rows = await Promise.all(
     changed.map(async (note) => {
-      const encryptedBlob = await encryptNoteContent(
-        workspaceKey,
-        note.id,
-        toNotePlaintext(note.title, note.body),
-      );
+      const existing = await getNote(workspaceId, note.id);
       return putNote(workspaceId, note.id, {
-        encryptedBlob,
-        sortOrder: note.sortOrder,
+        encryptedBlob: existing.encryptedBlob,
+        sortOrder: existing.sortOrder,
         isPinned: note.isPinned,
         pinSortOrder: note.pinSortOrder,
-        deletedAt: note.deletedAt,
-        links: note.links,
-        attachmentIds: extractFileAttachmentIdsFromDoc(note.body),
+        deletedAt: existing.deletedAt,
       });
     }),
   );

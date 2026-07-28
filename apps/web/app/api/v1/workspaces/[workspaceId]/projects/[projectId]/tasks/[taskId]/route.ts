@@ -154,12 +154,14 @@ export async function PUT(request: Request, context: RouteContext) {
 
   const { data: existing, error: existingError } = await supabase
     .from("tasks")
-    .select("id, label_id, stage_id, priority_id, milestone_id")
+    .select("id, project_id, label_id, stage_id, priority_id, milestone_id")
     .eq("id", taskId)
-    .eq("project_id", projectId)
     .maybeSingle();
   if (existingError) {
     return apiError("internal", existingError.message, 500);
+  }
+  if (existing && existing.project_id !== projectId) {
+    return apiError("conflict", "Task id belongs to another project", 409);
   }
   if (!existing) {
     const limitResponse = await assertWorkspaceCreateAllowed(

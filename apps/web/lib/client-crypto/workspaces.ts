@@ -21,14 +21,19 @@ import type {
 
 import {
   createWorkspace,
+  listProjects,
   listWorkspaces,
+  patchWorkspace,
   sealWorkspaceInvitation,
   ApiClientError,
 } from "@/lib/api/v1-client";
+import { type WorkspaceCategorizations } from "@/lib/client-crypto/categorizations";
+import { extractLegacyCategorizationsFromProject } from "@/lib/client-crypto/projects";
 import type { UnlockedUserKeys } from "@/lib/client-crypto/user-keys";
 import {
   parseWorkspacePlaintext,
   toWorkspacePlaintext,
+  type ParsedWorkspacePlaintext,
   type WorkspacePlaintext,
 } from "@/lib/client-crypto/workspace-plaintext";
 
@@ -74,7 +79,7 @@ export async function decryptWorkspacePlaintext(
   workspaceKey: Uint8Array,
   workspaceId: string,
   envelope: CiphertextEnvelope,
-): Promise<WorkspacePlaintext> {
+): Promise<ParsedWorkspacePlaintext> {
   const bytes = await decrypt({
     key: workspaceKey,
     envelope,
@@ -177,6 +182,52 @@ export type DecryptedWorkspaceListItem = {
   plan: WorkspaceListItem["plan"];
 };
 
+function categorizationRichness(cats: WorkspaceCategorizations): number {
+  return cats.labels.length + cats.stages.length + cats.priorities.length;
+}
+
+/** Lift legacy project categorizations into the workspace blob when missing. */
+async function migrateWorkspaceCategorizationsFromProjects(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  name: string,
+): Promise<WorkspaceCategorizations | null> {
+  let best: WorkspaceCategorizations | null = null;
+  let bestScore = 0;
+  let cursor: string | null = null;
+  do {
+    const page = await listProjects(workspaceId, {
+      limit: 100,
+      ...(cursor ? { cursor } : {}),
+    });
+    for (const project of page.projects) {
+      const cats = await extractLegacyCategorizationsFromProject(
+        workspaceKey,
+        project.id,
+        project.encryptedBlob,
+      );
+      if (!cats) continue;
+      const score = categorizationRichness(cats);
+      if (score > bestScore) {
+        best = cats;
+        bestScore = score;
+      }
+    }
+    cursor = page.nextCursor;
+  } while (cursor);
+
+  if (!best) return null;
+
+  const plaintext = toWorkspacePlaintext(name, best);
+  const encryptedBlob = await encryptWorkspaceName(
+    workspaceKey,
+    workspaceId,
+    plaintext,
+  );
+  await patchWorkspace(workspaceId, { encryptedBlob });
+  return best;
+}
+
 export async function decryptWorkspaceListItem(
   userKeys: UnlockedUserKeys,
   item: WorkspaceListItem,
@@ -187,10 +238,23 @@ export async function decryptWorkspaceListItem(
     item.id,
     item.encryptedBlob,
   );
+
+  let categorizations = plain.categorizations;
+  if (!plain.hadCategorizations) {
+    const migrated = await migrateWorkspaceCategorizationsFromProjects(
+      item.id,
+      workspaceKey,
+      plain.name,
+    );
+    if (migrated) {
+      categorizations = migrated;
+    }
+  }
+
   return {
     id: item.id,
     name: plain.name,
-    categorizations: plain.categorizations,
+    categorizations,
     kind: item.kind,
     role: item.role,
     wrappedKey: item.wrappedKey,
@@ -229,7 +293,7 @@ export async function createStandardWorkspace(
   return {
     id: created.id,
     name,
-      categorizations: plaintext.categorizations,
+    categorizations: plaintext.categorizations,
     kind: created.kind,
     role: "owner",
     wrappedKey,
