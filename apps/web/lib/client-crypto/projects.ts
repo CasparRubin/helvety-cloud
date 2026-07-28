@@ -14,11 +14,6 @@ import {
   type ListParams,
 } from "@/lib/api/v1-client";
 import {
-  defaultCategorizations,
-  parseCategorizations,
-  type ProjectCategorizations,
-} from "@/lib/client-crypto/categorizations";
-import {
   isEntityColor,
   type EntityColor,
 } from "@/lib/client-crypto/entity-colors";
@@ -33,7 +28,6 @@ const textDecoder = new TextDecoder();
 export type ProjectPlaintext = {
   name: string;
   description: TaskBodyDoc;
-  categorizations: ProjectCategorizations;
   color?: EntityColor;
 };
 
@@ -42,7 +36,6 @@ export type DecryptedProject = {
   workspaceId: string;
   name: string;
   description: TaskBodyDoc;
-  categorizations: ProjectCategorizations;
   color?: EntityColor;
   sortOrder: number;
   updatedAt: string;
@@ -62,7 +55,6 @@ export function projectPlaintextFrom(
   return {
     name: overrides?.name ?? project.name,
     description: overrides?.description ?? project.description,
-    categorizations: overrides?.categorizations ?? project.categorizations,
     ...(color ? { color } : {}),
   };
 }
@@ -94,7 +86,6 @@ export async function encryptProjectContent(
   const plaintext: ProjectPlaintext = {
     name: content.name.trim(),
     description: content.description,
-    categorizations: content.categorizations,
     ...(content.color ? { color: content.color } : {}),
   };
   return encrypt({
@@ -118,7 +109,6 @@ export async function decryptProjectPlaintext(
   const parsed = JSON.parse(textDecoder.decode(bytes)) as {
     name?: unknown;
     description?: unknown;
-    categorizations?: unknown;
     color?: unknown;
   };
   if (typeof parsed.name !== "string") {
@@ -129,14 +119,9 @@ export async function decryptProjectPlaintext(
     color = parsed.color;
   }
   const description = parseDescription(parsed.description);
-  const cats = parseCategorizations(parsed.categorizations);
-  if (!cats) {
-    throw new Error("Invalid project categorizations");
-  }
   return {
     name: parsed.name,
     description,
-    categorizations: cats,
     ...(color ? { color } : {}),
   };
 }
@@ -147,7 +132,6 @@ async function toDecrypted(
 ): Promise<DecryptedProject> {
   let name = "Untitled project";
   let description: TaskBodyDoc = EMPTY_TASK_BODY;
-  let categorizations = defaultCategorizations();
   let color: EntityColor | undefined;
   try {
     const plain = await decryptProjectPlaintext(
@@ -157,7 +141,6 @@ async function toDecrypted(
     );
     name = plain.name;
     description = plain.description;
-    categorizations = plain.categorizations;
     color = plain.color;
   } catch {
     name = "Unable to decrypt";
@@ -167,7 +150,6 @@ async function toDecrypted(
     workspaceId: row.workspaceId,
     name,
     description,
-    categorizations,
     color,
     sortOrder: row.sortOrder,
     updatedAt: row.updatedAt,
@@ -229,7 +211,6 @@ export async function createProject(
     {
       name,
       description: content?.description ?? EMPTY_TASK_BODY,
-      categorizations: defaultCategorizations(),
     },
   );
   const row = await putProject(workspaceId, projectId, {

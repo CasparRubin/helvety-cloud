@@ -79,10 +79,6 @@ export function projectSettingsNavItems(
   const base = `/app/w/${workspaceId}/p/${projectId}/settings`;
   return [
     { href: `${base}/general`, label: "General" },
-    { href: `${base}/stages`, label: "Task stages" },
-    { href: `${base}/labels`, label: "Task labels" },
-    { href: `${base}/priorities`, label: "Task priorities" },
-    { href: `${base}/import`, label: "Import" },
     { href: `${base}/danger`, label: "Danger zone", destructive: true },
   ];
 }
@@ -94,6 +90,9 @@ export function workspaceSettingsNavItems(
   const base = `/app/w/${workspaceId}/settings`;
   const items: SettingsNavItem[] = [
     { href: `${base}/general`, label: "General" },
+    { href: `${base}/stages`, label: "Task stages" },
+    { href: `${base}/labels`, label: "Task labels" },
+    { href: `${base}/priorities`, label: "Task priorities" },
     { href: `${base}/members`, label: "Members" },
     { href: `${base}/billing`, label: "Billing" },
   ];

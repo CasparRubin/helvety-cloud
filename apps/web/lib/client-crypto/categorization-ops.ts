@@ -1,52 +1,49 @@
 import {
-  cloneCategorizations,
   DEFAULT_MAX_VISIBLE_TASKS,
   normalizeCompletionPercent,
   normalizeMaxVisibleTasks,
   removeOption,
-  remapTaskIdsByName,
   setDefaultOption,
   type CategorizationIcon,
   type CategorizationKind,
   type CategorizationOption,
-  type ProjectCategorizations,
+  type WorkspaceCategorizations,
 } from "@/lib/client-crypto/categorizations";
 import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 import {
-  loadDecryptedProject,
-  projectPlaintextFrom,
-  saveProjectContent,
-  type DecryptedProject,
-} from "@/lib/client-crypto/projects";
-import {
-  remapTasksForCategorizationChange,
-  type DecryptedTask,
-} from "@/lib/client-crypto/tasks";
+  encryptWorkspaceName,
+  type DecryptedWorkspaceListItem,
+} from "@/lib/client-crypto/workspaces";
+import { toWorkspacePlaintext } from "@/lib/client-crypto/workspace-plaintext";
+import { patchWorkspace } from "@/lib/api/v1-client";
 
-async function updateProjectCategorizations(
+async function updateWorkspaceCategorizations(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
-  categorizations: ProjectCategorizations,
-): Promise<DecryptedProject> {
-  return saveProjectContent(
-    workspaceId,
+  workspace: DecryptedWorkspaceListItem,
+  categorizations: WorkspaceCategorizations,
+  keyVersion: number,
+): Promise<void> {
+  const encryptedBlob = await encryptWorkspaceName(
     workspaceKey,
-    project,
-    projectPlaintextFrom(project, { categorizations }),
+    workspaceId,
+    toWorkspacePlaintext(workspace.name, categorizations),
+    keyVersion,
   );
+  await patchWorkspace(workspaceId, { encryptedBlob });
 }
 
 export async function addCategorizationOption(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   kind: CategorizationKind,
   name: string,
-): Promise<DecryptedProject> {
+): Promise<void> {
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Name is required");
-  const list = project.categorizations[kind];
+  const list = workspace.categorizations[kind];
   const option: CategorizationOption = {
     id: crypto.randomUUID(),
     name: trimmed,
@@ -55,58 +52,63 @@ export async function addCategorizationOption(
   if (kind === "stages") {
     option.maxVisibleTasks = DEFAULT_MAX_VISIBLE_TASKS;
   }
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
     [kind]: [...list, option],
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
 export async function renameCategorizationOption(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   kind: CategorizationKind,
   optionId: string,
   name: string,
-): Promise<DecryptedProject> {
+): Promise<void> {
   const trimmed = name.trim();
   if (!trimmed) throw new Error("Name is required");
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
-    [kind]: project.categorizations[kind].map((o) =>
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
+    [kind]: workspace.categorizations[kind].map((o) =>
       o.id === optionId ? { ...o, name: trimmed } : o,
     ),
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
 export async function setCategorizationDefault(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   kind: "stages" | "priorities",
   optionId: string,
-): Promise<DecryptedProject> {
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
-    [kind]: setDefaultOption(project.categorizations[kind], optionId),
+): Promise<void> {
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
+    [kind]: setDefaultOption(workspace.categorizations[kind], optionId),
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
@@ -114,14 +116,14 @@ export async function setCategorizationDefault(
 export async function setCategorizationOptionColor(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
-  kind: "stages",
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   optionId: string,
   color: EntityColor | null,
-): Promise<DecryptedProject> {
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
-    [kind]: project.categorizations[kind].map((o) => {
+): Promise<void> {
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
+    stages: workspace.categorizations.stages.map((o) => {
       if (o.id !== optionId) return o;
       const next = { ...o };
       if (color) next.color = color;
@@ -129,11 +131,12 @@ export async function setCategorizationOptionColor(
       return next;
     }),
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
@@ -141,14 +144,15 @@ export async function setCategorizationOptionColor(
 export async function setCategorizationOptionIcon(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   kind: CategorizationKind,
   optionId: string,
   icon: CategorizationIcon | null,
-): Promise<DecryptedProject> {
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
-    [kind]: project.categorizations[kind].map((o) => {
+): Promise<void> {
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
+    [kind]: workspace.categorizations[kind].map((o) => {
       if (o.id !== optionId) return o;
       const next = { ...o };
       if (icon) next.icon = icon;
@@ -156,193 +160,132 @@ export async function setCategorizationOptionIcon(
       return next;
     }),
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
 export async function setCategorizationOptionMaxVisibleTasks(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   optionId: string,
   maxVisibleTasks: number,
-): Promise<DecryptedProject> {
+): Promise<void> {
   const normalized = normalizeMaxVisibleTasks(maxVisibleTasks);
   if (normalized === null) {
     throw new Error("Show limit must be an integer from 1 to 500");
   }
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
-    stages: project.categorizations.stages.map((o) =>
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
+    stages: workspace.categorizations.stages.map((o) =>
       o.id === optionId ? { ...o, maxVisibleTasks: normalized } : o,
     ),
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
 export async function setCategorizationOptionCompletionPercent(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   optionId: string,
   completionPercent: number,
-): Promise<DecryptedProject> {
+): Promise<void> {
   const normalized = normalizeCompletionPercent(completionPercent);
   if (normalized === null) {
     throw new Error("Completion must be an integer from 0 to 100");
   }
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
-    stages: project.categorizations.stages.map((o) =>
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
+    stages: workspace.categorizations.stages.map((o) =>
       o.id === optionId ? { ...o, completionPercent: normalized } : o,
     ),
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
 export async function reorderCategorizationOption(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   kind: CategorizationKind,
   optionId: string,
   direction: "up" | "down",
-): Promise<DecryptedProject> {
-  const list = [...project.categorizations[kind]].sort(
+): Promise<void> {
+  const list = [...workspace.categorizations[kind]].sort(
     (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
   );
   const index = list.findIndex((o) => o.id === optionId);
-  if (index < 0) return project;
+  if (index < 0) return;
   const swapWith = direction === "up" ? index - 1 : index + 1;
-  if (swapWith < 0 || swapWith >= list.length) return project;
+  if (swapWith < 0 || swapWith >= list.length) return;
   const a = list[index]!;
   const b = list[swapWith]!;
   const aOrder = a.sortOrder;
   list[index] = { ...a, sortOrder: b.sortOrder };
   list[swapWith] = { ...b, sortOrder: aOrder };
-  const categorizations: ProjectCategorizations = {
-    ...project.categorizations,
+  const categorizations: WorkspaceCategorizations = {
+    ...workspace.categorizations,
     [kind]: list,
   };
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
 }
 
-/** Delete option and remap tasks that referenced it. */
 export async function deleteCategorizationOption(
   workspaceId: string,
   workspaceKey: Uint8Array,
-  project: DecryptedProject,
+  workspace: DecryptedWorkspaceListItem,
+  keyVersion: number,
   kind: CategorizationKind,
   optionId: string,
-): Promise<DecryptedProject> {
+): Promise<{
+  remappedLabelId: string | null | undefined;
+  remappedStageId: string | undefined;
+  remappedPriorityId: string | undefined;
+}> {
   const {
     categorizations,
     remappedLabelId,
     remappedStageId,
     remappedPriorityId,
-  } = removeOption(project.categorizations, kind, optionId);
+  } = removeOption(workspace.categorizations, kind, optionId);
 
-  await remapTasksForCategorizationChange(
-    workspaceId,
-    project.id,
-    workspaceKey,
-    (task: DecryptedTask) => {
-      if (kind === "labels" && task.labelId === optionId) {
-        return {
-          labelId: remappedLabelId ?? null,
-          stageId: task.stageId,
-          priorityId: task.priorityId,
-        };
-      }
-      if (kind === "stages" && task.stageId === optionId) {
-        return {
-          labelId: task.labelId,
-          stageId: remappedStageId ?? task.stageId,
-          priorityId: task.priorityId,
-        };
-      }
-      if (kind === "priorities" && task.priorityId === optionId) {
-        return {
-          labelId: task.labelId,
-          stageId: task.stageId,
-          priorityId: remappedPriorityId ?? task.priorityId,
-        };
-      }
-      return null;
-    },
-  );
-
-  return updateProjectCategorizations(
+  await updateWorkspaceCategorizations(
     workspaceId,
     workspaceKey,
-    project,
+    workspace,
     categorizations,
+    keyVersion,
   );
-}
-
-/** Copy source categorizations onto target; remap target tasks by option name. */
-export async function copyProjectCategorizations(
-  workspaceId: string,
-  workspaceKey: Uint8Array,
-  sourceProjectId: string,
-  targetProjectId: string,
-): Promise<DecryptedProject> {
-  if (sourceProjectId === targetProjectId) {
-    throw new Error("Choose a different project to copy from");
-  }
-  const [source, target] = await Promise.all([
-    loadDecryptedProject(workspaceId, sourceProjectId, workspaceKey),
-    loadDecryptedProject(workspaceId, targetProjectId, workspaceKey),
-  ]);
-  const oldCats = target.categorizations;
-  const clone = cloneCategorizations(source.categorizations);
-  const saved = await saveProjectContent(
-    workspaceId,
-    workspaceKey,
-    target,
-    projectPlaintextFrom(target, { categorizations: clone }),
-  );
-
-  await remapTasksForCategorizationChange(
-    workspaceId,
-    targetProjectId,
-    workspaceKey,
-    (task) => {
-      const next = remapTaskIdsByName(
-        {
-          labelId: task.labelId,
-          stageId: task.stageId,
-          priorityId: task.priorityId,
-        },
-        oldCats,
-        clone,
-      );
-      return {
-        labelId: next.labelId,
-        stageId: next.stageId,
-        priorityId: next.priorityId,
-      };
-    },
-  );
-
-  return saved;
+  return {
+    remappedLabelId,
+    remappedStageId,
+    remappedPriorityId,
+  };
 }

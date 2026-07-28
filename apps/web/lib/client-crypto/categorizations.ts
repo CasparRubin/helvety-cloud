@@ -1,4 +1,4 @@
-/** Project-scoped task categorization option definitions (encrypted in project blob). */
+/** Workspace-scoped categorization option definitions (encrypted in workspace blob). */
 
 import {
   DEFAULT_OPTION_ICONS,
@@ -32,13 +32,15 @@ export type CategorizationOption = {
   completionPercent?: number;
 };
 
-export type ProjectCategorizations = {
+export type WorkspaceCategorizations = {
   labels: CategorizationOption[];
   stages: CategorizationOption[];
   priorities: CategorizationOption[];
 };
 
-export type CategorizationKind = keyof ProjectCategorizations;
+export type ProjectCategorizations = WorkspaceCategorizations;
+
+export type CategorizationKind = keyof WorkspaceCategorizations;
 
 const LABEL_NAMES = ["Bug", "New Feature", "Change Request"] as const;
 const STAGE_NAMES = [
@@ -185,8 +187,8 @@ function option(
   return o;
 }
 
-/** Seed defaults for a new project (fresh UUIDs each call). */
-export function defaultCategorizations(): ProjectCategorizations {
+/** Seed defaults for a new workspace (fresh UUIDs each call). */
+export function defaultCategorizations(): WorkspaceCategorizations {
   return {
     labels: LABEL_NAMES.map((name, i) =>
       option(name, i, { icon: DEFAULT_OPTION_ICONS[name] }),
@@ -250,10 +252,10 @@ function parseOptionArray(value: unknown): CategorizationOption[] | null {
   return out;
 }
 
-/** Parse categorizations from decrypted project plaintext; null if missing/invalid. */
+/** Parse categorizations from decrypted workspace plaintext; null if missing/invalid. */
 export function parseCategorizations(
   value: unknown,
-): ProjectCategorizations | null {
+): WorkspaceCategorizations | null {
   if (value === null || typeof value !== "object") return null;
   const c = value as Record<string, unknown>;
   const labels = parseOptionArray(c.labels);

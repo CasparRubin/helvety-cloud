@@ -1,5 +1,5 @@
 -- tasks: ciphertext-only content; plaintext FKs + categorization ids + sort + tombstone.
--- label_id / stage_id / priority_id are soft refs to option UUIDs inside project ciphertext.
+-- label_id / stage_id / priority_id are soft refs to option UUIDs inside workspace ciphertext.
 -- milestone_id is a real FK to milestones (ON DELETE SET NULL).
 
 create table public.tasks (

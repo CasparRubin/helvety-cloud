@@ -16,6 +16,24 @@ import type {
   WorkspaceMember,
 } from "@helvety-cloud/api-contract";
 
+import {
+  addCategorizationOption,
+  deleteCategorizationOption,
+  renameCategorizationOption,
+  reorderCategorizationOption,
+  setCategorizationDefault,
+  setCategorizationOptionColor,
+  setCategorizationOptionIcon,
+  setCategorizationOptionMaxVisibleTasks,
+  setCategorizationOptionCompletionPercent,
+} from "@/lib/client-crypto/categorization-ops";
+import type {
+  CategorizationIcon,
+  CategorizationKind,
+  WorkspaceCategorizations,
+} from "@/lib/client-crypto/categorizations";
+import type { EntityColor } from "@/lib/client-crypto/entity-colors";
+import { remapWorkspaceTasksForCategorizationChange } from "@/lib/client-crypto/tasks";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   ApiClientError,
@@ -45,6 +63,7 @@ type WorkspaceSettingsContextValue = {
   workspace: {
     id: string;
     name: string;
+    categorizations: WorkspaceCategorizations;
     kind: string;
     role: string;
   } | null;
@@ -61,12 +80,43 @@ type WorkspaceSettingsContextValue = {
   error: string | null;
   memberLimitHit: boolean;
   copiedId: string | null;
+  categorizationsError: string | null;
   deleteOpen: boolean;
   setDeleteOpen: (open: boolean) => void;
   deleteConfirmName: string;
   setDeleteConfirmName: (value: string) => void;
   activeInvites: WorkspaceInvitation[];
   needsBillingCancel: boolean;
+  onAddOption: (kind: CategorizationKind, name: string) => Promise<void>;
+  onRenameOption: (
+    kind: CategorizationKind,
+    id: string,
+    name: string,
+  ) => Promise<void>;
+  onDeleteOption: (kind: CategorizationKind, id: string) => Promise<void>;
+  onReorderOption: (
+    kind: CategorizationKind,
+    id: string,
+    direction: "up" | "down",
+  ) => Promise<void>;
+  onSetDefault: (
+    kind: "stages" | "priorities",
+    id: string,
+  ) => Promise<void>;
+  onSetOptionColor: (
+    id: string,
+    color: EntityColor | undefined,
+  ) => Promise<void>;
+  onSetOptionIcon: (
+    kind: CategorizationKind,
+    id: string,
+    icon: CategorizationIcon | undefined,
+  ) => Promise<void>;
+  onSetMaxVisibleTasks: (id: string, maxVisibleTasks: number) => Promise<void>;
+  onSetCompletionPercent: (
+    id: string,
+    completionPercent: number,
+  ) => Promise<void>;
   ensureMembersLoaded: () => Promise<void>;
   ensureBillingLoaded: () => Promise<void>;
   onSaveName: () => Promise<void>;
@@ -118,6 +168,9 @@ export function WorkspaceSettingsProvider({
   const [error, setError] = useState<string | null>(null);
   const [memberLimitHit, setMemberLimitHit] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [categorizationsError, setCategorizationsError] = useState<string | null>(
+    null,
+  );
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
 
@@ -370,9 +423,199 @@ export function WorkspaceSettingsProvider({
     );
 
   if (!userKeys) return null;
+  const activeWorkspace = workspace ?? null;
+  const activeUserKeys = userKeys;
+
+  async function withCategorizationSave(fn: () => Promise<void>) {
+    if (pending) return;
+    setPending(true);
+    setError(null);
+    setCategorizationsError(null);
+    try {
+      await fn();
+      await refreshWorkspaces();
+      window.dispatchEvent(new Event("helvety:workspace-categorizations-changed"));
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : "Could not save categorizations";
+      setError(message);
+      setCategorizationsError(message);
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onAddOption(kind: CategorizationKind, name: string) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await addCategorizationOption(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        kind,
+        name,
+      );
+    });
+  }
+
+  async function onRenameOption(
+    kind: CategorizationKind,
+    id: string,
+    name: string,
+  ) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await renameCategorizationOption(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        kind,
+        id,
+        name,
+      );
+    });
+  }
+
+  async function onDeleteOption(kind: CategorizationKind, id: string) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      const remap = await deleteCategorizationOption(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        kind,
+        id,
+      );
+      await remapWorkspaceTasksForCategorizationChange(
+        workspaceId,
+        workspaceKey,
+        (task) => {
+          if (kind === "labels" && task.labelId === id) {
+            return {
+              labelId: remap.remappedLabelId ?? null,
+              stageId: task.stageId,
+              priorityId: task.priorityId,
+            };
+          }
+          if (kind === "stages" && task.stageId === id) {
+            return {
+              labelId: task.labelId,
+              stageId: remap.remappedStageId ?? task.stageId,
+              priorityId: task.priorityId,
+            };
+          }
+          if (kind === "priorities" && task.priorityId === id) {
+            return {
+              labelId: task.labelId,
+              stageId: task.stageId,
+              priorityId: remap.remappedPriorityId ?? task.priorityId,
+            };
+          }
+          return null;
+        },
+      );
+    });
+  }
+
+  async function onReorderOption(
+    kind: CategorizationKind,
+    id: string,
+    direction: "up" | "down",
+  ) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await reorderCategorizationOption(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        kind,
+        id,
+        direction,
+      );
+    });
+  }
+
+  async function onSetDefault(kind: "stages" | "priorities", id: string) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await setCategorizationDefault(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        kind,
+        id,
+      );
+    });
+  }
+
+  async function onSetOptionColor(id: string, color: EntityColor | undefined) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await setCategorizationOptionColor(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        id,
+        color ?? null,
+      );
+    });
+  }
+
+  async function onSetOptionIcon(
+    kind: CategorizationKind,
+    id: string,
+    icon: CategorizationIcon | undefined,
+  ) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await setCategorizationOptionIcon(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        kind,
+        id,
+        icon ?? null,
+      );
+    });
+  }
+
+  async function onSetMaxVisibleTasks(id: string, maxVisibleTasks: number) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await setCategorizationOptionMaxVisibleTasks(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        id,
+        maxVisibleTasks,
+      );
+    });
+  }
+
+  async function onSetCompletionPercent(id: string, completionPercent: number) {
+    await withCategorizationSave(async () => {
+      const workspaceKey = await getWorkspaceKey(workspaceId);
+      await setCategorizationOptionCompletionPercent(
+        workspaceId,
+        workspaceKey,
+        activeWorkspace!,
+        activeUserKeys.keyVersion,
+        id,
+        completionPercent,
+      );
+    });
+  }
 
   const value: WorkspaceSettingsContextValue = {
-    workspace,
+    workspace: activeWorkspace,
     canManage,
     isOwner,
     isPersonal,
@@ -386,12 +629,22 @@ export function WorkspaceSettingsProvider({
     error,
     memberLimitHit,
     copiedId,
+    categorizationsError,
     deleteOpen,
     setDeleteOpen,
     deleteConfirmName,
     setDeleteConfirmName,
     activeInvites,
     needsBillingCancel,
+    onAddOption,
+    onRenameOption,
+    onDeleteOption,
+    onReorderOption,
+    onSetDefault,
+    onSetOptionColor,
+    onSetOptionIcon,
+    onSetMaxVisibleTasks,
+    onSetCompletionPercent,
     ensureMembersLoaded,
     ensureBillingLoaded,
     onSaveName,

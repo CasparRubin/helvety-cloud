@@ -19,7 +19,7 @@ export type AppNavEntity = {
 type AppNavLocation = {
   workspaceId: string;
   workspaceBase: string;
-  section: "projects" | "notes" | "contacts" | "settings" | null;
+  section: "projects" | "tasks" | "notes" | "contacts" | "settings" | null;
   entity: AppNavEntity | null;
   taskId: string | null;
   /** Nested project settings under /p/{id}/settings. */
@@ -69,6 +69,13 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
     };
   }
 
+  if (section === "tasks") {
+    return {
+      ...base,
+      section: "tasks",
+    };
+  }
+
   if (section === "contacts") {
     return {
       ...base,
@@ -102,7 +109,9 @@ export function parentHrefFor(location: AppNavLocation): string | null {
     }
   }
 
-  return section === "projects" || section === null ? null : workspaceBase;
+  return section === "projects" || section === "tasks" || section === null
+    ? null
+    : workspaceBase;
 }
 
 export function NavSeparator() {

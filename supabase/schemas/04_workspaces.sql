@@ -1,4 +1,5 @@
--- workspaces: client-generated UUIDs; display name in encrypted_blob (workspace key).
+-- workspaces: client-generated UUIDs; encrypted_blob stores workspace name plus
+-- workspace-scoped task categorizations (labels / stages / priorities).
 
 create table public.workspaces (
   id uuid primary key,

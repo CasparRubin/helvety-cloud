@@ -66,7 +66,7 @@ export function ContactDetail({
   contactId,
 }: ContactDetailProps) {
   const router = useRouter();
-  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const cache = useEntityCache();
   const { upsertContact } = cache;
 
@@ -227,14 +227,13 @@ export function ContactDetail({
       case "create-task": {
         const projectForTask = await pickProjectForNewTask();
         if (!projectForTask) return;
-        const project = cache.projects.find((p) => p.id === projectForTask);
         const task = await createTask(
           workspaceId,
           projectForTask,
           key,
           { title: action.title },
           0,
-          project?.categorizations,
+          workspaces.find((item) => item.id === workspaceId)?.categorizations,
         );
         cache.upsertTask(task);
         return { kind: "task", id: task.id };

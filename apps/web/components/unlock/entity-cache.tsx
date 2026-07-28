@@ -17,7 +17,7 @@ import type { CategorizationIcon } from "@/lib/client-crypto/categorization-icon
 import {
   findOption,
   resolveStageColor,
-  type ProjectCategorizations,
+  type WorkspaceCategorizations,
 } from "@/lib/client-crypto/categorizations";
 import { loadDecryptedContacts, type DecryptedContact } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
@@ -30,7 +30,10 @@ import {
   loadDecryptedProjects,
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
-import { loadDecryptedTasks, type DecryptedTask } from "@/lib/client-crypto/tasks";
+import {
+  loadDecryptedWorkspaceTasks,
+  type DecryptedTask,
+} from "@/lib/client-crypto/tasks";
 
 export type ResolvedEntity = {
   kind: EntityLinkKind;
@@ -60,7 +63,7 @@ const EntityCacheContext = createContext<EntityCacheValue | null>(
   null,
 );
 
-function doneStageIds(cats: ProjectCategorizations): Set<string> {
+function doneStageIds(cats: WorkspaceCategorizations): Set<string> {
   const done = new Set<string>();
   for (const s of cats.stages) {
     const n = s.name.trim().toLowerCase();
@@ -91,7 +94,7 @@ export function EntityCacheProvider({
   workspaceId: string;
   children: ReactNode;
 }) {
-  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
@@ -106,20 +109,14 @@ export function EntityCacheProvider({
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled || gen !== genRef.current) return;
-        const projectsPage = await loadDecryptedProjects(workspaceId, key, {
-          limit: 100,
-        });
+        const [projectsPage, taskPage] = await Promise.all([
+          loadDecryptedProjects(workspaceId, key, {
+            limit: 100,
+          }),
+          loadDecryptedWorkspaceTasks(workspaceId, key, { limit: 100 }),
+        ]);
         if (cancelled || gen !== genRef.current) return;
         setProjects(projectsPage.projects);
-
-        const allTasks: DecryptedTask[] = [];
-        for (const project of projectsPage.projects) {
-          const page = await loadDecryptedTasks(workspaceId, project.id, key, {
-            limit: 100,
-          });
-          allTasks.push(...page.tasks);
-        }
-        if (cancelled || gen !== genRef.current) return;
 
         const [notesPage, contactsPage] = await Promise.all([
           loadDecryptedNotes(workspaceId, key, { limit: 100 }),
@@ -127,7 +124,7 @@ export function EntityCacheProvider({
         ]);
         if (cancelled || gen !== genRef.current) return;
 
-        setTasks(allTasks);
+        setTasks(taskPage.tasks);
         setNotes(notesPage.notes);
         setContacts(contactsPage.contacts);
       } catch {
@@ -163,6 +160,13 @@ export function EntityCacheProvider({
     for (const p of projects) m.set(p.id, p);
     return m;
   }, [projects]);
+
+  const workspaceCategorizations = useMemo(
+    () =>
+      workspaces.find((workspace) => workspace.id === workspaceId)?.categorizations ??
+      null,
+    [workspaces, workspaceId],
+  );
 
   const resolve = useCallback(
     (kind: EntityLinkKind, id: string): ResolvedEntity => {
@@ -206,8 +210,7 @@ export function EntityCacheProvider({
         }
         case "task": {
           const task = tasks.find((t) => t.id === id);
-          const project = task ? projectById.get(task.projectId) : undefined;
-          const cats = project?.categorizations;
+          const cats = workspaceCategorizations;
           const stage = cats
             ? findOption(cats.stages, task?.stageId ?? null)
             : null;
@@ -252,7 +255,7 @@ export function EntityCacheProvider({
         }
       }
     },
-    [notes, contacts, tasks, projectById, workspaceId],
+    [notes, contacts, tasks, projectById, workspaceCategorizations, workspaceId],
   );
 
   const upsertNote = useCallback((note: DecryptedNote) => {

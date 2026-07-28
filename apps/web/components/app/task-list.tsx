@@ -73,6 +73,7 @@ import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
 import {
   createTask,
   loadAllDecryptedTasks,
+  loadAllDecryptedWorkspaceTasks,
   saveTaskCategorizationIds,
   type DecryptedTask,
 } from "@/lib/client-crypto/tasks";
@@ -86,12 +87,15 @@ import { cn } from "@/lib/utils";
 
 type TaskListProps = {
   workspaceId: string;
-  projectId: string;
+  projectId?: string;
 };
 
 export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const router = useRouter();
-  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
+  const workspaceCategorizations =
+    workspaces.find((workspace) => workspace.id === workspaceId)?.categorizations ??
+    null;
 
   const [project, setProject] = useState<DecryptedProject | null>(null);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
@@ -119,9 +123,13 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const reload = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
     const [loadedProject, allTasks, allMilestones] = await Promise.all([
-      loadDecryptedProject(workspaceId, projectId, key),
-      loadAllDecryptedTasks(workspaceId, projectId, key),
-      loadAllDecryptedMilestones(workspaceId, projectId, key),
+      projectId ? loadDecryptedProject(workspaceId, projectId, key) : Promise.resolve(null),
+      projectId
+        ? loadAllDecryptedTasks(workspaceId, projectId, key)
+        : loadAllDecryptedWorkspaceTasks(workspaceId, key),
+      projectId
+        ? loadAllDecryptedMilestones(workspaceId, projectId, key)
+        : Promise.resolve([]),
     ]);
     setProject(loadedProject);
     setTasks(allTasks);
@@ -165,9 +173,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   }, [tasks, milestoneFilter, deferredQuery]);
 
   const columns = useMemo(() => {
-    if (!project) return [];
-    return groupTasksByStage(filteredTasks, project.categorizations);
-  }, [project, filteredTasks]);
+    if (!workspaceCategorizations) return [];
+    return groupTasksByStage(filteredTasks, workspaceCategorizations);
+  }, [workspaceCategorizations, filteredTasks]);
 
   const milestoneById = useMemo(() => {
     const map = new Map<string, DecryptedMilestone>();
@@ -184,14 +192,18 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     setNewDueDate("");
     setNewLabelId(null);
     setNewMilestoneId(null);
-    setNewStageId(project ? defaultStage(project.categorizations).id : null);
+    setNewStageId(
+      workspaceCategorizations ? defaultStage(workspaceCategorizations).id : null,
+    );
     setNewPriorityId(
-      project ? defaultPriority(project.categorizations).id : null,
+      workspaceCategorizations
+        ? defaultPriority(workspaceCategorizations).id
+        : null,
     );
   }
 
   async function onCreate(title: string) {
-    if (busy || !project) return;
+    if (busy || !projectId || !workspaceCategorizations) return;
     setBusy(true);
     try {
       const key = await getWorkspaceKey(workspaceId);
@@ -208,7 +220,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           dueDate: newDueDate.trim() || null,
         },
         nextOrder,
-        project.categorizations,
+        workspaceCategorizations,
         {
           labelId: newLabelId,
           stageId: newStageId ?? undefined,
@@ -258,7 +270,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       const key = await getWorkspaceKey(workspaceId);
       const saved = await saveTaskCategorizationIds(
         workspaceId,
-        projectId,
+        task.projectId,
         key,
         task,
         {
@@ -296,7 +308,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   function onDragEnd(event: DragEndEvent) {
     setActiveTaskId(null);
     const { active, over } = event;
-    if (!over || !project) return;
+    if (!over) return;
     const task = tasks.find((t) => t.id === String(active.id));
     if (!task) return;
     const nextStageId = resolveDropStageId(
@@ -317,7 +329,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   return (
     <>
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
-      {!loading && project ? (
+      {!loading && projectId ? (
         <PageActions>
           <CreateEntityDialog
             triggerLabel="Create task"
@@ -325,7 +337,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             fieldLabel="Title"
             fieldPlaceholder="New task title"
             fieldMaxLength={500}
-            disabled={busy || !project}
+            disabled={busy || !projectId}
             onCreate={onCreate}
             onOpenChange={(open) => {
               if (open) resetCreateFields();
@@ -346,7 +358,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               <div className="flex flex-col gap-2">
                 <Label>Label</Label>
                 <CategorizationPicker
-                  options={project.categorizations.labels}
+                  options={workspaceCategorizations?.labels ?? []}
                   value={newLabelId}
                   allowNone
                   disabled={busy}
@@ -357,7 +369,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               <div className="flex flex-col gap-2">
                 <Label required>Stage</Label>
                 <CategorizationPicker
-                  options={project.categorizations.stages}
+                  options={workspaceCategorizations?.stages ?? []}
                   value={newStageId}
                   useStageColor
                   disabled={busy}
@@ -370,7 +382,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               <div className="flex flex-col gap-2">
                 <Label required>Priority</Label>
                 <CategorizationPicker
-                  options={project.categorizations.priorities}
+                  options={workspaceCategorizations?.priorities ?? []}
                   value={newPriorityId}
                   disabled={busy}
                   aria-label="Priority"
@@ -414,14 +426,20 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
           size="sm"
           render={
             <Link
-              href={`/app/w/${workspaceId}/p/${projectId}/settings/general`}
+              href={
+                projectId
+                  ? `/app/w/${workspaceId}/p/${projectId}/settings/general`
+                  : `/app/w/${workspaceId}/settings/stages`
+              }
             />
           }
           nativeButton={false}
-          aria-label="Project settings"
+          aria-label={projectId ? "Project settings" : "Workspace settings"}
         >
           <SettingsIcon />
-          <span className="hidden sm:inline">Project settings</span>
+          <span className="hidden sm:inline">
+            {projectId ? "Project settings" : "Workspace settings"}
+          </span>
         </Button>
       </PageSettingsActions>
       <EntityListShell
@@ -435,7 +453,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               onError={setError}
             />
           ) : (
-            (project?.name ?? "Project")
+            (project?.name ?? "Tasks")
           )
         }
         belowTitle={
@@ -455,6 +473,13 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                 disabled={tasks.length === 0}
               />
             </div>
+          ) : !loading ? (
+            <ListSearchInput
+              value={query}
+              onValueChange={setQuery}
+              placeholder="Filter tasks…"
+              disabled={tasks.length === 0}
+            />
           ) : null
         }
         error={error}
@@ -462,7 +487,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
         loadingLabel="Loading tasks…"
         bareChildren
       >
-        {!loading && project ? (
+        {!loading && workspaceCategorizations ? (
           <div className="flex min-h-0 flex-1 flex-col gap-4 lg:flex-row">
             <div className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-y-auto pb-2 lg:flex-[3]">
               {tasks.length > 0 && filteredTasks.length === 0 ? (
@@ -483,10 +508,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                         prevStage={columns[index - 1]?.stage ?? null}
                         nextStage={columns[index + 1]?.stage ?? null}
                         tasks={col.tasks}
-                        cats={project.categorizations}
+                        cats={workspaceCategorizations}
                         milestoneById={milestoneById}
                         workspaceId={workspaceId}
-                        projectId={projectId}
                         busy={busy}
                         savingTaskId={savingTaskId}
                         onUpdateIds={updateTaskIds}
@@ -494,10 +518,10 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                     ))}
                   </div>
                   <DragOverlay dropAnimation={null}>
-                    {activeTask && project ? (
+                    {activeTask ? (
                       <TaskCardContent
                         task={activeTask}
-                        cats={project.categorizations}
+                        cats={workspaceCategorizations}
                         milestone={
                           activeTask.milestoneId
                             ? (milestoneById.get(activeTask.milestoneId) ??
@@ -505,7 +529,6 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
                             : null
                         }
                         workspaceId={workspaceId}
-                        projectId={projectId}
                         overlay
                       />
                     ) : null}
@@ -514,6 +537,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               )}
             </div>
 
+            {projectId && project ? (
             <aside className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-t border-border/60 pt-4 lg:flex-[1] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4">
               <ProjectMilestonesPanel
                 workspaceId={workspaceId}
@@ -531,11 +555,12 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
               />
               <ProjectProgress
                 tasks={tasks}
-                categorizations={project.categorizations}
+                categorizations={workspaceCategorizations}
                 milestones={milestones}
                 milestoneFilter={milestoneFilter}
               />
             </aside>
+            ) : null}
           </div>
         ) : null}
       </EntityListShell>
@@ -551,7 +576,6 @@ function StageRow({
   cats,
   milestoneById,
   workspaceId,
-  projectId,
   busy,
   savingTaskId,
   onUpdateIds,
@@ -563,7 +587,6 @@ function StageRow({
   cats: ProjectCategorizations;
   milestoneById: Map<string, DecryptedMilestone>;
   workspaceId: string;
-  projectId: string;
   busy: boolean;
   savingTaskId: string | null;
   onUpdateIds: (
@@ -640,7 +663,6 @@ function StageRow({
                     : null
                 }
                 workspaceId={workspaceId}
-                projectId={projectId}
                 disabled={busy || savingTaskId === task.id}
                 onUpdateIds={onUpdateIds}
               />
@@ -675,7 +697,6 @@ function TaskCard({
   cats,
   milestone,
   workspaceId,
-  projectId,
   disabled,
   onUpdateIds,
 }: {
@@ -686,7 +707,6 @@ function TaskCard({
   cats: ProjectCategorizations;
   milestone: DecryptedMilestone | null;
   workspaceId: string;
-  projectId: string;
   disabled: boolean;
   onUpdateIds: (
     task: DecryptedTask,
@@ -720,7 +740,6 @@ function TaskCard({
         cats={cats}
         milestone={milestone}
         workspaceId={workspaceId}
-        projectId={projectId}
         disabled={disabled}
         onUpdateIds={onUpdateIds}
         dragHandle={
@@ -779,7 +798,6 @@ function TaskCardContent({
   cats,
   milestone,
   workspaceId,
-  projectId,
   disabled,
   onUpdateIds,
   dragHandle,
@@ -790,7 +808,6 @@ function TaskCardContent({
   cats: ProjectCategorizations;
   milestone?: DecryptedMilestone | null;
   workspaceId: string;
-  projectId: string;
   disabled?: boolean;
   onUpdateIds?: (
     task: DecryptedTask,
@@ -816,7 +833,7 @@ function TaskCardContent({
     >
       {dragHandle}
       <Link
-        href={`/app/w/${workspaceId}/p/${projectId}/t/${task.id}`}
+        href={`/app/w/${workspaceId}/p/${task.projectId}/t/${task.id}`}
         className="min-w-0 flex-1 truncate text-sm font-medium hover:underline"
         tabIndex={overlay ? -1 : undefined}
         onClick={(e) => {

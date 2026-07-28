@@ -57,7 +57,7 @@ type NoteDraft = {
 
 export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   const router = useRouter();
-  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const cache = useEntityCache();
   const { upsertNote } = cache;
 
@@ -178,14 +178,13 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       case "create-task": {
         const projectForTask = await pickProjectForNewTask();
         if (!projectForTask) return;
-        const project = cache.projects.find((p) => p.id === projectForTask);
         const task = await createTask(
           workspaceId,
           projectForTask,
           key,
           { title: action.title },
           0,
-          project?.categorizations,
+          workspaces.find((item) => item.id === workspaceId)?.categorizations,
         );
         cache.upsertTask(task);
         return { kind: "task", id: task.id };

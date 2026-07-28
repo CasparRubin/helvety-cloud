@@ -41,7 +41,6 @@ import { cn } from "@/lib/utils";
 import { createContact } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import { loadAllDecryptedMilestones } from "@/lib/client-crypto/milestones";
-import { loadDecryptedProject } from "@/lib/client-crypto/projects";
 import {
   EMPTY_TASK_BODY,
   toTaskPlaintext,
@@ -77,9 +76,12 @@ export function TaskDetail({
   taskId,
 }: TaskDetailProps) {
   const router = useRouter();
-  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const cache = useEntityCache();
   const { upsertTask } = cache;
+  const workspaceCategorizations =
+    workspaces.find((workspace) => workspace.id === workspaceId)?.categorizations ??
+    null;
 
   const [task, setTask] = useState<DecryptedTask | null>(null);
   const [categorizations, setCategorizations] =
@@ -162,13 +164,15 @@ export function TaskDetail({
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const [loaded, project, milestones] = await Promise.all([
+        const [loaded, milestones] = await Promise.all([
           loadDecryptedTask(workspaceId, projectId, taskId, key),
-          loadDecryptedProject(workspaceId, projectId, key),
           loadAllDecryptedMilestones(workspaceId, projectId, key),
         ]);
         if (cancelled) return;
-        const cats = project.categorizations;
+        const cats = workspaceCategorizations;
+        if (!cats) {
+          throw new Error("Workspace categorizations not available");
+        }
         const nextStage =
           loaded.stageId &&
           cats.stages.some((s) => s.id === loaded.stageId)
@@ -215,7 +219,15 @@ export function TaskDetail({
     return () => {
       cancelled = true;
     };
-  }, [userKeys, workspaceId, projectId, taskId, getWorkspaceKey, upsertTask]);
+  }, [
+    userKeys,
+    workspaceId,
+    projectId,
+    taskId,
+    getWorkspaceKey,
+    upsertTask,
+    workspaceCategorizations,
+  ]);
 
   async function onDelete() {
     if (!task || deleting || status === "saving") return;
@@ -237,14 +249,13 @@ export function TaskDetail({
     const key = await getWorkspaceKey(workspaceId);
     switch (action.type) {
       case "create-task": {
-        const project = cache.projects.find((p) => p.id === projectId);
         const created = await createTask(
           workspaceId,
           projectId,
           key,
           { title: action.title },
           0,
-          project?.categorizations ?? categorizations ?? undefined,
+          workspaceCategorizations ?? categorizations ?? undefined,
         );
         cache.upsertTask(created);
         return { kind: "task", id: created.id };

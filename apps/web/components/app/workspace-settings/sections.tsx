@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DateTimeText } from "@/components/app/datetime-text";
+import { CategorizationOptionList } from "@/components/app/project-settings/option-list";
 import {
   invitationStatusLabel,
   useWorkspaceSettings,
@@ -163,6 +164,132 @@ export function WorkspaceGeneralSettings() {
           </p>
         ) : null}
       </div>
+    </div>
+  );
+}
+
+export function WorkspaceStagesSettings() {
+  const {
+    workspace,
+    pending,
+    categorizationsError,
+    onAddOption,
+    onRenameOption,
+    onDeleteOption,
+    onReorderOption,
+    onSetDefault,
+    onSetOptionColor,
+    onSetOptionIcon,
+    onSetMaxVisibleTasks,
+    onSetCompletionPercent,
+  } = useWorkspaceSettings();
+
+  if (!workspace) {
+    return (
+      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SettingsError error={categorizationsError} />
+      <CategorizationOptionList
+        title="Stages"
+        description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Show limits how many tasks appear before “Show more”. % is the stage’s weight toward project completion (Cancelled is excluded)."
+        kind="stages"
+        options={workspace.categorizations.stages}
+        showDefault
+        busy={pending}
+        onAdd={(name) => onAddOption("stages", name)}
+        onRename={(id, name) => onRenameOption("stages", id, name)}
+        onDelete={(id) => onDeleteOption("stages", id)}
+        onReorder={(id, direction) => onReorderOption("stages", id, direction)}
+        onSetDefault={(id) => onSetDefault("stages", id)}
+        onSetColor={(id, color) => onSetOptionColor(id, color)}
+        onSetIcon={(id, icon) => onSetOptionIcon("stages", id, icon)}
+        onSetMaxVisibleTasks={onSetMaxVisibleTasks}
+        onSetCompletionPercent={onSetCompletionPercent}
+      />
+    </div>
+  );
+}
+
+export function WorkspaceLabelsSettings() {
+  const {
+    workspace,
+    pending,
+    categorizationsError,
+    onAddOption,
+    onRenameOption,
+    onDeleteOption,
+    onReorderOption,
+    onSetOptionIcon,
+  } = useWorkspaceSettings();
+
+  if (!workspace) {
+    return (
+      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SettingsError error={categorizationsError} />
+      <CategorizationOptionList
+        title="Labels"
+        description="Optional on tasks. Delete clears the label on affected tasks across this workspace."
+        kind="labels"
+        options={workspace.categorizations.labels}
+        showDefault={false}
+        busy={pending}
+        onAdd={(name) => onAddOption("labels", name)}
+        onRename={(id, name) => onRenameOption("labels", id, name)}
+        onDelete={(id) => onDeleteOption("labels", id)}
+        onReorder={(id, direction) => onReorderOption("labels", id, direction)}
+        onSetIcon={(id, icon) => onSetOptionIcon("labels", id, icon)}
+      />
+    </div>
+  );
+}
+
+export function WorkspacePrioritiesSettings() {
+  const {
+    workspace,
+    pending,
+    categorizationsError,
+    onAddOption,
+    onRenameOption,
+    onDeleteOption,
+    onReorderOption,
+    onSetDefault,
+    onSetOptionIcon,
+  } = useWorkspaceSettings();
+
+  if (!workspace) {
+    return (
+      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-4">
+      <SettingsError error={categorizationsError} />
+      <CategorizationOptionList
+        title="Priorities"
+        description="Required on tasks. Default is used for new tasks and when deleting an in-use priority."
+        kind="priorities"
+        options={workspace.categorizations.priorities}
+        showDefault
+        busy={pending}
+        onAdd={(name) => onAddOption("priorities", name)}
+        onRename={(id, name) => onRenameOption("priorities", id, name)}
+        onDelete={(id) => onDeleteOption("priorities", id)}
+        onReorder={(id, direction) =>
+          onReorderOption("priorities", id, direction)
+        }
+        onSetDefault={(id) => onSetDefault("priorities", id)}
+        onSetIcon={(id, icon) => onSetOptionIcon("priorities", id, icon)}
+      />
     </div>
   );
 }

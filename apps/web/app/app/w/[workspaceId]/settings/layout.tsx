@@ -26,8 +26,8 @@ export default function WorkspaceSettingsLayout({
         title="Workspace settings"
         description={
           workspace
-            ? `Manage name, members, billing, and deletion for ${workspace.name}.`
-            : "Manage name, members, billing, and deletion."
+            ? `Manage name, task categorizations, members, billing, and deletion for ${workspace.name}.`
+            : "Manage name, task categorizations, members, billing, and deletion."
         }
         items={workspaceSettingsNavItems(workspaceId, {
           showDanger: isOwner,

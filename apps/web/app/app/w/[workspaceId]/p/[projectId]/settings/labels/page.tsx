@@ -1,7 +1,10 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { ProjectLabelsSettings } from "@/components/app/project-settings/sections";
+type PageProps = {
+  params: Promise<{ workspaceId: string }>;
+};
 
-export default function ProjectLabelsSettingsPage() {
-  return <ProjectLabelsSettings />;
+export default async function ProjectLabelsSettingsPage({ params }: PageProps) {
+  const { workspaceId } = await params;
+  redirect(`/app/w/${workspaceId}/settings/labels`);
 }

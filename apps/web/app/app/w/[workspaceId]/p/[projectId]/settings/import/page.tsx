@@ -1,7 +1,10 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { ProjectImportSettings } from "@/components/app/project-settings/sections";
+type PageProps = {
+  params: Promise<{ workspaceId: string }>;
+};
 
-export default function ProjectImportSettingsPage() {
-  return <ProjectImportSettings />;
+export default async function ProjectImportSettingsPage({ params }: PageProps) {
+  const { workspaceId } = await params;
+  redirect(`/app/w/${workspaceId}/settings/stages`);
 }

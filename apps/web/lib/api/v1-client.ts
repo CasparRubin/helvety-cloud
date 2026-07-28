@@ -356,6 +356,26 @@ export async function listTasks(
   );
 }
 
+export async function listWorkspaceTasks(
+  workspaceId: string,
+  params?: ListTasksParams & { projectId?: string },
+): Promise<ListTasksResponse> {
+  const q = new URLSearchParams();
+  if (params?.limit !== undefined) q.set("limit", String(params.limit));
+  if (params?.cursor) q.set("cursor", params.cursor);
+  if (params?.includeDeleted) q.set("includeDeleted", "true");
+  if (params?.labelId) q.set("labelId", params.labelId);
+  if (params?.stageId) q.set("stageId", params.stageId);
+  if (params?.priorityId) q.set("priorityId", params.priorityId);
+  if (params?.milestoneId) q.set("milestoneId", params.milestoneId);
+  if (params?.projectId) q.set("projectId", params.projectId);
+  const qs = q.toString();
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/tasks${qs ? `?${qs}` : ""}`,
+    listTasksResponseSchema,
+  );
+}
+
 export async function putTask(
   workspaceId: string,
   projectId: string,

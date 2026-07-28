@@ -13,6 +13,7 @@ import {
   deleteTask as deleteTaskApi,
   getTask,
   listTasks,
+  listWorkspaceTasks,
   putTask,
   type ListTasksParams,
 } from "@/lib/api/v1-client";
@@ -136,6 +137,18 @@ export async function loadDecryptedTasks(
   return { tasks, nextCursor: page.nextCursor };
 }
 
+export async function loadDecryptedWorkspaceTasks(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  params?: ListTasksParams & { projectId?: string },
+): Promise<{ tasks: DecryptedTask[]; nextCursor: string | null }> {
+  const page = await listWorkspaceTasks(workspaceId, params);
+  const tasks = await Promise.all(
+    page.tasks.map((row) => toDecrypted(workspaceKey, row)),
+  );
+  return { tasks, nextCursor: page.nextCursor };
+}
+
 /** Load every page of tasks for a project (board / remap). */
 export async function loadAllDecryptedTasks(
   workspaceId: string,
@@ -148,6 +161,25 @@ export async function loadAllDecryptedTasks(
     const page = await loadDecryptedTasks(workspaceId, projectId, workspaceKey, {
       limit: 100,
       cursor,
+    });
+    all.push(...page.tasks);
+    cursor = page.nextCursor;
+  } while (cursor);
+  return all;
+}
+
+export async function loadAllDecryptedWorkspaceTasks(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  params?: { projectId?: string },
+): Promise<DecryptedTask[]> {
+  const all: DecryptedTask[] = [];
+  let cursor: string | null = null;
+  do {
+    const page = await loadDecryptedWorkspaceTasks(workspaceId, workspaceKey, {
+      limit: 100,
+      cursor,
+      projectId: params?.projectId,
     });
     all.push(...page.tasks);
     cursor = page.nextCursor;
@@ -328,6 +360,36 @@ export async function remapTasksForCategorizationChange(
     await saveTaskCategorizationIds(
       workspaceId,
       projectId,
+      workspaceKey,
+      task,
+      next,
+    );
+  }
+}
+
+export async function remapWorkspaceTasksForCategorizationChange(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  remap: (task: DecryptedTask) => {
+    labelId: string | null;
+    stageId: string | null;
+    priorityId: string | null;
+  } | null,
+): Promise<void> {
+  const tasks = await loadAllDecryptedWorkspaceTasks(workspaceId, workspaceKey);
+  for (const task of tasks) {
+    const next = remap(task);
+    if (!next) continue;
+    if (
+      next.labelId === task.labelId &&
+      next.stageId === task.stageId &&
+      next.priorityId === task.priorityId
+    ) {
+      continue;
+    }
+    await saveTaskCategorizationIds(
+      workspaceId,
+      task.projectId,
       workspaceKey,
       task,
       next,

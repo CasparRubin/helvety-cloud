@@ -29,6 +29,7 @@ import type { UnlockedUserKeys } from "@/lib/client-crypto/user-keys";
 import {
   parseWorkspacePlaintext,
   toWorkspacePlaintext,
+  type WorkspacePlaintext,
 } from "@/lib/client-crypto/workspace-plaintext";
 
 const textDecoder = new TextDecoder();
@@ -52,15 +53,34 @@ function workspaceAad(workspaceId: string) {
 export async function encryptWorkspaceName(
   workspaceKey: Uint8Array,
   workspaceId: string,
-  name: string,
+  content: WorkspacePlaintext | string,
   keyVersion = 1,
 ): Promise<CiphertextEnvelope> {
   return encrypt({
     key: workspaceKey,
-    plaintext: encodeUtf8(JSON.stringify(toWorkspacePlaintext(name))),
+    plaintext: encodeUtf8(
+      JSON.stringify(
+        typeof content === "string"
+          ? toWorkspacePlaintext(content)
+          : content,
+      ),
+    ),
     aad: workspaceAad(workspaceId),
     keyVersion,
   });
+}
+
+export async function decryptWorkspacePlaintext(
+  workspaceKey: Uint8Array,
+  workspaceId: string,
+  envelope: CiphertextEnvelope,
+): Promise<WorkspacePlaintext> {
+  const bytes = await decrypt({
+    key: workspaceKey,
+    envelope,
+    aad: workspaceAad(workspaceId),
+  });
+  return parseWorkspacePlaintext(JSON.parse(textDecoder.decode(bytes)));
 }
 
 export async function decryptWorkspaceName(
@@ -68,12 +88,9 @@ export async function decryptWorkspaceName(
   workspaceId: string,
   envelope: CiphertextEnvelope,
 ): Promise<string> {
-  const bytes = await decrypt({
-    key: workspaceKey,
-    envelope,
-    aad: workspaceAad(workspaceId),
-  });
-  return parseWorkspacePlaintext(JSON.parse(textDecoder.decode(bytes))).name;
+  return (
+    await decryptWorkspacePlaintext(workspaceKey, workspaceId, envelope)
+  ).name;
 }
 
 export async function unwrapWorkspaceKey(
@@ -152,6 +169,7 @@ export function invitationMailto(params: {
 export type DecryptedWorkspaceListItem = {
   id: string;
   name: string;
+  categorizations: WorkspacePlaintext["categorizations"];
   kind: WorkspaceListItem["kind"];
   role: WorkspaceListItem["role"];
   wrappedKey: WorkspaceListItem["wrappedKey"];
@@ -164,14 +182,15 @@ export async function decryptWorkspaceListItem(
   item: WorkspaceListItem,
 ): Promise<DecryptedWorkspaceListItem> {
   const workspaceKey = await unwrapWorkspaceKey(userKeys, item.id, item.wrappedKey);
-  const name = await decryptWorkspaceName(
+  const plain = await decryptWorkspacePlaintext(
     workspaceKey,
     item.id,
     item.encryptedBlob,
   );
   return {
     id: item.id,
-    name,
+    name: plain.name,
+    categorizations: plain.categorizations,
     kind: item.kind,
     role: item.role,
     wrappedKey: item.wrappedKey,
@@ -187,6 +206,7 @@ export async function createStandardWorkspace(
 ): Promise<DecryptedWorkspaceListItem> {
   const id = crypto.randomUUID();
   const workspaceKey = randomKeyBytes();
+  const plaintext = toWorkspacePlaintext(name);
   const wrappedKey = await sealToPublicKey(
     userKeys.publicKey,
     workspaceKey,
@@ -196,7 +216,7 @@ export async function createStandardWorkspace(
   const encryptedBlob = await encryptWorkspaceName(
     workspaceKey,
     id,
-    name,
+    plaintext,
     userKeys.keyVersion,
   );
   const created = await createWorkspace({
@@ -209,6 +229,7 @@ export async function createStandardWorkspace(
   return {
     id: created.id,
     name,
+      categorizations: plaintext.categorizations,
     kind: created.kind,
     role: "owner",
     wrappedKey,
@@ -232,6 +253,7 @@ export async function ensurePersonalWorkspace(
 
   const id = crypto.randomUUID();
   const workspaceKey = randomKeyBytes();
+  const plaintext = toWorkspacePlaintext("Personal");
   const wrappedKey = await sealToPublicKey(
     userKeys.publicKey,
     workspaceKey,
@@ -241,7 +263,7 @@ export async function ensurePersonalWorkspace(
   const encryptedBlob = await encryptWorkspaceName(
     workspaceKey,
     id,
-    "Personal",
+    plaintext,
     userKeys.keyVersion,
   );
 
@@ -255,6 +277,7 @@ export async function ensurePersonalWorkspace(
     return {
       id: created.id,
       name: "Personal",
+      categorizations: plaintext.categorizations,
       kind: created.kind,
       role: "owner",
       wrappedKey,

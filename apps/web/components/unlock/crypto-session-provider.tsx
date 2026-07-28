@@ -29,6 +29,9 @@ import {
   type UnlockedUserKeys,
 } from "@/lib/client-crypto/user-keys";
 import {
+  defaultCategorizations,
+} from "@/lib/client-crypto/categorizations";
+import {
   createStandardWorkspace,
   decryptWorkspaceListItem,
   encryptWorkspaceName,
@@ -36,6 +39,7 @@ import {
   unwrapWorkspaceKey,
   type DecryptedWorkspaceListItem,
 } from "@/lib/client-crypto/workspaces";
+import { toWorkspacePlaintext } from "@/lib/client-crypto/workspace-plaintext";
 
 type CryptoSessionValue = {
   userKeys: UnlockedUserKeys | null;
@@ -105,6 +109,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
           return {
             id: item.id,
             name: "Unable to decrypt",
+            categorizations: defaultCategorizations(),
             kind: item.kind,
             role: item.role,
             wrappedKey: item.wrappedKey,
@@ -219,16 +224,20 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
         throw new Error("Encryption is locked");
       }
       const workspaceKey = await getWorkspaceKey(workspaceId);
+      const workspace = workspaces.find((item) => item.id === workspaceId);
+      if (!workspace) {
+        throw new Error("Workspace not found");
+      }
       const encryptedBlob = await encryptWorkspaceName(
         workspaceKey,
         workspaceId,
-        name,
+        toWorkspacePlaintext(name, workspace.categorizations),
         userKeys.keyVersion,
       );
       await patchWorkspace(workspaceId, { encryptedBlob });
       await loadWorkspaces(userKeys);
     },
-    [userKeys, getWorkspaceKey, loadWorkspaces],
+    [userKeys, workspaces, getWorkspaceKey, loadWorkspaces],
   );
 
   const removeWorkspace = useCallback(async (workspaceId: string) => {

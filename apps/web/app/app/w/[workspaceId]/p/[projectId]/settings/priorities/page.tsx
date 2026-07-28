@@ -1,7 +1,12 @@
-"use client";
+import { redirect } from "next/navigation";
 
-import { ProjectPrioritiesSettings } from "@/components/app/project-settings/sections";
+type PageProps = {
+  params: Promise<{ workspaceId: string }>;
+};
 
-export default function ProjectPrioritiesSettingsPage() {
-  return <ProjectPrioritiesSettings />;
+export default async function ProjectPrioritiesSettingsPage({
+  params,
+}: PageProps) {
+  const { workspaceId } = await params;
+  redirect(`/app/w/${workspaceId}/settings/priorities`);
 }

@@ -1,4 +1,5 @@
--- projects: ciphertext-only content blob; plaintext FKs + sort + tombstone.
+-- projects: ciphertext-only content blob for project content; workspace-scoped
+-- categorizations are stored on the workspace, not the project.
 
 create table public.projects (
   id uuid primary key,

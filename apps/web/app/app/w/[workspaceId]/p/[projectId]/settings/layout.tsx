@@ -21,7 +21,7 @@ export default function ProjectSettingsLayout({
     <ProjectSettingsProvider workspaceId={workspaceId} projectId={projectId}>
       <SettingsShell
         title="Project settings"
-        description="Categorization names are encrypted. Option ids on tasks are plaintext metadata for filtering."
+        description="Manage project name, color, and deletion. Task categorizations now live in workspace settings."
         items={projectSettingsNavItems(workspaceId, projectId)}
       >
         {children}

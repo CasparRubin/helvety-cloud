@@ -8,6 +8,7 @@ import {
   ContactIcon,
   FolderKanbanIcon,
   CrownIcon,
+  ListTodoIcon,
   StickyNoteIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -51,7 +52,7 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-type SectionId = "projects" | "notes" | "contacts";
+type SectionId = "projects" | "tasks" | "notes" | "contacts";
 
 function workspaceSections(workspaceBase: string): {
   id: SectionId;
@@ -65,6 +66,12 @@ function workspaceSections(workspaceBase: string): {
       href: workspaceBase,
       label: "Projects",
       icon: FolderKanbanIcon,
+    },
+    {
+      id: "tasks",
+      href: `${workspaceBase}/tasks`,
+      label: "Tasks",
+      icon: ListTodoIcon,
     },
     {
       id: "notes",
