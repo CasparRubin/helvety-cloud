@@ -1,7 +1,30 @@
 -- Owner-only hard delete for a non-personal workspace.
 -- Cascades via FKs wipe members, projects, tasks, notes, contacts,
 -- invitations, and subscriptions. wrapped_keys has no FK on subject_id,
--- so those rows are deleted explicitly here.
+-- so workspace + project wraps are deleted explicitly here.
+-- Shared by delete_workspace and leave_workspace (solo leave = wipe).
+
+create or replace function public.purge_workspace_wraps(ws_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  delete from public.wrapped_keys
+  where subject_type = 'project'
+    and subject_id in (
+      select p.id from public.projects p where p.workspace_id = ws_id
+    );
+
+  delete from public.wrapped_keys
+  where subject_type = 'workspace'
+    and subject_id = ws_id;
+end;
+$$;
+
+revoke all on function public.purge_workspace_wraps(uuid) from public;
+-- Internal helper; not granted to clients.
 
 create or replace function public.delete_workspace(ws_id uuid)
 returns void
@@ -53,9 +76,7 @@ begin
       using errcode = 'P0001';
   end if;
 
-  delete from public.wrapped_keys
-  where subject_type = 'workspace'
-    and subject_id = ws_id;
+  perform public.purge_workspace_wraps(ws_id);
 
   delete from public.workspaces
   where id = ws_id;

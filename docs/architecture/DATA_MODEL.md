@@ -32,13 +32,13 @@ See [`ROADMAP.md`](ROADMAP.md) locked decisions.
 | `profiles` | `id` = `auth.users.id`; non-secret profile fields if any |
 | `user_crypto` | `public_key`, wrapped user/private key blobs, `prf_salt`, `key_check`, versions |
 | `workspaces` | Workspace ids, `kind` (`personal` \| `standard`), owner/timestamps; at most one Personal per owner. `encrypted_blob` holds the workspace name plus workspace-scoped task categorizations. |
-| `workspace_members` | `workspace_id`, `user_id`, `role` |
+| `workspace_members` | `workspace_id`, `user_id`, `role` (`owner`\|`admin`\|`member`). Leave: solo leave wipes the workspace; owner+others must transfer then leave; non-owners soft-leave (wraps removed, no key rotation). |
 | `workspace_invitations` | Email-targeted invites: normalized `email`, invited role (`admin`\|`member`), claim (`claimed_by`, `claimed_public_key`; always the claimer’s `user_crypto.public_key`), owner-produced `sealed_workspace_key` (cleared on cancel), accept/cancel timestamps |
 | `projects` | `id`, `workspace_id`, sort, timestamps, tombstone |
 | `milestones` (P10) | `id`, `project_id`, sort, timestamps, tombstone |
 | `notes` | `id`, `workspace_id`, sort, timestamps, tombstone |
 | `contacts` | `id`, `workspace_id`, sort, timestamps, tombstone |
-| `comments` (P16) | `id`, `workspace_id`, `parent_kind`/`parent_id` (`task`\|`note`\|`contact`), optional `parent_comment_id` (self-FK reply), `author_id`, timestamps, tombstone |
+| `comments` (P16) | `id`, `workspace_id`, `parent_kind`/`parent_id` (`task`\|`note`\|`contact`), optional `parent_comment_id` (self-FK reply), nullable `author_id` (`ON DELETE SET NULL`), timestamps, tombstone |
 | `entity_links` | Constrained UUID edges: `workspace_id`, `source_kind`/`source_id`, `target_kind`/`target_id`; unique per edge. Allowed pairs are note–task/contact/project and contact–note/project/task. Note/contact → project edges are multi-project affiliations (0..n). **Intentional metadata**: Helvety sees which ids are linked, never titles/colors. |
 | `wrapped_keys` | `(subject_type, subject_id, user_id, wrapped_key)` for workspace/project keys |
 | Sync helpers | `updated_at`, optional generation/cursor fields |

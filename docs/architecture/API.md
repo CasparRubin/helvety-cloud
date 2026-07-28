@@ -35,7 +35,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 | GET | `/api/v1/workspaces/:workspaceId` | Workspace id/`encryptedBlob`/kind + caller’s wrapped key |
 | PATCH | `/api/v1/workspaces/:workspaceId` | Update workspace ciphertext (`encryptedBlob` only; `kind` immutable) |
 | GET | `/api/v1/workspaces/:workspaceId/projects` | List projects (paginated; ciphertext-opaque) |
-| PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch |
+| PUT/GET/DELETE | `/api/v1/workspaces/:workspaceId/projects/:projectId` | Project upsert / fetch / delete (cleans links, task comments/attachments/Storage, project wraps) |
 | GET | `/api/v1/workspaces/:workspaceId/tasks` | List tasks across the workspace (paginated; ciphertext-opaque; optional `projectId` / `labelId` / `stageId` / `priorityId` / `milestoneId` filters) |
 | GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks` | List tasks (paginated; ciphertext-opaque; optional `labelId` / `stageId` / `priorityId` / `milestoneId` filters) |
 | PUT/GET | `/api/v1/workspaces/:workspaceId/projects/:projectId/tasks/:taskId` | Task upsert / fetch (`labelId` / `stageId` / `priorityId` soft refs; `milestoneId` FK; `links` replace outgoing edges) |
@@ -48,7 +48,11 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT/GET | `/api/v1/workspaces/:workspaceId/contacts/:contactId` | Contact upsert / fetch (`links` replace non-project outgoing edges; optional `projectIds` replace project affiliations) |
 | GET | `/api/v1/workspaces/:workspaceId/comments` | List comments for a parent (`parentKind` + `parentId` required; ciphertext-opaque) |
 | PUT/DELETE | `/api/v1/workspaces/:workspaceId/comments/:commentId` | Comment upsert / delete (`parentKind`, `parentId`, optional `parentCommentId`; create gated) |
+| DELETE | `/api/v1/workspaces/:workspaceId` | Owner hard-delete (wipes for all members; Storage cleared first; personal blocked; active Stripe must cancel first) |
+| POST | `/api/v1/workspaces/:workspaceId/leave` | Leave: solo = wipe; owner+others requires `newOwnerId` then soft-leave; non-owner soft-leave (no key rotation) |
+| POST | `/api/v1/workspaces/:workspaceId/transfer` | Owner promotes another member; caller becomes admin and stays |
 | GET | `/api/v1/workspaces/:workspaceId/members` | List members (`userId`, `role`) |
+| DELETE | `/api/v1/workspaces/:workspaceId/members/:userId` | Owner/admin removes a non-owner member (+ their wraps) |
 | GET/POST | `/api/v1/workspaces/:workspaceId/invitations` | List / create email invitations (owner/admin) |
 | POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/seal` | Owner/admin stores client-sealed workspace key for claimed invitee |
 | POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/cancel` | Cancel active invitation (owner/admin; clears any stored seal) |

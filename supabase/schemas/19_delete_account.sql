@@ -4,11 +4,10 @@
 -- per-user wraps cascade when the auth user is deleted.
 -- Blocks when the caller still owns any multi-member workspace.
 --
--- Invariant this relies on: a workspace whose created_by is the caller is
--- always one the caller owns (no leave-workspace or ownership-transfer path
--- exists), so it is either deleted here or blocks deletion. If either path is
--- added, workspaces.created_by (ON DELETE NO ACTION) must be cleared here too
--- or auth.admin.deleteUser will fail after this function already deleted data.
+-- Invariant: for standard workspaces, created_by tracks the current owner
+-- (transfer_workspace_ownership / leave_workspace keep them aligned). Solo
+-- owned workspaces are deleted here; multi-member owned ones must be
+-- transferred or wiped first so created_by never blocks deleteUser.
 
 create or replace function public.delete_account()
 returns void
@@ -50,15 +49,7 @@ begin
         where wm2.workspace_id = wm.workspace_id
       ) = 1
   loop
-    delete from public.wrapped_keys
-    where subject_type = 'project'
-      and subject_id in (
-        select p.id from public.projects p where p.workspace_id = solo.id
-      );
-
-    delete from public.wrapped_keys
-    where subject_type = 'workspace'
-      and subject_id = solo.id;
+    perform public.purge_workspace_wraps(solo.id);
 
     delete from public.workspaces
     where id = solo.id;

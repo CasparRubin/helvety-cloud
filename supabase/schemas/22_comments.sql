@@ -9,7 +9,7 @@ create table public.comments (
     check (parent_kind in ('task', 'note', 'contact')),
   parent_id uuid not null,
   parent_comment_id uuid references public.comments (id) on delete cascade,
-  author_id uuid not null references public.profiles (id),
+  author_id uuid references public.profiles (id) on delete set null,
   encrypted_blob jsonb not null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -54,8 +54,11 @@ begin
       using errcode = 'P0001';
   end if;
   if new.author_id is distinct from old.author_id then
-    raise exception 'comments.author_id is immutable'
-      using errcode = 'P0001';
+    -- Allow ON DELETE SET NULL when the author profile is removed.
+    if new.author_id is not null then
+      raise exception 'comments.author_id is immutable'
+        using errcode = 'P0001';
+    end if;
   end if;
   return new;
 end;

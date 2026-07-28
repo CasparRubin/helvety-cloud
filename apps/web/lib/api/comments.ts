@@ -18,7 +18,7 @@ export function toCommentResponse(row: {
   parent_kind: string;
   parent_id: string;
   parent_comment_id: string | null;
-  author_id: string;
+  author_id: string | null;
   encrypted_blob: unknown;
   created_at: string;
   updated_at: string;

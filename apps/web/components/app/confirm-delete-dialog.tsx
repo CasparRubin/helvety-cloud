@@ -24,6 +24,7 @@ type ConfirmDeleteDialogProps = {
   busyLabel?: string;
   busy?: boolean;
   onConfirm: () => void | Promise<void>;
+  children?: React.ReactNode;
 };
 
 export function ConfirmDeleteDialog({
@@ -35,6 +36,7 @@ export function ConfirmDeleteDialog({
   busyLabel = "Deleting…",
   busy = false,
   onConfirm,
+  children,
 }: ConfirmDeleteDialogProps) {
   const [confirming, setConfirming] = useState(false);
   const pending = busy || confirming;
@@ -57,6 +59,7 @@ export function ConfirmDeleteDialog({
           <AlertDialogTitle>{title}</AlertDialogTitle>
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
+        {children ? <div className="px-0">{children}</div> : null}
         <AlertDialogFooter>
           <AlertDialogCancel disabled={pending}>Cancel</AlertDialogCancel>
           <AlertDialogAction

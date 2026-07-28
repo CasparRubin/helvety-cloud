@@ -22,6 +22,8 @@ import {
   milestoneResponseSchema,
   listWorkspaceInvitationsResponseSchema,
   listWorkspaceMembersResponseSchema,
+  leaveWorkspaceRequestSchema,
+  transferWorkspaceOwnershipRequestSchema,
   listWorkspacesResponseSchema,
   noteResponseSchema,
   patchWorkspaceRequestSchema,
@@ -263,6 +265,40 @@ export async function deleteWorkspace(workspaceId: string): Promise<void> {
   await apiFetchNoContent(`/api/v1/workspaces/${workspaceId}`, {
     method: "DELETE",
   });
+}
+
+export async function leaveWorkspace(
+  workspaceId: string,
+  body?: { newOwnerId?: string },
+): Promise<void> {
+  await apiFetchNoContent(`/api/v1/workspaces/${workspaceId}/leave`, {
+    method: "POST",
+    body: JSON.stringify(
+      leaveWorkspaceRequestSchema.parse(body ?? {}),
+    ),
+  });
+}
+
+export async function transferWorkspaceOwnership(
+  workspaceId: string,
+  newOwnerId: string,
+): Promise<void> {
+  await apiFetchNoContent(`/api/v1/workspaces/${workspaceId}/transfer`, {
+    method: "POST",
+    body: JSON.stringify(
+      transferWorkspaceOwnershipRequestSchema.parse({ newOwnerId }),
+    ),
+  });
+}
+
+export async function removeWorkspaceMember(
+  workspaceId: string,
+  userId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/members/${userId}`,
+    { method: "DELETE" },
+  );
 }
 
 export type ListParams = {

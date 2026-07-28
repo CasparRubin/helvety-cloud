@@ -11,6 +11,7 @@ import {
 
 import {
   deleteWorkspace,
+  leaveWorkspace as leaveWorkspaceApi,
   listWorkspaces,
   patchWorkspace,
   getMeCrypto,
@@ -61,6 +62,10 @@ type CryptoSessionValue = {
   ) => Promise<DecryptedWorkspaceListItem>;
   renameWorkspace: (workspaceId: string, name: string) => Promise<void>;
   removeWorkspace: (workspaceId: string) => Promise<void>;
+  leaveWorkspace: (
+    workspaceId: string,
+    opts?: { newOwnerId?: string },
+  ) => Promise<void>;
   getWorkspaceKey: (workspaceId: string) => Promise<Uint8Array>;
 };
 
@@ -240,8 +245,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
     [userKeys, workspaces, getWorkspaceKey, loadWorkspaces],
   );
 
-  const removeWorkspace = useCallback(async (workspaceId: string) => {
-    await deleteWorkspace(workspaceId);
+  const dropWorkspaceLocal = useCallback((workspaceId: string) => {
     setWorkspaces((prev) => prev.filter((w) => w.id !== workspaceId));
     setWorkspaceKeys((prev) => {
       const next = new Map(prev);
@@ -249,6 +253,22 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
       return next;
     });
   }, []);
+
+  const removeWorkspace = useCallback(
+    async (workspaceId: string) => {
+      await deleteWorkspace(workspaceId);
+      dropWorkspaceLocal(workspaceId);
+    },
+    [dropWorkspaceLocal],
+  );
+
+  const leaveWorkspace = useCallback(
+    async (workspaceId: string, opts?: { newOwnerId?: string }) => {
+      await leaveWorkspaceApi(workspaceId, opts);
+      dropWorkspaceLocal(workspaceId);
+    },
+    [dropWorkspaceLocal],
+  );
 
   const value = useMemo<CryptoSessionValue>(
     () => ({
@@ -265,6 +285,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
       createWorkspace,
       renameWorkspace,
       removeWorkspace,
+      leaveWorkspace,
       getWorkspaceKey,
     }),
     [
@@ -281,6 +302,7 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
       createWorkspace,
       renameWorkspace,
       removeWorkspace,
+      leaveWorkspace,
       getWorkspaceKey,
     ],
   );

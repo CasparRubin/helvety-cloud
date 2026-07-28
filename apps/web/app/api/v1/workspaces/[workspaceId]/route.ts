@@ -7,6 +7,7 @@ import {
   workspaceKindSchema,
 } from "@helvety-cloud/api-contract";
 
+import { wipeWorkspaceAttachmentStorage } from "@/lib/api/attachment-storage";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
@@ -123,6 +124,8 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
   const { supabase } = auth;
   const { workspaceId } = await context.params;
+
+  await wipeWorkspaceAttachmentStorage(workspaceId);
 
   const { error } = await supabase.rpc("delete_workspace", {
     ws_id: workspaceId,

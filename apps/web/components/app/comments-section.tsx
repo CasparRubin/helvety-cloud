@@ -168,7 +168,11 @@ export function CommentsSection({
     const replies = repliesByParent.get(comment.id) ?? [];
     const editing = editingId === comment.id;
     const author =
-      userKeys?.userId === comment.authorId ? "You" : "Member";
+      !comment.authorId
+        ? "Former member"
+        : userKeys?.userId === comment.authorId
+          ? "You"
+          : "Member";
     return (
       <li
         key={comment.id}

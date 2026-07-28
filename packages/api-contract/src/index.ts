@@ -432,7 +432,7 @@ export const commentResponseSchema = z.object({
   parentKind: commentParentKindSchema,
   parentId: uuidSchema,
   parentCommentId: uuidSchema.nullable(),
-  authorId: uuidSchema,
+  authorId: uuidSchema.nullable(),
   encryptedBlob: ciphertextEnvelopeSchema,
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -577,6 +577,18 @@ export const listWorkspaceMembersResponseSchema = z.object({
 });
 export type ListWorkspaceMembersResponse = z.infer<
   typeof listWorkspaceMembersResponseSchema
+>;
+
+export const leaveWorkspaceRequestSchema = z.object({
+  newOwnerId: uuidSchema.optional(),
+});
+export type LeaveWorkspaceRequest = z.infer<typeof leaveWorkspaceRequestSchema>;
+
+export const transferWorkspaceOwnershipRequestSchema = z.object({
+  newOwnerId: uuidSchema,
+});
+export type TransferWorkspaceOwnershipRequest = z.infer<
+  typeof transferWorkspaceOwnershipRequestSchema
 >;
 
 /** P6f / P12 billing: plaintext entitlements only; never encryption keys or content. */

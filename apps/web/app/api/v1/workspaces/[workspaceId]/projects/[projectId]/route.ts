@@ -4,9 +4,14 @@ import {
   putProjectRequestSchema,
 } from "@helvety-cloud/api-contract";
 
+import { softDeleteAttachmentsForParent } from "@/lib/api/attachment-links";
+import { removeAttachmentObject } from "@/lib/api/attachment-storage";
+import { deleteCommentsForParent } from "@/lib/api/comments";
+import { deleteLinksTouching } from "@/lib/api/entity-links";
 import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 type RouteContext = {
   params: Promise<{ workspaceId: string; projectId: string }>;
@@ -139,6 +144,52 @@ export async function DELETE(request: Request, context: RouteContext) {
   }
   const { supabase } = auth;
   const { workspaceId, projectId } = await context.params;
+
+  const { data: tasks, error: tasksError } = await supabase
+    .from("tasks")
+    .select("id")
+    .eq("project_id", projectId);
+  if (tasksError) {
+    return apiError("internal", tasksError.message, 500);
+  }
+
+  try {
+    for (const task of tasks ?? []) {
+      await deleteLinksTouching(supabase, workspaceId, "task", task.id);
+      await deleteCommentsForParent(supabase, workspaceId, "task", task.id);
+      const orphanIds = await softDeleteAttachmentsForParent(
+        supabase,
+        workspaceId,
+        "task",
+        task.id,
+      );
+      for (const id of orphanIds) {
+        try {
+          await removeAttachmentObject(`${workspaceId}/${id}`);
+        } catch {
+          // Soft-delete is enough.
+        }
+      }
+    }
+
+    await deleteLinksTouching(supabase, workspaceId, "project", projectId);
+
+    const admin = createServiceRoleClient();
+    const { error: wrapError } = await admin
+      .from("wrapped_keys")
+      .delete()
+      .eq("subject_type", "project")
+      .eq("subject_id", projectId);
+    if (wrapError) {
+      throw new Error(wrapError.message);
+    }
+  } catch (e) {
+    return apiError(
+      "internal",
+      e instanceof Error ? e.message : "Failed to clean up project",
+      500,
+    );
+  }
 
   const { data, error } = await supabase
     .from("projects")

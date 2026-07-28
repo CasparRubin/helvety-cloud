@@ -140,7 +140,7 @@ export type Database = {
       }
       comments: {
         Row: {
-          author_id: string
+          author_id: string | null
           created_at: string
           deleted_at: string | null
           encrypted_blob: Json
@@ -152,7 +152,7 @@ export type Database = {
           workspace_id: string
         }
         Insert: {
-          author_id: string
+          author_id?: string | null
           created_at?: string
           deleted_at?: string | null
           encrypted_blob: Json
@@ -164,7 +164,7 @@ export type Database = {
           workspace_id: string
         }
         Update: {
-          author_id?: string
+          author_id?: string | null
           created_at?: string
           deleted_at?: string | null
           encrypted_blob?: Json
@@ -851,6 +851,18 @@ user_crypto: {
       }
       delete_account: { Args: never; Returns: undefined }
       delete_workspace: { Args: { ws_id: string }; Returns: undefined }
+      leave_workspace: {
+        Args: { new_owner_id?: string; ws_id: string }
+        Returns: undefined
+      }
+      remove_workspace_member: {
+        Args: { target_user_id: string; ws_id: string }
+        Returns: undefined
+      }
+      transfer_workspace_ownership: {
+        Args: { new_owner_id: string; ws_id: string }
+        Returns: undefined
+      }
       claim_workspace_invitation: {
         Args: { invitation_id: string; public_key: string }
         Returns: {

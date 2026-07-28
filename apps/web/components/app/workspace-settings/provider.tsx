@@ -44,7 +44,9 @@ import {
   getWorkspaceBilling,
   listWorkspaceInvitations,
   listWorkspaceMembers,
+  removeWorkspaceMember,
   syncWorkspaceBilling,
+  transferWorkspaceOwnership,
 } from "@/lib/api/v1-client";
 import {
   handoffInvitationSeal,
@@ -131,6 +133,9 @@ type WorkspaceSettingsContextValue = {
   onCancel: (invitation: WorkspaceInvitation) => Promise<void>;
   onCopyInvite: (invitation: WorkspaceInvitation) => Promise<void>;
   onDeleteWorkspace: () => Promise<void>;
+  onLeaveWorkspace: (opts?: { newOwnerId?: string }) => Promise<void>;
+  onTransferOwnership: (newOwnerId: string) => Promise<void>;
+  onRemoveMember: (userId: string) => Promise<void>;
 };
 
 const WorkspaceSettingsContext =
@@ -145,7 +150,7 @@ export function WorkspaceSettingsProvider({
 }) {
   const router = useRouter();
   const billingSyncAttempted = useRef(false);
-  const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace, refreshWorkspaces } =
+  const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace, leaveWorkspace, refreshWorkspaces } =
     useCryptoSession();
 
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
@@ -409,6 +414,49 @@ export function WorkspaceSettingsProvider({
     }
   }
 
+  async function onLeaveWorkspace(opts?: { newOwnerId?: string }) {
+    setPending(true);
+    setError(null);
+    try {
+      await leaveWorkspace(workspaceId, opts);
+      router.push("/app");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Leave failed");
+      setPending(false);
+      throw err;
+    }
+  }
+
+  async function onTransferOwnership(newOwnerId: string) {
+    setPending(true);
+    setError(null);
+    try {
+      await transferWorkspaceOwnership(workspaceId, newOwnerId);
+      await refreshWorkspaces();
+      const mem = await listWorkspaceMembers(workspaceId);
+      setMembers(mem.members);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Transfer failed");
+      throw err;
+    } finally {
+      setPending(false);
+    }
+  }
+
+  async function onRemoveMember(userId: string) {
+    setPending(true);
+    setError(null);
+    try {
+      await removeWorkspaceMember(workspaceId, userId);
+      setMembers((prev) => prev.filter((m) => m.userId !== userId));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Remove failed");
+      throw err;
+    } finally {
+      setPending(false);
+    }
+  }
+
   const activeInvites = invitations.filter(
     (i) => i.status !== "cancelled" && i.status !== "accepted",
   );
@@ -661,6 +709,9 @@ export function WorkspaceSettingsProvider({
     onCancel,
     onCopyInvite,
     onDeleteWorkspace,
+    onLeaveWorkspace,
+    onTransferOwnership,
+    onRemoveMember,
   };
 
   return (

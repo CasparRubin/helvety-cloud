@@ -169,15 +169,16 @@ export function AccountDangerSettings() {
         <section className="flex flex-col gap-2 rounded-lg border border-amber-500/40 p-4">
           <h2 className="text-sm font-medium">Cannot delete yet</h2>
           <p className="text-xs text-muted-foreground">
-            You still own shared workspaces with other members. Delete those
-            workspaces from settings before deleting your account. Helvety will
-            not delete shared workspaces for other members.
+            You still own shared workspaces with other members. Transfer
+            ownership and leave, or delete those workspaces from settings,
+            before deleting your account. Helvety will not delete shared
+            workspaces for other members.
           </p>
           <ul className="flex flex-col gap-1 text-sm">
             {account.blockingWorkspaces.map((ws) => (
               <li key={ws.id}>
                 <Link
-                  href={`/app/w/${ws.id}/settings/general`}
+                  href={`/app/w/${ws.id}/settings/members`}
                   className="underline underline-offset-4"
                 >
                   {workspaceName(ws.id)}

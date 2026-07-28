@@ -30,7 +30,7 @@ export type DecryptedComment = {
   parentKind: CommentParentKind;
   parentId: string;
   parentCommentId: string | null;
-  authorId: string;
+  authorId: string | null;
   body: TaskBodyDoc;
   createdAt: string;
   updatedAt: string;

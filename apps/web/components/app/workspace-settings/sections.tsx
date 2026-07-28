@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import type { WorkspaceMember } from "@helvety-cloud/api-contract";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -317,8 +318,10 @@ export function WorkspacePrioritiesSettings() {
 export function WorkspaceMembersSettings() {
   const { userKeys } = useCryptoSession();
   const {
+    workspace,
     canManage,
     isOwner,
+    isPersonal,
     members,
     billing,
     pending,
@@ -334,9 +337,19 @@ export function WorkspaceMembersSettings() {
     onCancel,
     onCopyInvite,
     onUpgrade,
+    onLeaveWorkspace,
+    onTransferOwnership,
+    onRemoveMember,
   } = useWorkspaceSettings();
 
   const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [leaveSuccessorId, setLeaveSuccessorId] = useState("");
+  const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null);
+
+  const otherMembers = members.filter((m) => m.userId !== userKeys?.userId);
+  const isSolo = members.length <= 1;
+  const needsSuccessor = isOwner && !isSolo;
 
   useEffect(() => {
     void ensureMembersLoaded();
@@ -428,20 +441,79 @@ export function WorkspaceMembersSettings() {
           <p className="text-xs text-muted-foreground">Loading…</p>
         ) : (
           <ul className="flex flex-col gap-1 text-sm">
-            {members.map((m) => (
-              <li
-                key={m.userId}
-                className="flex items-center justify-between rounded-lg border border-border px-2 py-1.5"
-              >
-                <span className="truncate font-mono text-xs">
-                  {m.userId.slice(0, 8)}…
-                </span>
-                <span className="text-xs text-muted-foreground">{m.role}</span>
-              </li>
-            ))}
+            {members.map((m) => {
+              const isSelf = m.userId === userKeys?.userId;
+              return (
+                <li
+                  key={m.userId}
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-border px-2 py-1.5"
+                >
+                  <div className="flex min-w-0 items-center gap-2">
+                    <span className="truncate font-mono text-xs">
+                      {isSelf ? "You" : `${m.userId.slice(0, 8)}…`}
+                    </span>
+                    <span className="text-xs text-muted-foreground">
+                      {m.role}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-1">
+                    {isOwner && !isSelf && m.role !== "owner" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="outline"
+                        disabled={pending}
+                        onClick={() => void onTransferOwnership(m.userId)}
+                      >
+                        Make owner
+                      </Button>
+                    ) : null}
+                    {canManage && !isSelf && m.role !== "owner" ? (
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant="destructive"
+                        disabled={pending}
+                        onClick={() => setRemoveTarget(m)}
+                      >
+                        Remove
+                      </Button>
+                    ) : null}
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         )}
       </div>
+
+      {!isPersonal ? (
+        <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+          <p className="text-xs leading-5 text-muted-foreground">
+            {isSolo
+              ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, files, and sharing."
+              : isOwner
+                ? "To leave, choose another member as the new owner. The workspace stays for everyone else."
+                : "Leaving removes your access. Nothing is deleted for other members."}
+          </p>
+          <Button
+            type="button"
+            variant="outline"
+            disabled={pending}
+            onClick={() => {
+              setLeaveSuccessorId(otherMembers[0]?.userId ?? "");
+              setLeaveOpen(true);
+            }}
+          >
+            Leave workspace
+          </Button>
+        </div>
+      ) : (
+        <p className="text-xs text-muted-foreground">
+          Your personal workspace cannot be left. It is removed only when you
+          delete your account.
+        </p>
+      )}
 
       {canManage ? (
         <div className="flex flex-col gap-2">
@@ -502,6 +574,72 @@ export function WorkspaceMembersSettings() {
           )}
         </div>
       ) : null}
+
+      <ConfirmDeleteDialog
+        open={leaveOpen}
+        onOpenChange={setLeaveOpen}
+        title={
+          isSolo
+            ? `Delete workspace “${workspace?.name ?? "workspace"}”?`
+            : "Leave this workspace?"
+        }
+        description={
+          isSolo
+            ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            : needsSuccessor
+              ? "Pick a new owner, then you will leave. The workspace stays for remaining members."
+              : "You will lose access. Other members keep the workspace. Helvety cannot restore your access without a new invite."
+        }
+        confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
+        busy={pending}
+        onConfirm={async () => {
+          if (needsSuccessor) {
+            if (!leaveSuccessorId) {
+              throw new Error("Choose a new owner before leaving");
+            }
+            await onLeaveWorkspace({ newOwnerId: leaveSuccessorId });
+            return;
+          }
+          await onLeaveWorkspace();
+        }}
+      >
+        {needsSuccessor ? (
+          <div className="flex flex-col gap-1.5">
+            <Label htmlFor="leave-successor" className="text-xs">
+              New owner
+            </Label>
+            <select
+              id="leave-successor"
+              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+              value={leaveSuccessorId}
+              disabled={pending}
+              onChange={(e) => setLeaveSuccessorId(e.target.value)}
+            >
+              {otherMembers.map((m) => (
+                <option key={m.userId} value={m.userId}>
+                  {m.userId.slice(0, 8)}… ({m.role})
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
+      </ConfirmDeleteDialog>
+
+      <ConfirmDeleteDialog
+        open={removeTarget !== null}
+        onOpenChange={(open) => {
+          if (!open) setRemoveTarget(null);
+        }}
+        title="Remove member?"
+        description="They lose access immediately. Their wrapped keys for this workspace are removed. Content stays for remaining members."
+        confirmLabel="Remove member"
+        busy={pending}
+        onConfirm={async () => {
+          if (!removeTarget) return;
+          await onRemoveMember(removeTarget.userId);
+          setRemoveTarget(null);
+        }}
+      />
     </div>
   );
 }
@@ -729,6 +867,7 @@ export function WorkspaceDangerSettings() {
     workspace,
     isOwner,
     isPersonal,
+    members,
     pending,
     error,
     deleteOpen,
@@ -737,12 +876,16 @@ export function WorkspaceDangerSettings() {
     setDeleteConfirmName,
     needsBillingCancel,
     ensureBillingLoaded,
+    ensureMembersLoaded,
     onDeleteWorkspace,
   } = useWorkspaceSettings();
 
   useEffect(() => {
-    if (isOwner && !isPersonal) void ensureBillingLoaded();
-  }, [isOwner, isPersonal, ensureBillingLoaded]);
+    if (isOwner && !isPersonal) {
+      void ensureBillingLoaded();
+      void ensureMembersLoaded();
+    }
+  }, [isOwner, isPersonal, ensureBillingLoaded, ensureMembersLoaded]);
 
   if (!workspace) {
     return (
@@ -760,6 +903,8 @@ export function WorkspaceDangerSettings() {
     );
   }
 
+  const hasOtherMembers = members.length > 1;
+
   return (
     <section className="flex max-w-lg flex-col gap-3 rounded-xl border border-destructive/30 p-5">
       <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
@@ -772,10 +917,16 @@ export function WorkspaceDangerSettings() {
       ) : (
         <>
           <p className="text-xs leading-5 text-muted-foreground">
-            Permanently delete this workspace and all projects, tasks, notes,
-            contacts, files, invitations, and sharing. This cannot be undone.
-            Helvety cannot recover deleted data.
+            Permanently delete this workspace for everyone, including projects,
+            tasks, notes, contacts, files, invitations, and sharing. This cannot
+            be undone. Helvety cannot recover deleted data.
           </p>
+          {hasOtherMembers ? (
+            <p className="text-xs leading-5 text-muted-foreground">
+              Other members will lose access. To keep the workspace, transfer
+              ownership and leave from Members instead.
+            </p>
+          ) : null}
           {needsBillingCancel ? (
             <p className="text-xs leading-5 text-muted-foreground">
               Cancel the Pro subscription in Manage billing before deleting this
@@ -813,7 +964,7 @@ export function WorkspaceDangerSettings() {
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
             title={`Delete workspace “${workspace.name}”?`}
-            description="This permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            description="This permanently deletes the workspace for everyone, including all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             busy={pending}
             onConfirm={onDeleteWorkspace}
           />

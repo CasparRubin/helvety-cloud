@@ -78,3 +78,74 @@ export async function removeAttachmentObject(
     throw new Error(error.message);
   }
 }
+
+const LIST_PAGE_SIZE = 100;
+const REMOVE_BATCH_SIZE = 100;
+
+/** List object paths under `{workspaceId}/` in the attachments bucket. */
+async function listWorkspaceAttachmentPaths(
+  workspaceId: string,
+): Promise<string[]> {
+  const admin = createServiceRoleClient();
+  const paths: string[] = [];
+  let offset = 0;
+
+  for (;;) {
+    const { data, error } = await admin.storage
+      .from(ATTACHMENTS_BUCKET)
+      .list(workspaceId, {
+        limit: LIST_PAGE_SIZE,
+        offset,
+        sortBy: { column: "name", order: "asc" },
+      });
+    if (error) {
+      throw new Error(error.message);
+    }
+    const page = data ?? [];
+    for (const obj of page) {
+      if (!obj.name || obj.name.endsWith("/")) continue;
+      if (obj.id === null && !obj.metadata) continue;
+      paths.push(`${workspaceId}/${obj.name}`);
+    }
+    if (page.length < LIST_PAGE_SIZE) break;
+    offset += LIST_PAGE_SIZE;
+  }
+
+  return paths;
+}
+
+async function removeAttachmentObjects(storagePaths: string[]): Promise<void> {
+  if (storagePaths.length === 0) return;
+  const admin = createServiceRoleClient();
+  for (let i = 0; i < storagePaths.length; i += REMOVE_BATCH_SIZE) {
+    const batch = storagePaths.slice(i, i + REMOVE_BATCH_SIZE);
+    const { error } = await admin.storage
+      .from(ATTACHMENTS_BUCKET)
+      .remove(batch);
+    if (error) {
+      throw new Error(error.message);
+    }
+  }
+}
+
+/**
+ * Best-effort wipe of all Storage objects for a workspace.
+ * Retries once; logs and continues on failure (DB wipe still proceeds).
+ */
+export async function wipeWorkspaceAttachmentStorage(
+  workspaceId: string,
+): Promise<void> {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const paths = await listWorkspaceAttachmentPaths(workspaceId);
+      await removeAttachmentObjects(paths);
+      return;
+    } catch (error) {
+      console.error("Workspace attachment Storage wipe failed", {
+        workspaceId,
+        attempt,
+        message: error instanceof Error ? error.message : "unknown",
+      });
+    }
+  }
+}

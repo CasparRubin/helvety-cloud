@@ -1,6 +1,7 @@
 import { getMeAccountResponseSchema } from "@helvety-cloud/api-contract";
 
 import { loadAccountWorkspaceSplit } from "@/lib/api/account";
+import { wipeWorkspaceAttachmentStorage } from "@/lib/api/attachment-storage";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -97,6 +98,10 @@ export async function DELETE(request: Request) {
         });
       }
     }
+  }
+
+  for (const workspaceId of soloOwnedIds) {
+    await wipeWorkspaceAttachmentStorage(workspaceId);
   }
 
   const { error: rpcError } = await supabase.rpc("delete_account");
