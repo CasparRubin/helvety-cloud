@@ -43,11 +43,12 @@ const sealAad = {
 };
 
 describe("P6e invitation contracts", () => {
-  it("normalizes invite email and rejects owner role", () => {
+  it("normalizes invite email and accepts only member role", () => {
     expect(invitationEmailSchema.parse("  Alex@Example.COM ")).toBe(
       "alex@example.com",
     );
     expect(workspaceInviteRoleSchema.safeParse("owner").success).toBe(false);
+    expect(workspaceInviteRoleSchema.safeParse("admin").success).toBe(false);
     expect(workspaceInviteRoleSchema.parse("member")).toBe("member");
     expect(
       createWorkspaceInvitationRequestSchema.parse({
@@ -68,7 +69,7 @@ describe("P6e invitation contracts", () => {
 });
 
 describe("P6e invitee seal / open", () => {
-  it("owner seals workspace key to invitee; invitee opens with final AAD", async () => {
+  it("member seals workspace key to invitee; invitee opens with final AAD", async () => {
     const owner = await generateUserKeyMaterial();
     const invitee = await generateUserKeyMaterial();
     const workspaceKey = crypto.getRandomValues(new Uint8Array(32));

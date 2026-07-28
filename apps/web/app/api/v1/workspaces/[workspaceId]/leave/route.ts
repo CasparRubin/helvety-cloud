@@ -1,5 +1,3 @@
-import { leaveWorkspaceRequestSchema } from "@helvety-cloud/api-contract";
-
 import { wipeWorkspaceAttachmentStorage } from "@/lib/api/attachment-storage";
 import { apiError } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -11,8 +9,7 @@ type RouteContext = {
 /**
  * Leave-centric membership exit:
  * - Solo member → wipe workspace (same as delete; Storage cleared after DB delete)
- * - Owner + others → require newOwnerId, transfer then soft-leave
- * - Non-owner → soft-leave only
+ * - Shared → soft-leave only (no handover)
  */
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
@@ -22,19 +19,14 @@ export async function POST(request: Request, context: RouteContext) {
   const { supabase, user } = auth;
   const { workspaceId } = await context.params;
 
-  let body: unknown = {};
+  // Optional empty JSON body for older clients.
   const raw = await request.text();
   if (raw.trim().length > 0) {
     try {
-      body = JSON.parse(raw) as unknown;
+      JSON.parse(raw);
     } catch {
       return apiError("invalid_body", "Request body must be JSON", 400);
     }
-  }
-
-  const parsed = leaveWorkspaceRequestSchema.safeParse(body);
-  if (!parsed.success) {
-    return apiError("invalid_body", parsed.error.message, 400);
   }
 
   const { data: members, error: membersError } = await supabase
@@ -52,7 +44,6 @@ export async function POST(request: Request, context: RouteContext) {
 
   const { error } = await supabase.rpc("leave_workspace", {
     ws_id: workspaceId,
-    new_owner_id: parsed.data.newOwnerId,
   });
 
   if (error) {
@@ -69,19 +60,9 @@ export async function POST(request: Request, context: RouteContext) {
     ) {
       return apiError("forbidden", error.message, 403);
     }
-    if (message.includes("owner transfer required")) {
-      return apiError(
-        "conflict",
-        "Transfer ownership to another member before leaving",
-        409,
-      );
-    }
     if (
       message.includes("cannot leave personal") ||
-      message.includes("active subscription") ||
-      message.includes("invalid new owner") ||
-      message.includes("new owner is not a member") ||
-      message.includes("new owner only valid")
+      message.includes("active subscription")
     ) {
       return apiError("conflict", error.message, 409);
     }

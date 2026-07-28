@@ -1,6 +1,6 @@
 import { billingRedirectResponseSchema } from "@helvety-cloud/api-contract";
 
-import { isWorkspaceOwner } from "@/lib/api/entitlements";
+import { isWorkspaceMember } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { resolvePlan } from "@/lib/billing/entitlements";
 import {
@@ -16,7 +16,7 @@ type RouteContext = {
 };
 
 /**
- * Owner-only: start a Stripe Checkout session to upgrade this workspace to
+ * Any member: start a Stripe Checkout session to upgrade this workspace to
  * Pro Workspace. Promotion codes are entered on Stripe Checkout. Only billing
  * metadata leaves the server.
  */
@@ -32,9 +32,9 @@ export async function POST(request: Request, context: RouteContext) {
     return apiError("internal", "Billing is not configured", 500);
   }
 
-  const owner = await isWorkspaceOwner(supabase, workspaceId, user.id);
-  if (!owner) {
-    return apiError("forbidden", "Only the workspace owner can upgrade", 403);
+  const member = await isWorkspaceMember(supabase, workspaceId, user.id);
+  if (!member) {
+    return apiError("forbidden", "Only workspace members can manage billing", 403);
   }
 
   const { data: subscription, error: subscriptionError } = await supabase

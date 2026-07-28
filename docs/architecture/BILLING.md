@@ -1,7 +1,7 @@
 # Billing (P6f + P12)
 
 Stripe workspace subscriptions with plaintext entitlements and one recurring
-Capacity Increase add-on. Charges only happen when a workspace owner completes
+Capacity Increase add-on. Charges only happen when a workspace member completes
 Stripe Checkout or changes paid add-ons. Discounts (including 100% off) are
 owned by Stripe coupons / promotion codes, not by Helvety app tables.
 
@@ -10,7 +10,8 @@ owned by Stripe coupons / promotion codes, not by Helvety app tables.
 - Billing never touches encryption keys or content.
 - Meter **plaintext counts** only: workspaces, projects, members, row counts,
   ciphertext byte sizes, attachment link counts.
-- Subscription belongs to the **workspace** (owner pays).
+- Subscription belongs to the **workspace** (any member may manage billing).
+- Free-tier “owned workspace” slots are attributed via `workspaces.created_by` (not a privilege).
 - **Stripe** Checkout + Customer Portal + webhooks → `subscriptions`.
 - Free plan = entitlements in code; no Stripe customer until upgrade.
 - Webhook uses service role only for billing rows, never to decrypt.
@@ -61,7 +62,7 @@ settings → Billing. Stripe promotion codes (including 100% off) can be entered
 at Checkout. Each paid workspace stands alone. Owning one Pro does not silently
 raise free slots.
 
-**Soft-lock overflow:** when Pro ends and the owner would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates return `limit_exceeded`. Locks clear automatically when the workspace returns to Pro or the owner is back within one free workspace.
+**Soft-lock overflow:** when Pro ends and the account attributed via `created_by` would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates return `limit_exceeded`. Locks clear automatically when the workspace returns to Pro or the attributed account is back within one free workspace.
 
 **Capacity Increase (Pro + Stripe only):** add-on quantity lives on the same
 subscription. Effective limit =
@@ -73,7 +74,7 @@ catalog[plan][meter] + (capacity_quantity × pack_delta)
 ## Stripe discounts
 
 Create coupons and promotion codes in the Stripe Dashboard. Checkout enables
-`allow_promotion_codes`, so owners can enter a code during upgrade. A 100% off
+`allow_promotion_codes`, so members can enter a code during upgrade. A 100% off
 coupon still creates a normal Pro subscription at zero cost. It is not an
 app-defined unlimited mode.
 

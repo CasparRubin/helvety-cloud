@@ -158,7 +158,7 @@ export async function POST(request: Request) {
     .insert({
       workspace_id: id,
       user_id: user.id,
-      role: "owner",
+      role: "member",
     });
   if (memberError) {
     return apiError("internal", memberError.message, 500);

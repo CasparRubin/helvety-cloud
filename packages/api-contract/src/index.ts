@@ -130,7 +130,7 @@ export type GetMeCryptoResponse = z.infer<typeof getMeCryptoResponseSchema>;
 export const workspaceKindSchema = z.enum(["personal", "standard"]);
 export type WorkspaceKind = z.infer<typeof workspaceKindSchema>;
 
-export const workspaceRoleSchema = z.enum(["owner", "admin", "member"]);
+export const workspaceRoleSchema = z.literal("member");
 export type WorkspaceRole = z.infer<typeof workspaceRoleSchema>;
 
 /** Resolved billing plan for a workspace (active/trialing Pro only). */
@@ -494,8 +494,8 @@ export type PutMePolicyAcceptancesResponse = z.infer<
   typeof putMePolicyAcceptancesResponseSchema
 >;
 
-/** Invitee roles (cannot invite as owner). */
-export const workspaceInviteRoleSchema = z.enum(["admin", "member"]);
+/** Invite role is always member (flat peer workspaces). */
+export const workspaceInviteRoleSchema = z.literal("member");
 export type WorkspaceInviteRole = z.infer<typeof workspaceInviteRoleSchema>;
 
 export const invitationStatusSchema = z.enum([
@@ -577,18 +577,6 @@ export const listWorkspaceMembersResponseSchema = z.object({
 });
 export type ListWorkspaceMembersResponse = z.infer<
   typeof listWorkspaceMembersResponseSchema
->;
-
-export const leaveWorkspaceRequestSchema = z.object({
-  newOwnerId: uuidSchema.optional(),
-});
-export type LeaveWorkspaceRequest = z.infer<typeof leaveWorkspaceRequestSchema>;
-
-export const transferWorkspaceOwnershipRequestSchema = z.object({
-  newOwnerId: uuidSchema,
-});
-export type TransferWorkspaceOwnershipRequest = z.infer<
-  typeof transferWorkspaceOwnershipRequestSchema
 >;
 
 /** P6f / P12 billing: plaintext entitlements only; never encryption keys or content. */
@@ -755,24 +743,17 @@ export type ListAttachmentsResponse = z.infer<
 export const getMeAccountResponseSchema = z.object({
   email: z.string().email(),
   userId: uuidSchema,
-  /** Owned workspaces that still have other members. These block deletion. */
-  blockingWorkspaces: z.array(
-    z.object({
-      id: uuidSchema,
-    }),
-  ),
-  /** Owned workspaces with no other members. Deleted with the account. */
+  /** Workspaces where the caller is the only member. Deleted with the account. */
   soloOwnedWorkspaces: z.array(
     z.object({
       id: uuidSchema,
       kind: workspaceKindSchema,
     }),
   ),
-  /** Workspaces the account is only removed from. Names resolve client-side after unlock. */
+  /** Shared workspaces the account soft-leaves. Names resolve client-side after unlock. */
   leavingWorkspaces: z.array(
     z.object({
       id: uuidSchema,
-      role: workspaceRoleSchema,
     }),
   ),
 });

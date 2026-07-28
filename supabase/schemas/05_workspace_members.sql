@@ -1,4 +1,4 @@
--- workspace_members: membership + role for RLS.
+-- workspace_members: membership for RLS. Single equal role: member.
 
 create table public.workspace_members (
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
@@ -6,7 +6,7 @@ create table public.workspace_members (
   role text not null,
   created_at timestamptz not null default now(),
   primary key (workspace_id, user_id),
-  constraint workspace_members_role_check check (role in ('owner', 'admin', 'member'))
+  constraint workspace_members_role_check check (role in ('member'))
 );
 
 create index workspace_members_user_id_idx on public.workspace_members (user_id);

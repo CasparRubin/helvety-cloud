@@ -18,7 +18,7 @@ export default function WorkspaceSettingsLayout({
   const workspaceId = params.workspaceId;
   const { workspaces } = useCryptoSession();
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
-  const isOwner = workspace?.role === "owner";
+  const showDanger = workspace?.kind !== "personal";
 
   return (
     <WorkspaceSettingsProvider workspaceId={workspaceId}>
@@ -30,7 +30,7 @@ export default function WorkspaceSettingsLayout({
             : "Manage name, task categorizations, members, billing, and deletion."
         }
         items={workspaceSettingsNavItems(workspaceId, {
-          showDanger: isOwner,
+          showDanger,
         })}
       >
         {children}

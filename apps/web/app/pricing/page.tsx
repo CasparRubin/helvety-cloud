@@ -295,8 +295,8 @@ export default function PricingPage() {
               <>
                 To upgrade your Free Workspace, open it, go to Workspace settings
                 → Billing, and choose Upgrade to Pro. To add another workspace,
-                use New Pro workspace (Checkout opens after create). Only the
-                workspace owner can start checkout.
+                use New Pro workspace (Checkout opens after create). Any member
+                can start checkout.
               </>
             }
           />
@@ -310,7 +310,7 @@ export default function PricingPage() {
             rows={capacityRows}
             footer={
               <>
-                Requires an active Pro Workspace. Sign in as the workspace owner,
+                Requires an active Pro Workspace. Sign in as a workspace member,
                 open Workspace settings → Billing → Add-ons, then choose Add or
                 change (opens the Stripe billing portal).
               </>

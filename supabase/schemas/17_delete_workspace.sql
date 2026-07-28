@@ -1,4 +1,4 @@
--- Owner-only hard delete for a non-personal workspace.
+-- Member hard delete for a non-personal workspace.
 -- Cascades via FKs wipe members, projects, tasks, notes, contacts,
 -- invitations, and subscriptions. wrapped_keys has no FK on subject_id,
 -- so workspace + project wraps are deleted explicitly here.
@@ -49,14 +49,8 @@ begin
     raise exception 'workspace not found' using errcode = 'P0002';
   end if;
 
-  if not exists (
-    select 1
-    from public.workspace_members
-    where workspace_id = ws_id
-      and user_id = caller
-      and role = 'owner'
-  ) then
-    raise exception 'not workspace owner' using errcode = '42501';
+  if not public.is_workspace_member(ws_id) then
+    raise exception 'not a workspace member' using errcode = '42501';
   end if;
 
   if ws.kind = 'personal' then

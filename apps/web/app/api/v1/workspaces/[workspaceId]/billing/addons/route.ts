@@ -3,7 +3,7 @@ import {
   updateBillingAddonsResponseSchema,
 } from "@helvety-cloud/api-contract";
 
-import { isWorkspaceOwner } from "@/lib/api/entitlements";
+import { isWorkspaceMember } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import {
   ADDON_PACKS,
@@ -26,7 +26,7 @@ type RouteContext = {
 };
 
 /**
- * Owner-only: set Capacity Increase quantity on a paid Pro Workspace
+ * Any member: set Capacity Increase quantity on a paid Pro Workspace
  * subscription.
  */
 export async function PUT(request: Request, context: RouteContext) {
@@ -41,11 +41,11 @@ export async function PUT(request: Request, context: RouteContext) {
     return apiError("internal", "Billing is not configured", 500);
   }
 
-  const owner = await isWorkspaceOwner(supabase, workspaceId, user.id);
-  if (!owner) {
+  const member = await isWorkspaceMember(supabase, workspaceId, user.id);
+  if (!member) {
     return apiError(
       "forbidden",
-      "Only the workspace owner can change addons",
+      "Only workspace members can change addons",
       403,
     );
   }

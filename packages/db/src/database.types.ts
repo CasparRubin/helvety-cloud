@@ -852,15 +852,11 @@ user_crypto: {
       delete_account: { Args: never; Returns: undefined }
       delete_workspace: { Args: { ws_id: string }; Returns: undefined }
       leave_workspace: {
-        Args: { new_owner_id?: string; ws_id: string }
+        Args: { ws_id: string }
         Returns: undefined
       }
       remove_workspace_member: {
         Args: { target_user_id: string; ws_id: string }
-        Returns: undefined
-      }
-      transfer_workspace_ownership: {
-        Args: { new_owner_id: string; ws_id: string }
         Returns: undefined
       }
       claim_workspace_invitation: {
@@ -889,7 +885,6 @@ user_crypto: {
           isSetofReturn: false
         }
       }
-      is_workspace_admin: { Args: { ws_id: string }; Returns: boolean }
       is_workspace_member: { Args: { ws_id: string }; Returns: boolean }
       normalized_auth_email: { Args: never; Returns: string }
       seal_workspace_invitation: {

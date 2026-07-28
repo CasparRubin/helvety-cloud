@@ -1,7 +1,5 @@
 "use client";
 
-import Link from "next/link";
-
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { useAccountSettings } from "@/components/app/account-settings/provider";
 import { Button } from "@/components/ui/button";
@@ -69,7 +67,6 @@ export function AccountDangerSettings() {
     setCleanupAck,
     deleteOpen,
     setDeleteOpen,
-    canDelete,
     canSubmit,
     onDeleteAccount,
   } = useAccountSettings();
@@ -110,18 +107,18 @@ export function AccountDangerSettings() {
             acceptances, and sessions are permanently removed.
           </li>
           <li>
-            Solo workspaces you own (including Personal) and everything inside
-            them (projects, tasks, notes, contacts, links, ciphertext, and
-            wrapped keys) are permanently deleted. Helvety cannot decrypt or
-            recover your data.
+            Solo workspaces where you are the only member (including Personal)
+            and everything inside them (projects, tasks, notes, contacts, links,
+            ciphertext, and wrapped keys) are permanently deleted. Helvety cannot
+            decrypt or recover your data.
           </li>
           <li>
             Pro subscriptions on those deleted solo workspaces are cancelled.
           </li>
           <li>
-            Workspaces where you are a member but not the owner remain for
-            others. You leave them: your membership and wrapped keys are
-            removed, so you lose access while other members keep the workspace.
+            Shared workspaces remain for others. You leave them: your membership
+            and wrapped keys are removed, so you lose access while other members
+            keep the workspace.
           </li>
           <li>Pending invitations tied to you are removed or cancelled.</li>
         </ul>
@@ -155,34 +152,9 @@ export function AccountDangerSettings() {
             {account.leavingWorkspaces.map((ws) => (
               <li
                 key={ws.id}
-                className="flex items-center justify-between rounded-md border border-border px-2 py-1.5"
+                className="rounded-md border border-border px-2 py-1.5"
               >
-                <span>{workspaceName(ws.id)}</span>
-                <span className="text-xs text-muted-foreground">{ws.role}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-
-      {!canDelete ? (
-        <section className="flex flex-col gap-2 rounded-lg border border-amber-500/40 p-4">
-          <h2 className="text-sm font-medium">Cannot delete yet</h2>
-          <p className="text-xs text-muted-foreground">
-            You still own shared workspaces with other members. Transfer
-            ownership and leave, or delete those workspaces from settings,
-            before deleting your account. Helvety will not delete shared
-            workspaces for other members.
-          </p>
-          <ul className="flex flex-col gap-1 text-sm">
-            {account.blockingWorkspaces.map((ws) => (
-              <li key={ws.id}>
-                <Link
-                  href={`/app/w/${ws.id}/settings/members`}
-                  className="underline underline-offset-4"
-                >
-                  {workspaceName(ws.id)}
-                </Link>
+                {workspaceName(ws.id)}
               </li>
             ))}
           </ul>
@@ -205,7 +177,7 @@ export function AccountDangerSettings() {
           <Checkbox
             id="cleanup-ack"
             checked={cleanupAck}
-            disabled={pending || !canDelete}
+            disabled={pending}
             onCheckedChange={(value) => setCleanupAck(value === true)}
           />
           <Label htmlFor="cleanup-ack" className="text-xs leading-snug">
@@ -223,7 +195,7 @@ export function AccountDangerSettings() {
             id="account-delete-confirm"
             value={confirmEmail}
             onChange={(e) => setConfirmEmail(e.target.value)}
-            disabled={pending || !canDelete}
+            disabled={pending}
             autoComplete="off"
           />
         </div>
@@ -241,7 +213,7 @@ export function AccountDangerSettings() {
           open={deleteOpen}
           onOpenChange={setDeleteOpen}
           title="Delete your Helvety Cloud account?"
-          description="This permanently deletes your account and solo-owned workspaces. Workspaces where you are only a member stay for others. Helvety cannot recover your data. This cannot be undone."
+          description="This permanently deletes your account and solo workspaces. Shared workspaces stay for other members. Helvety cannot recover your data. This cannot be undone."
           confirmLabel="Delete account permanently"
           busy={pending}
           onConfirm={onDeleteAccount}

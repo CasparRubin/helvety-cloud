@@ -1,6 +1,6 @@
 import { billingRedirectResponseSchema } from "@helvety-cloud/api-contract";
 
-import { isWorkspaceOwner } from "@/lib/api/entitlements";
+import { isWorkspaceMember } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { getAppUrl, getStripe } from "@/lib/stripe";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
@@ -10,7 +10,7 @@ type RouteContext = {
 };
 
 /**
- * Owner-only: open the Stripe Customer Portal for this workspace's billing
+ * Any member: open the Stripe Customer Portal for this workspace's billing
  * (cancel, update payment method, invoices).
  */
 export async function POST(request: Request, context: RouteContext) {
@@ -21,11 +21,11 @@ export async function POST(request: Request, context: RouteContext) {
   const { supabase, user } = auth;
   const { workspaceId } = await context.params;
 
-  const owner = await isWorkspaceOwner(supabase, workspaceId, user.id);
-  if (!owner) {
+  const member = await isWorkspaceMember(supabase, workspaceId, user.id);
+  if (!member) {
     return apiError(
       "forbidden",
-      "Only the workspace owner can manage billing",
+      "Only workspace members can manage billing",
       403,
     );
   }

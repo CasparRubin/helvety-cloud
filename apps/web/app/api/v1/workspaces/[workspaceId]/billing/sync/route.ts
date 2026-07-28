@@ -1,4 +1,4 @@
-import { isWorkspaceOwner } from "@/lib/api/entitlements";
+import { isWorkspaceMember } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { syncWorkspaceSubscriptionFromStripe } from "@/lib/billing/stripe-subscription-sync";
 import { buildWorkspaceBillingResponse } from "@/lib/billing/workspace-billing-response";
@@ -10,7 +10,7 @@ type RouteContext = {
   params: Promise<{ workspaceId: string }>;
 };
 
-/** Owner-only: reconcile `subscriptions` from Stripe after Checkout. */
+/** Any member: reconcile `subscriptions` from Stripe after Checkout. */
 export async function POST(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
   if (!isAuthedApi(auth)) {
@@ -23,9 +23,9 @@ export async function POST(request: Request, context: RouteContext) {
     return apiError("internal", "Billing is not configured", 500);
   }
 
-  const owner = await isWorkspaceOwner(supabase, workspaceId, user.id);
-  if (!owner) {
-    return apiError("forbidden", "Only the workspace owner can sync billing", 403);
+  const member = await isWorkspaceMember(supabase, workspaceId, user.id);
+  if (!member) {
+    return apiError("forbidden", "Only workspace members can sync billing", 403);
   }
 
   const { data: existing, error: existingError } = await supabase

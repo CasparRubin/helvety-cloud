@@ -23,7 +23,6 @@ type AccountSettingsContextValue = {
   setCleanupAck: (value: boolean) => void;
   deleteOpen: boolean;
   setDeleteOpen: (open: boolean) => void;
-  canDelete: boolean;
   canSubmit: boolean;
   onDeleteAccount: () => Promise<void>;
 };
@@ -80,12 +79,8 @@ export function AccountSettingsProvider({
     }
   }
 
-  const canDelete = account
-    ? account.blockingWorkspaces.length === 0
-    : false;
   const canSubmit = Boolean(
     account &&
-      canDelete &&
       confirmEmail === account.email &&
       cleanupAck &&
       !pending,
@@ -101,7 +96,6 @@ export function AccountSettingsProvider({
     setCleanupAck,
     deleteOpen,
     setDeleteOpen,
-    canDelete,
     canSubmit,
     onDeleteAccount,
   };

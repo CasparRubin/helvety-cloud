@@ -21,14 +21,14 @@ export async function GET(request: Request, context: RouteContext) {
   const { supabase } = auth;
   const { workspaceId } = await context.params;
 
-  const { data: isAdmin, error: adminError } = await supabase.rpc(
-    "is_workspace_admin",
+  const { data: isMember, error: memberError } = await supabase.rpc(
+    "is_workspace_member",
     { ws_id: workspaceId },
   );
-  if (adminError) {
-    return apiError("internal", adminError.message, 500);
+  if (memberError) {
+    return apiError("internal", memberError.message, 500);
   }
-  if (!isAdmin) {
+  if (!isMember) {
     return apiError("forbidden", "Not allowed to list invitations", 403);
   }
 
@@ -72,14 +72,14 @@ export async function POST(request: Request, context: RouteContext) {
   }
   const { id, email, role } = parsed.data;
 
-  const { data: isAdmin, error: adminError } = await supabase.rpc(
-    "is_workspace_admin",
+  const { data: isMember, error: memberError } = await supabase.rpc(
+    "is_workspace_member",
     { ws_id: workspaceId },
   );
-  if (adminError) {
-    return apiError("internal", adminError.message, 500);
+  if (memberError) {
+    return apiError("internal", memberError.message, 500);
   }
-  if (!isAdmin) {
+  if (!isMember) {
     return apiError("forbidden", "Not allowed to invite", 403);
   }
 

@@ -40,22 +40,20 @@ export async function syncWorkspaceFreeOverflowTag(
     return;
   }
 
-  const { data: ownerRow } = await service
-    .from("workspace_members")
-    .select("user_id")
-    .eq("workspace_id", workspaceId)
-    .eq("role", "owner")
+  const { data: workspaceRow } = await service
+    .from("workspaces")
+    .select("created_by")
+    .eq("id", workspaceId)
     .maybeSingle();
-  if (!ownerRow) {
+  if (!workspaceRow?.created_by) {
     return;
   }
 
   const { data: owned } = await service
-    .from("workspace_members")
-    .select("workspace_id")
-    .eq("user_id", ownerRow.user_id)
-    .eq("role", "owner");
-  const ownedIds = (owned ?? []).map((row) => row.workspace_id);
+    .from("workspaces")
+    .select("id")
+    .eq("created_by", workspaceRow.created_by);
+  const ownedIds = (owned ?? []).map((row) => row.id);
   if (ownedIds.length === 0) {
     return;
   }

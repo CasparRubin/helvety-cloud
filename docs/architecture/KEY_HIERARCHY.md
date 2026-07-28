@@ -39,7 +39,7 @@ Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod sh
 | Library + tests (`packages/crypto`) | **Done** |
 | `user_crypto`, `wrapped_keys` + wrap/key_check AAD | **Done** |
 | Unlock → API → encrypt entity round-trip | **Done** |
-| Seal `workspace_key` to invitees (claim → owner seal → accept) | **Done** (P6e) |
+| Seal `workspace_key` to invitees (claim → member seal → accept) | **Done** (P6e) |
 | Per-file DEK + binary AES-GCM for Storage; meta/wrap under `workspace_key` | **Done** (P11) |
 
 `project_key` remains optional in the hierarchy for future finer ACLs; current product encrypts under **workspace_key**.

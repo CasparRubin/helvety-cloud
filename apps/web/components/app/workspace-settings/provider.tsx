@@ -12,7 +12,6 @@ import { useRouter } from "next/navigation";
 import type {
   GetWorkspaceBillingResponse,
   WorkspaceInvitation,
-  WorkspaceInviteRole,
   WorkspaceMember,
 } from "@helvety-cloud/api-contract";
 
@@ -46,7 +45,6 @@ import {
   listWorkspaceMembers,
   removeWorkspaceMember,
   syncWorkspaceBilling,
-  transferWorkspaceOwnership,
 } from "@/lib/api/v1-client";
 import {
   handoffInvitationSeal,
@@ -69,8 +67,6 @@ type WorkspaceSettingsContextValue = {
     kind: string;
     role: string;
   } | null;
-  canManage: boolean;
-  isOwner: boolean;
   isPersonal: boolean;
   setNameDraft: (value: string | null) => void;
   name: string;
@@ -87,8 +83,11 @@ type WorkspaceSettingsContextValue = {
   setDeleteOpen: (open: boolean) => void;
   deleteConfirmName: string;
   setDeleteConfirmName: (value: string) => void;
+  leaveOpen: boolean;
+  setLeaveOpen: (open: boolean) => void;
   activeInvites: WorkspaceInvitation[];
   needsBillingCancel: boolean;
+  hasActiveProBilling: boolean;
   onAddOption: (kind: CategorizationKind, name: string) => Promise<void>;
   onRenameOption: (
     kind: CategorizationKind,
@@ -125,16 +124,12 @@ type WorkspaceSettingsContextValue = {
   onSaveName: () => Promise<void>;
   onUpgrade: () => Promise<void>;
   onManageBilling: () => Promise<void>;
-  onInvite: (opts: {
-    email: string;
-    role: WorkspaceInviteRole;
-  }) => Promise<void>;
+  onInvite: (opts: { email: string }) => Promise<void>;
   onSeal: (invitation: WorkspaceInvitation) => Promise<void>;
   onCancel: (invitation: WorkspaceInvitation) => Promise<void>;
   onCopyInvite: (invitation: WorkspaceInvitation) => Promise<void>;
   onDeleteWorkspace: () => Promise<void>;
-  onLeaveWorkspace: (opts?: { newOwnerId?: string }) => Promise<void>;
-  onTransferOwnership: (newOwnerId: string) => Promise<void>;
+  onLeaveWorkspace: () => Promise<void>;
   onRemoveMember: (userId: string) => Promise<void>;
 };
 
@@ -154,9 +149,6 @@ export function WorkspaceSettingsProvider({
     useCryptoSession();
 
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
-  const canManage =
-    workspace?.role === "owner" || workspace?.role === "admin";
-  const isOwner = workspace?.role === "owner";
   const isPersonal = workspace?.kind === "personal";
 
   const [nameDraft, setNameDraft] = useState<string | null>(null);
@@ -179,6 +171,7 @@ export function WorkspaceSettingsProvider({
   );
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
+  const [leaveOpen, setLeaveOpen] = useState(false);
 
   const ensureMembersLoaded = useCallback(async () => {
     if (membersLoaded) return;
@@ -186,9 +179,7 @@ export function WorkspaceSettingsProvider({
     setError(null);
     try {
       const [inv, mem] = await Promise.all([
-        canManage
-          ? listWorkspaceInvitations(workspaceId)
-          : Promise.resolve({ invitations: [] }),
+        listWorkspaceInvitations(workspaceId),
         listWorkspaceMembers(workspaceId),
       ]);
       setInvitations(inv.invitations);
@@ -199,7 +190,7 @@ export function WorkspaceSettingsProvider({
     } finally {
       setMembersLoading(false);
     }
-  }, [membersLoaded, canManage, workspaceId]);
+  }, [membersLoaded, workspaceId]);
 
   const refreshBilling = useCallback(async () => {
     setBillingLoading(true);
@@ -221,7 +212,7 @@ export function WorkspaceSettingsProvider({
   }, [billingLoaded, refreshBilling]);
 
   useEffect(() => {
-    if (!isOwner || billingSyncAttempted.current) return;
+    if (!workspace || billingSyncAttempted.current) return;
     const params = new URLSearchParams(window.location.search);
     if (params.get("billing") !== "success") return;
     billingSyncAttempted.current = true;
@@ -255,19 +246,17 @@ export function WorkspaceSettingsProvider({
     return () => {
       cancelled = true;
     };
-  }, [isOwner, refreshBilling, refreshWorkspaces, router, workspaceId]);
+  }, [workspace, refreshBilling, refreshWorkspaces, router, workspaceId]);
 
   const refreshMembers = useCallback(async () => {
     const [inv, mem] = await Promise.all([
-      canManage
-        ? listWorkspaceInvitations(workspaceId)
-        : Promise.resolve({ invitations: [] }),
+      listWorkspaceInvitations(workspaceId),
       listWorkspaceMembers(workspaceId),
     ]);
     setInvitations(inv.invitations);
     setMembers(mem.members);
     setMembersLoaded(true);
-  }, [canManage, workspaceId]);
+  }, [workspaceId]);
 
   async function onSaveName() {
     const trimmed = name.trim();
@@ -310,11 +299,8 @@ export function WorkspaceSettingsProvider({
     }
   }
 
-  async function onInvite(opts: {
-    email: string;
-    role: WorkspaceInviteRole;
-  }) {
-    if (!canManage || !workspace) return;
+  async function onInvite(opts: { email: string }) {
+    if (!workspace) return;
     const trimmed = opts.email.trim();
     if (!trimmed) return;
     setPending(true);
@@ -324,7 +310,7 @@ export function WorkspaceSettingsProvider({
       const created = await createWorkspaceInvitation(workspaceId, {
         id: crypto.randomUUID(),
         email: trimmed,
-        role: opts.role,
+        role: "member",
       });
       setInvitations((prev) => [created, ...prev]);
       const mail = invitationMailto({
@@ -414,32 +400,17 @@ export function WorkspaceSettingsProvider({
     }
   }
 
-  async function onLeaveWorkspace(opts?: { newOwnerId?: string }) {
+  async function onLeaveWorkspace() {
     setPending(true);
     setError(null);
     try {
-      await leaveWorkspace(workspaceId, opts);
+      await leaveWorkspace(workspaceId);
+      setLeaveOpen(false);
       router.push("/app");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Leave failed");
       setPending(false);
       throw err;
-    }
-  }
-
-  async function onTransferOwnership(newOwnerId: string) {
-    setPending(true);
-    setError(null);
-    try {
-      await transferWorkspaceOwnership(workspaceId, newOwnerId);
-      await refreshWorkspaces();
-      const mem = await listWorkspaceMembers(workspaceId);
-      setMembers(mem.members);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Transfer failed");
-      throw err;
-    } finally {
-      setPending(false);
     }
   }
 
@@ -461,8 +432,13 @@ export function WorkspaceSettingsProvider({
     (i) => i.status !== "cancelled" && i.status !== "accepted",
   );
 
+  const hasActiveProBilling = Boolean(
+    billing &&
+      billing.plan === "pro" &&
+      BLOCKING_SUB_STATUSES.has(billing.status),
+  );
+
   const needsBillingCancel =
-    isOwner &&
     !isPersonal &&
     Boolean(
       billing &&
@@ -670,8 +646,6 @@ export function WorkspaceSettingsProvider({
 
   const value: WorkspaceSettingsContextValue = {
     workspace: activeWorkspace,
-    canManage,
-    isOwner,
     isPersonal,
     setNameDraft,
     name,
@@ -688,8 +662,11 @@ export function WorkspaceSettingsProvider({
     setDeleteOpen,
     deleteConfirmName,
     setDeleteConfirmName,
+    leaveOpen,
+    setLeaveOpen,
     activeInvites,
     needsBillingCancel,
+    hasActiveProBilling,
     onAddOption,
     onRenameOption,
     onDeleteOption,
@@ -710,7 +687,6 @@ export function WorkspaceSettingsProvider({
     onCopyInvite,
     onDeleteWorkspace,
     onLeaveWorkspace,
-    onTransferOwnership,
     onRemoveMember,
   };
 

@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const privacyDoc: LegalDocument = {
   slug: "privacy",
   title: "Privacy Policy",
-  versionLabel: "2026-07-28-v5",
+  versionLabel: "2026-07-28-v6",
   sections: [
     {
       heading: "Controller",
@@ -65,7 +65,7 @@ export const privacyDoc: LegalDocument = {
       paragraphs: [
         "Account and membership data are kept while your account is active and for a reasonable period afterward as needed for security, dispute handling, and legal retention.",
         "Ciphertext and related encryption metadata are kept while associated with your account/workspaces or until deleted via the Service or account closure processes.",
-        "Account closure deletes solo-owned workspaces (including your Personal workspace) and their ciphertext. Shared workspaces with other members are not wiped for those members. If you leave, are removed, or delete your account as a non-owner member, your membership metadata and wrapped keys for that workspace are removed; remaining ciphertext stays with the workspace until it is deleted.",
+        "Account closure deletes workspaces where you are the only member (including your Personal workspace) and their ciphertext. Shared workspaces with other members are not wiped for those members. If you leave, are removed, or delete your account while others remain, your membership metadata and wrapped keys for that workspace are removed; remaining ciphertext stays with the workspace until it is deleted.",
         "Policy acceptance records are retained to evidence which terms applied.",
         "Logs are retained for a limited operational period unless a longer period is required for security or legal reasons.",
       ],

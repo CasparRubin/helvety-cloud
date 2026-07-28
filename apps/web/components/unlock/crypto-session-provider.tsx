@@ -62,10 +62,7 @@ type CryptoSessionValue = {
   ) => Promise<DecryptedWorkspaceListItem>;
   renameWorkspace: (workspaceId: string, name: string) => Promise<void>;
   removeWorkspace: (workspaceId: string) => Promise<void>;
-  leaveWorkspace: (
-    workspaceId: string,
-    opts?: { newOwnerId?: string },
-  ) => Promise<void>;
+  leaveWorkspace: (workspaceId: string) => Promise<void>;
   getWorkspaceKey: (workspaceId: string) => Promise<Uint8Array>;
 };
 
@@ -263,8 +260,8 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
   );
 
   const leaveWorkspace = useCallback(
-    async (workspaceId: string, opts?: { newOwnerId?: string }) => {
-      await leaveWorkspaceApi(workspaceId, opts);
+    async (workspaceId: string) => {
+      await leaveWorkspaceApi(workspaceId);
       dropWorkspaceLocal(workspaceId);
     },
     [dropWorkspaceLocal],

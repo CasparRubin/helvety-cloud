@@ -3,7 +3,7 @@ import type { LegalDocument } from "./types";
 export const termsDoc: LegalDocument = {
   slug: "terms",
   title: "Terms of Service",
-  versionLabel: "2026-07-28-v4",
+  versionLabel: "2026-07-28-v5",
   sections: [
     {
       heading: "Agreement",
@@ -31,10 +31,10 @@ export const termsDoc: LegalDocument = {
     {
       heading: "Workspaces",
       paragraphs: [
-        "Encrypted content lives in workspaces. A workspace has an owner and may have admins and members. Owners and admins can invite people and manage membership as shown in the product.",
-        "Leaving a workspace as a non-owner, or being removed, drops your membership and wrapped keys for that workspace. Content stays for remaining members. Helvety does not rotate workspace keys when someone leaves or is removed.",
-        "If you are the only member and leave, or if the owner deletes the workspace, its ciphertext is permanently deleted for everyone. Your Personal workspace cannot be left or deleted except by deleting your account.",
-        "Deleting your account permanently removes your account data and solo-owned workspaces (including Personal). If you still own a workspace with other members, you must transfer ownership and leave, or delete that workspace, before account deletion. Support cannot restore access or keys.",
+        "Encrypted content lives in workspaces. Every invited member has the same rights: invite others, remove members, manage billing, and delete the workspace. Only invite people you trust fully.",
+        "Leaving a shared workspace, or being removed, drops your membership and wrapped keys for that workspace. Content stays for remaining members. Helvety does not rotate workspace keys when someone leaves or is removed. Leaving a Pro workspace does not cancel billing; cancel the subscription in Manage billing if you do not want charges to continue.",
+        "If you are the only member and leave, or if any member deletes the workspace, its ciphertext is permanently deleted for everyone. Your Personal workspace cannot be left or deleted except by deleting your account.",
+        "Deleting your account permanently removes your account data and workspaces where you are the only member (including Personal). Shared workspaces remain for other members; you leave them. Support cannot restore access or keys.",
       ],
     },
     {

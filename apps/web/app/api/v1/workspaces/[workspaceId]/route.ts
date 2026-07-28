@@ -137,8 +137,8 @@ export async function DELETE(request: Request, context: RouteContext) {
     if (message.includes("not authenticated")) {
       return apiError("unauthorized", "Not authenticated", 401);
     }
-    if (message.includes("not workspace owner")) {
-      return apiError("forbidden", "Only the workspace owner can delete it", 403);
+    if (message.includes("not a workspace member")) {
+      return apiError("forbidden", "Not a workspace member", 403);
     }
     if (
       message.includes("cannot delete personal") ||

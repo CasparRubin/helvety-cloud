@@ -1,8 +1,6 @@
 import {
   workspaceKindSchema,
-  workspaceRoleSchema,
   type WorkspaceKind,
-  type WorkspaceRole,
 } from "@helvety-cloud/api-contract";
 import type { Database } from "@helvety-cloud/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -10,16 +8,13 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 type Api = SupabaseClient<Database>;
 
 export type AccountWorkspaceSplit = {
-  /** Owned but shared with other members; deletion is blocked until resolved. */
-  blockingWorkspaces: { id: string }[];
-  /** Owned with no other members; hard-deleted with the account. */
+  /** Sole member; hard-deleted with the account. */
   soloOwnedWorkspaces: { id: string; kind: WorkspaceKind }[];
-  /** Not owned; the account is only removed from these. */
-  leavingWorkspaces: { id: string; role: WorkspaceRole }[];
+  /** Shared membership; soft-leave on account delete. */
+  leavingWorkspaces: { id: string }[];
 };
 
 const EMPTY_SPLIT: AccountWorkspaceSplit = {
-  blockingWorkspaces: [],
   soloOwnedWorkspaces: [],
   leavingWorkspaces: [],
 };
@@ -31,7 +26,7 @@ export async function loadAccountWorkspaceSplit(
 ): Promise<AccountWorkspaceSplit> {
   const { data: memberships, error: membershipError } = await supabase
     .from("workspace_members")
-    .select("workspace_id, role")
+    .select("workspace_id")
     .eq("user_id", userId);
 
   if (membershipError) {
@@ -70,7 +65,6 @@ export async function loadAccountWorkspaceSplit(
   }
 
   const split: AccountWorkspaceSplit = {
-    blockingWorkspaces: [],
     soloOwnedWorkspaces: [],
     leavingWorkspaces: [],
   };
@@ -79,16 +73,8 @@ export async function loadAccountWorkspaceSplit(
     const workspace = workspacesById.get(membership.workspace_id);
     if (!workspace) continue;
 
-    if (membership.role !== "owner") {
-      split.leavingWorkspaces.push({
-        id: workspace.id,
-        role: workspaceRoleSchema.parse(membership.role),
-      });
-      continue;
-    }
-
     if ((memberCounts.get(workspace.id) ?? 1) > 1) {
-      split.blockingWorkspaces.push({ id: workspace.id });
+      split.leavingWorkspaces.push({ id: workspace.id });
     } else {
       split.soloOwnedWorkspaces.push({
         id: workspace.id,

@@ -210,9 +210,6 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
                   <p className="text-sm font-medium">
                     {workspaceNames.get(invitation.id) ?? "Workspace"}
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    Role: {invitation.role}
-                  </p>
                   <p className="mt-1 text-xs text-muted-foreground">
                     {statusCopy(invitation.status)}
                   </p>

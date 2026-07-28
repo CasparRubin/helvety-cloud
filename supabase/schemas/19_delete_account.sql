@@ -1,13 +1,11 @@
--- Account hard-delete prep: remove solo-owned workspaces and clear FK
+-- Account hard-delete prep: wipe solo-member workspaces and clear FK
 -- blockers so auth.admin.deleteUser can cascade the rest.
--- Shared workspaces with other members are left intact; membership and
--- per-user wraps cascade when the auth user is deleted.
--- Blocks when the caller still owns any multi-member workspace.
+-- Shared workspaces with other members stay; membership and per-user wraps
+-- cascade when the auth user is deleted. created_by is reassigned first so
+-- deleteUser is not blocked by workspaces.created_by.
 --
--- Invariant: for standard workspaces, created_by tracks the current owner
--- (transfer_workspace_ownership / leave_workspace keep them aligned). Solo
--- owned workspaces are deleted here; multi-member owned ones must be
--- transferred or wiped first so created_by never blocks deleteUser.
+-- Invariant: created_by always points at a current member (leave/remove
+-- reassign it). Solo-member workspaces are deleted here.
 
 create or replace function public.delete_account()
 returns void
@@ -18,31 +16,42 @@ as $$
 declare
   caller uuid := (select auth.uid());
   solo record;
+  shared record;
+  next_owner uuid;
 begin
   if caller is null then
     raise exception 'not authenticated' using errcode = '42501';
   end if;
 
-  if exists (
-    select 1
-    from public.workspace_members wm
-    where wm.user_id = caller
-      and wm.role = 'owner'
+  -- Reassign created_by on shared workspaces before auth user delete.
+  for shared in
+    select w.id as workspace_id
+    from public.workspaces w
+    where w.created_by = caller
       and (
         select count(*)
-        from public.workspace_members wm2
-        where wm2.workspace_id = wm.workspace_id
+        from public.workspace_members wm
+        where wm.workspace_id = w.id
       ) > 1
-  ) then
-    raise exception 'owns shared workspaces'
-      using errcode = 'P0001';
-  end if;
+  loop
+    select wm.user_id into next_owner
+    from public.workspace_members wm
+    where wm.workspace_id = shared.workspace_id
+      and wm.user_id <> caller
+    order by wm.created_at asc
+    limit 1;
+
+    if next_owner is not null then
+      update public.workspaces
+      set created_by = next_owner
+      where id = shared.workspace_id;
+    end if;
+  end loop;
 
   for solo in
     select wm.workspace_id as id
     from public.workspace_members wm
     where wm.user_id = caller
-      and wm.role = 'owner'
       and (
         select count(*)
         from public.workspace_members wm2

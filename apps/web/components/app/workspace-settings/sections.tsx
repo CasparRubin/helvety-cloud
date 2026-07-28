@@ -319,8 +319,6 @@ export function WorkspaceMembersSettings() {
   const { userKeys } = useCryptoSession();
   const {
     workspace,
-    canManage,
-    isOwner,
     isPersonal,
     members,
     billing,
@@ -330,6 +328,10 @@ export function WorkspaceMembersSettings() {
     memberLimitHit,
     copiedId,
     activeInvites,
+    leaveOpen,
+    setLeaveOpen,
+    hasActiveProBilling,
+    needsBillingCancel,
     ensureMembersLoaded,
     ensureBillingLoaded,
     onInvite,
@@ -337,30 +339,22 @@ export function WorkspaceMembersSettings() {
     onCancel,
     onCopyInvite,
     onUpgrade,
+    onManageBilling,
     onLeaveWorkspace,
-    onTransferOwnership,
     onRemoveMember,
   } = useWorkspaceSettings();
 
-  const [inviteRole, setInviteRole] = useState<"member" | "admin">("member");
-  const [leaveOpen, setLeaveOpen] = useState(false);
-  const [leaveSuccessorId, setLeaveSuccessorId] = useState("");
   const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null);
-  const [transferTarget, setTransferTarget] = useState<WorkspaceMember | null>(
-    null,
-  );
 
-  const otherMembers = members.filter((m) => m.userId !== userKeys?.userId);
   const isSolo = members.length <= 1;
-  const needsSuccessor = isOwner && !isSolo;
 
   useEffect(() => {
     void ensureMembersLoaded();
   }, [ensureMembersLoaded]);
 
   useEffect(() => {
-    if (memberLimitHit) void ensureBillingLoaded();
-  }, [memberLimitHit, ensureBillingLoaded]);
+    if (memberLimitHit || leaveOpen) void ensureBillingLoaded();
+  }, [memberLimitHit, leaveOpen, ensureBillingLoaded]);
 
   return (
     <div className="flex max-w-xl flex-col gap-4">
@@ -368,54 +362,28 @@ export function WorkspaceMembersSettings() {
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-medium">Workspace access</h2>
         <p className="text-xs leading-5 text-muted-foreground">
-          Invite by email. After they sign in and set up encryption, complete key
-          handoff on an unlocked device. Helvety never sees the workspace key or
-          your data.
+          Invite by email. Every member has the same rights: invite, remove,
+          billing, and delete. After they sign in and set up encryption, complete
+          key handoff on an unlocked device. Helvety never sees the workspace key
+          or your data.
         </p>
       </div>
 
-      {canManage ? (
-        <CreateEntityDialog
-          triggerLabel="Invite member"
-          dialogTitle="Invite member"
-          fieldLabel="Email"
-          fieldPlaceholder="teammate@example.com"
-          fieldType="email"
-          fieldMaxLength={320}
-          confirmLabel="Invite"
-          disabled={pending}
-          onCreate={async (email) => {
-            await onInvite({ email, role: inviteRole });
-          }}
-          onOpenChange={(open) => {
-            if (open) setInviteRole("member");
-          }}
-        >
-          <div className="flex flex-col gap-2">
-            <Label htmlFor="invite-role" required>
-              Role
-            </Label>
-            <select
-              id="invite-role"
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-              value={inviteRole}
-              disabled={pending}
-              onChange={(e) =>
-                setInviteRole(e.target.value as "member" | "admin")
-              }
-            >
-              <option value="member">Member</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-        </CreateEntityDialog>
-      ) : (
-        <p className="text-xs text-muted-foreground">
-          Only owners and admins can invite members.
-        </p>
-      )}
+      <CreateEntityDialog
+        triggerLabel="Invite member"
+        dialogTitle="Invite member"
+        fieldLabel="Email"
+        fieldPlaceholder="teammate@example.com"
+        fieldType="email"
+        fieldMaxLength={320}
+        confirmLabel="Invite"
+        disabled={pending}
+        onCreate={async (email) => {
+          await onInvite({ email });
+        }}
+      />
 
-      {memberLimitHit && isOwner && billing?.plan === "free" ? (
+      {memberLimitHit && billing?.plan === "free" ? (
         <div className="flex items-center justify-between gap-2 rounded-lg border border-border px-2 py-1.5">
           <p className="text-xs text-muted-foreground">
             The free plan includes {formatLimit(billing.limits.members)} members
@@ -451,34 +419,18 @@ export function WorkspaceMembersSettings() {
                     <span className="truncate font-mono text-xs">
                       {isSelf ? "You" : `${m.userId.slice(0, 8)}…`}
                     </span>
-                    <span className="text-xs text-muted-foreground">
-                      {m.role}
-                    </span>
                   </div>
-                  <div className="flex flex-wrap gap-1">
-                    {isOwner && !isSelf && m.role !== "owner" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="outline"
-                        disabled={pending}
-                        onClick={() => setTransferTarget(m)}
-                      >
-                        Make owner
-                      </Button>
-                    ) : null}
-                    {canManage && !isSelf && m.role !== "owner" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        variant="destructive"
-                        disabled={pending}
-                        onClick={() => setRemoveTarget(m)}
-                      >
-                        Remove
-                      </Button>
-                    ) : null}
-                  </div>
+                  {!isSelf ? (
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="destructive"
+                      disabled={pending}
+                      onClick={() => setRemoveTarget(m)}
+                    >
+                      Remove
+                    </Button>
+                  ) : null}
                 </li>
               );
             })}
@@ -491,18 +443,13 @@ export function WorkspaceMembersSettings() {
           <p className="text-xs leading-5 text-muted-foreground">
             {isSolo
               ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, files, and sharing."
-              : isOwner
-                ? "To leave, choose another member as the new owner. The workspace stays for everyone else."
-                : "Leaving removes your access and your wrapped keys. Nothing is deleted for other members."}
+              : "Leaving removes your access and your wrapped keys. Nothing is deleted for other members."}
           </p>
           <Button
             type="button"
             variant="outline"
             disabled={pending}
-            onClick={() => {
-              setLeaveSuccessorId(otherMembers[0]?.userId ?? "");
-              setLeaveOpen(true);
-            }}
+            onClick={() => setLeaveOpen(true)}
           >
             Leave workspace
           </Button>
@@ -514,65 +461,62 @@ export function WorkspaceMembersSettings() {
         </p>
       )}
 
-      {canManage ? (
-        <div className="flex flex-col gap-2">
-          <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
-            Pending invitations
+      <div className="flex flex-col gap-2">
+        <p className="text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+          Pending invitations
+        </p>
+        {activeInvites.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            No pending invitations.
           </p>
-          {activeInvites.length === 0 ? (
-            <p className="text-xs text-muted-foreground">
-              No pending invitations.
-            </p>
-          ) : (
-            <ul className="flex flex-col gap-2">
-              {activeInvites.map((invitation) => (
-                <li
-                  key={invitation.id}
-                  className="flex flex-col gap-1.5 rounded-lg border border-border px-2 py-2"
-                >
-                  <div className="min-w-0">
-                    <p className="truncate text-sm">{invitation.email}</p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {invitationStatusLabel(invitation.status)} ·{" "}
-                      {invitation.role}
-                    </p>
-                  </div>
-                  <div className="flex flex-wrap gap-1">
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {activeInvites.map((invitation) => (
+              <li
+                key={invitation.id}
+                className="flex flex-col gap-1.5 rounded-lg border border-border px-2 py-2"
+              >
+                <div className="min-w-0">
+                  <p className="truncate text-sm">{invitation.email}</p>
+                  <p className="text-[11px] text-muted-foreground">
+                    {invitationStatusLabel(invitation.status)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-1">
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void onCopyInvite(invitation)}
+                  >
+                    {copiedId === invitation.id ? "Copied" : "Copy invite"}
+                  </Button>
+                  {invitation.status === "waiting_for_owner_seal" ? (
                     <Button
                       type="button"
                       size="sm"
-                      variant="outline"
-                      disabled={pending}
-                      onClick={() => void onCopyInvite(invitation)}
+                      disabled={pending || !userKeys}
+                      onClick={() => void onSeal(invitation)}
                     >
-                      {copiedId === invitation.id ? "Copied" : "Copy invite"}
+                      Complete key handoff
                     </Button>
-                    {invitation.status === "waiting_for_owner_seal" ? (
-                      <Button
-                        type="button"
-                        size="sm"
-                        disabled={pending || !userKeys}
-                        onClick={() => void onSeal(invitation)}
-                      >
-                        Complete key handoff
-                      </Button>
-                    ) : null}
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="destructive"
-                      disabled={pending}
-                      onClick={() => void onCancel(invitation)}
-                    >
-                      Cancel
-                    </Button>
-                  </div>
-                </li>
-              ))}
-            </ul>
-          )}
-        </div>
-      ) : null}
+                  ) : null}
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="destructive"
+                    disabled={pending}
+                    onClick={() => void onCancel(invitation)}
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       <ConfirmDeleteDialog
         open={leaveOpen}
@@ -585,42 +529,47 @@ export function WorkspaceMembersSettings() {
         description={
           isSolo
             ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
-            : needsSuccessor
-              ? "Pick a new owner, then you will leave. The workspace stays for remaining members. Helvety does not rotate keys for remaining members."
-              : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
+            : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
         }
         confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
         busyLabel={isSolo ? "Deleting…" : "Leaving…"}
         busy={pending}
         onConfirm={async () => {
-          if (needsSuccessor) {
-            if (!leaveSuccessorId) {
-              throw new Error("Choose a new owner before leaving");
-            }
-            await onLeaveWorkspace({ newOwnerId: leaveSuccessorId });
-            return;
-          }
           await onLeaveWorkspace();
         }}
       >
-        {needsSuccessor ? (
-          <div className="flex flex-col gap-1.5">
-            <Label htmlFor="leave-successor" className="text-xs">
-              New owner
-            </Label>
-            <select
-              id="leave-successor"
-              className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-              value={leaveSuccessorId}
-              disabled={pending}
-              onChange={(e) => setLeaveSuccessorId(e.target.value)}
+        {!isSolo && hasActiveProBilling ? (
+          <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <p className="text-xs leading-5 text-muted-foreground">
+              This workspace is on Pro. Leaving does not cancel billing. If you
+              pay for this workspace, cancel the subscription first.
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending || !billing?.hasStripeCustomer}
+              onClick={() => void onManageBilling()}
             >
-              {otherMembers.map((m) => (
-                <option key={m.userId} value={m.userId}>
-                  {m.userId.slice(0, 8)}… ({m.role})
-                </option>
-              ))}
-            </select>
+              Open billing portal
+            </Button>
+          </div>
+        ) : null}
+        {isSolo && needsBillingCancel ? (
+          <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+            <p className="text-xs leading-5 text-muted-foreground">
+              Cancel the Pro subscription in Manage billing before leaving
+              (leaving as the only member deletes this workspace).
+            </p>
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={pending}
+              onClick={() => void onManageBilling()}
+            >
+              Open billing portal
+            </Button>
           </div>
         ) : null}
       </ConfirmDeleteDialog>
@@ -641,30 +590,12 @@ export function WorkspaceMembersSettings() {
           setRemoveTarget(null);
         }}
       />
-
-      <ConfirmDeleteDialog
-        open={transferTarget !== null}
-        onOpenChange={(open) => {
-          if (!open) setTransferTarget(null);
-        }}
-        title="Transfer ownership?"
-        description="They become the owner. You stay as an admin."
-        confirmLabel="Make owner"
-        busyLabel="Transferring…"
-        busy={pending}
-        onConfirm={async () => {
-          if (!transferTarget) return;
-          await onTransferOwnership(transferTarget.userId);
-          setTransferTarget(null);
-        }}
-      />
     </div>
   );
 }
 
 export function WorkspaceBillingSettings() {
   const {
-    isOwner,
     billing,
     pending,
     billingLoading,
@@ -690,8 +621,8 @@ export function WorkspaceBillingSettings() {
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-medium">Plan and limits</h2>
         <p className="text-sm text-muted-foreground">
-          Billing is tied to the workspace. Review usage here and open Stripe
-          only when you need to change the plan or add-ons.
+          Billing is tied to the workspace. Any member can review usage and open
+          Stripe to change the plan or add-ons.
         </p>
       </div>
       {billingLoading && !billing ? (
@@ -713,33 +644,27 @@ export function WorkspaceBillingSettings() {
                     />
                   </p>
                 </div>
-                {isOwner ? (
-                  billing.plan === "free" ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={pending}
-                      onClick={() => void onUpgrade()}
-                    >
-                      Upgrade to Pro
-                    </Button>
-                  ) : billing.hasStripeCustomer ? (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      disabled={pending}
-                      onClick={() => void onManageBilling()}
-                    >
-                      Manage billing
-                    </Button>
-                  ) : null
-                ) : (
-                  <p className="shrink-0 text-xs text-muted-foreground">
-                    Only the owner can manage billing.
-                  </p>
-                )}
+                {billing.plan === "free" ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void onUpgrade()}
+                  >
+                    Upgrade to Pro
+                  </Button>
+                ) : billing.hasStripeCustomer ? (
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    disabled={pending}
+                    onClick={() => void onManageBilling()}
+                  >
+                    Manage billing
+                  </Button>
+                ) : null}
               </div>
               {billing.freeOverflowLocked ? (
                 <p className="text-xs text-muted-foreground">
@@ -749,10 +674,11 @@ export function WorkspaceBillingSettings() {
                     ? "1 free workspace per account"
                     : `${PLAN_LIMITS.free.ownedWorkspaces} free workspaces per account`}
                   ). Existing content stays available. Upgrade to Pro, or reduce
-                  owned free workspaces to unlock creates again.
+                  free workspaces attributed to this account to unlock creates
+                  again.
                 </p>
               ) : null}
-              {isOwner && billing.plan === "free" ? (
+              {billing.plan === "free" ? (
                 <p className="border-t border-border pt-2 text-xs text-muted-foreground">
                   Promotion codes can be entered at Stripe Checkout after you
                   click Upgrade to Pro.
@@ -838,7 +764,7 @@ export function WorkspaceBillingSettings() {
                           : "No packs yet"}
                       </p>
                     </div>
-                    {isOwner && billing.hasStripeCustomer ? (
+                    {billing.hasStripeCustomer ? (
                       <Button
                         type="button"
                         size="sm"
@@ -883,7 +809,6 @@ export function WorkspaceBillingSettings() {
 export function WorkspaceDangerSettings() {
   const {
     workspace,
-    isOwner,
     isPersonal,
     members,
     pending,
@@ -892,18 +817,23 @@ export function WorkspaceDangerSettings() {
     setDeleteOpen,
     deleteConfirmName,
     setDeleteConfirmName,
+    leaveOpen,
+    setLeaveOpen,
+    hasActiveProBilling,
     needsBillingCancel,
     ensureBillingLoaded,
     ensureMembersLoaded,
     onDeleteWorkspace,
+    onLeaveWorkspace,
+    onManageBilling,
   } = useWorkspaceSettings();
 
   useEffect(() => {
-    if (isOwner && !isPersonal) {
+    if (!isPersonal) {
       void ensureBillingLoaded();
       void ensureMembersLoaded();
     }
-  }, [isOwner, isPersonal, ensureBillingLoaded, ensureMembersLoaded]);
+  }, [isPersonal, ensureBillingLoaded, ensureMembersLoaded]);
 
   if (!workspace) {
     return (
@@ -913,15 +843,8 @@ export function WorkspaceDangerSettings() {
     );
   }
 
-  if (!isOwner) {
-    return (
-      <p className="text-sm text-muted-foreground">
-        Only the workspace owner can access the danger zone.
-      </p>
-    );
-  }
-
   const hasOtherMembers = members.length > 1;
+  const isSolo = members.length <= 1;
 
   return (
     <section className="flex max-w-lg flex-col gap-3 rounded-xl border border-destructive/30 p-5">
@@ -940,16 +863,38 @@ export function WorkspaceDangerSettings() {
             be undone. Helvety cannot recover deleted data.
           </p>
           {hasOtherMembers ? (
-            <p className="text-xs leading-5 text-muted-foreground">
-              Other members will lose access. To keep the workspace, transfer
-              ownership then leave from Members instead.
-            </p>
+            <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+              <p className="text-xs leading-5 text-muted-foreground">
+                Other members will lose access. If you only want to exit, leave
+                the workspace instead of deleting it.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() => setLeaveOpen(true)}
+              >
+                Leave instead
+              </Button>
+            </div>
           ) : null}
           {needsBillingCancel ? (
-            <p className="text-xs leading-5 text-muted-foreground">
-              Cancel the Pro subscription in Manage billing before deleting this
-              workspace.
-            </p>
+            <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+              <p className="text-xs leading-5 text-muted-foreground">
+                Cancel the Pro subscription in Manage billing before deleting
+                this workspace.
+              </p>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={pending}
+                onClick={() => void onManageBilling()}
+              >
+                Manage billing
+              </Button>
+            </div>
           ) : null}
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex flex-1 flex-col gap-1">
@@ -986,6 +931,44 @@ export function WorkspaceDangerSettings() {
             busy={pending}
             onConfirm={onDeleteWorkspace}
           />
+          <ConfirmDeleteDialog
+            open={leaveOpen}
+            onOpenChange={setLeaveOpen}
+            title={
+              isSolo
+                ? `Delete workspace “${workspace.name}”?`
+                : "Leave this workspace?"
+            }
+            description={
+              isSolo
+                ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+                : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
+            }
+            confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
+            busyLabel={isSolo ? "Deleting…" : "Leaving…"}
+            busy={pending}
+            onConfirm={async () => {
+              await onLeaveWorkspace();
+            }}
+          >
+            {!isSolo && hasActiveProBilling ? (
+              <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
+                <p className="text-xs leading-5 text-muted-foreground">
+                  This workspace is on Pro. Leaving does not cancel billing. If
+                  you pay for this workspace, cancel the subscription first.
+                </p>
+                <Button
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  disabled={pending}
+                  onClick={() => void onManageBilling()}
+                >
+                  Open billing portal
+                </Button>
+              </div>
+            ) : null}
+          </ConfirmDeleteDialog>
         </>
       )}
     </section>

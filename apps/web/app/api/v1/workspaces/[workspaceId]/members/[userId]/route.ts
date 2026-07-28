@@ -5,7 +5,7 @@ type RouteContext = {
   params: Promise<{ workspaceId: string; userId: string }>;
 };
 
-/** Owner/admin removes a non-owner member (and their wraps). */
+/** Any member may remove another member (and their wraps). */
 export async function DELETE(request: Request, context: RouteContext) {
   const auth = await requireUser(request);
   if (!isAuthedApi(auth)) {
@@ -27,13 +27,10 @@ export async function DELETE(request: Request, context: RouteContext) {
     if (message.includes("not authenticated")) {
       return apiError("unauthorized", "Not authenticated", 401);
     }
-    if (message.includes("not workspace admin")) {
-      return apiError("forbidden", "Only owners and admins can remove members", 403);
+    if (message.includes("not a workspace member")) {
+      return apiError("forbidden", "Not a workspace member", 403);
     }
-    if (
-      message.includes("cannot remove owner") ||
-      message.includes("use leave for self")
-    ) {
+    if (message.includes("use leave for self")) {
       return apiError("conflict", error.message, 409);
     }
     return apiError("internal", error.message, 500);

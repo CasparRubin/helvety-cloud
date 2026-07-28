@@ -1,25 +1,7 @@
 -- P6e: workspace invitations (email-targeted; client-sealed workspace key).
--- Lifecycle: create → claim (invitee + public key) → seal (owner) → accept
+-- Lifecycle: create → claim (invitee + public key) → seal (member) → accept
 -- (membership + wrapped_keys atomically). Server never sees plaintext keys.
-
-create or replace function public.is_workspace_admin(ws_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public
-as $$
-  select exists (
-    select 1
-    from public.workspace_members
-    where workspace_id = ws_id
-      and user_id = (select auth.uid())
-      and role in ('owner', 'admin')
-  );
-$$;
-
-revoke all on function public.is_workspace_admin(uuid) from public;
-grant execute on function public.is_workspace_admin(uuid) to authenticated;
+-- Any member may invite, seal, and cancel. Invite role is always member.
 
 create or replace function public.normalized_auth_email()
 returns text
@@ -50,7 +32,7 @@ create table public.workspace_invitations (
   cancelled_at timestamptz,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
-  constraint workspace_invitations_role_check check (role in ('admin', 'member')),
+  constraint workspace_invitations_role_check check (role in ('member')),
   constraint workspace_invitations_email_check check (
     email = lower(trim(email))
     and position('@' in email) > 1
@@ -101,23 +83,24 @@ create trigger workspace_invitations_set_updated_at
 alter table public.workspace_invitations enable row level security;
 alter table public.workspace_invitations force row level security;
 
--- Owners/admins see workspace invitations; invitees see rows matching JWT email.
+-- Members see workspace invitations; invitees see rows matching JWT email.
 create policy workspace_invitations_select
   on public.workspace_invitations
   for select
   to authenticated
   using (
-    public.is_workspace_admin(workspace_id)
+    public.is_workspace_member(workspace_id)
     or email = public.normalized_auth_email()
   );
 
-create policy workspace_invitations_insert_admin
+create policy workspace_invitations_insert_member
   on public.workspace_invitations
   for insert
   to authenticated
   with check (
     invited_by = (select auth.uid())
-    and public.is_workspace_admin(workspace_id)
+    and public.is_workspace_member(workspace_id)
+    and role = 'member'
     and claimed_by is null
     and sealed_workspace_key is null
     and accepted_at is null
@@ -231,7 +214,7 @@ begin
     and wi.accepted_at is null
     and wi.claimed_by is not null
     and wi.sealed_workspace_key is null
-    and public.is_workspace_admin(wi.workspace_id)
+    and public.is_workspace_member(wi.workspace_id)
   returning * into row;
 
   if not found then
@@ -269,7 +252,7 @@ begin
   where wi.id = invitation_id
     and wi.cancelled_at is null
     and wi.accepted_at is null
-    and public.is_workspace_admin(wi.workspace_id)
+    and public.is_workspace_member(wi.workspace_id)
   returning * into row;
 
   if not found then

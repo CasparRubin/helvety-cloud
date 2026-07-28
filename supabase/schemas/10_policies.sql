@@ -71,13 +71,13 @@ create policy workspace_members_select_own
   to authenticated
   using (user_id = (select auth.uid()));
 
-create policy workspace_members_insert_self_owner
+create policy workspace_members_insert_self_creator
   on public.workspace_members
   for insert
   to authenticated
   with check (
     user_id = (select auth.uid())
-    and role = 'owner'
+    and role = 'member'
     and exists (
       select 1
       from public.workspaces w

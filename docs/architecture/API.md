@@ -28,10 +28,10 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT | `/api/v1/me/policy-acceptances` | Record ToS/Privacy/AUP/E2EE version acceptances |
 | GET | `/api/v1/me/crypto` | Load public key + wrapped user key material |
 | PUT | `/api/v1/me/crypto` | Upsert public key + wrapped user key material (requires current policy acceptances) |
-| GET | `/api/v1/me` | Account deletion preview (solo / leaving / blocking workspace **ids**; names resolve client-side after unlock) |
-| DELETE | `/api/v1/me` | Hard-delete account (cancels solo-owned Stripe subs; blocks if owns shared workspaces; then `auth.admin.deleteUser`) |
-| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, `encryptedBlob`, kind, role, wrapped key, resolved `plan`) |
-| POST | `/api/v1/workspaces` | Create workspace + owner wrapped key (`encryptedBlob`, `kind`, sealed key) |
+| GET | `/api/v1/me` | Account deletion preview (solo / leaving workspace **ids**; names resolve client-side after unlock) |
+| DELETE | `/api/v1/me` | Hard-delete account (cancels solo-member Stripe subs; soft-leaves shared; then `auth.admin.deleteUser`) |
+| GET | `/api/v1/workspaces` | List workspaces the caller belongs to (id, `encryptedBlob`, kind, role=`member`, wrapped key, resolved `plan`) |
+| POST | `/api/v1/workspaces` | Create workspace + member wrapped key (`encryptedBlob`, `kind`, sealed key); creator is `created_by` |
 | GET | `/api/v1/workspaces/:workspaceId` | Workspace id/`encryptedBlob`/kind + caller’s wrapped key |
 | PATCH | `/api/v1/workspaces/:workspaceId` | Update workspace ciphertext (`encryptedBlob` only; `kind` immutable) |
 | GET | `/api/v1/workspaces/:workspaceId/projects` | List projects (paginated; ciphertext-opaque) |
@@ -48,22 +48,21 @@ Realtime (optional later) = wake-up only, not a second write API.
 | PUT/GET | `/api/v1/workspaces/:workspaceId/contacts/:contactId` | Contact upsert / fetch (`links` replace non-project outgoing edges; optional `projectIds` replace project affiliations) |
 | GET | `/api/v1/workspaces/:workspaceId/comments` | List comments for a parent (`parentKind` + `parentId` required; ciphertext-opaque) |
 | PUT/DELETE | `/api/v1/workspaces/:workspaceId/comments/:commentId` | Comment upsert / delete (`parentKind`, `parentId`, optional `parentCommentId`; create gated) |
-| DELETE | `/api/v1/workspaces/:workspaceId` | Owner hard-delete (wipes for all members; Storage cleared first; personal blocked; active Stripe must cancel first) |
-| POST | `/api/v1/workspaces/:workspaceId/leave` | Leave: solo = wipe; owner+others requires `newOwnerId` then soft-leave; non-owner soft-leave (no key rotation) |
-| POST | `/api/v1/workspaces/:workspaceId/transfer` | Owner promotes another member; caller becomes admin and stays |
-| GET | `/api/v1/workspaces/:workspaceId/members` | List members (`userId`, `role`) |
-| DELETE | `/api/v1/workspaces/:workspaceId/members/:userId` | Owner/admin removes a non-owner member (+ their wraps) |
-| GET/POST | `/api/v1/workspaces/:workspaceId/invitations` | List / create email invitations (owner/admin) |
-| POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/seal` | Owner/admin stores client-sealed workspace key for claimed invitee |
-| POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/cancel` | Cancel active invitation (owner/admin; clears any stored seal) |
+| DELETE | `/api/v1/workspaces/:workspaceId` | Any member hard-delete (wipes for everyone; Storage cleared; personal blocked; active Stripe must cancel first) |
+| POST | `/api/v1/workspaces/:workspaceId/leave` | Leave: solo = wipe; shared = soft-leave only (no handover; no key rotation) |
+| GET | `/api/v1/workspaces/:workspaceId/members` | List members (`userId`, `role`=`member`) |
+| DELETE | `/api/v1/workspaces/:workspaceId/members/:userId` | Any member removes another member (+ their wraps) |
+| GET/POST | `/api/v1/workspaces/:workspaceId/invitations` | List / create email invitations (any member; role always `member`) |
+| POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/seal` | Member stores client-sealed workspace key for claimed invitee |
+| POST | `/api/v1/workspaces/:workspaceId/invitations/:invitationId/cancel` | Cancel active invitation (any member; clears any stored seal) |
 | GET | `/api/v1/me/invitations` | Invitations addressed to the caller’s verified email |
 | POST | `/api/v1/me/invitations/:invitationId/claim` | Invitee attaches their `public_key` (must match their `user_crypto` row) |
 | POST | `/api/v1/me/invitations/:invitationId/accept` | Atomic membership + `wrapped_keys` insert (member-gated) |
 | GET | `/api/v1/workspaces/:workspaceId/billing` | Plan, status, effective limits, usage, Capacity Increase quantity, `freeOverflowLocked` (any member) |
-| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Owner-only: Stripe Checkout for Pro Workspace (`allow_promotion_codes`) → `{ url }` |
-| POST | `/api/v1/workspaces/:workspaceId/billing/sync` | Owner-only: reconcile `subscriptions` from Stripe (post-Checkout self-heal) → same body as GET billing |
-| POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Owner-only: Stripe Customer Portal → `{ url }` |
-| PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Owner-only: set Capacity Increase quantity on a Pro Workspace Stripe subscription |
+| POST | `/api/v1/workspaces/:workspaceId/billing/checkout` | Any member: Stripe Checkout for Pro Workspace (`allow_promotion_codes`) → `{ url }` |
+| POST | `/api/v1/workspaces/:workspaceId/billing/sync` | Any member: reconcile `subscriptions` from Stripe (post-Checkout self-heal) → same body as GET billing |
+| POST | `/api/v1/workspaces/:workspaceId/billing/portal` | Any member: Stripe Customer Portal → `{ url }` |
+| PUT | `/api/v1/workspaces/:workspaceId/billing/addons` | Any member: set Capacity Increase quantity on a Pro Workspace Stripe subscription |
 | GET | `/api/v1/workspaces/:workspaceId/attachments` | List attachments (optional `parentKind` + `parentId` filter via `attachment_links`) |
 | POST | `/api/v1/workspaces/:workspaceId/attachments` | Create pending attachment + signed upload URL (`encryptedMeta`, `wrappedDek`, `byteSize`) |
 | GET | `/api/v1/workspaces/:workspaceId/attachments/:attachmentId` | Fetch attachment metadata envelopes |
@@ -74,7 +73,7 @@ Realtime (optional later) = wake-up only, not a second write API.
 
 **Attachments (P11):** Client encrypts file bytes with a per-file DEK, wraps the DEK under `workspace_key`, and stores filename/mime in `encryptedMeta`. Server stores opaque envelopes + Storage ciphertext only. TipTap `fileAttachment` atoms and `attachment_links` join notes/tasks/contacts to attachment ids without decrypting bodies. Upload/create is entitlement-gated (storage + attachment counts); see [`BILLING.md`](./BILLING.md).
 
-**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up encryption, claims, then an owner/admin seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own encryption key. Invitation payloads expose `workspaceEncryptedBlob` (not a plaintext workspace name); the invitee decrypts the name after seal when they hold the workspace key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys.
+**Invitation lifecycle (P6e):** `waiting_for_recipient` → `waiting_for_owner_seal` → `ready_to_accept` → `accepted` (or `cancelled`). Any email is invitable; invitee signs in with OTP, sets up encryption, claims, then any member seals `workspace_key` to the claimed public key with AAD `wrapped_keys:{workspaceId}:wrapped_key`. Claim stores the caller’s registered `user_crypto.public_key`, so seals can only target the invitee’s own encryption key. Invitation payloads expose `workspaceEncryptedBlob` (not a plaintext workspace name); the invitee decrypts the name after seal when they hold the workspace key. Cancelling drops the stored seal; a sealed key already opened by the invitee is not recoverable, so rotation stays a later concern. Server never sees plaintext keys. Inviting someone grants full peer rights (invite, remove, billing, delete).
 
 **List query params:** `limit` (1–100, default 50), opaque `cursor`, `includeDeleted=true` to include soft-deleted rows. Soft-delete = PUT with `deletedAt` ISO timestamp (schema `deleted_at`). Default lists omit tombstones. Most entity lists keyset on `sort_order ASC, id ASC`. Notes list keysets on `created_at DESC, id DESC` (newest first). Notes list also accepts optional `projectId` / `taskId` (UUID) to filter without decrypting (both resolved via `entity_links`). Workspace task list also accepts optional `projectId`. Task lists accept optional `labelId` / `stageId` / `priorityId` (UUID). Option **names** live in workspace ciphertext; these ids are intentional plaintext metadata for filtering.
 

@@ -7,10 +7,7 @@ import { getStripe, isStripeConfigured } from "@/lib/stripe";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
-const SHARED_OWNERSHIP_MESSAGE =
-  "Transfer or delete shared workspaces you own before deleting your account";
-
-/** Account deletion preview: what gets deleted, left, or blocks deletion. */
+/** Account deletion preview: what gets deleted or left. */
 export async function GET(request: Request) {
   const auth = await requireUser(request);
   if (!isAuthedApi(auth)) {
@@ -44,9 +41,9 @@ export async function GET(request: Request) {
 
 /**
  * Hard-delete the authenticated account: cancel Stripe subscriptions for
- * solo-owned workspaces, run delete_account (solo workspace wipe + invitation
- * FK cleanup), then delete the auth user so the remaining rows cascade.
- * Blocks with 409 while the caller owns a workspace with other members.
+ * solo-member workspaces, run delete_account (solo workspace wipe + invitation
+ * FK cleanup + created_by reassignment on shared workspaces), then delete the
+ * auth user so the remaining rows cascade.
  */
 export async function DELETE(request: Request) {
   const auth = await requireUser(request);
@@ -63,14 +60,6 @@ export async function DELETE(request: Request) {
       "internal",
       error instanceof Error ? error.message : "Failed to load account",
       500,
-    );
-  }
-
-  if (split.blockingWorkspaces.length > 0) {
-    return apiError(
-      "conflict",
-      `${SHARED_OWNERSHIP_MESSAGE} (${split.blockingWorkspaces.length})`,
-      409,
     );
   }
 
@@ -105,9 +94,6 @@ export async function DELETE(request: Request) {
     const message = rpcError.message.toLowerCase();
     if (message.includes("not authenticated")) {
       return apiError("unauthorized", "Not authenticated", 401);
-    }
-    if (message.includes("owns shared workspaces")) {
-      return apiError("conflict", SHARED_OWNERSHIP_MESSAGE, 409);
     }
     return apiError("internal", rpcError.message, 500);
   }

@@ -64,26 +64,24 @@ export async function isWorkspaceFreeOverflowLocked(
     return false;
   }
 
-  const { data: ownerRow, error: ownerError } = await supabase
-    .from("workspace_members")
-    .select("user_id")
-    .eq("workspace_id", workspaceId)
-    .eq("role", "owner")
+  const { data: workspaceRow, error: workspaceError } = await supabase
+    .from("workspaces")
+    .select("created_by")
+    .eq("id", workspaceId)
     .maybeSingle();
-  if (ownerError || !ownerRow) {
+  if (workspaceError || !workspaceRow?.created_by) {
     return false;
   }
 
   const { data: owned, error: ownedError } = await supabase
-    .from("workspace_members")
-    .select("workspace_id")
-    .eq("user_id", ownerRow.user_id)
-    .eq("role", "owner");
+    .from("workspaces")
+    .select("id")
+    .eq("created_by", workspaceRow.created_by);
   if (ownedError || !owned?.length) {
     return false;
   }
 
-  const ownedIds = owned.map((row) => row.workspace_id);
+  const ownedIds = owned.map((row) => row.id);
   const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
     .select(
@@ -126,7 +124,7 @@ async function assertNotFreeOverflowLocked(
 
 /**
  * Plaintext usage counts for the billing endpoint. Pending invitations are
- * only visible to owners/admins (RLS), so members see 0 there.
+ * visible to any member (RLS).
  */
 export async function getWorkspaceUsage(
   supabase: Api,
@@ -196,19 +194,19 @@ export async function getWorkspaceUsage(
   };
 }
 
-/** True when the caller holds the `owner` role in the workspace. */
-export async function isWorkspaceOwner(
+/** True when the caller is a member of the workspace. */
+export async function isWorkspaceMember(
   supabase: Api,
   workspaceId: string,
   userId: string,
 ): Promise<boolean> {
   const { data } = await supabase
     .from("workspace_members")
-    .select("role")
+    .select("user_id")
     .eq("workspace_id", workspaceId)
     .eq("user_id", userId)
     .maybeSingle();
-  return data?.role === "owner";
+  return data != null;
 }
 
 export async function getWorkspaceSubscription(
@@ -436,9 +434,9 @@ export async function assertWorkspaceStorageAllowed(
 
 /**
  * Gate creating a new workspace.
- * Free: up to PLAN_LIMITS.free.ownedWorkspaces non-Pro owned workspaces.
- * Beyond that: only allowed when creating as Pro (checkout/comp) and there is
- * at most one unpaid overflow workspace already.
+ * Free: up to PLAN_LIMITS.free.ownedWorkspaces non-Pro workspaces attributed
+ * via created_by. Beyond that: only allowed when creating as Pro (checkout/comp)
+ * and there is at most one unpaid overflow workspace already.
  */
 export async function assertOwnedWorkspaceAllowed(
   supabase: Api,
@@ -446,15 +444,14 @@ export async function assertOwnedWorkspaceAllowed(
   options?: { asPro?: boolean },
 ): Promise<NextResponse | null> {
   const { data: owned, error } = await supabase
-    .from("workspace_members")
-    .select("workspace_id")
-    .eq("user_id", userId)
-    .eq("role", "owner");
+    .from("workspaces")
+    .select("id")
+    .eq("created_by", userId);
   if (error) {
     return null;
   }
 
-  const ownedIds = (owned ?? []).map((row) => row.workspace_id);
+  const ownedIds = (owned ?? []).map((row) => row.id);
   const freeSlots = effectiveLimits(null).ownedWorkspaces;
   if (ownedIds.length === 0) {
     return null;

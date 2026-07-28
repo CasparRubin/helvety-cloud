@@ -40,7 +40,7 @@ Current gated versions live in `apps/web/lib/legal/policies.ts` (`CURRENT_POLICY
 - Do not invent compliance badges.  
 - Free limits stated clearly.  
 - Marketing must match [`KEY_HIERARCHY.md`](KEY_HIERARCHY.md).
-- Legal pack must not imply account closure wipes shared workspaces for remaining members (solo-owned wipe; non-owner leave; block while you own multi-member workspaces).
+- Legal pack must not imply account closure wipes shared workspaces for remaining members (solo-member wipe; soft-leave shared memberships).
 
 ## Regimes
 
