@@ -35,7 +35,7 @@ export async function GET(request: Request, context: RouteContext) {
   let query = supabase
     .from("contacts")
     .select(
-      "id, workspace_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at",
+      "id, workspace_id, encrypted_blob, sort_order, is_pinned, pin_sort_order, created_at, updated_at, deleted_at",
     )
     .eq("workspace_id", workspaceId)
     .order("sort_order", { ascending: true })
@@ -92,6 +92,8 @@ export async function GET(request: Request, context: RouteContext) {
       workspaceId: row.workspace_id,
       encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
       sortOrder: row.sort_order,
+      isPinned: row.is_pinned,
+      pinSortOrder: row.pin_sort_order,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
       deletedAt: row.deleted_at,

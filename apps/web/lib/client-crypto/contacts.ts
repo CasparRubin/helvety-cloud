@@ -26,6 +26,11 @@ import {
   EMPTY_TASK_BODY,
   type TaskBodyDoc,
 } from "@/lib/client-crypto/task-plaintext";
+import {
+  comparePinned,
+  movePinnedItem,
+  nextPinSortOrder,
+} from "@/lib/client-crypto/pins";
 
 const textDecoder = new TextDecoder();
 
@@ -40,6 +45,8 @@ export type DecryptedContact = {
   notes: TaskBodyDoc;
   links: EntityLinkTarget[];
   sortOrder: number;
+  isPinned: boolean;
+  pinSortOrder: number | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -116,6 +123,8 @@ async function toDecrypted(
     notes,
     links: row.links,
     sortOrder: row.sortOrder,
+    isPinned: row.isPinned,
+    pinSortOrder: row.pinSortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -169,6 +178,8 @@ export async function createContact(
   const row = await putContact(workspaceId, contactId, {
     encryptedBlob,
     sortOrder,
+    isPinned: false,
+    pinSortOrder: null,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.notes),
   });
@@ -197,6 +208,8 @@ export async function saveContact(
   const row = await putContact(workspaceId, contact.id, {
     encryptedBlob,
     sortOrder: contact.sortOrder,
+    isPinned: contact.isPinned,
+    pinSortOrder: contact.pinSortOrder,
     deletedAt: contact.deletedAt,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(content.notes),
@@ -214,9 +227,93 @@ export async function setContactProjectIds(
   return putContact(workspaceId, contactId, {
     encryptedBlob: row.encryptedBlob,
     sortOrder: row.sortOrder,
+    isPinned: row.isPinned,
+    pinSortOrder: row.pinSortOrder,
     deletedAt: row.deletedAt,
     projectIds,
   });
+}
+
+export function sortContactsForDisplay(
+  contacts: DecryptedContact[],
+  compareUnpinned: (a: DecryptedContact, b: DecryptedContact) => number,
+): DecryptedContact[] {
+  return contacts.slice().sort((a, b) => {
+    const byPinned = comparePinned(a, b);
+    if (byPinned !== 0) return byPinned;
+    if (a.isPinned && b.isPinned) return 0;
+    return compareUnpinned(a, b);
+  });
+}
+
+export async function setContactPinned(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  contacts: DecryptedContact[],
+  contact: DecryptedContact,
+  pinned: boolean,
+): Promise<DecryptedContact> {
+  const encryptedBlob = await encryptContactContent(
+    workspaceKey,
+    contact.id,
+    toContactPlaintext(contact),
+  );
+  const row = await putContact(workspaceId, contact.id, {
+    encryptedBlob,
+    sortOrder: contact.sortOrder,
+    isPinned: pinned,
+    pinSortOrder: pinned ? nextPinSortOrder(contacts) : null,
+    deletedAt: contact.deletedAt,
+    links: contact.links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(contact.notes),
+  });
+  return toDecrypted(workspaceKey, row);
+}
+
+export async function reorderPinnedContacts(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  contacts: DecryptedContact[],
+  contactId: string,
+  direction: "up" | "down",
+): Promise<DecryptedContact[]> {
+  const next = movePinnedItem(contacts, contactId, direction);
+  if (next === contacts) return contacts;
+  const previousById = new Map(contacts.map((contact) => [contact.id, contact]));
+  const changed = next.filter((contact) => {
+    const previous = previousById.get(contact.id);
+    return (
+      previous?.pinSortOrder !== contact.pinSortOrder ||
+      previous.isPinned !== contact.isPinned
+    );
+  });
+
+  const rows = await Promise.all(
+    changed.map(async (contact) => {
+      const encryptedBlob = await encryptContactContent(
+        workspaceKey,
+        contact.id,
+        toContactPlaintext(contact),
+      );
+      return putContact(workspaceId, contact.id, {
+        encryptedBlob,
+        sortOrder: contact.sortOrder,
+        isPinned: contact.isPinned,
+        pinSortOrder: contact.pinSortOrder,
+        deletedAt: contact.deletedAt,
+        links: contact.links,
+        attachmentIds: extractFileAttachmentIdsFromDoc(contact.notes),
+      });
+    }),
+  );
+
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  return Promise.all(
+    next.map(async (contact) => {
+      const row = rowsById.get(contact.id);
+      return row ? toDecrypted(workspaceKey, row) : contact;
+    }),
+  );
 }
 
 export async function deleteContact(

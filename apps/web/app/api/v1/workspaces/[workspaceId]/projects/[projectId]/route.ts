@@ -23,7 +23,7 @@ export async function GET(_request: Request, context: RouteContext) {
   const { data, error } = await supabase
     .from("projects")
     .select(
-      "id, workspace_id, encrypted_blob, sort_order, updated_at, deleted_at",
+      "id, workspace_id, encrypted_blob, sort_order, is_pinned, pin_sort_order, updated_at, deleted_at",
     )
     .eq("id", projectId)
     .eq("workspace_id", workspaceId)
@@ -42,6 +42,8 @@ export async function GET(_request: Request, context: RouteContext) {
       workspaceId: data.workspace_id,
       encryptedBlob: ciphertextEnvelopeSchema.parse(data.encrypted_blob),
       sortOrder: data.sort_order,
+      isPinned: data.is_pinned,
+      pinSortOrder: data.pin_sort_order,
       updatedAt: data.updated_at,
       deletedAt: data.deleted_at,
     }),
@@ -97,12 +99,15 @@ export async function PUT(request: Request, context: RouteContext) {
         workspace_id: workspaceId,
         encrypted_blob: data.encryptedBlob,
         sort_order: data.sortOrder ?? 0,
+        is_pinned: data.isPinned ?? false,
+        pin_sort_order:
+          data.isPinned === false ? null : (data.pinSortOrder ?? null),
         deleted_at: data.deletedAt ?? null,
       },
       { onConflict: "id" },
     )
     .select(
-      "id, workspace_id, encrypted_blob, sort_order, updated_at, deleted_at",
+      "id, workspace_id, encrypted_blob, sort_order, is_pinned, pin_sort_order, updated_at, deleted_at",
     )
     .single();
 
@@ -119,6 +124,8 @@ export async function PUT(request: Request, context: RouteContext) {
       workspaceId: row.workspace_id,
       encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
       sortOrder: row.sort_order,
+      isPinned: row.is_pinned,
+      pinSortOrder: row.pin_sort_order,
       updatedAt: row.updated_at,
       deletedAt: row.deleted_at,
     }),

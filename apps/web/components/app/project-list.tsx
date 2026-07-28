@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { SettingsIcon } from "lucide-react";
+import { PinIcon, SettingsIcon } from "lucide-react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import {
@@ -23,7 +23,10 @@ import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   createProject,
   loadDecryptedProjects,
+  reorderPinnedProjects,
   reorderProjects,
+  setProjectPinned,
+  sortProjectsForDisplay,
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
 import { textToTaskBody } from "@/lib/client-crypto/task-plaintext";
@@ -130,11 +133,66 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     }
   }
 
+  async function onTogglePinned(project: DecryptedProject) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const key = await getWorkspaceKey(workspaceId);
+      const updated = await setProjectPinned(
+        workspaceId,
+        key,
+        projects,
+        project,
+        !project.isPinned,
+      );
+      setProjects((current) =>
+        sortProjectsForDisplay(
+          current.map((item) => (item.id === updated.id ? updated : item)),
+        ),
+      );
+      window.dispatchEvent(new Event("helvety:projects-changed"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pin update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onReorderPinned(
+    projectId: string,
+    direction: "up" | "down",
+  ) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const key = await getWorkspaceKey(workspaceId);
+      const next = await reorderPinnedProjects(
+        workspaceId,
+        key,
+        projects,
+        projectId,
+        direction,
+      );
+      setProjects(next);
+      window.dispatchEvent(new Event("helvety:projects-changed"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pinned reorder failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!userKeys) return null;
 
   const filtering = deferredQuery.trim().length > 0;
-  const filteredProjects = projects.filter((p) =>
-    matchesQuery([p.name], deferredQuery),
+  const filteredProjects = sortProjectsForDisplay(
+    projects.filter((p) => matchesQuery([p.name], deferredQuery)),
+  );
+  const pinnedProjects = filteredProjects.filter((project) => project.isPinned);
+  const pinnedIndexById = new Map(
+    pinnedProjects.map((project, index) => [project.id, index]),
   );
 
   return (
@@ -201,6 +259,51 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
               {project.name}
             </Link>
             <div className="flex shrink-0 gap-1">
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={busy}
+                onClick={() => void onTogglePinned(project)}
+                aria-label={project.isPinned ? "Unpin project" : "Pin project"}
+              >
+                <PinIcon
+                  className="size-4"
+                  aria-hidden="true"
+                  fill={project.isPinned ? "currentColor" : "none"}
+                />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={
+                  busy ||
+                  filtering ||
+                  !project.isPinned ||
+                  (pinnedIndexById.get(project.id) ?? 0) === 0
+                }
+                onClick={() => void onReorderPinned(project.id, "up")}
+                aria-label="Move pin up"
+              >
+                ⇡
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                disabled={
+                  busy ||
+                  filtering ||
+                  !project.isPinned ||
+                  (pinnedIndexById.get(project.id) ?? -1) ===
+                    pinnedProjects.length - 1
+                }
+                onClick={() => void onReorderPinned(project.id, "down")}
+                aria-label="Move pin down"
+              >
+                ⇣
+              </Button>
               <Button
                 type="button"
                 variant="ghost"

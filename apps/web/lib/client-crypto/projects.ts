@@ -22,6 +22,11 @@ import {
   isTaskBodyDoc,
   type TaskBodyDoc,
 } from "@/lib/client-crypto/task-plaintext";
+import {
+  comparePinned,
+  movePinnedItem,
+  nextPinSortOrder,
+} from "@/lib/client-crypto/pins";
 
 const textDecoder = new TextDecoder();
 
@@ -38,6 +43,8 @@ export type DecryptedProject = {
   description: TaskBodyDoc;
   color?: EntityColor;
   sortOrder: number;
+  isPinned: boolean;
+  pinSortOrder: number | null;
   updatedAt: string;
   deletedAt: string | null;
 };
@@ -152,6 +159,8 @@ async function toDecrypted(
     description,
     color,
     sortOrder: row.sortOrder,
+    isPinned: row.isPinned,
+    pinSortOrder: row.pinSortOrder,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
   };
@@ -171,6 +180,8 @@ export async function saveProjectContent(
   const row = await putProject(workspaceId, project.id, {
     encryptedBlob,
     sortOrder: project.sortOrder,
+    isPinned: project.isPinned,
+    pinSortOrder: project.pinSortOrder,
     deletedAt: project.deletedAt,
   });
   return toDecrypted(workspaceKey, row);
@@ -216,6 +227,8 @@ export async function createProject(
   const row = await putProject(workspaceId, projectId, {
     encryptedBlob,
     sortOrder,
+    isPinned: false,
+    pinSortOrder: null,
   });
   return toDecrypted(workspaceKey, row);
 }
@@ -268,11 +281,15 @@ export async function reorderProjects(
     putProject(workspaceId, a.id, {
       encryptedBlob: aBlob,
       sortOrder: bOrder,
+      isPinned: a.isPinned,
+      pinSortOrder: a.pinSortOrder,
       deletedAt: a.deletedAt,
     }),
     putProject(workspaceId, b.id, {
       encryptedBlob: bBlob,
       sortOrder: aOrder,
+      isPinned: b.isPinned,
+      pinSortOrder: b.pinSortOrder,
       deletedAt: b.deletedAt,
     }),
   ]);
@@ -282,6 +299,83 @@ export async function reorderProjects(
   next[swapWith] = await toDecrypted(workspaceKey, aRow);
   next.sort((x, y) => x.sortOrder - y.sortOrder || x.id.localeCompare(y.id));
   return next;
+}
+
+export function sortProjectsForDisplay(
+  projects: DecryptedProject[],
+): DecryptedProject[] {
+  return projects.slice().sort((a, b) => {
+    const byPinned = comparePinned(a, b);
+    if (byPinned !== 0) return byPinned;
+    return a.sortOrder - b.sortOrder || a.id.localeCompare(b.id);
+  });
+}
+
+export async function setProjectPinned(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  projects: DecryptedProject[],
+  project: DecryptedProject,
+  pinned: boolean,
+): Promise<DecryptedProject> {
+  const encryptedBlob = await encryptProjectContent(
+    workspaceKey,
+    project.id,
+    projectPlaintextFrom(project),
+  );
+  const row = await putProject(workspaceId, project.id, {
+    encryptedBlob,
+    sortOrder: project.sortOrder,
+    isPinned: pinned,
+    pinSortOrder: pinned ? nextPinSortOrder(projects) : null,
+    deletedAt: project.deletedAt,
+  });
+  return toDecrypted(workspaceKey, row);
+}
+
+export async function reorderPinnedProjects(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  projects: DecryptedProject[],
+  projectId: string,
+  direction: "up" | "down",
+): Promise<DecryptedProject[]> {
+  const next = movePinnedItem(projects, projectId, direction);
+  if (next === projects) return projects;
+  const previousById = new Map(projects.map((project) => [project.id, project]));
+
+  const changed = next.filter((project) => {
+    const previous = previousById.get(project.id);
+    return (
+      previous?.pinSortOrder !== project.pinSortOrder ||
+      previous.isPinned !== project.isPinned
+    );
+  });
+
+  const rows = await Promise.all(
+    changed.map(async (project) => {
+      const encryptedBlob = await encryptProjectContent(
+        workspaceKey,
+        project.id,
+        projectPlaintextFrom(project),
+      );
+      return putProject(workspaceId, project.id, {
+        encryptedBlob,
+        sortOrder: project.sortOrder,
+        isPinned: project.isPinned,
+        pinSortOrder: project.pinSortOrder,
+        deletedAt: project.deletedAt,
+      });
+    }),
+  );
+
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  return Promise.all(
+    sortProjectsForDisplay(next).map(async (project) => {
+      const row = rowsById.get(project.id);
+      return row ? toDecrypted(workspaceKey, row) : project;
+    }),
+  );
 }
 
 export async function deleteProject(

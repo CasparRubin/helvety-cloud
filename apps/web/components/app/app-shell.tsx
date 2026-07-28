@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ContactIcon,
   FolderKanbanIcon,
@@ -39,6 +39,11 @@ import {
   useCryptoSession,
   CryptoSessionProvider,
 } from "@/components/unlock/crypto-session-provider";
+import { loadDecryptedContacts } from "@/lib/client-crypto/contacts";
+import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
+import { loadDecryptedNotes } from "@/lib/client-crypto/notes";
+import { pinnedTop } from "@/lib/client-crypto/pins";
+import { loadDecryptedProjects } from "@/lib/client-crypto/projects";
 import {
   loadLastWorkspaceId,
   pickDefaultWorkspaceId,
@@ -126,6 +131,134 @@ function SectionLink({
   );
 }
 
+function WorkspacePinnedPreview({
+  items,
+}: {
+  items: Array<{ id: string; label: string; href: string }>;
+}) {
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-1.5 ml-6 mt-0.5 flex flex-col gap-0.5">
+      {items.map((item) => (
+        <Link
+          key={item.id}
+          href={item.href}
+          className="truncate rounded-md px-2 py-1 text-xs text-muted-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+        >
+          {item.label}
+        </Link>
+      ))}
+    </div>
+  );
+}
+
+function useWorkspacePinnedPreviews(workspaceId: string | null) {
+  const { userKeys, getWorkspaceKey } = useCryptoSession();
+  const [previews, setPreviews] = useState<{
+    projects: Array<{ id: string; label: string; href: string }>;
+    notes: Array<{ id: string; label: string; href: string }>;
+    contacts: Array<{ id: string; label: string; href: string }>;
+  }>({
+    projects: [],
+    notes: [],
+    contacts: [],
+  });
+
+  const refresh = useCallback(async () => {
+    if (!workspaceId) {
+      setPreviews({ projects: [], notes: [], contacts: [] });
+      return;
+    }
+    const key = await getWorkspaceKey(workspaceId);
+    const [projectsPage, notesPage, contactsPage] = await Promise.all([
+      loadDecryptedProjects(workspaceId, key, { limit: 100 }),
+      loadDecryptedNotes(workspaceId, key, { limit: 100 }),
+      loadDecryptedContacts(workspaceId, key, { limit: 100 }),
+    ]);
+    setPreviews({
+      projects: pinnedTop(projectsPage.projects, 3).map((project) => ({
+        id: project.id,
+        label: project.name,
+        href: `/app/w/${workspaceId}/p/${project.id}`,
+      })),
+      notes: pinnedTop(notesPage.notes, 3).map((note) => ({
+        id: note.id,
+        label: note.title || "Untitled",
+        href: `/app/w/${workspaceId}/notes/${note.id}`,
+      })),
+      contacts: pinnedTop(contactsPage.contacts, 3).map((contact) => ({
+        id: contact.id,
+        label: formatContactName(contact) || "Unnamed",
+        href: `/app/w/${workspaceId}/contacts/${contact.id}`,
+      })),
+    });
+  }, [getWorkspaceKey, workspaceId]);
+
+  useEffect(() => {
+    if (!userKeys) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        if (!workspaceId) {
+          if (!cancelled) {
+            setPreviews({ projects: [], notes: [], contacts: [] });
+          }
+          return;
+        }
+        const key = await getWorkspaceKey(workspaceId);
+        const [projectsPage, notesPage, contactsPage] = await Promise.all([
+          loadDecryptedProjects(workspaceId, key, { limit: 100 }),
+          loadDecryptedNotes(workspaceId, key, { limit: 100 }),
+          loadDecryptedContacts(workspaceId, key, { limit: 100 }),
+        ]);
+        if (cancelled) return;
+        setPreviews({
+          projects: pinnedTop(projectsPage.projects, 3).map((project) => ({
+            id: project.id,
+            label: project.name,
+            href: `/app/w/${workspaceId}/p/${project.id}`,
+          })),
+          notes: pinnedTop(notesPage.notes, 3).map((note) => ({
+            id: note.id,
+            label: note.title || "Untitled",
+            href: `/app/w/${workspaceId}/notes/${note.id}`,
+          })),
+          contacts: pinnedTop(contactsPage.contacts, 3).map((contact) => ({
+            id: contact.id,
+            label: formatContactName(contact) || "Unnamed",
+            href: `/app/w/${workspaceId}/contacts/${contact.id}`,
+          })),
+        });
+      } catch {
+        if (!cancelled) {
+          setPreviews({ projects: [], notes: [], contacts: [] });
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [getWorkspaceKey, userKeys, workspaceId]);
+
+  useEffect(() => {
+    if (!userKeys) return;
+    const onChange = () => {
+      void refresh().catch(() => undefined);
+    };
+    window.addEventListener("helvety:projects-changed", onChange);
+    window.addEventListener("helvety:notes-changed", onChange);
+    window.addEventListener("helvety:contacts-changed", onChange);
+    return () => {
+      window.removeEventListener("helvety:projects-changed", onChange);
+      window.removeEventListener("helvety:notes-changed", onChange);
+      window.removeEventListener("helvety:contacts-changed", onChange);
+    };
+  }, [refresh, userKeys]);
+
+  return previews;
+}
+
 function AppShellInner({ email, userId, children }: AppShellProps) {
   const router = useRouter();
   const pathname = usePathname();
@@ -160,6 +293,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const onAppIndex = pathname === "/app" || pathname === "/app/";
   const shouldRedirectToWorkspace =
     Boolean(userKeys) && !recovery && workspaces.length > 0 && onAppIndex;
+  const pinnedPreviews = useWorkspacePinnedPreviews(activeWorkspaceId);
 
   useEffect(() => {
     if (!shouldRedirectToWorkspace) return;
@@ -268,15 +402,23 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
                       </div>
                     ) : null}
                     {sections.map((section) => (
-                      <SectionLink
-                        key={section.id}
-                        href={section.href}
-                        active={activeSection === section.id}
-                        icon={section.icon}
-                        variant="sidebar"
-                      >
-                        {section.label}
-                      </SectionLink>
+                      <div key={section.id}>
+                        <SectionLink
+                          href={section.href}
+                          active={activeSection === section.id}
+                          icon={section.icon}
+                          variant="sidebar"
+                        >
+                          {section.label}
+                        </SectionLink>
+                        {section.id === "projects" ||
+                        section.id === "notes" ||
+                        section.id === "contacts" ? (
+                          <WorkspacePinnedPreview
+                            items={pinnedPreviews[section.id]}
+                          />
+                        ) : null}
+                      </div>
                     ))}
                   </>
                 ) : (

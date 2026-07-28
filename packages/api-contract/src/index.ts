@@ -204,6 +204,8 @@ export type PatchWorkspaceResponse = z.infer<
 export const putProjectRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
+  isPinned: z.boolean().optional(),
+  pinSortOrder: z.number().int().nullable().optional(),
   deletedAt: z.string().nullable().optional(),
 });
 export type PutProjectRequest = z.infer<typeof putProjectRequestSchema>;
@@ -213,6 +215,8 @@ export const projectResponseSchema = z.object({
   workspaceId: uuidSchema,
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
+  isPinned: z.boolean(),
+  pinSortOrder: z.number().int().nullable(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
 });
@@ -324,6 +328,8 @@ export type ListTasksResponse = z.infer<typeof listTasksResponseSchema>;
 export const putNoteRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
+  isPinned: z.boolean().optional(),
+  pinSortOrder: z.number().int().nullable().optional(),
   deletedAt: z.string().nullable().optional(),
   /** Replace non-project outgoing entity_links when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
@@ -340,6 +346,8 @@ export const noteResponseSchema = z.object({
   links: z.array(entityLinkTargetSchema),
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
+  isPinned: z.boolean(),
+  pinSortOrder: z.number().int().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),
@@ -373,6 +381,8 @@ export type ListEntityLinksResponse = z.infer<
 export const putContactRequestSchema = z.object({
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int().optional(),
+  isPinned: z.boolean().optional(),
+  pinSortOrder: z.number().int().nullable().optional(),
   deletedAt: z.string().nullable().optional(),
   /** Replace non-project outgoing entity_links when provided. */
   links: z.array(entityLinkTargetSchema).optional(),
@@ -388,6 +398,8 @@ export const contactResponseSchema = z.object({
   workspaceId: uuidSchema,
   encryptedBlob: ciphertextEnvelopeSchema,
   sortOrder: z.number().int(),
+  isPinned: z.boolean(),
+  pinSortOrder: z.number().int().nullable(),
   createdAt: z.string(),
   updatedAt: z.string(),
   deletedAt: z.string().nullable(),

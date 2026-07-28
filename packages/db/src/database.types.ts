@@ -205,6 +205,8 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
+          is_pinned: boolean
+          pin_sort_order: number | null
           sort_order: number
           updated_at: string
           workspace_id: string
@@ -214,6 +216,8 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
           sort_order?: number
           updated_at?: string
           workspace_id: string
@@ -223,6 +227,8 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
           sort_order?: number
           updated_at?: string
           workspace_id?: string
@@ -376,6 +382,8 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
+          is_pinned: boolean
+          pin_sort_order: number | null
           sort_order: number
           updated_at: string
           workspace_id: string
@@ -385,6 +393,8 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
           sort_order?: number
           updated_at?: string
           workspace_id: string
@@ -394,6 +404,8 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
           sort_order?: number
           updated_at?: string
           workspace_id?: string
@@ -456,6 +468,8 @@ export type Database = {
           deleted_at: string | null
           encrypted_blob: Json
           id: string
+          is_pinned: boolean
+          pin_sort_order: number | null
           sort_order: number
           updated_at: string
           workspace_id: string
@@ -465,6 +479,8 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob: Json
           id: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
           sort_order?: number
           updated_at?: string
           workspace_id: string
@@ -474,6 +490,8 @@ export type Database = {
           deleted_at?: string | null
           encrypted_blob?: Json
           id?: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
           sort_order?: number
           updated_at?: string
           workspace_id?: string

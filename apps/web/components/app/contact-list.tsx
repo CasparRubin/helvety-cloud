@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useCallback, useDeferredValue, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { PinIcon } from "lucide-react";
 
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
 import { DateTimeText } from "@/components/app/datetime-text";
@@ -17,6 +18,7 @@ import {
   PageActions,
   WorkspaceSettingsAction,
 } from "@/components/app/page-actions";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,6 +26,9 @@ import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import {
   createContact,
   loadDecryptedContacts,
+  reorderPinnedContacts,
+  setContactPinned,
+  sortContactsForDisplay,
   type DecryptedContact,
 } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
@@ -188,14 +193,68 @@ export function ContactList({ workspaceId }: ContactListProps) {
     }
   }
 
+  async function onTogglePinned(contact: DecryptedContact) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const key = await getWorkspaceKey(workspaceId);
+      const updated = await setContactPinned(
+        workspaceId,
+        key,
+        contacts,
+        contact,
+        !contact.isPinned,
+      );
+      setContacts((current) =>
+        current.map((item) => (item.id === updated.id ? updated : item)),
+      );
+      window.dispatchEvent(new Event("helvety:contacts-changed"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pin update failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function onReorderPinned(
+    contactId: string,
+    direction: "up" | "down",
+  ) {
+    if (busy) return;
+    setBusy(true);
+    setError(null);
+    try {
+      const key = await getWorkspaceKey(workspaceId);
+      const next = await reorderPinnedContacts(
+        workspaceId,
+        key,
+        contacts,
+        contactId,
+        direction,
+      );
+      setContacts(next);
+      window.dispatchEvent(new Event("helvety:contacts-changed"));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Pinned reorder failed");
+    } finally {
+      setBusy(false);
+    }
+  }
+
   if (!userKeys) return null;
 
   const filtering = deferredQuery.trim().length > 0;
-  const filteredContacts = contacts
-    .filter((c) =>
+  const filteredContacts = sortContactsForDisplay(
+    contacts.filter((c) =>
       matchesQuery([formatContactName(c), ...c.emails], deferredQuery),
-    )
-    .sort((a, b) => compareContacts(a, b, sort));
+    ),
+    (a, b) => compareContacts(a, b, sort),
+  );
+  const pinnedContacts = filteredContacts.filter((contact) => contact.isPinned);
+  const pinnedIndexById = new Map(
+    pinnedContacts.map((contact, index) => [contact.id, index]),
+  );
 
   const showDateMeta = sort === "created" || sort === "modified";
 
@@ -309,10 +368,10 @@ export function ContactList({ workspaceId }: ContactListProps) {
           const name = formatContactName(contact) || "Untitled";
           const email = contact.emails[0] || null;
           return (
-            <EntityListRow key={contact.id}>
+            <EntityListRow key={contact.id} className="flex items-start gap-2">
               <Link
                 href={`/app/w/${workspaceId}/contacts/${contact.id}`}
-                className="flex w-full flex-col gap-1"
+                className="flex min-w-0 flex-1 flex-col gap-1"
               >
                 <span className="font-medium">{name}</span>
                 {email || showDateMeta ? (
@@ -333,6 +392,53 @@ export function ContactList({ workspaceId }: ContactListProps) {
                   </span>
                 ) : null}
               </Link>
+              <div className="flex shrink-0 gap-1">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={busy}
+                  onClick={() => void onTogglePinned(contact)}
+                  aria-label={contact.isPinned ? "Unpin contact" : "Pin contact"}
+                >
+                  <PinIcon
+                    className="size-4"
+                    aria-hidden="true"
+                    fill={contact.isPinned ? "currentColor" : "none"}
+                  />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={
+                    busy ||
+                    filtering ||
+                    !contact.isPinned ||
+                    (pinnedIndexById.get(contact.id) ?? 0) === 0
+                  }
+                  onClick={() => void onReorderPinned(contact.id, "up")}
+                  aria-label="Move pin up"
+                >
+                  ⇡
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  disabled={
+                    busy ||
+                    filtering ||
+                    !contact.isPinned ||
+                    (pinnedIndexById.get(contact.id) ?? -1) ===
+                      pinnedContacts.length - 1
+                  }
+                  onClick={() => void onReorderPinned(contact.id, "down")}
+                  aria-label="Move pin down"
+                >
+                  ⇣
+                </Button>
+              </div>
             </EntityListRow>
           );
         })}

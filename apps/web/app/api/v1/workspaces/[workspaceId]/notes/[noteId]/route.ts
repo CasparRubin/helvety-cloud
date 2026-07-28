@@ -28,7 +28,7 @@ type RouteContext = {
 };
 
 const NOTE_SELECT =
-  "id, workspace_id, encrypted_blob, sort_order, created_at, updated_at, deleted_at";
+  "id, workspace_id, encrypted_blob, sort_order, is_pinned, pin_sort_order, created_at, updated_at, deleted_at";
 
 function toNoteResponse(
   row: {
@@ -36,6 +36,8 @@ function toNoteResponse(
     workspace_id: string;
     encrypted_blob: unknown;
     sort_order: number;
+    is_pinned: boolean;
+    pin_sort_order: number | null;
     created_at: string;
     updated_at: string;
     deleted_at: string | null;
@@ -48,6 +50,8 @@ function toNoteResponse(
     links,
     encryptedBlob: ciphertextEnvelopeSchema.parse(row.encrypted_blob),
     sortOrder: row.sort_order,
+    isPinned: row.is_pinned,
+    pinSortOrder: row.pin_sort_order,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
@@ -171,6 +175,9 @@ export async function PUT(request: Request, context: RouteContext) {
         workspace_id: workspaceId,
         encrypted_blob: data.encryptedBlob,
         sort_order: data.sortOrder ?? 0,
+        is_pinned: data.isPinned ?? false,
+        pin_sort_order:
+          data.isPinned === false ? null : (data.pinSortOrder ?? null),
         deleted_at: data.deletedAt ?? null,
       },
       { onConflict: "id" },

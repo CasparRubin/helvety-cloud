@@ -5,6 +5,8 @@ create table public.contacts (
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
   encrypted_blob jsonb not null,
   sort_order bigint not null default 0,
+  is_pinned boolean not null default false,
+  pin_sort_order bigint,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
   deleted_at timestamptz

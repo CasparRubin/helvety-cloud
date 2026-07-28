@@ -24,6 +24,11 @@ import {
   type NotePlaintext,
 } from "@/lib/client-crypto/note-plaintext";
 import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/client-crypto/entity-refs";
+import {
+  comparePinned,
+  movePinnedItem,
+  nextPinSortOrder,
+} from "@/lib/client-crypto/pins";
 
 const textDecoder = new TextDecoder();
 
@@ -34,6 +39,8 @@ export type DecryptedNote = {
   title: string;
   body: TaskBodyDoc;
   sortOrder: number;
+  isPinned: boolean;
+  pinSortOrder: number | null;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -98,6 +105,8 @@ async function toDecrypted(
     title,
     body,
     sortOrder: row.sortOrder,
+    isPinned: row.isPinned,
+    pinSortOrder: row.pinSortOrder,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     deletedAt: row.deletedAt,
@@ -151,6 +160,8 @@ export async function createNote(
   const row = await putNote(workspaceId, noteId, {
     encryptedBlob,
     sortOrder,
+    isPinned: false,
+    pinSortOrder: null,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(plaintext.body),
   });
@@ -179,6 +190,8 @@ export async function saveNote(
   const row = await putNote(workspaceId, note.id, {
     encryptedBlob,
     sortOrder: note.sortOrder,
+    isPinned: note.isPinned,
+    pinSortOrder: note.pinSortOrder,
     deletedAt: note.deletedAt,
     links,
     attachmentIds: extractFileAttachmentIdsFromDoc(content.body),
@@ -196,9 +209,93 @@ export async function setNoteProjectIds(
   return putNote(workspaceId, noteId, {
     encryptedBlob: row.encryptedBlob,
     sortOrder: row.sortOrder,
+    isPinned: row.isPinned,
+    pinSortOrder: row.pinSortOrder,
     deletedAt: row.deletedAt,
     projectIds,
   });
+}
+
+export function sortNotesForDisplay(
+  notes: DecryptedNote[],
+  compareUnpinned: (a: DecryptedNote, b: DecryptedNote) => number,
+): DecryptedNote[] {
+  return notes.slice().sort((a, b) => {
+    const byPinned = comparePinned(a, b);
+    if (byPinned !== 0) return byPinned;
+    if (a.isPinned && b.isPinned) return 0;
+    return compareUnpinned(a, b);
+  });
+}
+
+export async function setNotePinned(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  notes: DecryptedNote[],
+  note: DecryptedNote,
+  pinned: boolean,
+): Promise<DecryptedNote> {
+  const encryptedBlob = await encryptNoteContent(
+    workspaceKey,
+    note.id,
+    toNotePlaintext(note.title, note.body),
+  );
+  const row = await putNote(workspaceId, note.id, {
+    encryptedBlob,
+    sortOrder: note.sortOrder,
+    isPinned: pinned,
+    pinSortOrder: pinned ? nextPinSortOrder(notes) : null,
+    deletedAt: note.deletedAt,
+    links: note.links,
+    attachmentIds: extractFileAttachmentIdsFromDoc(note.body),
+  });
+  return toDecrypted(workspaceKey, row);
+}
+
+export async function reorderPinnedNotes(
+  workspaceId: string,
+  workspaceKey: Uint8Array,
+  notes: DecryptedNote[],
+  noteId: string,
+  direction: "up" | "down",
+): Promise<DecryptedNote[]> {
+  const next = movePinnedItem(notes, noteId, direction);
+  if (next === notes) return notes;
+  const previousById = new Map(notes.map((note) => [note.id, note]));
+  const changed = next.filter((note) => {
+    const previous = previousById.get(note.id);
+    return (
+      previous?.pinSortOrder !== note.pinSortOrder ||
+      previous.isPinned !== note.isPinned
+    );
+  });
+
+  const rows = await Promise.all(
+    changed.map(async (note) => {
+      const encryptedBlob = await encryptNoteContent(
+        workspaceKey,
+        note.id,
+        toNotePlaintext(note.title, note.body),
+      );
+      return putNote(workspaceId, note.id, {
+        encryptedBlob,
+        sortOrder: note.sortOrder,
+        isPinned: note.isPinned,
+        pinSortOrder: note.pinSortOrder,
+        deletedAt: note.deletedAt,
+        links: note.links,
+        attachmentIds: extractFileAttachmentIdsFromDoc(note.body),
+      });
+    }),
+  );
+
+  const rowsById = new Map(rows.map((row) => [row.id, row]));
+  return Promise.all(
+    next.map(async (note) => {
+      const row = rowsById.get(note.id);
+      return row ? toDecrypted(workspaceKey, row) : note;
+    }),
+  );
 }
 
 export async function deleteNote(
