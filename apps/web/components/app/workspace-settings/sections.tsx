@@ -492,7 +492,7 @@ export function WorkspaceMembersSettings() {
                   >
                     {copiedId === invitation.id ? "Copied" : "Copy invite"}
                   </Button>
-                  {invitation.status === "waiting_for_owner_seal" ? (
+                  {invitation.status === "waiting_for_seal" ? (
                     <Button
                       type="button"
                       size="sm"

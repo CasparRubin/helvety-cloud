@@ -18,7 +18,7 @@ export type WorkspaceMeter =
   | "comments";
 
 export type PlanLimits = {
-  /** Workspaces where the user has the `owner` role (free slots only). */
+  /** Free-tier workspace slots attributed via created_by (not a privilege). */
   ownedWorkspaces: number;
   projectsPerWorkspace: number;
   /** Members: accepted members + pending invitations count toward this. */

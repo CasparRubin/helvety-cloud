@@ -23,7 +23,7 @@ export const privacyDoc: LegalDocument = {
       heading: "Data Helvety processes (account / metadata)",
       paragraphs: [
         "Email address and authentication metadata (for example OTP delivery via Supabase Auth).",
-        "Profile and membership records (user id, workspace membership roles, timestamps).",
+        "Profile and membership records (user id, workspace membership, timestamps).",
         "Public cryptographic material needed for the product (for example user public keys) and wrapped or encrypted blobs that Helvety cannot decrypt.",
         "Policy acceptance records (which policy versions you accepted and when).",
         "Technical logs reasonably needed to operate and secure the Service (for example IP addresses in hosting/auth logs, request metadata).",

@@ -13,7 +13,7 @@ create table public.workspaces (
 
 create index workspaces_created_by_idx on public.workspaces (created_by);
 
--- At most one Personal workspace per owner.
+-- At most one Personal workspace per created_by.
 create unique index workspaces_one_personal_per_owner_idx
   on public.workspaces (created_by)
   where kind = 'personal';

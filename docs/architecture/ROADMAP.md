@@ -44,7 +44,7 @@ Product north star: [`docs/VISION.md`](../VISION.md).
 | Crypto | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field |
 | Access model | **Everything workspace-scoped**: projects/tasks/milestones/notes/contacts/attachments under a workspace; entity links as constrained plaintext metadata; no user-global contacts/notes; no `workspace_id = null`. See [`DATA_MODEL.md`](./DATA_MODEL.md) |
 | Personal workspace | On first encryption setup, ensure one **Personal** workspace (home for “general” notes/contacts) |
-| Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** encrypted entities in that workspace (P6e) |
+| Sharing model | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** encrypted entities in that workspace (P6e). Equal peers only (`role = member`); no owner/admin; leave is wipe-or-go; `created_by` is free-slot attribution only |
 | Public API | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>` |
 | Browser Supabase | **Auth SDK OK**; **`from('…')` for encrypted entity tables NOT OK**. Go through API |
 | Schema | Declarative `supabase/schemas/*.sql` → `db diff` → `migrations/` → push / MCP `apply_migration` |

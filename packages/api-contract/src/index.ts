@@ -494,13 +494,13 @@ export type PutMePolicyAcceptancesResponse = z.infer<
   typeof putMePolicyAcceptancesResponseSchema
 >;
 
-/** Invite role is always member (flat peer workspaces). */
-export const workspaceInviteRoleSchema = z.literal("member");
-export type WorkspaceInviteRole = z.infer<typeof workspaceInviteRoleSchema>;
+/** Invite role matches workspace membership (always member). */
+export const workspaceInviteRoleSchema = workspaceRoleSchema;
+export type WorkspaceInviteRole = WorkspaceRole;
 
 export const invitationStatusSchema = z.enum([
   "waiting_for_recipient",
-  "waiting_for_owner_seal",
+  "waiting_for_seal",
   "ready_to_accept",
   "accepted",
   "cancelled",
@@ -639,7 +639,7 @@ export const getWorkspaceBillingResponseSchema = z.object({
   cancelAtPeriodEnd: z.boolean(),
   currentPeriodEnd: z.string().nullable(),
   hasStripeCustomer: z.boolean(),
-  /** Soft-lock: owner exceeds free workspace allowance after Pro ended. */
+  /** Soft-lock: created_by exceeds free workspace allowance after Pro ended. */
   freeOverflowLocked: z.boolean(),
   limits: workspaceLimitsSchema,
   usage: workspaceUsageSchema,

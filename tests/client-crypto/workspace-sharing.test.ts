@@ -56,8 +56,8 @@ describe("P6e invitation contracts", () => {
         email: "person@example.com",
       }).role,
     ).toBe("member");
-    expect(invitationStatusSchema.parse("waiting_for_owner_seal")).toBe(
-      "waiting_for_owner_seal",
+    expect(invitationStatusSchema.parse("waiting_for_seal")).toBe(
+      "waiting_for_seal",
     );
   });
 

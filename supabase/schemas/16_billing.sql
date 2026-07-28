@@ -13,7 +13,7 @@ create table public.subscriptions (
   cancel_at_period_end boolean not null default false,
   -- Pack quantities keyed by addon meter (e.g. {"capacity": 2}). Plaintext only.
   addon_quantities jsonb not null default '{}'::jsonb,
-  -- Set when this workspace loses Pro while the owner exceeds free owned slots.
+  -- Set when this workspace loses Pro while created_by exceeds free owned slots.
   -- Soft-lock is computed dynamically from these tags (newest first).
   free_overflowed_at timestamptz,
   created_at timestamptz not null default now(),

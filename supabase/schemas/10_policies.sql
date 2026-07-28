@@ -41,7 +41,7 @@ create policy user_crypto_update_own
   using (user_id = (select auth.uid()))
   with check (user_id = (select auth.uid()));
 
--- workspaces (created_by allows owner read before membership row exists)
+-- workspaces (created_by allows creator read before membership row exists)
 create policy workspaces_select_member
   on public.workspaces
   for select

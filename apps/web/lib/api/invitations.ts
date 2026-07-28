@@ -30,7 +30,7 @@ function invitationStatus(row: InvitationRow): InvitationStatus {
   if (row.cancelled_at) return "cancelled";
   if (row.accepted_at) return "accepted";
   if (!row.claimed_by) return "waiting_for_recipient";
-  if (!row.sealed_workspace_key) return "waiting_for_owner_seal";
+  if (!row.sealed_workspace_key) return "waiting_for_seal";
   return "ready_to_accept";
 }
 

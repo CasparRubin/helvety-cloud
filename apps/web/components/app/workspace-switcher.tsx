@@ -195,7 +195,7 @@ export function WorkspaceSwitcher({
               Each account includes one Free Workspace (your Personal workspace).
               Additional owned workspaces require Pro Workspace. After you create
               this workspace, Stripe Checkout opens so you can start the yearly
-              subscription. Only you as owner can pay.
+              subscription. Any member can manage billing afterward.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">

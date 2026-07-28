@@ -338,7 +338,7 @@ export default function PricingPage() {
               <InfoBlock title="Where to buy">
                 Upgrade a Free Workspace in Workspace settings → Billing, or
                 create another workspace with New Pro workspace (Checkout opens
-                after create). For Capacity Increase packs, owners use Add or
+                after create). For Capacity Increase packs, members use Add or
                 change under Add-ons (Stripe billing portal).
               </InfoBlock>
               <InfoBlock title="Pro Workspace Capacity Increase">

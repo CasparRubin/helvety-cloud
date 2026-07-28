@@ -9,7 +9,7 @@ import {
 } from "../../apps/web/components/app/workspace-nav";
 
 describe("settings nav items", () => {
-  it("hides workspace danger for non-owners", () => {
+  it("can omit workspace danger nav", () => {
     const withDanger = workspaceSettingsNavItems("ws1");
     const withoutDanger = workspaceSettingsNavItems("ws1", {
       showDanger: false,

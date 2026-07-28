@@ -713,7 +713,7 @@ export function invitationStatusLabel(
   switch (status) {
     case "waiting_for_recipient":
       return "Waiting for recipient";
-    case "waiting_for_owner_seal":
+    case "waiting_for_seal":
       return "Needs key handoff";
     case "ready_to_accept":
       return "Ready to accept";

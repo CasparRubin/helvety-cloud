@@ -1,5 +1,5 @@
 /**
- * Stripe subscription → `subscriptions` upsert (webhook + owner sync).
+ * Stripe subscription → `subscriptions` upsert (webhook + Checkout sync).
  */
 import type { Database } from "@helvety-cloud/db";
 import type Stripe from "stripe";
