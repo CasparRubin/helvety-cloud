@@ -61,8 +61,11 @@ export function CategorizationOptionList({
   );
   const canDelete = kind === "labels" || sorted.length > 1;
   const singular = title.toLowerCase().replace(/s$/, "");
-  const showsStageControls =
-    !!onSetMaxVisibleTasks || !!onSetCompletionPercent || !!onSetColor;
+  const showsStageControls = !!onSetMaxVisibleTasks || !!onSetCompletionPercent;
+  const colorHelpText =
+    kind === "stages"
+      ? "Auto uses the default stage color. Choose one to override it."
+      : "Optional accent for pickers and task chips.";
 
   return (
     <section className="flex max-w-3xl flex-col gap-4">
@@ -150,7 +153,7 @@ export function CategorizationOptionList({
                     onChange={(color) => void onSetColor(opt.id, color)}
                   />
                   <p className="text-[11px] leading-5 text-muted-foreground">
-                    Auto uses the default stage color. Choose one to override it.
+                    {colorHelpText}
                   </p>
                 </div>
               ) : null}

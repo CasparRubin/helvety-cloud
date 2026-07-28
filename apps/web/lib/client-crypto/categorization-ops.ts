@@ -112,18 +112,19 @@ export async function setCategorizationDefault(
   );
 }
 
-/** Set or clear a stage option accent color (stages only). */
+/** Set or clear an option accent color (labels, stages, priorities). */
 export async function setCategorizationOptionColor(
   workspaceId: string,
   workspaceKey: Uint8Array,
   workspace: DecryptedWorkspaceListItem,
   keyVersion: number,
+  kind: CategorizationKind,
   optionId: string,
   color: EntityColor | null,
 ): Promise<void> {
   const categorizations: WorkspaceCategorizations = {
     ...workspace.categorizations,
-    stages: workspace.categorizations.stages.map((o) => {
+    [kind]: workspace.categorizations[kind].map((o) => {
       if (o.id !== optionId) return o;
       const next = { ...o };
       if (color) next.color = color;

@@ -5,7 +5,24 @@ import {
   resolveStageColor,
 } from "../../apps/web/lib/client-crypto/categorizations";
 
-describe("stage colors", () => {
+describe("categorization colors", () => {
+  it("seeds default labels and priorities with accent colors", () => {
+    const cats = defaultCategorizations();
+    const labelByName = Object.fromEntries(cats.labels.map((s) => [s.name, s.color]));
+    const priorityByName = Object.fromEntries(
+      cats.priorities.map((s) => [s.name, s.color]),
+    );
+
+    expect(labelByName.Bug).toBe("red");
+    expect(labelByName["New Feature"]).toBe("teal");
+    expect(labelByName["Change Request"]).toBe("pink");
+
+    expect(priorityByName.Low).toBe("slate");
+    expect(priorityByName.Normal).toBe("blue");
+    expect(priorityByName.High).toBe("violet");
+    expect(priorityByName.Urgent).toBe("pink");
+  });
+
   it("seeds default stages with EntityColor tokens", () => {
     const cats = defaultCategorizations();
     const byName = Object.fromEntries(

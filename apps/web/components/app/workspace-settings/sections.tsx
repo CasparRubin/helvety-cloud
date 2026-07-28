@@ -217,7 +217,7 @@ export function WorkspaceStagesSettings() {
         onDelete={(id) => onDeleteOption("stages", id)}
         onReorder={(id, direction) => onReorderOption("stages", id, direction)}
         onSetDefault={(id) => onSetDefault("stages", id)}
-        onSetColor={(id, color) => onSetOptionColor(id, color)}
+        onSetColor={(id, color) => onSetOptionColor("stages", id, color)}
         onSetIcon={(id, icon) => onSetOptionIcon("stages", id, icon)}
         onSetMaxVisibleTasks={onSetMaxVisibleTasks}
         onSetCompletionPercent={onSetCompletionPercent}
@@ -235,6 +235,7 @@ export function WorkspaceLabelsSettings() {
     onRenameOption,
     onDeleteOption,
     onReorderOption,
+    onSetOptionColor,
     onSetOptionIcon,
   } = useWorkspaceSettings();
 
@@ -260,6 +261,7 @@ export function WorkspaceLabelsSettings() {
         onRename={(id, name) => onRenameOption("labels", id, name)}
         onDelete={(id) => onDeleteOption("labels", id)}
         onReorder={(id, direction) => onReorderOption("labels", id, direction)}
+        onSetColor={(id, color) => onSetOptionColor("labels", id, color)}
         onSetIcon={(id, icon) => onSetOptionIcon("labels", id, icon)}
       />
     </div>
@@ -276,6 +278,7 @@ export function WorkspacePrioritiesSettings() {
     onDeleteOption,
     onReorderOption,
     onSetDefault,
+    onSetOptionColor,
     onSetOptionIcon,
   } = useWorkspaceSettings();
 
@@ -304,6 +307,7 @@ export function WorkspacePrioritiesSettings() {
           onReorderOption("priorities", id, direction)
         }
         onSetDefault={(id) => onSetDefault("priorities", id)}
+        onSetColor={(id, color) => onSetOptionColor("priorities", id, color)}
         onSetIcon={(id, icon) => onSetOptionIcon("priorities", id, icon)}
       />
     </div>

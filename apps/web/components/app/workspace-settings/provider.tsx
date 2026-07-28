@@ -104,6 +104,7 @@ type WorkspaceSettingsContextValue = {
     id: string,
   ) => Promise<void>;
   onSetOptionColor: (
+    kind: CategorizationKind,
     id: string,
     color: EntityColor | undefined,
   ) => Promise<void>;
@@ -553,7 +554,11 @@ export function WorkspaceSettingsProvider({
     });
   }
 
-  async function onSetOptionColor(id: string, color: EntityColor | undefined) {
+  async function onSetOptionColor(
+    kind: CategorizationKind,
+    id: string,
+    color: EntityColor | undefined,
+  ) {
     await withCategorizationSave(async () => {
       const workspaceKey = await getWorkspaceKey(workspaceId);
       await setCategorizationOptionColor(
@@ -561,6 +566,7 @@ export function WorkspaceSettingsProvider({
         workspaceKey,
         activeWorkspace!,
         activeUserKeys.keyVersion,
+        kind,
         id,
         color ?? null,
       );

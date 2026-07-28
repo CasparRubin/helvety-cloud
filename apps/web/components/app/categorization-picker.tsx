@@ -50,8 +50,11 @@ export function CategorizationPicker({
     value == null || value === ""
       ? null
       : (sorted.find((o) => o.id === value) ?? null);
-  const tintColor =
-    useStageColor && selected ? resolveStageColor(selected) : undefined;
+  const resolveOptionColor = (option: CategorizationOption | null | undefined) => {
+    if (!option) return undefined;
+    return useStageColor ? resolveStageColor(option) : option.color;
+  };
+  const tintColor = resolveOptionColor(selected);
   const tint = tintColor ? ENTITY_COLOR_CLASSES[tintColor] : null;
   const SelectedIcon = selected?.icon
     ? CATEGORIZATION_ICON_COMPONENTS[selected.icon]
@@ -110,9 +113,7 @@ export function CategorizationPicker({
             </li>
           ) : null}
           {sorted.map((opt) => {
-            const rowColor = useStageColor
-              ? resolveStageColor(opt)
-              : undefined;
+            const rowColor = resolveOptionColor(opt);
             const rowTint = rowColor
               ? ENTITY_COLOR_CLASSES[rowColor]
               : null;

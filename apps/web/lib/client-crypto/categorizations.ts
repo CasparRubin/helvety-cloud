@@ -55,6 +55,22 @@ const STAGE_NAMES = [
 ] as const;
 const PRIORITY_NAMES = ["Low", "Normal", "High", "Urgent"] as const;
 
+const DEFAULT_LABEL_COLORS: Record<(typeof LABEL_NAMES)[number], EntityColor> = {
+  Bug: "red",
+  "New Feature": "teal",
+  "Change Request": "pink",
+};
+
+const DEFAULT_PRIORITY_COLORS: Record<
+  (typeof PRIORITY_NAMES)[number],
+  EntityColor
+> = {
+  Low: "slate",
+  Normal: "blue",
+  High: "violet",
+  Urgent: "pink",
+};
+
 /** Default colors for seeded stage names (also used when stage.color is missing). */
 const DEFAULT_STAGE_COLORS: Record<
   (typeof STAGE_NAMES)[number],
@@ -191,7 +207,10 @@ function option(
 export function defaultCategorizations(): WorkspaceCategorizations {
   return {
     labels: LABEL_NAMES.map((name, i) =>
-      option(name, i, { icon: DEFAULT_OPTION_ICONS[name] }),
+      option(name, i, {
+        color: DEFAULT_LABEL_COLORS[name],
+        icon: DEFAULT_OPTION_ICONS[name],
+      }),
     ),
     stages: STAGE_NAMES.map((name, i) =>
       option(name, i, {
@@ -204,6 +223,7 @@ export function defaultCategorizations(): WorkspaceCategorizations {
     ),
     priorities: PRIORITY_NAMES.map((name, i) =>
       option(name, i, {
+        color: DEFAULT_PRIORITY_COLORS[name],
         isDefault: name === "Normal",
         icon: DEFAULT_OPTION_ICONS[name],
       }),
