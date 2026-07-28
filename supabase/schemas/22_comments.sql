@@ -23,6 +23,9 @@ create index comments_parent_comment_id_idx
   on public.comments (parent_comment_id)
   where parent_comment_id is not null;
 
+create index comments_author_id_idx
+  on public.comments (author_id);
+
 create trigger comments_set_updated_at
   before update on public.comments
   for each row execute function public.set_updated_at();

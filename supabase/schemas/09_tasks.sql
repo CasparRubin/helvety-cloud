@@ -22,6 +22,8 @@ create index tasks_project_stage_idx on public.tasks (project_id, stage_id);
 create index tasks_project_priority_idx on public.tasks (project_id, priority_id);
 create index tasks_project_label_idx on public.tasks (project_id, label_id);
 create index tasks_project_milestone_idx on public.tasks (project_id, milestone_id);
+create index tasks_milestone_id_idx on public.tasks (milestone_id)
+  where milestone_id is not null;
 
 create trigger tasks_set_updated_at
   before update on public.tasks

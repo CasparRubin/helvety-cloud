@@ -87,6 +87,13 @@ create index workspace_invitations_email_idx
 create index workspace_invitations_claimed_by_idx
   on public.workspace_invitations (claimed_by);
 
+create index workspace_invitations_invited_by_idx
+  on public.workspace_invitations (invited_by);
+
+create index workspace_invitations_sealed_by_idx
+  on public.workspace_invitations (sealed_by)
+  where sealed_by is not null;
+
 create trigger workspace_invitations_set_updated_at
   before update on public.workspace_invitations
   for each row execute function public.set_updated_at();
