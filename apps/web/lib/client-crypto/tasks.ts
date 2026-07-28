@@ -149,7 +149,7 @@ export async function loadDecryptedWorkspaceTasks(
   return { tasks, nextCursor: page.nextCursor };
 }
 
-/** Load every page of tasks for a project (board / remap). */
+/** Load every page of tasks for a project (board). */
 export async function loadAllDecryptedTasks(
   workspaceId: string,
   projectId: string,
@@ -331,42 +331,7 @@ export async function saveTaskCategorizationIds(
   return toDecrypted(workspaceKey, row);
 }
 
-/** Remap tasks after deleting an option or copying categorizations. */
-export async function remapTasksForCategorizationChange(
-  workspaceId: string,
-  projectId: string,
-  workspaceKey: Uint8Array,
-  remap: (task: DecryptedTask) => {
-    labelId: string | null;
-    stageId: string | null;
-    priorityId: string | null;
-  } | null,
-): Promise<void> {
-  const tasks = await loadAllDecryptedTasks(
-    workspaceId,
-    projectId,
-    workspaceKey,
-  );
-  for (const task of tasks) {
-    const next = remap(task);
-    if (!next) continue;
-    if (
-      next.labelId === task.labelId &&
-      next.stageId === task.stageId &&
-      next.priorityId === task.priorityId
-    ) {
-      continue;
-    }
-    await saveTaskCategorizationIds(
-      workspaceId,
-      projectId,
-      workspaceKey,
-      task,
-      next,
-    );
-  }
-}
-
+/** Remap workspace tasks after deleting a categorization option. */
 export async function remapWorkspaceTasksForCategorizationChange(
   workspaceId: string,
   workspaceKey: Uint8Array,

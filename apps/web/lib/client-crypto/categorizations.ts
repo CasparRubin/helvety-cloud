@@ -42,7 +42,15 @@ export type ProjectCategorizations = WorkspaceCategorizations;
 
 export type CategorizationKind = keyof WorkspaceCategorizations;
 
-const LABEL_NAMES = ["Bug", "New Feature", "Change Request"] as const;
+const LABEL_NAMES = [
+  "Bug",
+  "Change Request",
+  "Clean-up",
+  "Documentation",
+  "Enhancement",
+  "Maintenance",
+  "New Feature",
+] as const;
 const STAGE_NAMES = [
   "Backlog",
   "Discovery",
@@ -57,8 +65,12 @@ const PRIORITY_NAMES = ["Low", "Normal", "High", "Urgent"] as const;
 
 const DEFAULT_LABEL_COLORS: Record<(typeof LABEL_NAMES)[number], EntityColor> = {
   Bug: "violet",
-  "New Feature": "blue",
   "Change Request": "teal",
+  "Clean-up": "slate",
+  Documentation: "amber",
+  Enhancement: "green",
+  Maintenance: "orange",
+  "New Feature": "blue",
 };
 
 const DEFAULT_PRIORITY_COLORS: Record<
@@ -302,79 +314,6 @@ export function findOption(
 ): CategorizationOption | null {
   if (!id) return null;
   return options.find((o) => o.id === id) ?? null;
-}
-
-/** Clone categorizations with new UUIDs. */
-export function cloneCategorizations(
-  source: ProjectCategorizations,
-): ProjectCategorizations {
-  function cloneList(list: CategorizationOption[]): CategorizationOption[] {
-    return list.map((o) => {
-      const next: CategorizationOption = {
-        id: crypto.randomUUID(),
-        name: o.name,
-        sortOrder: o.sortOrder,
-      };
-      if (o.color !== undefined) next.color = o.color;
-      if (o.icon !== undefined) next.icon = o.icon;
-      if (o.isDefault) next.isDefault = true;
-      if (o.maxVisibleTasks !== undefined) {
-        next.maxVisibleTasks = o.maxVisibleTasks;
-      }
-      if (o.completionPercent !== undefined) {
-        next.completionPercent = o.completionPercent;
-      }
-      return next;
-    });
-  }
-
-  return {
-    labels: cloneList(source.labels),
-    stages: cloneList(source.stages),
-    priorities: cloneList(source.priorities),
-  };
-}
-
-/**
- * Remap a task's categorization ids when copying defs by option name.
- * Unmatched stage/priority → new defaults; unmatched label → null.
- */
-export function remapTaskIdsByName(
-  oldIds: {
-    labelId: string | null;
-    stageId: string | null;
-    priorityId: string | null;
-  },
-  oldCats: ProjectCategorizations,
-  newCats: ProjectCategorizations,
-): {
-  labelId: string | null;
-  stageId: string;
-  priorityId: string;
-} {
-  const labelName = oldIds.labelId
-    ? oldCats.labels.find((o) => o.id === oldIds.labelId)?.name
-    : null;
-  const stageName = oldIds.stageId
-    ? oldCats.stages.find((o) => o.id === oldIds.stageId)?.name
-    : null;
-  const priorityName = oldIds.priorityId
-    ? oldCats.priorities.find((o) => o.id === oldIds.priorityId)?.name
-    : null;
-
-  const labelId = labelName
-    ? (newCats.labels.find((o) => o.name === labelName)?.id ?? null)
-    : null;
-  const stageId =
-    (stageName
-      ? newCats.stages.find((o) => o.name === stageName)?.id
-      : null) ?? defaultStage(newCats).id;
-  const priorityId =
-    (priorityName
-      ? newCats.priorities.find((o) => o.name === priorityName)?.id
-      : null) ?? defaultPriority(newCats).id;
-
-  return { labelId, stageId, priorityId };
 }
 
 export function setDefaultOption(

@@ -88,16 +88,9 @@ export function CategorizationOptionList({
             className="flex flex-col gap-4 rounded-xl border border-border/70 bg-background px-4 py-4"
           >
             <div className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
-                  {singular} {index + 1}
-                </p>
-                {opt.isDefault ? (
-                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
-                    Default
-                  </span>
-                ) : null}
-              </div>
+              <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                {singular} {index + 1}
+              </p>
               <Input
                 defaultValue={opt.name}
                 disabled={busy}

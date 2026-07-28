@@ -16,8 +16,12 @@ describe("categorization icons", () => {
     );
 
     expect(labels.Bug).toBe("bug");
-    expect(labels["New Feature"]).toBe("sparkles");
     expect(labels["Change Request"]).toBe("git-pull-request");
+    expect(labels["Clean-up"]).toBe("eraser");
+    expect(labels.Documentation).toBe("book-open");
+    expect(labels.Enhancement).toBe("lightbulb");
+    expect(labels.Maintenance).toBe("wrench");
+    expect(labels["New Feature"]).toBe("sparkles");
 
     expect(stages.Backlog).toBe("inbox");
     expect(stages["In Progress"]).toBe("loader");
@@ -32,6 +36,8 @@ describe("categorization icons", () => {
 
   it("isCategorizationIcon rejects unknown tokens", () => {
     expect(isCategorizationIcon("bug")).toBe(true);
+    expect(isCategorizationIcon("eraser")).toBe(true);
+    expect(isCategorizationIcon("book-open")).toBe(true);
     expect(isCategorizationIcon("not-a-real-icon")).toBe(false);
   });
 

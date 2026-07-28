@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  cloneCategorizations,
   DEFAULT_MAX_VISIBLE_TASKS,
   defaultCategorizations,
   normalizeMaxVisibleTasks,
@@ -81,17 +80,5 @@ describe("stage maxVisibleTasks", () => {
     expect(normalizeMaxVisibleTasks(501)).toBeNull();
     expect(normalizeMaxVisibleTasks(1.5)).toBeNull();
     expect(normalizeMaxVisibleTasks("15")).toBeNull();
-  });
-
-  it("preserves maxVisibleTasks when cloning", () => {
-    const source = defaultCategorizations();
-    source.stages[0]!.maxVisibleTasks = 5;
-    const cloned = cloneCategorizations(source);
-    for (const stage of source.stages) {
-      const match = cloned.stages.find((s) => s.name === stage.name);
-      expect(match).toBeDefined();
-      expect(match!.id).not.toBe(stage.id);
-      expect(match!.maxVisibleTasks).toBe(stage.maxVisibleTasks);
-    }
   });
 });

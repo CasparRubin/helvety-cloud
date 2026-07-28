@@ -14,13 +14,22 @@ describe("categorization colors", () => {
     );
 
     expect(labelByName.Bug).toBe("violet");
-    expect(labelByName["New Feature"]).toBe("blue");
     expect(labelByName["Change Request"]).toBe("teal");
+    expect(labelByName["Clean-up"]).toBe("slate");
+    expect(labelByName.Documentation).toBe("amber");
+    expect(labelByName.Enhancement).toBe("green");
+    expect(labelByName.Maintenance).toBe("orange");
+    expect(labelByName["New Feature"]).toBe("blue");
 
     expect(priorityByName.Low).toBe("slate");
     expect(priorityByName.Normal).toBe("amber");
     expect(priorityByName.High).toBe("orange");
     expect(priorityByName.Urgent).toBe("red");
+  });
+
+  it("seeds default labels in alphabetical order", () => {
+    const names = defaultCategorizations().labels.map((l) => l.name);
+    expect(names).toEqual([...names].sort((a, b) => a.localeCompare(b)));
   });
 
   it("seeds default stages with EntityColor tokens", () => {

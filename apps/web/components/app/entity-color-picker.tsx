@@ -22,7 +22,7 @@ export function EntityColorPicker({
   compact = false,
 }: ColorPickerProps) {
   return (
-    <div className={cn("flex flex-col gap-1", compact && "gap-1")}>
+    <div className="flex flex-col gap-1">
       {compact ? null : (
         <span className="text-xs text-muted-foreground">Accent color</span>
       )}

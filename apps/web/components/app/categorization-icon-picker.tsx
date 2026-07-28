@@ -22,7 +22,7 @@ export function CategorizationIconPicker({
   compact = false,
 }: IconPickerProps) {
   return (
-    <div className={cn("flex flex-col gap-1", compact && "gap-1")}>
+    <div className="flex flex-col gap-1">
       {compact ? null : (
         <span className="text-xs text-muted-foreground">Icon</span>
       )}

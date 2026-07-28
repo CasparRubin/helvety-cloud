@@ -6,6 +6,7 @@ import {
   ArrowDownIcon,
   ArrowUpIcon,
   BanIcon,
+  BookOpenIcon,
   BookmarkIcon,
   BugIcon,
   CheckCircle2Icon,
@@ -13,6 +14,7 @@ import {
   CircleIcon,
   ClipboardCheckIcon,
   ClockIcon,
+  EraserIcon,
   FolderKanbanIcon,
   FlagIcon,
   FlameIcon,
@@ -71,6 +73,8 @@ export const CATEGORIZATION_ICON_TOKENS = [
   "wrench",
   "rocket",
   "ban",
+  "eraser",
+  "book-open",
 ] as const;
 
 export type CategorizationIcon = (typeof CATEGORIZATION_ICON_TOKENS)[number];
@@ -122,13 +126,19 @@ export const CATEGORIZATION_ICON_COMPONENTS: Record<
   wrench: WrenchIcon,
   rocket: RocketIcon,
   ban: BanIcon,
+  eraser: EraserIcon,
+  "book-open": BookOpenIcon,
 };
 
 /** Icons written into `defaultCategorizations()` seeds. */
 export const DEFAULT_OPTION_ICONS: Record<string, CategorizationIcon> = {
   Bug: "bug",
-  "New Feature": "sparkles",
   "Change Request": "git-pull-request",
+  "Clean-up": "eraser",
+  Documentation: "book-open",
+  Enhancement: "lightbulb",
+  Maintenance: "wrench",
+  "New Feature": "sparkles",
   Backlog: "inbox",
   Discovery: "search",
   Ready: "circle-dot",
