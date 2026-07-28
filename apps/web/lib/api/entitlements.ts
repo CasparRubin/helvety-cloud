@@ -84,9 +84,7 @@ export async function isWorkspaceFreeOverflowLocked(
   const ownedIds = owned.map((row) => row.id);
   const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
-    .select(
-      "workspace_id, plan, status, free_overflowed_at",
-    )
+    .select("workspace_id, plan, status, free_overflowed_at")
     .in("workspace_id", ownedIds);
   if (subsError) {
     return false;
@@ -96,7 +94,11 @@ export async function isWorkspaceFreeOverflowLocked(
     (subs ?? []).map((row) => [row.workspace_id, row]),
   );
   const nonProOwned = ownedIds
-    .filter((id) => resolvePlan(subscriptionLikeFromRow(subByWorkspace.get(id) ?? null)) !== "pro")
+    .filter(
+      (id) =>
+        resolvePlan(subscriptionLikeFromRow(subByWorkspace.get(id) ?? null)) !==
+        "pro",
+    )
     .map((id) => ({
       workspaceId: id,
       freeOverflowedAt: subByWorkspace.get(id)?.free_overflowed_at ?? null,
@@ -377,7 +379,11 @@ export async function assertWorkspaceStorageAllowed(
   incomingBytes: number,
 ): Promise<NextResponse | null> {
   if (!Number.isFinite(incomingBytes) || incomingBytes < 0) {
-    return apiError("invalid_body", "byteSize must be a non-negative number", 400);
+    return apiError(
+      "invalid_body",
+      "byteSize must be a non-negative number",
+      400,
+    );
   }
 
   const overflow = await assertNotFreeOverflowLocked(supabase, workspaceId);
@@ -459,9 +465,7 @@ export async function assertOwnedWorkspaceAllowed(
 
   const { data: subs, error: subsError } = await supabase
     .from("subscriptions")
-    .select(
-      "workspace_id, plan, status, addon_quantities",
-    )
+    .select("workspace_id, plan, status, addon_quantities")
     .in("workspace_id", ownedIds);
   if (subsError) {
     return null;

@@ -11,11 +11,7 @@ export type AddonMeter = "capacity";
 
 /** Workspace create gates that map 1:1 onto a catalog meter (except tasks). */
 export type WorkspaceMeter =
-  | "projects"
-  | "tasks"
-  | "notes"
-  | "contacts"
-  | "comments";
+  "projects" | "tasks" | "notes" | "contacts" | "comments";
 
 export type PlanLimits = {
   /** Free-tier workspace slots attributed via created_by (not a privilege). */
@@ -145,7 +141,9 @@ export function resolvePlan(subscription: SubscriptionLike): Plan {
   return "free";
 }
 
-function capacityPackCount(quantities: AddonQuantities | null | undefined): number {
+function capacityPackCount(
+  quantities: AddonQuantities | null | undefined,
+): number {
   const qty = quantities?.capacity ?? 0;
   if (!Number.isFinite(qty) || qty <= 0) {
     return 0;
@@ -183,7 +181,8 @@ export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
     filesPerTask:
       base.filesPerTask + packCount * CAPACITY_PACK.deltas.filesPerTask,
     storageBytesPerWorkspace:
-      base.storageBytesPerWorkspace + packCount * CAPACITY_PACK.deltas.storageBytes,
+      base.storageBytesPerWorkspace +
+      packCount * CAPACITY_PACK.deltas.storageBytes,
     maxUploadBytes: base.maxUploadBytes,
   };
 }
@@ -239,8 +238,7 @@ export function limitMessage(
     plan === "free"
       ? " Upgrade this workspace to Pro Workspace for higher limits."
       : "";
-  const scope =
-    meter === "tasks" ? " per project" : " per workspace";
+  const scope = meter === "tasks" ? " per project" : " per workspace";
   return `${capitalize(METER_LABEL[meter])} limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit}${scope}).${upgradeHint}`;
 }
 
@@ -257,12 +255,11 @@ export function ownedWorkspacesLimitMessage(plan: Plan, limit: number): string {
     plan === "free"
       ? " Create an additional workspace as Pro Workspace, or delete an unused workspace."
       : "";
-  const cap =
-    isUnlimited(limit)
-      ? "unlimited owned workspaces"
-      : limit === 1
-        ? "1 owned workspace"
-        : `${limit} owned workspaces`;
+  const cap = isUnlimited(limit)
+    ? "unlimited owned workspaces"
+    : limit === 1
+      ? "1 owned workspace"
+      : `${limit} owned workspaces`;
   return `Workspace limit reached (${cap} on the ${plan} plan).${upgradeHint}`;
 }
 
@@ -343,9 +340,7 @@ export function formatBytes(bytes: number): string {
   return `${Number.isInteger(gb) ? gb.toFixed(0) : gb.toFixed(1)} GB`;
 }
 
-export function normalizeAddonQuantities(
-  raw: unknown,
-): AddonQuantities {
+export function normalizeAddonQuantities(raw: unknown): AddonQuantities {
   if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
     return {};
   }

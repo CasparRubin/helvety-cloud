@@ -18,7 +18,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
-import { loadDecryptedTasks, type DecryptedTask } from "@/lib/client-crypto/tasks";
+import {
+  loadDecryptedTasks,
+  type DecryptedTask,
+} from "@/lib/client-crypto/tasks";
 
 type TaskJumpSwitcherProps = {
   workspaceId: string;
@@ -81,9 +84,7 @@ export function TaskJumpSwitcher({
   const normalizedQuery = query.trim().toLowerCase();
   const filtered = normalizedQuery
     ? tasks.filter((task) =>
-        (task.title || "Untitled task")
-          .toLowerCase()
-          .includes(normalizedQuery),
+        (task.title || "Untitled task").toLowerCase().includes(normalizedQuery),
       )
     : tasks;
 

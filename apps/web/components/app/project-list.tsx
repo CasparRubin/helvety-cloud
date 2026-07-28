@@ -177,10 +177,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
     }
   }
 
-  async function onReorderPinned(
-    projectId: string,
-    direction: "up" | "down",
-  ) {
+  async function onReorderPinned(projectId: string, direction: "up" | "down") {
     if (busy) return;
     setBusy(true);
     setError(null);
@@ -305,7 +302,9 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
                   size="sm"
                   disabled={busy}
                   onClick={() => void onTogglePinned(project)}
-                  aria-label={project.isPinned ? "Unpin project" : "Pin project"}
+                  aria-label={
+                    project.isPinned ? "Unpin project" : "Pin project"
+                  }
                 >
                   <PinIcon
                     className="size-4"

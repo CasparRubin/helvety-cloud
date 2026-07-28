@@ -94,8 +94,8 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const router = useRouter();
   const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const workspaceCategorizations =
-    workspaces.find((workspace) => workspace.id === workspaceId)?.categorizations ??
-    null;
+    workspaces.find((workspace) => workspace.id === workspaceId)
+      ?.categorizations ?? null;
 
   const [project, setProject] = useState<DecryptedProject | null>(null);
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
@@ -123,7 +123,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
   const reload = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
     const [loadedProject, allTasks, allMilestones] = await Promise.all([
-      projectId ? loadDecryptedProject(workspaceId, projectId, key) : Promise.resolve(null),
+      projectId
+        ? loadDecryptedProject(workspaceId, projectId, key)
+        : Promise.resolve(null),
       projectId
         ? loadAllDecryptedTasks(workspaceId, projectId, key)
         : loadAllDecryptedWorkspaceTasks(workspaceId, key),
@@ -193,7 +195,9 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
     setNewLabelId(null);
     setNewMilestoneId(null);
     setNewStageId(
-      workspaceCategorizations ? defaultStage(workspaceCategorizations).id : null,
+      workspaceCategorizations
+        ? defaultStage(workspaceCategorizations).id
+        : null,
     );
     setNewPriorityId(
       workspaceCategorizations
@@ -538,28 +542,31 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             </div>
 
             {projectId && project ? (
-            <aside className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-t border-border/60 pt-4 lg:flex-[1] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4">
-              <ProjectMilestonesPanel
-                workspaceId={workspaceId}
-                projectId={projectId}
-                milestones={milestones}
-                selectedFilter={milestoneFilter}
-                onSelectFilter={setMilestoneFilter}
-                onMilestonesChange={(next) => {
-                  setMilestones(next);
-                  const ids = new Set(next.map((m) => m.id));
-                  if (milestoneFilter !== "all" && !ids.has(milestoneFilter)) {
-                    setMilestoneFilter("all");
-                  }
-                }}
-              />
-              <ProjectProgress
-                tasks={tasks}
-                categorizations={workspaceCategorizations}
-                milestones={milestones}
-                milestoneFilter={milestoneFilter}
-              />
-            </aside>
+              <aside className="flex min-h-0 min-w-0 flex-col overflow-y-auto border-t border-border/60 pt-4 lg:flex-[1] lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4">
+                <ProjectMilestonesPanel
+                  workspaceId={workspaceId}
+                  projectId={projectId}
+                  milestones={milestones}
+                  selectedFilter={milestoneFilter}
+                  onSelectFilter={setMilestoneFilter}
+                  onMilestonesChange={(next) => {
+                    setMilestones(next);
+                    const ids = new Set(next.map((m) => m.id));
+                    if (
+                      milestoneFilter !== "all" &&
+                      !ids.has(milestoneFilter)
+                    ) {
+                      setMilestoneFilter("all");
+                    }
+                  }}
+                />
+                <ProjectProgress
+                  tasks={tasks}
+                  categorizations={workspaceCategorizations}
+                  milestones={milestones}
+                  milestoneFilter={milestoneFilter}
+                />
+              </aside>
             ) : null}
           </div>
         ) : null}
@@ -606,9 +613,7 @@ function StageRow({
   const [visibleCount, setVisibleCount] = useState(limit);
   const tintColor = resolveStageColor(stage);
   const tint = tintColor ? ENTITY_COLOR_CLASSES[tintColor] : null;
-  const Icon = stage.icon
-    ? CATEGORIZATION_ICON_COMPONENTS[stage.icon]
-    : null;
+  const Icon = stage.icon ? CATEGORIZATION_ICON_COMPONENTS[stage.icon] : null;
   const shownTasks = tasks.slice(0, visibleCount);
   const remaining = tasks.length - shownTasks.length;
 
@@ -673,12 +678,11 @@ function StageRow({
                   variant="ghost"
                   size="sm"
                   className="w-full text-xs text-muted-foreground"
-                  onClick={() =>
-                    setVisibleCount((prev) => prev + limit)
-                  }
+                  onClick={() => setVisibleCount((prev) => prev + limit)}
                 >
                   Show {Math.min(limit, remaining)} more task
-                  {Math.min(limit, remaining) === 1 ? "" : "s"} ({remaining} remaining)
+                  {Math.min(limit, remaining) === 1 ? "" : "s"} ({remaining}{" "}
+                  remaining)
                 </Button>
                 <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
                   This stage is showing {limit} task
@@ -768,9 +772,7 @@ function TaskCard({
               className="text-muted-foreground"
               disabled={!canMove || !prevStage}
               aria-label={
-                prevStage
-                  ? `Move to ${prevStage.name}`
-                  : "No previous stage"
+                prevStage ? `Move to ${prevStage.name}` : "No previous stage"
               }
               title={prevStage ? `Move to ${prevStage.name}` : undefined}
               onClick={() => moveToStage(prevStage)}
@@ -863,7 +865,11 @@ function TaskCardContent({
               "bg-destructive/10 text-destructive",
           )}
         >
-          <DateTimeText mode="date" value={task.dueDate} className="text-[10px]" />
+          <DateTimeText
+            mode="date"
+            value={task.dueDate}
+            className="text-[10px]"
+          />
         </span>
       ) : null}
       {onUpdateIds ? (

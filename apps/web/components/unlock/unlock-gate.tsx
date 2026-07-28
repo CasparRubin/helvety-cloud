@@ -51,9 +51,9 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
   const [message, setMessage] = useState<string | null>(null);
   const [pending, setPending] = useState(false);
   const [step, setStep] = useState<Step>("loading");
-  const [cryptoReadyStep, setCryptoReadyStep] = useState<"locked" | "needs_setup">(
-    "needs_setup",
-  );
+  const [cryptoReadyStep, setCryptoReadyStep] = useState<
+    "locked" | "needs_setup"
+  >("needs_setup");
 
   useEffect(() => {
     let cancelled = false;
@@ -164,7 +164,12 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
         </>
       }
       footer={
-        <a href="/legal" className="underline underline-offset-4">
+        <a
+          href="https://helvety.com/impressum"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="underline underline-offset-4"
+        >
           Legal
         </a>
       }
@@ -210,8 +215,8 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
           <p className="text-sm font-medium">Save your recovery file</p>
           <p className="text-sm text-muted-foreground">
             Download helvety-recovery.json and store it offline. It is not sent
-            to Helvety. Use it later if you lose your unlock passkey. Losing both
-            means permanent data loss.
+            to Helvety. Use it later if you lose your unlock passkey. Losing
+            both means permanent data loss.
           </p>
           <Button
             type="button"

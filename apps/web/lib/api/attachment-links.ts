@@ -53,7 +53,10 @@ export async function replaceAttachmentLinks(
     (existingLinks ?? []).map((row) => row.attachment_id),
   );
   const addingNew = deduped.some((id) => !existingIds.has(id));
-  if (addingNew && (await isWorkspaceFreeOverflowLocked(supabase, workspaceId))) {
+  if (
+    addingNew &&
+    (await isWorkspaceFreeOverflowLocked(supabase, workspaceId))
+  ) {
     throw new AttachmentLinkLimitError(
       freeOverflowLockMessage(effectiveLimits(null).ownedWorkspaces),
     );
@@ -93,14 +96,16 @@ export async function replaceAttachmentLinks(
   if (deleteError) throw new Error(deleteError.message);
 
   if (deduped.length > 0) {
-    const { error: insertError } = await supabase.from("attachment_links").insert(
-      deduped.map((attachmentId) => ({
-        workspace_id: workspaceId,
-        parent_kind: parentKind,
-        parent_id: parentId,
-        attachment_id: attachmentId,
-      })),
-    );
+    const { error: insertError } = await supabase
+      .from("attachment_links")
+      .insert(
+        deduped.map((attachmentId) => ({
+          workspace_id: workspaceId,
+          parent_kind: parentKind,
+          parent_id: parentId,
+          attachment_id: attachmentId,
+        })),
+      );
     if (insertError) throw new Error(insertError.message);
   }
 

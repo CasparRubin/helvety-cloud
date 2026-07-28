@@ -40,7 +40,8 @@ export function getAppUrl(): string {
 
 export function isStripeConfigured(): boolean {
   return Boolean(
-    process.env.STRIPE_SECRET_KEY && process.env.STRIPE_PRICE_PRO_WORKSPACE_YEARLY,
+    process.env.STRIPE_SECRET_KEY &&
+    process.env.STRIPE_PRICE_PRO_WORKSPACE_YEARLY,
   );
 }
 
@@ -84,4 +85,3 @@ export function addonQuantitiesFromSubscription(
   }
   return quantities;
 }
-

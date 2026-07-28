@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import type { GetMeAccountResponse } from "@helvety-cloud/api-contract";
 
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -80,10 +75,7 @@ export function AccountSettingsProvider({
   }
 
   const canSubmit = Boolean(
-    account &&
-      confirmEmail === account.email &&
-      cleanupAck &&
-      !pending,
+    account && confirmEmail === account.email && cleanupAck && !pending,
   );
 
   const value: AccountSettingsContextValue = {

@@ -4,10 +4,7 @@ import {
   uuidSchema,
 } from "@helvety-cloud/api-contract";
 
-import {
-  COMMENT_SELECT,
-  toCommentResponse,
-} from "@/lib/api/comments";
+import { COMMENT_SELECT, toCommentResponse } from "@/lib/api/comments";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 

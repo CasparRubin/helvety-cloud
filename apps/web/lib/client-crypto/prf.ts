@@ -3,7 +3,12 @@
  * Dedicated discoverable credential with PRF, not Supabase Auth.
  */
 
-import { deriveUnlockKey, fromBase64Url, generatePrfSalt, toBase64Url } from "@helvety-cloud/crypto";
+import {
+  deriveUnlockKey,
+  fromBase64Url,
+  generatePrfSalt,
+  toBase64Url,
+} from "@helvety-cloud/crypto";
 
 const CREDENTIAL_STORAGE_PREFIX = "helvety.crypto.prfCredentialId:";
 

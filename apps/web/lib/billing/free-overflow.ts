@@ -4,10 +4,7 @@
 import type { Database } from "@helvety-cloud/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-import {
-  effectiveLimits,
-  resolvePlan,
-} from "@/lib/billing/entitlements";
+import { effectiveLimits, resolvePlan } from "@/lib/billing/entitlements";
 
 type ServiceApi = SupabaseClient<Database>;
 

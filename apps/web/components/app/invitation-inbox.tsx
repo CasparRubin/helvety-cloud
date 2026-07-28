@@ -111,7 +111,9 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
       setInvitations(loaded.invitations);
       setWorkspaceNames(loaded.workspaceNames);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load invitations");
+      setError(
+        err instanceof Error ? err.message : "Failed to load invitations",
+      );
     } finally {
       setLoading(false);
     }

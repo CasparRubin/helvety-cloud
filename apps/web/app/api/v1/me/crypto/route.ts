@@ -66,7 +66,9 @@ export async function PUT(request: Request) {
   } catch (err) {
     return apiError(
       "internal",
-      err instanceof Error ? err.message : "Failed to verify policy acceptances",
+      err instanceof Error
+        ? err.message
+        : "Failed to verify policy acceptances",
       500,
     );
   }
@@ -84,10 +86,9 @@ export async function PUT(request: Request) {
   }
   const data = parsed.data;
 
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    { id: user.id },
-    { onConflict: "id" },
-  );
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert({ id: user.id }, { onConflict: "id" });
   if (profileError) {
     return apiError("internal", profileError.message, 500);
   }

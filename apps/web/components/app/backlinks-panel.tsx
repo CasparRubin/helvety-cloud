@@ -92,9 +92,7 @@ export function BacklinksPanel({ workspaceId, kind, id }: BacklinksPanelProps) {
     };
   }, [workspaceId, kind, id]);
 
-  const projectIds = links
-    .filter((l) => l.kind === "project")
-    .map((l) => l.id);
+  const projectIds = links.filter((l) => l.kind === "project").map((l) => l.id);
 
   function openProjectDialog() {
     setDraftProjectIds(projectIds);

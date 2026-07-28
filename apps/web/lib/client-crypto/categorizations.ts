@@ -63,15 +63,16 @@ const STAGE_NAMES = [
 ] as const;
 const PRIORITY_NAMES = ["Low", "Normal", "High", "Urgent"] as const;
 
-const DEFAULT_LABEL_COLORS: Record<(typeof LABEL_NAMES)[number], EntityColor> = {
-  Bug: "violet",
-  "Change Request": "teal",
-  "Clean-up": "slate",
-  Documentation: "amber",
-  Enhancement: "green",
-  Maintenance: "orange",
-  "New Feature": "blue",
-};
+const DEFAULT_LABEL_COLORS: Record<(typeof LABEL_NAMES)[number], EntityColor> =
+  {
+    Bug: "violet",
+    "Change Request": "teal",
+    "Clean-up": "slate",
+    Documentation: "amber",
+    Enhancement: "green",
+    Maintenance: "orange",
+    "New Feature": "blue",
+  };
 
 const DEFAULT_PRIORITY_COLORS: Record<
   (typeof PRIORITY_NAMES)[number],
@@ -84,19 +85,17 @@ const DEFAULT_PRIORITY_COLORS: Record<
 };
 
 /** Default colors for seeded stage names (also used when stage.color is missing). */
-const DEFAULT_STAGE_COLORS: Record<
-  (typeof STAGE_NAMES)[number],
-  EntityColor
-> = {
-  Backlog: "slate",
-  Discovery: "violet",
-  Ready: "blue",
-  "In Progress": "teal",
-  Testing: "amber",
-  Acceptance: "orange",
-  Completed: "green",
-  Cancelled: "red",
-};
+const DEFAULT_STAGE_COLORS: Record<(typeof STAGE_NAMES)[number], EntityColor> =
+  {
+    Backlog: "slate",
+    Discovery: "violet",
+    Ready: "blue",
+    "In Progress": "teal",
+    Testing: "amber",
+    Acceptance: "orange",
+    Completed: "green",
+    Cancelled: "red",
+  };
 
 /** Resolve a stage chip color: stored token, else name map, else undefined. */
 export function resolveStageColor(
@@ -104,9 +103,7 @@ export function resolveStageColor(
 ): EntityColor | undefined {
   if (!stage) return undefined;
   if (stage.color) return stage.color;
-  return DEFAULT_STAGE_COLORS[
-    stage.name as keyof typeof DEFAULT_STAGE_COLORS
-  ];
+  return DEFAULT_STAGE_COLORS[stage.name as keyof typeof DEFAULT_STAGE_COLORS];
 }
 
 /** Default completion weights for seeded stage names. Cancelled is out of scope. */
@@ -174,7 +171,8 @@ export function resolveMaxVisibleTasks(
   stage: Pick<CategorizationOption, "maxVisibleTasks"> | null | undefined,
 ): number {
   return (
-    normalizeMaxVisibleTasks(stage?.maxVisibleTasks) ?? DEFAULT_MAX_VISIBLE_TASKS
+    normalizeMaxVisibleTasks(stage?.maxVisibleTasks) ??
+    DEFAULT_MAX_VISIBLE_TASKS
   );
 }
 

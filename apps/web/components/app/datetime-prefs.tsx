@@ -32,7 +32,9 @@ export function DatetimePrefsProvider({ children }: { children: ReactNode }) {
   );
 
   return (
-    <DateTimePrefsContext.Provider value={{ prefs, setPrefs: storeDateTimePrefs }}>
+    <DateTimePrefsContext.Provider
+      value={{ prefs, setPrefs: storeDateTimePrefs }}
+    >
       {children}
     </DateTimePrefsContext.Provider>
   );
@@ -41,7 +43,9 @@ export function DatetimePrefsProvider({ children }: { children: ReactNode }) {
 export function useDateTimePrefs(): DateTimePrefsContextValue {
   const ctx = useContext(DateTimePrefsContext);
   if (!ctx) {
-    throw new Error("useDateTimePrefs must be used within DatetimePrefsProvider");
+    throw new Error(
+      "useDateTimePrefs must be used within DatetimePrefsProvider",
+    );
   }
   return ctx;
 }

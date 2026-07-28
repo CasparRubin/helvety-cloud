@@ -7,11 +7,7 @@ import { AlertCircleIcon } from "lucide-react";
 import { AuthShell } from "@/components/auth/auth-shell";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
-import {
-  Field,
-  FieldGroup,
-  FieldLabel,
-} from "@/components/ui/field";
+import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
   InputOTP,
@@ -107,7 +103,12 @@ export function LoginForm() {
       }
       footer={
         <>
-          <a href="/legal" className="underline underline-offset-4">
+          <a
+            href="https://helvety.com/impressum"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+          >
             Legal
           </a>
           {" · "}
@@ -115,7 +116,12 @@ export function LoginForm() {
             Pricing
           </a>
           {" · "}
-          <a href="/legal/billing" className="underline underline-offset-4">
+          <a
+            href="https://helvety.com/terms#billing"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline underline-offset-4"
+          >
             Billing terms
           </a>
         </>

@@ -80,10 +80,7 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
     noteRef.current = note;
   });
 
-  const draft = useMemo<NoteDraft>(
-    () => ({ title, body }),
-    [title, body],
-  );
+  const draft = useMemo<NoteDraft>(() => ({ title, body }), [title, body]);
 
   const { status, savedAt, flush } = useAutosave({
     draft,
@@ -155,7 +152,9 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   async function pickProjectForNewTask(): Promise<string | null> {
     const cached = cache.notes.find((n) => n.id === noteId);
     const linkedProjects = (
-      cached?.links ?? noteRef.current?.links ?? []
+      cached?.links ??
+      noteRef.current?.links ??
+      []
     ).filter((l) => l.kind === "project");
     if (linkedProjects.length === 1) return linkedProjects[0]!.id;
     if (cache.projects.length === 1) return cache.projects[0]!.id;
@@ -206,8 +205,11 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
   }
 
   const linkCandidates = useMemo(() => {
-    const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
-      [];
+    const items: {
+      kind: EntityLinkTarget["kind"];
+      id: string;
+      label: string;
+    }[] = [];
     for (const t of cache.tasks) {
       items.push({ kind: "task", id: t.id, label: t.title });
     }
@@ -298,7 +300,9 @@ export function NoteDetail({ workspaceId, noteId }: NoteDetailProps) {
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>{pendingProjectPick?.title ?? "Choose project"}</DialogTitle>
+            <DialogTitle>
+              {pendingProjectPick?.title ?? "Choose project"}
+            </DialogTitle>
           </DialogHeader>
           <ul className="flex max-h-60 flex-col gap-1 overflow-auto">
             {cache.projects.map((p) => (

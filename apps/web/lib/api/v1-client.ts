@@ -524,10 +524,9 @@ export async function deleteNote(
   workspaceId: string,
   noteId: string,
 ): Promise<void> {
-  await apiFetchNoContent(
-    `/api/v1/workspaces/${workspaceId}/notes/${noteId}`,
-    { method: "DELETE" },
-  );
+  await apiFetchNoContent(`/api/v1/workspaces/${workspaceId}/notes/${noteId}`, {
+    method: "DELETE",
+  });
 }
 
 export type ListEntityLinksParams = {

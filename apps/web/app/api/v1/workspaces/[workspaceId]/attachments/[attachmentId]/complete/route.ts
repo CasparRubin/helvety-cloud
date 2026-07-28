@@ -54,7 +54,11 @@ export async function POST(_request: Request, context: RouteContext) {
       .from("attachments")
       .update({ status: "failed" })
       .eq("id", attachmentId);
-    return apiError("invalid_body", "Uploaded object not found in storage", 400);
+    return apiError(
+      "invalid_body",
+      "Uploaded object not found in storage",
+      400,
+    );
   }
   // -1 = object present but Storage did not report size metadata.
   if (objectSize >= 0 && objectSize !== data.byte_size) {

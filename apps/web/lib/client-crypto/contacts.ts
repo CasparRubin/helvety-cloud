@@ -21,7 +21,10 @@ import {
   toContactPlaintext,
   type ContactPlaintext,
 } from "@/lib/client-crypto/contact-plaintext";
-import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/client-crypto/entity-refs";
+import {
+  extractEntityRefsFromDoc,
+  extractFileAttachmentIdsFromDoc,
+} from "@/lib/client-crypto/entity-refs";
 import {
   EMPTY_TASK_BODY,
   type TaskBodyDoc,
@@ -273,7 +276,9 @@ export async function reorderPinnedContacts(
 ): Promise<DecryptedContact[]> {
   const next = movePinnedItem(contacts, contactId, direction);
   if (next === contacts) return contacts;
-  const previousById = new Map(contacts.map((contact) => [contact.id, contact]));
+  const previousById = new Map(
+    contacts.map((contact) => [contact.id, contact]),
+  );
   const changed = next.filter((contact) => {
     const previous = previousById.get(contact.id);
     return (

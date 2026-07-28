@@ -149,10 +149,5 @@ export async function unlockUserKeys(
     wrappedUserKeyAad(userId),
   );
 
-  return unlockWithUserSymmetricKey(
-    userId,
-    unlockKey,
-    userSymmetricKey,
-    row,
-  );
+  return unlockWithUserSymmetricKey(userId, unlockKey, userSymmetricKey, row);
 }

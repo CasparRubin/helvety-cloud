@@ -97,7 +97,10 @@ export async function PUT(request: Request) {
 
   const { error: insertError } = await supabase
     .from("policy_acceptances")
-    .upsert(rows, { onConflict: "user_id,policy,version", ignoreDuplicates: true });
+    .upsert(rows, {
+      onConflict: "user_id,policy,version",
+      ignoreDuplicates: true,
+    });
 
   if (insertError) {
     return apiError("internal", insertError.message, 500);
@@ -121,7 +124,9 @@ export async function PUT(request: Request) {
   } catch (err) {
     return apiError(
       "internal",
-      err instanceof Error ? err.message : "Failed to verify policy acceptances",
+      err instanceof Error
+        ? err.message
+        : "Failed to verify policy acceptances",
       500,
     );
   }

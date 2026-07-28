@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import {
   CURRENT_POLICY_VERSIONS,
-  LEGAL_DOC_META,
+  SIGNUP_POLICY_HREFS,
   SIGNUP_POLICY_IDS,
   type SignupPolicyId,
 } from "@/lib/legal/policies";
@@ -16,29 +16,31 @@ import { putMePolicyAcceptances } from "@/lib/api/v1-client";
 
 const GATE_LABELS: Record<
   SignupPolicyId,
-  { prefix: string; linkText: string; suffix?: string; docSlug: keyof typeof LEGAL_DOC_META }
+  { prefix: string; linkText: string; suffix?: string }
 > = {
   tos: {
     prefix: "I accept the",
     linkText: "Terms of Service",
-    docSlug: "terms",
   },
   privacy: {
     prefix: "I accept the",
     linkText: "Privacy Policy",
-    docSlug: "privacy",
   },
   aup: {
     prefix: "I accept the",
     linkText: "Acceptable Use Policy",
-    docSlug: "aup",
   },
   e2ee: {
     prefix: "I acknowledge the",
     linkText: "E2EE / zero-access notice",
     suffix:
       "Helvety cannot decrypt or recover your data; lost keys mean permanent loss; I am responsible for my content and keys.",
-    docSlug: "e2ee",
+  },
+  eligibility: {
+    prefix: "I confirm",
+    linkText: "geographic eligibility",
+    suffix:
+      "I am not located in the EU/EEA and am not using Helvety Cloud on behalf of a person or entity located there.",
   },
 };
 
@@ -60,6 +62,7 @@ export function PolicyAcceptanceGate({
     privacy: false,
     aup: false,
     e2ee: false,
+    eligibility: false,
   });
 
   const allChecked = SIGNUP_POLICY_IDS.every((id) => checked[id]);
@@ -77,7 +80,9 @@ export function PolicyAcceptanceGate({
       onAccepted();
     } catch (err) {
       onError(
-        err instanceof Error ? err.message : "Failed to record policy acceptance",
+        err instanceof Error
+          ? err.message
+          : "Failed to record policy acceptance",
       );
     } finally {
       onPendingChange(false);
@@ -90,16 +95,16 @@ export function PolicyAcceptanceGate({
         <p className="text-sm font-medium">Accept policies to continue</p>
         <p className="text-xs text-muted-foreground">
           Acceptance is logged with policy version and timestamp before
-          encryption setup. Open each linked document to read it.
+          encryption setup. Linked documents open on helvety.com in a new tab.
         </p>
       </div>
 
       <div className="flex flex-col gap-4">
         {SIGNUP_POLICY_IDS.map((id) => {
           const meta = GATE_LABELS[id];
-          const href = LEGAL_DOC_META[meta.docSlug].href;
+          const href = SIGNUP_POLICY_HREFS[id];
           const inputId = `policy-${id}`;
-          const isE2ee = id === "e2ee";
+          const showSuffix = Boolean(meta.suffix);
 
           return (
             <div key={id} className="flex min-w-0 items-start gap-3">
@@ -122,7 +127,7 @@ export function PolicyAcceptanceGate({
                 <a
                   href={href}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   className="underline underline-offset-4"
                 >
                   {meta.linkText}
@@ -130,7 +135,7 @@ export function PolicyAcceptanceGate({
                 <span className="text-muted-foreground">
                   ({CURRENT_POLICY_VERSIONS[id]})
                 </span>
-                {isE2ee && meta.suffix ? (
+                {showSuffix && meta.suffix ? (
                   <span className="mt-1 block text-xs leading-relaxed text-muted-foreground">
                     {meta.suffix}
                   </span>

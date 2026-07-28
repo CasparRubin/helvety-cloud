@@ -40,10 +40,7 @@ export function ProjectProgress({
 
   return (
     <section
-      className={cn(
-        "mt-3 shrink-0 border-t border-border pt-3",
-        className,
-      )}
+      className={cn("mt-3 shrink-0 border-t border-border pt-3", className)}
       aria-label="Project progress"
     >
       <div className="flex items-baseline justify-between gap-2">
@@ -138,9 +135,7 @@ function ProgressScheduleChart({
       preserveAspectRatio="none"
       role="img"
       aria-label={
-        showActual
-          ? `${weightedPercent}% complete`
-          : "Schedule progress chart"
+        showActual ? `${weightedPercent}% complete` : "Schedule progress chart"
       }
     >
       <defs>

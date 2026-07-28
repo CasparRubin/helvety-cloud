@@ -13,22 +13,22 @@ supabase/
 
 ## Flow
 
-1. Edit `supabase/schemas/*.sql` (lexicographic / `schema_paths` order for FKs).  
-2. `supabase db diff -f <name>` → review `supabase/migrations/`.  
-3. Apply to remote project **`qnoeiurmyyyuawkcifmw` only**:  
-   - `supabase db push`, and/or  
-   - Cursor **Supabase MCP** `apply_migration` with the same SQL.  
-4. MCP **`generate_typescript_types`** → commit under `packages/db`.  
-5. MCP **`get_advisors`** (security/performance): fix critical RLS issues.  
+1. Edit `supabase/schemas/*.sql` (lexicographic / `schema_paths` order for FKs).
+2. `supabase db diff -f <name>` → review `supabase/migrations/`.
+3. Apply to remote project **`qnoeiurmyyyuawkcifmw` only**:
+   - `supabase db push`, and/or
+   - Cursor **Supabase MCP** `apply_migration` with the same SQL.
+4. MCP **`generate_typescript_types`** → commit under `packages/db`.
+5. MCP **`get_advisors`** (security/performance): fix critical RLS issues.
 6. Verify with MCP `list_tables` / `list_migrations`.
 
 Optional: GitHub Integration “Deploy to production” on `main` still requires migration files in the repo.
 
 ## Forbidden
 
-- Changing production schema only in Studio without updating `schemas/` + migrations  
-- Applying to old Helvety project `bkdzeihxzvrkndjvyzye`  
-- Skipping type generation after schema changes  
+- Changing production schema only in Studio without updating `schemas/` + migrations
+- Applying to old Helvety project `bkdzeihxzvrkndjvyzye`
+- Skipping type generation after schema changes
 
 ## Why Cursor “knows” the DB
 

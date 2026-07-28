@@ -50,7 +50,9 @@ export function CategorizationPicker({
     value == null || value === ""
       ? null
       : (sorted.find((o) => o.id === value) ?? null);
-  const resolveOptionColor = (option: CategorizationOption | null | undefined) => {
+  const resolveOptionColor = (
+    option: CategorizationOption | null | undefined,
+  ) => {
     if (!option) return undefined;
     return useStageColor ? resolveStageColor(option) : option.color;
   };
@@ -114,9 +116,7 @@ export function CategorizationPicker({
           ) : null}
           {sorted.map((opt) => {
             const rowColor = resolveOptionColor(opt);
-            const rowTint = rowColor
-              ? ENTITY_COLOR_CLASSES[rowColor]
-              : null;
+            const rowTint = rowColor ? ENTITY_COLOR_CLASSES[rowColor] : null;
             const Icon = opt.icon
               ? CATEGORIZATION_ICON_COMPONENTS[opt.icon]
               : null;

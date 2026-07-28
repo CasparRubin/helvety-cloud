@@ -96,7 +96,9 @@ export function ProjectGeneralSettings() {
           </p>
         </div>
         <div className="flex flex-col gap-1.5">
-          <span className="text-xs font-medium text-foreground">Accent color</span>
+          <span className="text-xs font-medium text-foreground">
+            Accent color
+          </span>
           <EntityColorPicker
             value={project.color}
             disabled={busy}

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  createContext,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -127,10 +122,7 @@ export function ProjectSettingsProvider({
         workspaceId,
         key,
         project,
-        projectPlaintextFrom(
-          project,
-          color ? { color } : { clearColor: true },
-        ),
+        projectPlaintextFrom(project, color ? { color } : { clearColor: true }),
       );
       setProject(saved);
       window.dispatchEvent(new Event("helvety:projects-changed"));

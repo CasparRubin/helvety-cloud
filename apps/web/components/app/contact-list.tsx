@@ -217,10 +217,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
     }
   }
 
-  async function onReorderPinned(
-    contactId: string,
-    direction: "up" | "down",
-  ) {
+  async function onReorderPinned(contactId: string, direction: "up" | "down") {
     if (busy) return;
     setBusy(true);
     setError(null);
@@ -399,7 +396,9 @@ export function ContactList({ workspaceId }: ContactListProps) {
                   size="sm"
                   disabled={busy}
                   onClick={() => void onTogglePinned(contact)}
-                  aria-label={contact.isPinned ? "Unpin contact" : "Pin contact"}
+                  aria-label={
+                    contact.isPinned ? "Unpin contact" : "Pin contact"
+                  }
                 >
                   <PinIcon
                     className="size-4"

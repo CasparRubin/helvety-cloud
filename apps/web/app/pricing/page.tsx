@@ -10,7 +10,11 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { CAPACITY_PACK, PLAN_LIMITS, formatBytes } from "@/lib/billing/entitlements";
+import {
+  CAPACITY_PACK,
+  PLAN_LIMITS,
+  formatBytes,
+} from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 
 export const metadata: Metadata = {
@@ -203,13 +207,17 @@ function PricingCard({
               className="flex items-start justify-between gap-4 border-b border-border/70 pb-3 last:border-b-0 last:pb-0"
             >
               <dt className="text-sm text-foreground/90">{row.label}</dt>
-              <dd className="text-sm font-medium text-foreground">{row.value}</dd>
+              <dd className="text-sm font-medium text-foreground">
+                {row.value}
+              </dd>
             </div>
           ))}
         </dl>
       </CardContent>
       <CardFooter className="items-start border-t border-border/70 bg-muted/35">
-        <p className="text-sm leading-relaxed text-muted-foreground">{footer}</p>
+        <p className="text-sm leading-relaxed text-muted-foreground">
+          {footer}
+        </p>
       </CardFooter>
     </Card>
   );
@@ -233,7 +241,9 @@ function InfoBlock({
   return (
     <div className="flex flex-col gap-2 rounded-xl border border-border/70 bg-card/80 p-4">
       <h3 className="text-sm font-medium text-foreground">{title}</h3>
-      <p className="text-sm leading-relaxed text-muted-foreground">{children}</p>
+      <p className="text-sm leading-relaxed text-muted-foreground">
+        {children}
+      </p>
     </div>
   );
 }
@@ -250,12 +260,12 @@ export default function PricingPage() {
                 Private work stays simple. Billing does too.
               </h1>
               <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground sm:text-base">
-                Start with a Free Workspace, upgrade a workspace to Pro Workspace
-                when you need encrypted files and higher limits, then add Pro
-                Workspace Capacity Increase packs only when that workspace grows.
-                Workspace content (projects, tasks, notes, contacts, and names) is
-                end-to-end encrypted on every plan, including Free. Helvety cannot
-                decrypt it.
+                Start with a Free Workspace, upgrade a workspace to Pro
+                Workspace when you need encrypted files and higher limits, then
+                add Pro Workspace Capacity Increase packs only when that
+                workspace grows. Workspace content (projects, tasks, notes,
+                contacts, and names) is end-to-end encrypted on every plan,
+                including Free. Helvety cannot decrypt it.
               </p>
             </div>
           </div>
@@ -279,7 +289,8 @@ export default function PricingPage() {
             footer={
               <>
                 Sign in to start. Billing is per workspace: each user gets one
-                free workspace. Additional owned workspaces require Pro Workspace.
+                free workspace. Additional owned workspaces require Pro
+                Workspace.
               </>
             }
           />
@@ -293,10 +304,10 @@ export default function PricingPage() {
             rows={proRows}
             footer={
               <>
-                To upgrade your Free Workspace, open it, go to Workspace settings
-                → Billing, and choose Upgrade to Pro. To add another workspace,
-                use New Pro workspace (Checkout opens after create). Any member
-                can start checkout.
+                To upgrade your Free Workspace, open it, go to Workspace
+                settings → Billing, and choose Upgrade to Pro. To add another
+                workspace, use New Pro workspace (Checkout opens after create).
+                Any member can start checkout.
               </>
             }
           />
@@ -332,8 +343,9 @@ export default function PricingPage() {
             </CardHeader>
             <CardContent className="grid gap-4 pt-5 md:grid-cols-3">
               <InfoBlock title="Workspace-scoped">
-                One workspace can stay on Free while another is on Pro Workspace.
-                Upgrades never silently change the rest of your account.
+                One workspace can stay on Free while another is on Pro
+                Workspace. Upgrades never silently change the rest of your
+                account.
               </InfoBlock>
               <InfoBlock title="Where to buy">
                 Upgrade a Free Workspace in Workspace settings → Billing, or
@@ -342,8 +354,9 @@ export default function PricingPage() {
                 change under Add-ons (Stripe billing portal).
               </InfoBlock>
               <InfoBlock title="Pro Workspace Capacity Increase">
-                Pro Workspace Capacity Increase is an optional add-on for a paid Pro
-                Workspace. Each extra pack adds the same bundle of limits again.
+                Pro Workspace Capacity Increase is an optional add-on for a paid
+                Pro Workspace. Each extra pack adds the same bundle of limits
+                again.
               </InfoBlock>
             </CardContent>
           </Card>
@@ -370,8 +383,10 @@ export default function PricingPage() {
               >
                 Start with Free Workspace
               </Link>
-              <Link
-                href="/legal/billing"
+              <a
+                href="https://helvety.com/terms#billing"
+                target="_blank"
+                rel="noopener noreferrer"
                 className={buttonVariants({
                   variant: "outline",
                   size: "lg",
@@ -379,7 +394,7 @@ export default function PricingPage() {
                 })}
               >
                 See billing terms
-              </Link>
+              </a>
             </CardContent>
             <CardFooter className="items-start border-t border-border/70 bg-transparent">
               <p className="text-sm leading-relaxed text-muted-foreground">

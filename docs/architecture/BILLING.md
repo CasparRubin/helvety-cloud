@@ -18,42 +18,42 @@ owned by Stripe coupons / promotion codes, not by Helvety app tables.
 
 ## Stack
 
-| Piece | Choice |
-|-------|--------|
-| Processor | Stripe (no monthly fee; % when paid) |
-| Auth | Supabase Auth (no Clerk) |
-| Entitlements | Gated in `/api/v1` create mutations, server-side |
+| Piece         | Choice                                                   |
+| ------------- | -------------------------------------------------------- |
+| Processor     | Stripe (no monthly fee; % when paid)                     |
+| Auth          | Supabase Auth (no Clerk)                                 |
+| Entitlements  | Gated in `/api/v1` create mutations, server-side         |
 | Limit catalog | `apps/web/lib/billing/entitlements.ts` (tune + redeploy) |
-| Discounts | Stripe coupons / promotion codes (Dashboard) |
+| Discounts     | Stripe coupons / promotion codes (Dashboard)             |
 
 ## Implementation map
 
-| Piece | Where |
-|-------|-------|
-| Tables | `subscriptions`, `billing_events` (`supabase/schemas/16_billing.sql`) |
-| Plans/limits/addons | `apps/web/lib/billing/entitlements.ts` |
-| API gates | `apps/web/lib/api/entitlements.ts` + create paths in `/api/v1` |
-| Member-cap RPC | `public.workspace_seat_usage` |
-| Billing endpoints | `GET …/billing`, `POST …/checkout`, `POST …/sync`, `POST …/portal`, `PUT …/addons` |
-| Webhook | `POST /api/webhooks/stripe` |
+| Piece               | Where                                                                              |
+| ------------------- | ---------------------------------------------------------------------------------- |
+| Tables              | `subscriptions`, `billing_events` (`supabase/schemas/16_billing.sql`)              |
+| Plans/limits/addons | `apps/web/lib/billing/entitlements.ts`                                             |
+| API gates           | `apps/web/lib/api/entitlements.ts` + create paths in `/api/v1`                     |
+| Member-cap RPC      | `public.workspace_seat_usage`                                                      |
+| Billing endpoints   | `GET …/billing`, `POST …/checkout`, `POST …/sync`, `POST …/portal`, `PUT …/addons` |
+| Webhook             | `POST /api/webhooks/stripe`                                                        |
 
 ## Plans and limits (tune in code)
 
 Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing rows; create gates only):
 
-| Meter | Free | Pro base |
-|-------|-----:|---------:|
-| Owned free-tier workspaces / user | 1 | n/a |
-| Soft owned Pro ceiling / user | n/a | 50 |
-| Projects / workspace | 2 | 25 |
-| Members (incl. pending invites) | 3 | 25 |
-| Tasks / **project** | 50 | 1000 |
-| Notes / workspace | 25 | 500 |
-| Contacts / workspace | 25 | 500 |
-| Comments + replies / workspace | 50 | 1000 |
-| Files / task | 0 | 5 |
-| File storage (ciphertext bytes) | 0 | 5 GiB |
-| Max upload size | 0 | 25 MiB |
+| Meter                             | Free | Pro base |
+| --------------------------------- | ---: | -------: |
+| Owned free-tier workspaces / user |    1 |      n/a |
+| Soft owned Pro ceiling / user     |  n/a |       50 |
+| Projects / workspace              |    2 |       25 |
+| Members (incl. pending invites)   |    3 |       25 |
+| Tasks / **project**               |   50 |     1000 |
+| Notes / workspace                 |   25 |      500 |
+| Contacts / workspace              |   25 |      500 |
+| Comments + replies / workspace    |   50 |     1000 |
+| Files / task                      |    0 |        5 |
+| File storage (ciphertext bytes)   |    0 |    5 GiB |
+| Max upload size                   |    0 |   25 MiB |
 
 **2nd+ owned workspace:** create from the app switcher (New Pro workspace). The
 workspace is created with Pro intent, then Stripe Checkout opens for that
@@ -87,14 +87,14 @@ app-defined unlimited mode.
 
 ## Environment (server-only unless NEXT_PUBLIC_)
 
-| Var | Use |
-|-----|-----|
-| `STRIPE_SECRET_KEY` | Server Stripe client |
-| `STRIPE_WEBHOOK_SECRET` | Webhook signature verification |
-| `STRIPE_PRICE_PRO_WORKSPACE_YEARLY` | Preferred Pro Workspace price |
-| `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` | Capacity Increase yearly Price |
-| `SUPABASE_SERVICE_ROLE_KEY` | Webhook, account deletion, attachment Storage ONLY |
-| `NEXT_PUBLIC_APP_URL` | Checkout success/cancel + portal return URLs |
+| Var                                                   | Use                                                |
+| ----------------------------------------------------- | -------------------------------------------------- |
+| `STRIPE_SECRET_KEY`                                   | Server Stripe client                               |
+| `STRIPE_WEBHOOK_SECRET`                               | Webhook signature verification                     |
+| `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`                   | Preferred Pro Workspace price                      |
+| `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` | Capacity Increase yearly Price                     |
+| `SUPABASE_SERVICE_ROLE_KEY`                           | Webhook, account deletion, attachment Storage ONLY |
+| `NEXT_PUBLIC_APP_URL`                                 | Checkout success/cancel + portal return URLs       |
 
 ## Ops checklist
 
@@ -109,7 +109,7 @@ app-defined unlimited mode.
 ## Docs / UX
 
 Free limits are stated in the product before a gate blocks an action and in
-`/legal/billing`. Cancel is one click in the Portal for paid subs. No dark
+`https://helvety.com/terms#billing`. Cancel is one click in the Portal for paid subs. No dark
 patterns. Capacity Increase: Workspace settings → Billing → Add-ons → **Add or
 change** (Stripe Customer Portal). **Manage billing** covers cancel, payment
 method, and invoices.

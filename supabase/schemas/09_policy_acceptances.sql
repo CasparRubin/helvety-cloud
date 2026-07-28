@@ -1,4 +1,4 @@
--- policy_acceptances: plaintext signup gates (ToS, Privacy, AUP, E2EE ack).
+-- policy_acceptances: plaintext signup gates (ToS, Privacy, AUP, E2EE ack, eligibility).
 -- Append-only: users may insert/select own rows; no update/delete for clients.
 
 create table public.policy_acceptances (

@@ -60,12 +60,7 @@ export type SealedKeyEnvelope = z.infer<typeof sealedKeyEnvelopeSchema>;
 export const uuidSchema = z.string().uuid();
 
 /** Entity kinds that can appear in entity_links (P8a). */
-export const entityLinkKinds = [
-  "note",
-  "task",
-  "contact",
-  "project",
-] as const;
+export const entityLinkKinds = ["note", "task", "contact", "project"] as const;
 export const entityLinkKindSchema = z.enum(entityLinkKinds);
 export type EntityLinkKind = z.infer<typeof entityLinkKindSchema>;
 
@@ -445,8 +440,14 @@ export const listCommentsResponseSchema = z.object({
 });
 export type ListCommentsResponse = z.infer<typeof listCommentsResponseSchema>;
 
-/** Signup-gated policy IDs (ToS, Privacy, AUP, E2EE acknowledgment). */
-export const signupPolicyIds = ["tos", "privacy", "aup", "e2ee"] as const;
+/** Signup-gated policy IDs (ToS, Privacy, AUP, E2EE ack, EU/EEA eligibility). */
+export const signupPolicyIds = [
+  "tos",
+  "privacy",
+  "aup",
+  "e2ee",
+  "eligibility",
+] as const;
 export const signupPolicyIdSchema = z.enum(signupPolicyIds);
 export type SignupPolicyId = z.infer<typeof signupPolicyIdSchema>;
 
@@ -463,6 +464,7 @@ export const getMePolicyAcceptancesResponseSchema = z.object({
     privacy: z.string().min(1),
     aup: z.string().min(1),
     e2ee: z.string().min(1),
+    eligibility: z.string().min(1),
   }),
   acceptances: z.array(policyAcceptanceSchema),
   missingPolicies: z.array(signupPolicyIdSchema),
@@ -480,7 +482,7 @@ export const putMePolicyAcceptancesRequestSchema = z.object({
         version: z.string().min(1),
       }),
     )
-    .length(4),
+    .length(5),
 });
 export type PutMePolicyAcceptancesRequest = z.infer<
   typeof putMePolicyAcceptancesRequestSchema

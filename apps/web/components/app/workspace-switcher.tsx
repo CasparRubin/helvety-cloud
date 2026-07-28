@@ -2,7 +2,12 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { CheckIcon, ChevronsUpDownIcon, CrownIcon, PlusIcon } from "lucide-react";
+import {
+  CheckIcon,
+  ChevronsUpDownIcon,
+  CrownIcon,
+  PlusIcon,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -24,10 +29,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
-import {
-  ApiClientError,
-  createBillingCheckout,
-} from "@/lib/api/v1-client";
+import { ApiClientError, createBillingCheckout } from "@/lib/api/v1-client";
 import { storeLastWorkspaceId } from "@/lib/client-crypto/workspaces";
 import { cn } from "@/lib/utils";
 
@@ -48,8 +50,7 @@ export function WorkspaceSwitcher({
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const active =
-    workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
+  const active = workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
 
   function selectWorkspace(id: string) {
     storeLastWorkspaceId(userId, id);
@@ -192,10 +193,11 @@ export function WorkspaceSwitcher({
           <DialogHeader>
             <DialogTitle>New Pro Workspace</DialogTitle>
             <DialogDescription>
-              Each account includes one Free Workspace (your Personal workspace).
-              Additional owned workspaces require Pro Workspace. After you create
-              this workspace, Stripe Checkout opens so you can start the yearly
-              subscription. Any member can manage billing afterward.
+              Each account includes one Free Workspace (your Personal
+              workspace). Additional owned workspaces require Pro Workspace.
+              After you create this workspace, Stripe Checkout opens so you can
+              start the yearly subscription. Any member can manage billing
+              afterward.
             </DialogDescription>
           </DialogHeader>
           <div className="flex flex-col gap-2">
@@ -213,9 +215,7 @@ export function WorkspaceSwitcher({
                 if (e.key === "Enter") void onCreate();
               }}
             />
-            {error ? (
-              <p className="text-xs text-destructive">{error}</p>
-            ) : null}
+            {error ? <p className="text-xs text-destructive">{error}</p> : null}
           </div>
           <DialogFooter>
             <Button
@@ -261,9 +261,7 @@ export function WorkspaceSwitcher({
                 if (e.key === "Enter") void onRename();
               }}
             />
-            {error ? (
-              <p className="text-xs text-destructive">{error}</p>
-            ) : null}
+            {error ? <p className="text-xs text-destructive">{error}</p> : null}
           </div>
           <DialogFooter>
             <Button

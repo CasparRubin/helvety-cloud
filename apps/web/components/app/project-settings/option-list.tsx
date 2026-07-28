@@ -122,7 +122,9 @@ export function CategorizationOptionList({
             >
               {onSetIcon ? (
                 <div className="flex flex-col gap-1.5">
-                  <span className="text-xs font-medium text-foreground">Icon</span>
+                  <span className="text-xs font-medium text-foreground">
+                    Icon
+                  </span>
                   <CategorizationIconPicker
                     compact
                     value={opt.icon}
@@ -237,7 +239,8 @@ export function CategorizationOptionList({
                     }}
                   />
                   <p className="text-[11px] leading-5 text-muted-foreground">
-                    Used in project completion. Cancelled stages should stay at 0.
+                    Used in project completion. Cancelled stages should stay at
+                    0.
                   </p>
                 </div>
               ) : null}

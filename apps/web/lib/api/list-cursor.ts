@@ -7,10 +7,7 @@ import {
 
 function encodeBase64UrlJson(payload: object): string {
   const json = JSON.stringify(payload);
-  return btoa(json)
-    .replace(/\+/g, "-")
-    .replace(/\//g, "_")
-    .replace(/=+$/, "");
+  return btoa(json).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 }
 
 function decodeBase64UrlJson(raw: string): unknown {
@@ -27,9 +24,7 @@ export function encodeSortOrderCursor(cursor: SortOrderCursor): string {
   });
 }
 
-export function decodeSortOrderCursor(
-  raw: string,
-): SortOrderCursor | null {
+export function decodeSortOrderCursor(raw: string): SortOrderCursor | null {
   try {
     const parsed = sortOrderCursorSchema.safeParse(decodeBase64UrlJson(raw));
     return parsed.success ? parsed.data : null;

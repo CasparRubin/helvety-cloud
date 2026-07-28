@@ -65,9 +65,7 @@ export async function encryptWorkspaceName(
     key: workspaceKey,
     plaintext: encodeUtf8(
       JSON.stringify(
-        typeof content === "string"
-          ? toWorkspacePlaintext(content)
-          : content,
+        typeof content === "string" ? toWorkspacePlaintext(content) : content,
       ),
     ),
     aad: workspaceAad(workspaceId),
@@ -93,9 +91,8 @@ export async function decryptWorkspaceName(
   workspaceId: string,
   envelope: CiphertextEnvelope,
 ): Promise<string> {
-  return (
-    await decryptWorkspacePlaintext(workspaceKey, workspaceId, envelope)
-  ).name;
+  return (await decryptWorkspacePlaintext(workspaceKey, workspaceId, envelope))
+    .name;
 }
 
 export async function unwrapWorkspaceKey(
@@ -232,7 +229,11 @@ export async function decryptWorkspaceListItem(
   userKeys: UnlockedUserKeys,
   item: WorkspaceListItem,
 ): Promise<DecryptedWorkspaceListItem> {
-  const workspaceKey = await unwrapWorkspaceKey(userKeys, item.id, item.wrappedKey);
+  const workspaceKey = await unwrapWorkspaceKey(
+    userKeys,
+    item.id,
+    item.wrappedKey,
+  );
   const plain = await decryptWorkspacePlaintext(
     workspaceKey,
     item.id,
@@ -381,7 +382,10 @@ export function loadLastWorkspaceId(userId: string): string | null {
   }
 }
 
-export function storeLastWorkspaceId(userId: string, workspaceId: string): void {
+export function storeLastWorkspaceId(
+  userId: string,
+  workspaceId: string,
+): void {
   try {
     localStorage.setItem(LAST_WORKSPACE_KEY(userId), workspaceId);
   } catch {

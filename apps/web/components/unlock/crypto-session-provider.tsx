@@ -29,9 +29,7 @@ import {
   unlockWithUserSymmetricKey,
   type UnlockedUserKeys,
 } from "@/lib/client-crypto/user-keys";
-import {
-  defaultCategorizations,
-} from "@/lib/client-crypto/categorizations";
+import { defaultCategorizations } from "@/lib/client-crypto/categorizations";
 import {
   createStandardWorkspace,
   decryptWorkspaceListItem,
@@ -195,7 +193,11 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
       if (!item) {
         throw new Error("Workspace not found");
       }
-      const key = await unwrapWorkspaceKey(userKeys, workspaceId, item.wrappedKey);
+      const key = await unwrapWorkspaceKey(
+        userKeys,
+        workspaceId,
+        item.wrappedKey,
+      );
       cacheWorkspaceKey(workspaceId, key);
       return key;
     },
@@ -314,7 +316,9 @@ export function CryptoSessionProvider({ children }: { children: ReactNode }) {
 export function useCryptoSession(): CryptoSessionValue {
   const ctx = useContext(CryptoSessionContext);
   if (!ctx) {
-    throw new Error("useCryptoSession must be used within CryptoSessionProvider");
+    throw new Error(
+      "useCryptoSession must be used within CryptoSessionProvider",
+    );
   }
   return ctx;
 }

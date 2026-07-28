@@ -247,8 +247,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
         emptyLabel={notes.length === 0 ? "No notes yet." : "No matching notes."}
       >
         {filteredNotes.map((note) => {
-          const dateIso =
-            sort === "created" ? note.createdAt : note.updatedAt;
+          const dateIso = sort === "created" ? note.createdAt : note.updatedAt;
           const dateLabel = sort === "created" ? "Created" : "Modified";
           return (
             <EntityListRow key={note.id} className="flex items-start gap-2">
@@ -258,8 +257,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
               >
                 <span className="font-medium">{note.title || "Untitled"}</span>
                 <span className="text-xs text-muted-foreground">
-                  {dateLabel}{" "}
-                  <DateTimeText value={dateIso} />
+                  {dateLabel} <DateTimeText value={dateIso} />
                 </span>
               </Link>
               <div className="flex shrink-0 gap-1">

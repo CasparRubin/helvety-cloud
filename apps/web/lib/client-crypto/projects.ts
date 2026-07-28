@@ -74,18 +74,16 @@ export function projectPlaintextFrom(
     clearIcon?: boolean;
   },
 ): ProjectPlaintext {
-  const color =
-    overrides?.clearColor
-      ? undefined
-      : overrides?.color !== undefined
-        ? overrides.color
-        : project.color;
-  const icon =
-    overrides?.clearIcon
-      ? undefined
-      : overrides?.icon !== undefined
-        ? overrides.icon
-        : project.icon;
+  const color = overrides?.clearColor
+    ? undefined
+    : overrides?.color !== undefined
+      ? overrides.color
+      : project.color;
+  const icon = overrides?.clearIcon
+    ? undefined
+    : overrides?.icon !== undefined
+      ? overrides.icon
+      : project.icon;
   return {
     name: overrides?.name ?? project.name,
     description: overrides?.description ?? project.description,
@@ -279,16 +277,12 @@ export async function createProject(
   },
 ): Promise<DecryptedProject> {
   const projectId = crypto.randomUUID();
-  const encryptedBlob = await encryptProjectContent(
-    workspaceKey,
-    projectId,
-    {
-      name,
-      description: content?.description ?? EMPTY_TASK_BODY,
-      ...(content?.color ? { color: content.color } : {}),
-      ...(content?.icon ? { icon: content.icon } : {}),
-    },
-  );
+  const encryptedBlob = await encryptProjectContent(workspaceKey, projectId, {
+    name,
+    description: content?.description ?? EMPTY_TASK_BODY,
+    ...(content?.color ? { color: content.color } : {}),
+    ...(content?.icon ? { icon: content.icon } : {}),
+  });
   const row = await putProject(workspaceId, projectId, {
     encryptedBlob,
     sortOrder,
@@ -395,7 +389,9 @@ export async function reorderPinnedProjects(
 ): Promise<DecryptedProject[]> {
   const next = movePinnedItem(projects, projectId, direction);
   if (next === projects) return projects;
-  const previousById = new Map(projects.map((project) => [project.id, project]));
+  const previousById = new Map(
+    projects.map((project) => [project.id, project]),
+  );
 
   const changed = next.filter((project) => {
     const previous = previousById.get(project.id);

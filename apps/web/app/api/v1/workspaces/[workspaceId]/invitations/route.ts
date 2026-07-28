@@ -88,10 +88,9 @@ export async function POST(request: Request, context: RouteContext) {
     return limitResponse;
   }
 
-  const { error: profileError } = await supabase.from("profiles").upsert(
-    { id: user.id },
-    { onConflict: "id" },
-  );
+  const { error: profileError } = await supabase
+    .from("profiles")
+    .upsert({ id: user.id }, { onConflict: "id" });
   if (profileError) {
     return apiError("internal", profileError.message, 500);
   }

@@ -61,10 +61,7 @@ type ContactDraft = {
   notes: TaskBodyDoc;
 };
 
-export function ContactDetail({
-  workspaceId,
-  contactId,
-}: ContactDetailProps) {
+export function ContactDetail({ workspaceId, contactId }: ContactDetailProps) {
   const router = useRouter();
   const { userKeys, workspaces, getWorkspaceKey } = useCryptoSession();
   const cache = useEntityCache();
@@ -161,11 +158,7 @@ export function ContactDetail({
       try {
         const key = await getWorkspaceKey(workspaceId);
         if (cancelled) return;
-        const loaded = await loadDecryptedContact(
-          workspaceId,
-          contactId,
-          key,
-        );
+        const loaded = await loadDecryptedContact(workspaceId, contactId, key);
         if (cancelled) return;
         setContact(loaded);
         setFirstName(loaded.firstName);
@@ -204,7 +197,9 @@ export function ContactDetail({
   async function pickProjectForNewTask(): Promise<string | null> {
     const cached = cache.contacts.find((c) => c.id === contactId);
     const linkedProjects = (
-      cached?.links ?? contactRef.current?.links ?? []
+      cached?.links ??
+      contactRef.current?.links ??
+      []
     ).filter((l) => l.kind === "project");
     if (linkedProjects.length === 1) return linkedProjects[0]!.id;
     if (cache.projects.length === 1) return cache.projects[0]!.id;
@@ -255,8 +250,11 @@ export function ContactDetail({
   }
 
   const linkCandidates = useMemo(() => {
-    const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
-      [];
+    const items: {
+      kind: EntityLinkTarget["kind"];
+      id: string;
+      label: string;
+    }[] = [];
     for (const t of cache.tasks) {
       items.push({ kind: "task", id: t.id, label: t.title });
     }
@@ -429,7 +427,9 @@ export function ContactDetail({
       >
         <DialogContent className="sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle>{pendingProjectPick?.title ?? "Choose project"}</DialogTitle>
+            <DialogTitle>
+              {pendingProjectPick?.title ?? "Choose project"}
+            </DialogTitle>
           </DialogHeader>
           <ul className="flex max-h-60 flex-col gap-1 overflow-auto">
             {cache.projects.map((p) => (

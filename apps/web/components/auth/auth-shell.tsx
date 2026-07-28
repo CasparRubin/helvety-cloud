@@ -54,7 +54,9 @@ export function AuthShell({
           </div>
           {children}
           {footer ? (
-            <p className="text-center text-xs text-muted-foreground">{footer}</p>
+            <p className="text-center text-xs text-muted-foreground">
+              {footer}
+            </p>
           ) : null}
           <p className="text-center text-xs text-muted-foreground/70">
             Developed by{" "}

@@ -1,7 +1,4 @@
-import {
-  apiErrorSchema,
-  type ApiErrorCode,
-} from "@helvety-cloud/api-contract";
+import { apiErrorSchema, type ApiErrorCode } from "@helvety-cloud/api-contract";
 import { NextResponse } from "next/server";
 
 export function apiError(

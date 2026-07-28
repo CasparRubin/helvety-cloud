@@ -19,13 +19,19 @@ import {
   resolveStageColor,
   type WorkspaceCategorizations,
 } from "@/lib/client-crypto/categorizations";
-import { loadDecryptedContacts, type DecryptedContact } from "@/lib/client-crypto/contacts";
+import {
+  loadDecryptedContacts,
+  type DecryptedContact,
+} from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import {
   KIND_FALLBACK_COLOR,
   type EntityColor,
 } from "@/lib/client-crypto/entity-colors";
-import { loadDecryptedNotes, type DecryptedNote } from "@/lib/client-crypto/notes";
+import {
+  loadDecryptedNotes,
+  type DecryptedNote,
+} from "@/lib/client-crypto/notes";
 import {
   loadDecryptedProjects,
   type DecryptedProject,
@@ -59,9 +65,7 @@ type EntityCacheValue = {
   upsertContact: (contact: DecryptedContact) => void;
 };
 
-const EntityCacheContext = createContext<EntityCacheValue | null>(
-  null,
-);
+const EntityCacheContext = createContext<EntityCacheValue | null>(null);
 
 function doneStageIds(cats: WorkspaceCategorizations): Set<string> {
   const done = new Set<string>();
@@ -163,8 +167,8 @@ export function EntityCacheProvider({
 
   const workspaceCategorizations = useMemo(
     () =>
-      workspaces.find((workspace) => workspace.id === workspaceId)?.categorizations ??
-      null,
+      workspaces.find((workspace) => workspace.id === workspaceId)
+        ?.categorizations ?? null,
     [workspaces, workspaceId],
   );
 
@@ -255,7 +259,14 @@ export function EntityCacheProvider({
         }
       }
     },
-    [notes, contacts, tasks, projectById, workspaceCategorizations, workspaceId],
+    [
+      notes,
+      contacts,
+      tasks,
+      projectById,
+      workspaceCategorizations,
+      workspaceId,
+    ],
   );
 
   const upsertNote = useCallback((note: DecryptedNote) => {

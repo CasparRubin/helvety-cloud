@@ -23,7 +23,10 @@ import {
   type TaskBodyDoc,
   type NotePlaintext,
 } from "@/lib/client-crypto/note-plaintext";
-import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/client-crypto/entity-refs";
+import {
+  extractEntityRefsFromDoc,
+  extractFileAttachmentIdsFromDoc,
+} from "@/lib/client-crypto/entity-refs";
 import {
   comparePinned,
   movePinnedItem,
@@ -155,8 +158,7 @@ export async function createNote(
     plaintext,
   );
   const links =
-    content.links ??
-    extractEntityRefsFromDoc("note", plaintext.body);
+    content.links ?? extractEntityRefsFromDoc("note", plaintext.body);
   const row = await putNote(workspaceId, noteId, {
     encryptedBlob,
     sortOrder,

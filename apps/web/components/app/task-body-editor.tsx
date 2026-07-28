@@ -86,7 +86,11 @@ export function TaskBodyEditor({
   }, [uploading]);
 
   const compactMinHeight =
-    compact && disabled ? "min-h-0" : compact ? "min-h-[96px]" : "min-h-[240px]";
+    compact && disabled
+      ? "min-h-0"
+      : compact
+        ? "min-h-[96px]"
+        : "min-h-[240px]";
 
   const editor = useEditor({
     extensions: [
@@ -229,14 +233,7 @@ export function TaskBodyEditor({
   }
 
   if (!editor) {
-    return (
-      <div
-        className={cn(
-          compactMinHeight,
-          className,
-        )}
-      />
-    );
+    return <div className={cn(compactMinHeight, className)} />;
   }
 
   const filteredCandidates = linkCandidates.filter((c) => {
@@ -335,9 +332,7 @@ export function TaskBodyEditor({
               className="hidden"
               multiple
               onChange={(e) => {
-                const files = e.target.files
-                  ? Array.from(e.target.files)
-                  : [];
+                const files = e.target.files ? Array.from(e.target.files) : [];
                 e.target.value = "";
                 if (files.length > 0) void uploadFilesRef.current(files);
               }}

@@ -32,7 +32,9 @@ export async function GET(request: Request) {
     return apiError("internal", error.message, 500);
   }
 
-  const workspaceIds = [...new Set((data ?? []).map((row) => row.workspace_id))];
+  const workspaceIds = [
+    ...new Set((data ?? []).map((row) => row.workspace_id)),
+  ];
   const blobById = new Map<string, CiphertextEnvelope>();
   if (workspaceIds.length > 0) {
     const { data: workspaces, error: wsError } = await supabase

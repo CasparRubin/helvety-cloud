@@ -21,12 +21,12 @@ Optional: recovery_key (high entropy, shown once)
 
 ## Algorithms (foundation)
 
-| Use | Algorithm |
-|-----|-----------|
-| Content | AES-256-GCM, unique IV/nonce per encrypt |
-| KDF | HKDF from PRF material |
-| Key wrap (asymmetric) | X25519 (or RSA-OAEP if forced by platform constraints; prefer X25519) |
-| Binding | AAD includes `table:recordId:field` for **content, symmetric wraps, and X25519 seals** so ciphertext cannot be moved across rows/columns. `wrapKey`/`unwrapKey` and `sealToPublicKey`/`openSealedKey` bind AAD; `key_check` uses real `userId` (not `"self"`). |
+| Use                   | Algorithm                                                                                                                                                                                                                                                      |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Content               | AES-256-GCM, unique IV/nonce per encrypt                                                                                                                                                                                                                       |
+| KDF                   | HKDF from PRF material                                                                                                                                                                                                                                         |
+| Key wrap (asymmetric) | X25519 (or RSA-OAEP if forced by platform constraints; prefer X25519)                                                                                                                                                                                          |
+| Binding               | AAD includes `table:recordId:field` for **content, symmetric wraps, and X25519 seals** so ciphertext cannot be moved across rows/columns. `wrapKey`/`unwrapKey` and `sealToPublicKey`/`openSealedKey` bind AAD; `key_check` uses real `userId` (not `"self"`). |
 
 ## Envelope
 
@@ -34,20 +34,20 @@ Versioned ciphertext blob: version, nonce, ciphertext, key_version. Exact Zod sh
 
 ## What is shipped
 
-| Area | Status |
-|------|--------|
-| Library + tests (`packages/crypto`) | **Done** |
-| `user_crypto`, `wrapped_keys` + wrap/key_check AAD | **Done** |
-| Unlock → API → encrypt entity round-trip | **Done** |
-| Seal `workspace_key` to invitees (claim → member seal → accept) | **Done** (P6e) |
+| Area                                                                       | Status         |
+| -------------------------------------------------------------------------- | -------------- |
+| Library + tests (`packages/crypto`)                                        | **Done**       |
+| `user_crypto`, `wrapped_keys` + wrap/key_check AAD                         | **Done**       |
+| Unlock → API → encrypt entity round-trip                                   | **Done**       |
+| Seal `workspace_key` to invitees (claim → member seal → accept)            | **Done** (P6e) |
 | Per-file DEK + binary AES-GCM for Storage; meta/wrap under `workspace_key` | **Done** (P11) |
 
 `project_key` remains optional in the hierarchy for future finer ACLs; current product encrypts under **workspace_key**.
 
 ## Forbidden
 
-- Server-side derivation of unlock keys  
-- Storing PRF output or recovery plaintext on server  
+- Server-side derivation of unlock keys
+- Storing PRF output or recovery plaintext on server
 - MLS / OpenMLS (revisit later if needed)
 
 See [`THREAT_MODEL.md`](THREAT_MODEL.md) and [`ROADMAP.md`](ROADMAP.md).

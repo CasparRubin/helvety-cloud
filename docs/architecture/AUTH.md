@@ -4,12 +4,12 @@ Passwordless Supabase Auth for **helvety.cloud**. Session ≠ encrypted unlock (
 
 ## Policy
 
-| Allowed | Forbidden |
-|---------|-----------|
-| Email OTP (`signInWithOtp` / `verifyOtp`) | Passwords (`signInWithPassword`, password `signUp`) |
+| Allowed                                              | Forbidden                                                        |
+| ---------------------------------------------------- | ---------------------------------------------------------------- |
+| Email OTP (`signInWithOtp` / `verifyOtp`)            | Passwords (`signInWithPassword`, password `signUp`)              |
 | Encryption unlock via WebAuthn **PRF** (client-only) | Supabase Auth passkeys (`registerPasskey` / `signInWithPasskey`) |
-| Browser Supabase **Auth** SDK | Browser PostgREST `from('…')` for encrypted entity tables |
-| | Claiming Helvety can recover encrypted content |
+| Browser Supabase **Auth** SDK                        | Browser PostgREST `from('…')` for encrypted entity tables        |
+|                                                      | Claiming Helvety can recover encrypted content                   |
 
 UI: shadcn/ui **Base UI** (`style: base-nova` in `apps/web/components.json`). Do not init with `-b radix`.
 
@@ -43,10 +43,10 @@ The RP ID is derived from `window.location.hostname`: `localhost` locally, and a
 
 ## App routes
 
-| Route | Role |
-|-------|------|
-| `/` | Signed-out shell (CTA) or signed-in shell |
-| `/login` | Email → OTP code → session |
+| Route    | Role                                      |
+| -------- | ----------------------------------------- |
+| `/`      | Signed-out shell (CTA) or signed-in shell |
+| `/login` | Email → OTP code → session                |
 
 ## Session vs encryption unlock
 

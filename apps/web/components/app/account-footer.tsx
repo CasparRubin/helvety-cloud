@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
+import { LEGAL_EXTERNAL_HREFS } from "@/lib/legal/policies";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
@@ -26,24 +27,43 @@ function FooterLink({
   icon: Icon,
   children,
   compact,
+  external,
 }: {
   href: string;
   active: boolean;
   icon: LucideIcon;
   children: string;
   compact?: boolean;
+  external?: boolean;
 }) {
+  const className = cn(
+    compact
+      ? "inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+      : "flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+    active && "bg-sidebar-accent text-sidebar-accent-foreground",
+  );
+
+  if (external) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={compact ? children : undefined}
+        className={className}
+      >
+        <Icon className={cn("size-4 shrink-0", !compact && "opacity-60")} />
+        {compact ? <span className="sr-only">{children}</span> : children}
+      </a>
+    );
+  }
+
   return (
     <Link
       href={href}
       aria-current={active ? "page" : undefined}
       title={compact ? children : undefined}
-      className={cn(
-        compact
-          ? "inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-          : "flex items-center gap-2 rounded-md px-2 py-1 text-sm hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-        active && "bg-sidebar-accent text-sidebar-accent-foreground",
-      )}
+      className={className}
     >
       <Icon className={cn("size-4 shrink-0", !compact && "opacity-60")} />
       {compact ? <span className="sr-only">{children}</span> : children}
@@ -60,7 +80,6 @@ export function AccountFooter({
   const onAccount = pathname.startsWith("/app/account");
   const onInvitations = pathname.startsWith("/app/invitations");
   const onPricing = pathname.startsWith("/pricing");
-  const onLegal = pathname.startsWith("/legal");
 
   async function signOut() {
     lock();
@@ -99,7 +118,13 @@ export function AccountFooter({
         >
           Pricing
         </FooterLink>
-        <FooterLink href="/legal" active={onLegal} icon={ScaleIcon} compact>
+        <FooterLink
+          href={LEGAL_EXTERNAL_HREFS.impressum}
+          active={false}
+          icon={ScaleIcon}
+          compact
+          external
+        >
           Legal
         </FooterLink>
         <button
@@ -141,7 +166,12 @@ export function AccountFooter({
       >
         Pricing
       </FooterLink>
-      <FooterLink href="/legal" active={onLegal} icon={ScaleIcon}>
+      <FooterLink
+        href={LEGAL_EXTERNAL_HREFS.impressum}
+        active={false}
+        icon={ScaleIcon}
+        external
+      >
         Legal
       </FooterLink>
       <button

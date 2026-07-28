@@ -9,9 +9,7 @@ import type { Database } from "@helvety-cloud/db";
 
 type Db = SupabaseClient<Database>;
 
-function dedupeLinkTargets(
-  links: EntityLinkTarget[],
-): EntityLinkTarget[] {
+function dedupeLinkTargets(links: EntityLinkTarget[]): EntityLinkTarget[] {
   const seen = new Set<string>();
   const out: EntityLinkTarget[] = [];
   for (const link of links) {
@@ -46,7 +44,8 @@ export async function validateLinkTargetsInWorkspace(
           .eq("workspace_id", workspaceId)
           .maybeSingle();
         if (error) return { ok: false, message: error.message };
-        if (!data) return { ok: false, message: `note ${link.id} not in workspace` };
+        if (!data)
+          return { ok: false, message: `note ${link.id} not in workspace` };
         break;
       }
       case "contact": {
@@ -159,8 +158,7 @@ export async function replaceOutgoingLinks(
 ): Promise<EntityLinkTarget[]> {
   const deduped = dedupeLinkTargets(targets).filter(
     (t) =>
-      t.kind !== "project" &&
-      !(t.kind === sourceKind && t.id === sourceId),
+      t.kind !== "project" && !(t.kind === sourceKind && t.id === sourceId),
   );
 
   const { error: deleteError } = await supabase

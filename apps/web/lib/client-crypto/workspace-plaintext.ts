@@ -19,7 +19,9 @@ export type ParsedWorkspacePlaintext = WorkspacePlaintext & {
   hadCategorizations: boolean;
 };
 
-export function parseWorkspacePlaintext(raw: unknown): ParsedWorkspacePlaintext {
+export function parseWorkspacePlaintext(
+  raw: unknown,
+): ParsedWorkspacePlaintext {
   if (typeof raw !== "object" || raw === null) {
     throw new Error("Invalid workspace plaintext");
   }

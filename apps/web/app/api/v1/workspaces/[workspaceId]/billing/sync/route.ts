@@ -25,7 +25,11 @@ export async function POST(request: Request, context: RouteContext) {
 
   const member = await isWorkspaceMember(supabase, workspaceId, user.id);
   if (!member) {
-    return apiError("forbidden", "Only workspace members can sync billing", 403);
+    return apiError(
+      "forbidden",
+      "Only workspace members can sync billing",
+      403,
+    );
   }
 
   const { data: existing, error: existingError } = await supabase

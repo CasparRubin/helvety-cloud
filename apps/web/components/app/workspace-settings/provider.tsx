@@ -100,10 +100,7 @@ type WorkspaceSettingsContextValue = {
     id: string,
     direction: "up" | "down",
   ) => Promise<void>;
-  onSetDefault: (
-    kind: "stages" | "priorities",
-    id: string,
-  ) => Promise<void>;
+  onSetDefault: (kind: "stages" | "priorities", id: string) => Promise<void>;
   onSetOptionColor: (
     kind: CategorizationKind,
     id: string,
@@ -145,8 +142,15 @@ export function WorkspaceSettingsProvider({
 }) {
   const router = useRouter();
   const billingSyncAttempted = useRef(false);
-  const { userKeys, workspaces, getWorkspaceKey, renameWorkspace, removeWorkspace, leaveWorkspace, refreshWorkspaces } =
-    useCryptoSession();
+  const {
+    userKeys,
+    workspaces,
+    getWorkspaceKey,
+    renameWorkspace,
+    removeWorkspace,
+    leaveWorkspace,
+    refreshWorkspaces,
+  } = useCryptoSession();
 
   const workspace = workspaces.find((w) => w.id === workspaceId) ?? null;
   const isPersonal = workspace?.kind === "personal";
@@ -166,9 +170,9 @@ export function WorkspaceSettingsProvider({
   const [error, setError] = useState<string | null>(null);
   const [memberLimitHit, setMemberLimitHit] = useState(false);
   const [copiedId, setCopiedId] = useState<string | null>(null);
-  const [categorizationsError, setCategorizationsError] = useState<string | null>(
-    null,
-  );
+  const [categorizationsError, setCategorizationsError] = useState<
+    string | null
+  >(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [deleteConfirmName, setDeleteConfirmName] = useState("");
   const [leaveOpen, setLeaveOpen] = useState(false);
@@ -434,17 +438,17 @@ export function WorkspaceSettingsProvider({
 
   const hasActiveProBilling = Boolean(
     billing &&
-      billing.plan === "pro" &&
-      BLOCKING_SUB_STATUSES.has(billing.status),
+    billing.plan === "pro" &&
+    BLOCKING_SUB_STATUSES.has(billing.status),
   );
 
   const needsBillingCancel =
     !isPersonal &&
     Boolean(
       billing &&
-        billing.hasStripeCustomer &&
-        BLOCKING_SUB_STATUSES.has(billing.status) &&
-        !billing.cancelAtPeriodEnd,
+      billing.hasStripeCustomer &&
+      BLOCKING_SUB_STATUSES.has(billing.status) &&
+      !billing.cancelAtPeriodEnd,
     );
 
   if (!userKeys) return null;
@@ -459,7 +463,9 @@ export function WorkspaceSettingsProvider({
     try {
       await fn();
       await refreshWorkspaces();
-      window.dispatchEvent(new Event("helvety:workspace-categorizations-changed"));
+      window.dispatchEvent(
+        new Event("helvety:workspace-categorizations-changed"),
+      );
     } catch (err) {
       const message =
         err instanceof Error ? err.message : "Could not save categorizations";

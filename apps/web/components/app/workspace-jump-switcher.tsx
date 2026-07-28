@@ -31,7 +31,10 @@ import {
   type DecryptedContact,
 } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
-import { loadDecryptedNotes, type DecryptedNote } from "@/lib/client-crypto/notes";
+import {
+  loadDecryptedNotes,
+  type DecryptedNote,
+} from "@/lib/client-crypto/notes";
 import {
   loadDecryptedProjects,
   type DecryptedProject,

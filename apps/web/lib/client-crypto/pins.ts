@@ -63,5 +63,9 @@ export function pinnedTop<T extends PinnableEntity>(
   items: T[],
   limit: number,
 ): T[] {
-  return items.filter((item) => item.isPinned).slice().sort(comparePinned).slice(0, limit);
+  return items
+    .filter((item) => item.isPinned)
+    .slice()
+    .sort(comparePinned)
+    .slice(0, limit);
 }

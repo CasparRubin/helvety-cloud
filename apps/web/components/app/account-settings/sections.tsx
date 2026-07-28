@@ -103,14 +103,14 @@ export function AccountDangerSettings() {
         <h2 className="text-sm font-medium">What deletion does</h2>
         <ul className="list-disc space-y-2 pl-5 text-sm text-muted-foreground">
           <li>
-            Your auth account, profile, encryption metadata, policy
-            acceptances, and sessions are permanently removed.
+            Your auth account, profile, encryption metadata, policy acceptances,
+            and sessions are permanently removed.
           </li>
           <li>
             Solo workspaces where you are the only member (including Personal)
             and everything inside them (projects, tasks, notes, contacts, links,
-            ciphertext, and wrapped keys) are permanently deleted. Helvety cannot
-            decrypt or recover your data.
+            ciphertext, and wrapped keys) are permanently deleted. Helvety
+            cannot decrypt or recover your data.
           </li>
           <li>
             Pro subscriptions on those deleted solo workspaces are cancelled.

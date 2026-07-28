@@ -110,7 +110,9 @@ export async function syncWorkspaceSubscriptionFromStripe(
 
   if (existingSubscriptionId) {
     try {
-      subscription = await stripe.subscriptions.retrieve(existingSubscriptionId);
+      subscription = await stripe.subscriptions.retrieve(
+        existingSubscriptionId,
+      );
     } catch {
       subscription = null;
     }

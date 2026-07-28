@@ -1,16 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import type { EntityLinkTarget } from "@helvety-cloud/api-contract";
 
-import { TaskBodyEditor, type EntityLinkAction } from "@/components/app/task-body-editor";
+import {
+  TaskBodyEditor,
+  type EntityLinkAction,
+} from "@/components/app/task-body-editor";
 import { BacklinksPanel } from "@/components/app/backlinks-panel";
 import { CommentsSection } from "@/components/app/comments-section";
 import { DeleteButton } from "@/components/app/confirm-delete-dialog";
@@ -80,8 +77,8 @@ export function TaskDetail({
   const cache = useEntityCache();
   const { upsertTask } = cache;
   const workspaceCategorizations =
-    workspaces.find((workspace) => workspace.id === workspaceId)?.categorizations ??
-    null;
+    workspaces.find((workspace) => workspace.id === workspaceId)
+      ?.categorizations ?? null;
 
   const [task, setTask] = useState<DecryptedTask | null>(null);
   const [categorizations, setCategorizations] =
@@ -174,8 +171,7 @@ export function TaskDetail({
           throw new Error("Workspace categorizations not available");
         }
         const nextStage =
-          loaded.stageId &&
-          cats.stages.some((s) => s.id === loaded.stageId)
+          loaded.stageId && cats.stages.some((s) => s.id === loaded.stageId)
             ? loaded.stageId
             : defaultStage(cats).id;
         const nextPriority =
@@ -277,8 +273,11 @@ export function TaskDetail({
   }
 
   const linkCandidates = useMemo(() => {
-    const items: { kind: EntityLinkTarget["kind"]; id: string; label: string }[] =
-      [];
+    const items: {
+      kind: EntityLinkTarget["kind"];
+      id: string;
+      label: string;
+    }[] = [];
     for (const n of cache.notes) {
       items.push({ kind: "note", id: n.id, label: n.title });
     }
@@ -426,11 +425,7 @@ export function TaskDetail({
                 </RadioSection>
               </>
             ) : null}
-            <BacklinksPanel
-              workspaceId={workspaceId}
-              kind="task"
-              id={taskId}
-            />
+            <BacklinksPanel workspaceId={workspaceId} kind="task" id={taskId} />
           </>
         }
       />
@@ -467,7 +462,6 @@ function RadioSection({
   );
 }
 
-
 function CategorizationRadioList({
   name,
   options,
@@ -489,11 +483,7 @@ function CategorizationRadioList({
     (a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id),
   );
   return (
-    <div
-      className="flex flex-col gap-1.5"
-      role="radiogroup"
-      aria-label={name}
-    >
+    <div className="flex flex-col gap-1.5" role="radiogroup" aria-label={name}>
       {allowNone ? (
         <label className="flex items-center gap-2 text-sm">
           <input
@@ -508,9 +498,7 @@ function CategorizationRadioList({
         </label>
       ) : null}
       {sorted.map((opt) => {
-        const Icon = opt.icon
-          ? CATEGORIZATION_ICON_COMPONENTS[opt.icon]
-          : null;
+        const Icon = opt.icon ? CATEGORIZATION_ICON_COMPONENTS[opt.icon] : null;
         const color = useStageColor ? resolveStageColor(opt) : opt.color;
         const tint = color ? ENTITY_COLOR_CLASSES[color] : null;
         return (

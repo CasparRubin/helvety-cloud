@@ -1,5 +1,9 @@
 import type { Database } from "@helvety-cloud/db";
-import { createClient, type SupabaseClient, type User } from "@supabase/supabase-js";
+import {
+  createClient,
+  type SupabaseClient,
+  type User,
+} from "@supabase/supabase-js";
 
 import { apiError } from "@/lib/api/errors";
 
@@ -70,8 +74,6 @@ export async function requireUser(
   return { supabase, user };
 }
 
-export function isAuthedApi(
-  value: AuthedApi | Response,
-): value is AuthedApi {
+export function isAuthedApi(value: AuthedApi | Response): value is AuthedApi {
   return !(value instanceof Response) && "supabase" in value && "user" in value;
 }

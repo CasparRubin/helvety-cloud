@@ -217,20 +217,12 @@ export function ProjectMilestonesPanel({
     if (!editing) return;
     const key = await getWorkspaceKey(workspaceId);
     const description = input.description.trim();
-    const saved = await saveMilestone(
-      workspaceId,
-      projectId,
-      key,
-      editing,
-      {
-        title: input.title.trim(),
-        description: description
-          ? textToTaskBody(description)
-          : EMPTY_TASK_BODY,
-        startDate: input.startDate.trim() || null,
-        endDate: input.endDate.trim() || null,
-      },
-    );
+    const saved = await saveMilestone(workspaceId, projectId, key, editing, {
+      title: input.title.trim(),
+      description: description ? textToTaskBody(description) : EMPTY_TASK_BODY,
+      startDate: input.startDate.trim() || null,
+      endDate: input.endDate.trim() || null,
+    });
     onMilestonesChange(
       sortMilestones(
         milestones.map((item) => (item.id === saved.id ? saved : item)),
@@ -384,7 +376,9 @@ function MilestoneListItem({
         aria-pressed={selected}
       >
         <div className="flex items-baseline justify-between gap-2">
-          <span className="truncate text-sm font-medium">{milestone.title}</span>
+          <span className="truncate text-sm font-medium">
+            {milestone.title}
+          </span>
           <DateTimeText
             mode="range"
             startDate={milestone.startDate}

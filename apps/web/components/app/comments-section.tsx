@@ -167,12 +167,11 @@ export function CommentsSection({
   function renderComment(comment: DecryptedComment, depth: number) {
     const replies = repliesByParent.get(comment.id) ?? [];
     const editing = editingId === comment.id;
-    const author =
-      !comment.authorId
-        ? "Former member"
-        : userKeys?.userId === comment.authorId
-          ? "You"
-          : "Member";
+    const author = !comment.authorId
+      ? "Former member"
+      : userKeys?.userId === comment.authorId
+        ? "You"
+        : "Member";
     return (
       <li
         key={comment.id}

@@ -203,9 +203,7 @@ export async function PUT(request: Request, context: RouteContext) {
   }
 
   const labelId =
-    data.labelId !== undefined
-      ? data.labelId
-      : (existing?.label_id ?? null);
+    data.labelId !== undefined ? data.labelId : (existing?.label_id ?? null);
   const stageId =
     data.stageId !== undefined ? data.stageId : (existing?.stage_id ?? null);
   const priorityId =

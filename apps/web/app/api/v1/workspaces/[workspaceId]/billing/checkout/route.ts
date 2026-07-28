@@ -34,7 +34,11 @@ export async function POST(request: Request, context: RouteContext) {
 
   const member = await isWorkspaceMember(supabase, workspaceId, user.id);
   if (!member) {
-    return apiError("forbidden", "Only workspace members can manage billing", 403);
+    return apiError(
+      "forbidden",
+      "Only workspace members can manage billing",
+      403,
+    );
   }
 
   const { data: subscription, error: subscriptionError } = await supabase
@@ -46,7 +50,11 @@ export async function POST(request: Request, context: RouteContext) {
     return apiError("internal", subscriptionError.message, 500);
   }
   if (resolvePlan(subscription ?? null) === "pro") {
-    return apiError("conflict", "Workspace is already on the Pro Workspace plan", 409);
+    return apiError(
+      "conflict",
+      "Workspace is already on the Pro Workspace plan",
+      409,
+    );
   }
 
   const stripe = getStripe();

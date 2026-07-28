@@ -22,7 +22,10 @@ import {
   defaultStage,
   type ProjectCategorizations,
 } from "@/lib/client-crypto/categorizations";
-import { extractEntityRefsFromDoc, extractFileAttachmentIdsFromDoc } from "@/lib/client-crypto/entity-refs";
+import {
+  extractEntityRefsFromDoc,
+  extractFileAttachmentIdsFromDoc,
+} from "@/lib/client-crypto/entity-refs";
 import {
   EMPTY_TASK_BODY,
   parseTaskPlaintext,
@@ -158,10 +161,15 @@ export async function loadAllDecryptedTasks(
   const all: DecryptedTask[] = [];
   let cursor: string | null = null;
   do {
-    const page = await loadDecryptedTasks(workspaceId, projectId, workspaceKey, {
-      limit: 100,
-      cursor,
-    });
+    const page = await loadDecryptedTasks(
+      workspaceId,
+      projectId,
+      workspaceKey,
+      {
+        limit: 100,
+        cursor,
+      },
+    );
     all.push(...page.tasks);
     cursor = page.nextCursor;
   } while (cursor);

@@ -16,7 +16,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
-import { PLAN_LIMITS, CAPACITY_PACK, formatBytes } from "@/lib/billing/entitlements";
+import {
+  PLAN_LIMITS,
+  CAPACITY_PACK,
+  formatBytes,
+} from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 
 function formatLimit(value: number | null): string {
@@ -160,9 +164,7 @@ export function WorkspaceGeneralSettings() {
           />
           <Button
             type="button"
-            disabled={
-              pending || !name.trim() || name.trim() === workspace.name
-            }
+            disabled={pending || !name.trim() || name.trim() === workspace.name}
             onClick={() => void onSaveName()}
           >
             Save
@@ -344,7 +346,9 @@ export function WorkspaceMembersSettings() {
     onRemoveMember,
   } = useWorkspaceSettings();
 
-  const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(null);
+  const [removeTarget, setRemoveTarget] = useState<WorkspaceMember | null>(
+    null,
+  );
 
   const isSolo = members.length <= 1;
 
@@ -363,9 +367,9 @@ export function WorkspaceMembersSettings() {
         <h2 className="text-sm font-medium">Workspace access</h2>
         <p className="text-xs leading-5 text-muted-foreground">
           Invite by email. Every member has the same rights: invite, remove,
-          billing, and delete. After they sign in and set up encryption, complete
-          key handoff on an unlocked device. Helvety never sees the workspace key
-          or your data.
+          billing, and delete. After they sign in and set up encryption,
+          complete key handoff on an unlocked device. Helvety never sees the
+          workspace key or your data.
         </p>
       </div>
 
@@ -790,8 +794,8 @@ export function WorkspaceBillingSettings() {
               ) : (
                 <p className="text-xs text-muted-foreground">
                   Capacity Increase is available on Pro Workspace. Each pack
-                  raises projects, tasks, notes, contacts, comments, members, and
-                  storage together.
+                  raises projects, tasks, notes, contacts, comments, members,
+                  and storage together.
                 </p>
               )}
             </CardContent>

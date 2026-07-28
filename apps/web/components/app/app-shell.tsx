@@ -315,9 +315,7 @@ function AppShellInner({ email, userId, children }: AppShellProps) {
   const activeWorkspaceName = activeWorkspace?.name ?? null;
   const isProWorkspace = activeWorkspace?.plan === "pro";
   const workspaceBase = location?.workspaceBase ?? null;
-  const onWorkspaceHome = Boolean(
-    workspaceBase && pathname === workspaceBase,
-  );
+  const onWorkspaceHome = Boolean(workspaceBase && pathname === workspaceBase);
   const parentHref = location ? parentHrefFor(location) : null;
   const { hasInAppPredecessor, noteParentReplace } =
     useInAppNavHistory(pathname);
