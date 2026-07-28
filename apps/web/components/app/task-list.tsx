@@ -617,9 +617,8 @@ function StageRow({
       ref={setNodeRef}
       aria-label={`${stage.name} stage`}
       className={cn(
-        "flex w-full min-w-0 flex-col overflow-hidden rounded-lg border border-border bg-background",
-        // Inset ring: an outward ring gets clipped by the scrolling board.
-        isOver && "ring-2 ring-ring ring-inset",
+        "flex w-full min-w-0 flex-col overflow-hidden rounded-lg border-2 bg-background",
+        isOver ? "border-ring" : "border-border",
       )}
     >
       <div

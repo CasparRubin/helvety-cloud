@@ -55,7 +55,7 @@ export type DecryptedProject = {
   deletedAt: string | null;
 };
 
-export const DEFAULT_PROJECT_ICON: CategorizationIcon = "folder-kanban";
+const DEFAULT_PROJECT_ICON: CategorizationIcon = "folder-kanban";
 
 export function resolveProjectIcon(
   icon?: CategorizationIcon,

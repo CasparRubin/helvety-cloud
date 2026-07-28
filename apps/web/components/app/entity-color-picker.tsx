@@ -11,7 +11,7 @@ type ColorPickerProps = {
   value?: EntityColor;
   onChange: (color: EntityColor | undefined) => void;
   disabled?: boolean;
-  /** Hide the “Accent color” label (e.g. stage rows). */
+  /** Hide the “Accent color” label (e.g. option rows). */
   compact?: boolean;
 };
 
