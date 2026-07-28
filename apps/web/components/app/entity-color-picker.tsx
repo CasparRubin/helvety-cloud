@@ -22,7 +22,7 @@ export function EntityColorPicker({
   compact = false,
 }: ColorPickerProps) {
   return (
-    <div className={cn("flex flex-col gap-1", compact && "gap-0")}>
+    <div className={cn("flex flex-col gap-1", compact && "gap-1")}>
       {compact ? null : (
         <span className="text-xs text-muted-foreground">Accent color</span>
       )}
@@ -30,8 +30,10 @@ export function EntityColorPicker({
         <button
           type="button"
           disabled={disabled}
+          title="Automatic color"
+          aria-label="Automatic color"
           className={cn(
-            "h-6 rounded border px-2 text-[10px]",
+            "h-7 rounded border px-2 text-[10px]",
             !value
               ? "border-foreground bg-muted"
               : "border-input text-muted-foreground",
@@ -51,7 +53,7 @@ export function EntityColorPicker({
               aria-label={token}
               aria-pressed={value === token}
               className={cn(
-                "size-6 rounded-full ring-2 ring-offset-1 ring-offset-background",
+                "size-7 rounded-full ring-2 ring-offset-1 ring-offset-background",
                 c.dot,
                 value === token ? "ring-foreground" : "ring-transparent",
               )}

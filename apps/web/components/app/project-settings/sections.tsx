@@ -29,7 +29,9 @@ function SettingsStatus({
   }
   if (empty) {
     return (
-      <p className="text-sm text-muted-foreground">Project not found.</p>
+      <p className="text-sm text-muted-foreground">
+        This project is unavailable or you no longer have access to it.
+      </p>
     );
   }
   return null;
@@ -55,6 +57,13 @@ export function ProjectGeneralSettings() {
 
   return (
     <div className="flex max-w-lg flex-col gap-4">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">Project identity</h2>
+        <p className="text-sm text-muted-foreground">
+          Update how this project appears in navigation and task views. Task
+          stages, labels, and priorities are managed at the workspace level.
+        </p>
+      </div>
       <form onSubmit={(e) => void onRename(e)} className="flex gap-2">
         <Input
           value={nameDraft}
@@ -72,20 +81,34 @@ export function ProjectGeneralSettings() {
           Save
         </Button>
       </form>
-      <CategorizationIconPicker
-        value={project.icon}
-        disabled={busy}
-        onChange={(next) => {
-          void onSetIcon(next);
-        }}
-      />
-      <EntityColorPicker
-        value={project.color}
-        disabled={busy}
-        onChange={(next: EntityColor | undefined) => {
-          void onSetColor(next);
-        }}
-      />
+      <div className="grid gap-4 sm:grid-cols-2">
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-foreground">Icon</span>
+          <CategorizationIconPicker
+            value={project.icon}
+            disabled={busy}
+            onChange={(next) => {
+              void onSetIcon(next);
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            Optional marker shown beside the project name.
+          </p>
+        </div>
+        <div className="flex flex-col gap-1.5">
+          <span className="text-xs font-medium text-foreground">Accent color</span>
+          <EntityColorPicker
+            value={project.color}
+            disabled={busy}
+            onChange={(next: EntityColor | undefined) => {
+              void onSetColor(next);
+            }}
+          />
+          <p className="text-xs text-muted-foreground">
+            Helps the project stand out in lists and headers.
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
@@ -100,8 +123,9 @@ export function ProjectDangerSettings() {
   if (loading || error || !project) return status;
 
   return (
-    <div className="flex max-w-lg flex-col gap-3 rounded-lg border border-destructive/30 p-4">
-      <p className="text-xs text-muted-foreground">
+    <section className="flex max-w-lg flex-col gap-3 rounded-xl border border-destructive/30 p-5">
+      <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
+      <p className="text-xs leading-5 text-muted-foreground">
         Permanently delete this project, all of its tasks and milestones, and
         files on those tasks. Notes and contacts stay in the workspace. This
         cannot be undone. Helvety cannot recover deleted data.
@@ -114,6 +138,6 @@ export function ProjectDangerSettings() {
         dialogDescription="This permanently deletes the project, all of its tasks and milestones, and files on those tasks. Notes and contacts stay in the workspace. This cannot be undone."
         onConfirm={onDeleteProject}
       />
-    </div>
+    </section>
   );
 }

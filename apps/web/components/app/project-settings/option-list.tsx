@@ -61,24 +61,44 @@ export function CategorizationOptionList({
   );
   const canDelete = kind === "labels" || sorted.length > 1;
   const singular = title.toLowerCase().replace(/s$/, "");
+  const showsStageControls =
+    !!onSetMaxVisibleTasks || !!onSetCompletionPercent || !!onSetColor;
 
   return (
-    <section className="flex max-w-2xl flex-col gap-3">
-      <div>
-        <h2 className="text-sm font-medium">{title}</h2>
-        <p className="text-sm text-muted-foreground">{description}</p>
+    <section className="flex max-w-3xl flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <div>
+          <h2 className="text-sm font-medium">{title}</h2>
+          <p className="text-sm leading-6 text-muted-foreground">
+            {description}
+          </p>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Changes save automatically when you finish editing a field or pick an
+          option.
+        </p>
       </div>
-      <ul className="flex flex-col gap-3">
+      <ul className="flex flex-col gap-4">
         {sorted.map((opt, index) => (
           <li
             key={opt.id}
-            className="flex flex-col gap-2 border-b border-border pb-3 last:border-0"
+            className="flex flex-col gap-4 rounded-xl border border-border/70 bg-background px-4 py-4"
           >
-            <div className="flex flex-wrap items-center gap-2">
+            <div className="flex flex-col gap-3">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-[11px] font-medium tracking-wide text-muted-foreground uppercase">
+                  {singular} {index + 1}
+                </p>
+                {opt.isDefault ? (
+                  <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium text-foreground">
+                    Default
+                  </span>
+                ) : null}
+              </div>
               <Input
                 defaultValue={opt.name}
                 disabled={busy}
-                className="min-w-[10rem] flex-1"
+                className="min-w-[12rem] flex-1"
                 aria-label={`${title} name`}
                 onBlur={(e) => {
                   const next = e.target.value.trim();
@@ -95,46 +115,62 @@ export function CategorizationOptionList({
                   }
                 }}
               />
+            </div>
+            <div
+              className={[
+                "grid gap-3",
+                showsStageControls
+                  ? "sm:grid-cols-2 xl:grid-cols-4"
+                  : "sm:grid-cols-2",
+              ].join(" ")}
+            >
               {onSetIcon ? (
-                <CategorizationIconPicker
-                  compact
-                  value={opt.icon}
-                  disabled={busy}
-                  onChange={(icon) => void onSetIcon(opt.id, icon)}
-                />
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-foreground">Icon</span>
+                  <CategorizationIconPicker
+                    compact
+                    value={opt.icon}
+                    disabled={busy}
+                    onChange={(icon) => void onSetIcon(opt.id, icon)}
+                  />
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    Optional visual marker in pickers and task chips.
+                  </p>
+                </div>
               ) : null}
               {onSetColor ? (
-                <EntityColorPicker
-                  compact
-                  value={opt.color}
-                  disabled={busy}
-                  onChange={(color) => void onSetColor(opt.id, color)}
-                />
-              ) : null}
-            </div>
-            <div className="flex flex-wrap items-center gap-2">
-              {showDefault ? (
-                <Button
-                  type="button"
-                  size="sm"
-                  variant={opt.isDefault ? "secondary" : "ghost"}
-                  disabled={busy || !!opt.isDefault}
-                  onClick={() => void onSetDefault?.(opt.id)}
-                >
-                  {opt.isDefault ? "Default" : "Set default"}
-                </Button>
+                <div className="flex flex-col gap-1.5">
+                  <span className="text-xs font-medium text-foreground">
+                    Color
+                  </span>
+                  <EntityColorPicker
+                    compact
+                    value={opt.color}
+                    disabled={busy}
+                    onChange={(color) => void onSetColor(opt.id, color)}
+                  />
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    Auto uses the default stage color. Choose one to override it.
+                  </p>
+                </div>
               ) : null}
               {onSetMaxVisibleTasks ? (
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span>Show</span>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor={`${kind}-${opt.id}-max-visible`}
+                    className="text-xs font-medium text-foreground"
+                  >
+                    Tasks shown before “Show more”
+                  </label>
                   <Input
+                    id={`${kind}-${opt.id}-max-visible`}
                     type="number"
                     inputMode="numeric"
                     min={MIN_MAX_VISIBLE_TASKS}
                     max={MAX_MAX_VISIBLE_TASKS}
                     defaultValue={resolveMaxVisibleTasks(opt)}
                     disabled={busy}
-                    className="h-8 w-16 tabular-nums"
+                    className="h-9 w-28 tabular-nums"
                     aria-label={`Max visible tasks for ${opt.name}`}
                     onBlur={(e) => {
                       const parsed = Number.parseInt(e.target.value, 10);
@@ -158,19 +194,29 @@ export function CategorizationOptionList({
                       }
                     }}
                   />
-                </label>
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    Only affects the board view. Tasks stay in the stage either
+                    way.
+                  </p>
+                </div>
               ) : null}
               {onSetCompletionPercent ? (
-                <label className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                  <span>%</span>
+                <div className="flex flex-col gap-1.5">
+                  <label
+                    htmlFor={`${kind}-${opt.id}-completion`}
+                    className="text-xs font-medium text-foreground"
+                  >
+                    Progress weight (%)
+                  </label>
                   <Input
+                    id={`${kind}-${opt.id}-completion`}
                     type="number"
                     inputMode="numeric"
                     min={0}
                     max={100}
                     defaultValue={resolveCompletionPercent(opt, options)}
                     disabled={busy}
-                    className="h-8 w-14 tabular-nums"
+                    className="h-9 w-24 tabular-nums"
                     aria-label={`Completion percent for ${opt.name}`}
                     onBlur={(e) => {
                       const parsed = Number.parseInt(e.target.value, 10);
@@ -194,7 +240,23 @@ export function CategorizationOptionList({
                       }
                     }}
                   />
-                </label>
+                  <p className="text-[11px] leading-5 text-muted-foreground">
+                    Used in project completion. Cancelled stages should stay at 0.
+                  </p>
+                </div>
+              ) : null}
+            </div>
+            <div className="flex flex-wrap items-center gap-2 border-t border-border/60 pt-3">
+              {showDefault ? (
+                <Button
+                  type="button"
+                  size="sm"
+                  variant={opt.isDefault ? "secondary" : "ghost"}
+                  disabled={busy || !!opt.isDefault}
+                  onClick={() => void onSetDefault?.(opt.id)}
+                >
+                  {opt.isDefault ? "Default" : "Set default"}
+                </Button>
               ) : null}
               <div className="ml-auto flex items-center gap-1">
                 <Button

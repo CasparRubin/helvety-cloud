@@ -31,19 +31,26 @@ export function SettingsShell({
   const pathname = usePathname();
 
   return (
-    <div className="flex h-full flex-col gap-4 p-4 sm:p-6">
-      <div className="flex flex-col gap-1">
-        <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
-        {description ? (
-          <p className="text-sm text-muted-foreground">{description}</p>
-        ) : null}
+    <div className="flex h-full flex-col gap-6 p-4 sm:gap-8 sm:p-6">
+      <div className="max-w-3xl rounded-xl border border-border/60 bg-muted/20 px-4 py-4 sm:px-5">
+        <div className="flex flex-col gap-1.5">
+          <h1 className="text-lg font-semibold tracking-tight">{title}</h1>
+          {description ? (
+            <p className="max-w-2xl text-sm leading-6 text-muted-foreground">
+              {description}
+            </p>
+          ) : null}
+        </div>
       </div>
 
       <div className="flex min-h-0 flex-1 flex-col gap-6 md:flex-row md:gap-8">
         <nav
           aria-label="Settings sections"
-          className="flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-2 md:w-44 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:pb-0 md:pr-4"
+          className="flex shrink-0 gap-1 overflow-x-auto border-b border-border pb-2 md:w-52 md:flex-col md:overflow-visible md:border-b-0 md:border-r md:pb-0 md:pr-5"
         >
+          <p className="hidden px-2.5 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase md:block">
+            Sections
+          </p>
           {items.map((item) => {
             const active = isActiveSettingsPath(pathname, item.href);
             return (
@@ -66,7 +73,11 @@ export function SettingsShell({
           })}
         </nav>
 
-        <div className="min-w-0 flex-1">{children}</div>
+        <div className="min-w-0 flex-1">
+          <div className="mx-auto flex w-full max-w-4xl flex-col gap-6">
+            {children}
+          </div>
+        </div>
       </div>
     </div>
   );

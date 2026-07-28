@@ -37,12 +37,23 @@ export function AccountGeneralSettings() {
           {error}
         </p>
       ) : null}
-      <p className="text-sm text-muted-foreground">
-        Signed in as{" "}
-        <span className="font-medium text-foreground">{account.email}</span>.
-        Auth is email OTP, so there is no account password. Billing is per
-        workspace (owner manages Plan in workspace settings).
-      </p>
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium">Sign-in</h2>
+        <p className="text-sm text-muted-foreground">
+          Signed in as{" "}
+          <span className="font-medium text-foreground">{account.email}</span>.
+          Helvety Cloud uses email OTP for account access, so there is no
+          account password to manage here.
+        </p>
+      </section>
+      <section className="flex flex-col gap-2">
+        <h2 className="text-sm font-medium">What belongs here</h2>
+        <p className="text-sm text-muted-foreground">
+          Account settings cover sign-in and account deletion. Workspace plan,
+          members, task categorizations, and project settings stay inside each
+          workspace.
+        </p>
+      </section>
     </div>
   );
 }

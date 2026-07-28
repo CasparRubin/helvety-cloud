@@ -22,7 +22,7 @@ export function CategorizationIconPicker({
   compact = false,
 }: IconPickerProps) {
   return (
-    <div className={cn("flex flex-col gap-1", compact && "gap-0")}>
+    <div className={cn("flex flex-col gap-1", compact && "gap-1")}>
       {compact ? null : (
         <span className="text-xs text-muted-foreground">Icon</span>
       )}
@@ -30,8 +30,10 @@ export function CategorizationIconPicker({
         <button
           type="button"
           disabled={disabled}
+          title="No icon"
+          aria-label="No icon"
           className={cn(
-            "h-6 rounded border px-2 text-[10px]",
+            "h-7 rounded border px-2 text-[10px]",
             !value
               ? "border-foreground bg-muted"
               : "border-input text-muted-foreground",
@@ -51,7 +53,7 @@ export function CategorizationIconPicker({
               aria-label={token}
               aria-pressed={value === token}
               className={cn(
-                "inline-flex size-6 items-center justify-center rounded-md ring-2 ring-offset-1 ring-offset-background",
+                "inline-flex size-7 items-center justify-center rounded-md ring-2 ring-offset-1 ring-offset-background",
                 value === token
                   ? "bg-muted ring-foreground"
                   : "ring-transparent hover:bg-muted/60",

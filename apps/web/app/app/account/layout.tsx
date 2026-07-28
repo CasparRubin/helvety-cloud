@@ -13,7 +13,11 @@ export default function AccountSettingsLayout({
 }) {
   return (
     <AccountSettingsProvider>
-      <SettingsShell title="Account" items={accountSettingsNavItems()}>
+      <SettingsShell
+        title="Account"
+        description="Review how you sign in, what belongs to your account versus your workspaces, and what account deletion removes."
+        items={accountSettingsNavItems()}
+      >
         {children}
       </SettingsShell>
     </AccountSettingsProvider>

@@ -129,13 +129,22 @@ export function WorkspaceGeneralSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">
+        This workspace is unavailable or you no longer have access to it.
+      </p>
     );
   }
 
   return (
-    <div className="flex max-w-lg flex-col gap-3">
+    <section className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">Workspace name</h2>
+        <p className="text-sm text-muted-foreground">
+          This is the name people see in the workspace switcher, settings, and
+          sharing flows.
+        </p>
+      </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="ws-settings-name" required>
           Name
@@ -160,11 +169,12 @@ export function WorkspaceGeneralSettings() {
         </div>
         {isPersonal ? (
           <p className="text-xs text-muted-foreground">
-            Personal workspace. Cannot be deleted.
+            Personal workspace. It stays attached to your account and cannot be
+            deleted.
           </p>
         ) : null}
       </div>
-    </div>
+    </section>
   );
 }
 
@@ -186,7 +196,9 @@ export function WorkspaceStagesSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">
+        This workspace is unavailable or you no longer have access to it.
+      </p>
     );
   }
 
@@ -195,7 +207,7 @@ export function WorkspaceStagesSettings() {
       <SettingsError error={categorizationsError} />
       <CategorizationOptionList
         title="Stages"
-        description="Required on tasks. Default is used for new tasks and when deleting an in-use stage. Show limits how many tasks appear before “Show more”. % is the stage’s weight toward project completion (Cancelled is excluded)."
+        description="Stages are required on every task. The default stage is used for new tasks and when you remove a stage that is still in use."
         kind="stages"
         options={workspace.categorizations.stages}
         showDefault
@@ -228,7 +240,9 @@ export function WorkspaceLabelsSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">
+        This workspace is unavailable or you no longer have access to it.
+      </p>
     );
   }
 
@@ -237,7 +251,7 @@ export function WorkspaceLabelsSettings() {
       <SettingsError error={categorizationsError} />
       <CategorizationOptionList
         title="Labels"
-        description="Optional on tasks. Delete clears the label on affected tasks across this workspace."
+        description="Labels are optional tags for extra context across this workspace. Removing a label clears it from affected tasks."
         kind="labels"
         options={workspace.categorizations.labels}
         showDefault={false}
@@ -267,7 +281,9 @@ export function WorkspacePrioritiesSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">
+        This workspace is unavailable or you no longer have access to it.
+      </p>
     );
   }
 
@@ -276,7 +292,7 @@ export function WorkspacePrioritiesSettings() {
       <SettingsError error={categorizationsError} />
       <CategorizationOptionList
         title="Priorities"
-        description="Required on tasks. Default is used for new tasks and when deleting an in-use priority."
+        description="Priorities are required on every task. The default priority is used for new tasks and when you remove one that is still in use."
         kind="priorities"
         options={workspace.categorizations.priorities}
         showDefault
@@ -329,7 +345,14 @@ export function WorkspaceMembersSettings() {
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
-      <p className="text-xs text-muted-foreground">
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">Workspace access</h2>
+        <p className="text-sm text-muted-foreground">
+          Invite people by email and complete the encryption handoff after they
+          join.
+        </p>
+      </div>
+      <p className="text-xs leading-5 text-muted-foreground">
         Invite by email. After they sign in and set up encryption, complete key
         handoff on an unlocked device. Helvety never sees the workspace key or
         your data.
@@ -422,7 +445,9 @@ export function WorkspaceMembersSettings() {
             Pending invitations
           </p>
           {activeInvites.length === 0 ? (
-            <p className="text-xs text-muted-foreground">None</p>
+            <p className="text-xs text-muted-foreground">
+              No pending invitations.
+            </p>
           ) : (
             <ul className="flex flex-col gap-2">
               {activeInvites.map((invitation) => (
@@ -502,6 +527,13 @@ export function WorkspaceBillingSettings() {
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
+      <div className="flex flex-col gap-1">
+        <h2 className="text-sm font-medium">Plan and limits</h2>
+        <p className="text-sm text-muted-foreground">
+          Billing is tied to the workspace. Review usage here and open Stripe
+          only when you need to change the plan or add-ons.
+        </p>
+      </div>
       {billingLoading && !billing ? (
         <p className="text-xs text-muted-foreground">Loading billing…</p>
       ) : billing ? (
@@ -710,7 +742,9 @@ export function WorkspaceDangerSettings() {
 
   if (!workspace) {
     return (
-      <p className="text-sm text-muted-foreground">Workspace not found.</p>
+      <p className="text-sm text-muted-foreground">
+        This workspace is unavailable or you no longer have access to it.
+      </p>
     );
   }
 
@@ -723,22 +757,23 @@ export function WorkspaceDangerSettings() {
   }
 
   return (
-    <div className="flex max-w-lg flex-col gap-3 rounded-lg border border-destructive/30 p-4">
+    <section className="flex max-w-lg flex-col gap-3 rounded-xl border border-destructive/30 p-5">
+      <h2 className="text-sm font-medium text-destructive">Danger zone</h2>
       <SettingsError error={error} />
       {isPersonal ? (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs leading-5 text-muted-foreground">
           Your personal workspace cannot be deleted. It is created with your
           encryption setup and anchors your account.
         </p>
       ) : (
         <>
-          <p className="text-xs text-muted-foreground">
+          <p className="text-xs leading-5 text-muted-foreground">
             Permanently delete this workspace and all projects, tasks, notes,
             contacts, files, invitations, and sharing. This cannot be undone.
             Helvety cannot recover deleted data.
           </p>
           {needsBillingCancel ? (
-            <p className="text-xs text-muted-foreground">
+            <p className="text-xs leading-5 text-muted-foreground">
               Cancel the Pro subscription in Manage billing before deleting this
               workspace.
             </p>
@@ -780,6 +815,6 @@ export function WorkspaceDangerSettings() {
           />
         </>
       )}
-    </div>
+    </section>
   );
 }

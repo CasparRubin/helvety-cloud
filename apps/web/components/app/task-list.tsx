@@ -434,11 +434,11 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
             />
           }
           nativeButton={false}
-          aria-label={projectId ? "Project settings" : "Workspace settings"}
+          aria-label={projectId ? "Project settings" : "Task stage settings"}
         >
           <SettingsIcon />
           <span className="hidden sm:inline">
-            {projectId ? "Project settings" : "Workspace settings"}
+            {projectId ? "Project settings" : "Task stage settings"}
           </span>
         </Button>
       </PageSettingsActions>
@@ -645,7 +645,7 @@ function StageRow({
       <div className="flex flex-col">
         {tasks.length === 0 ? (
           <EntityListEmpty className="m-2 px-3 py-4 text-center text-xs">
-            No tasks in this stage
+            No tasks in this stage yet.
           </EntityListEmpty>
         ) : (
           <>
@@ -678,8 +678,14 @@ function StageRow({
                     setVisibleCount((prev) => prev + limit)
                   }
                 >
-                  Show more ({remaining} remaining)
+                  Show {Math.min(limit, remaining)} more task
+                  {Math.min(limit, remaining) === 1 ? "" : "s"} ({remaining} remaining)
                 </Button>
+                <p className="mt-1 text-[11px] leading-5 text-muted-foreground">
+                  This stage is showing {limit} task
+                  {limit === 1 ? "" : "s"} at a time. Change that in Task stage
+                  settings.
+                </p>
               </div>
             ) : null}
           </>
