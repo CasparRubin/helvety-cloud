@@ -56,9 +56,9 @@ const STAGE_NAMES = [
 const PRIORITY_NAMES = ["Low", "Normal", "High", "Urgent"] as const;
 
 const DEFAULT_LABEL_COLORS: Record<(typeof LABEL_NAMES)[number], EntityColor> = {
-  Bug: "red",
-  "New Feature": "teal",
-  "Change Request": "pink",
+  Bug: "violet",
+  "New Feature": "blue",
+  "Change Request": "teal",
 };
 
 const DEFAULT_PRIORITY_COLORS: Record<
@@ -66,9 +66,9 @@ const DEFAULT_PRIORITY_COLORS: Record<
   EntityColor
 > = {
   Low: "slate",
-  Normal: "blue",
-  High: "violet",
-  Urgent: "pink",
+  Normal: "amber",
+  High: "orange",
+  Urgent: "red",
 };
 
 /** Default colors for seeded stage names (also used when stage.color is missing). */
@@ -79,8 +79,8 @@ const DEFAULT_STAGE_COLORS: Record<
   Backlog: "slate",
   Discovery: "violet",
   Ready: "blue",
-  "In Progress": "amber",
-  Testing: "teal",
+  "In Progress": "teal",
+  Testing: "amber",
   Acceptance: "orange",
   Completed: "green",
   Cancelled: "red",

@@ -13,14 +13,14 @@ describe("categorization colors", () => {
       cats.priorities.map((s) => [s.name, s.color]),
     );
 
-    expect(labelByName.Bug).toBe("red");
-    expect(labelByName["New Feature"]).toBe("teal");
-    expect(labelByName["Change Request"]).toBe("pink");
+    expect(labelByName.Bug).toBe("violet");
+    expect(labelByName["New Feature"]).toBe("blue");
+    expect(labelByName["Change Request"]).toBe("teal");
 
     expect(priorityByName.Low).toBe("slate");
-    expect(priorityByName.Normal).toBe("blue");
-    expect(priorityByName.High).toBe("violet");
-    expect(priorityByName.Urgent).toBe("pink");
+    expect(priorityByName.Normal).toBe("amber");
+    expect(priorityByName.High).toBe("orange");
+    expect(priorityByName.Urgent).toBe("red");
   });
 
   it("seeds default stages with EntityColor tokens", () => {
@@ -29,14 +29,14 @@ describe("categorization colors", () => {
       cats.stages.map((s) => [s.name, s.color]),
     );
     expect(byName.Backlog).toBe("slate");
-    expect(byName["In Progress"]).toBe("amber");
+    expect(byName["In Progress"]).toBe("teal");
     expect(byName.Completed).toBe("green");
     expect(byName.Cancelled).toBe("red");
   });
 
   it("resolveStageColor prefers stored color then name map", () => {
     expect(resolveStageColor({ name: "custom", color: "pink" })).toBe("pink");
-    expect(resolveStageColor({ name: "In Progress" })).toBe("amber");
+    expect(resolveStageColor({ name: "In Progress" })).toBe("teal");
     expect(resolveStageColor({ name: "unknown-stage" })).toBeUndefined();
   });
 });
