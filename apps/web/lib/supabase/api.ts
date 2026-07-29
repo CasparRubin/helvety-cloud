@@ -68,7 +68,11 @@ export async function requireUser(
   } = await supabase.auth.getUser();
 
   if (error || !user) {
-    return apiError("unauthorized", "Invalid or expired access token", 401);
+    const raw = error?.message ?? "";
+    const msg = raw.includes("issued at future")
+      ? "Your session token is invalid due to a clock skew. Sign out and sign in again."
+      : "Invalid or expired access token";
+    return apiError("unauthorized", msg, 401);
   }
 
   return { supabase, user };

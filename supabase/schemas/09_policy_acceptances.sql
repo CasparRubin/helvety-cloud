@@ -5,7 +5,7 @@ create table public.policy_acceptances (
   id uuid primary key default gen_random_uuid(),
   user_id uuid not null references auth.users (id) on delete cascade,
   policy text not null
-    check (policy in ('tos', 'privacy', 'aup', 'e2ee')),
+    check (policy in ('tos', 'privacy', 'aup', 'e2ee', 'eligibility')),
   version text not null,
   accepted_at timestamptz not null default now(),
   unique (user_id, policy, version)
