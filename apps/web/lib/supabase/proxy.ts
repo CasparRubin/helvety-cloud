@@ -1,7 +1,10 @@
+import { type User } from "@supabase/supabase-js";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
-export async function updateSession(request: NextRequest) {
+export async function updateSession(
+  request: NextRequest,
+): Promise<{ response: NextResponse; user: User | null }> {
   let supabaseResponse = NextResponse.next({
     request,
   });
@@ -41,8 +44,8 @@ export async function updateSession(request: NextRequest) {
   if (user && isLogin) {
     const url = request.nextUrl.clone();
     url.pathname = "/";
-    return NextResponse.redirect(url);
+    return { response: NextResponse.redirect(url), user };
   }
 
-  return supabaseResponse;
+  return { response: supabaseResponse, user };
 }

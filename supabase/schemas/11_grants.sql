@@ -1,4 +1,12 @@
 -- Explicit GRANTs (Data API auto-expose is OFF). No encrypted-entity access for anon.
+--
+-- PostgREST gap (future hardening): the `authenticated` role has full DML on encrypted
+-- entity tables (projects, tasks, notes, contacts, comments). An authenticated user can
+-- therefore bypass the Next.js /api/v1 layer and hit PostgREST directly with their JWT.
+-- RLS still enforces workspace membership, so they only ever receive ciphertext for
+-- workspaces they legitimately belong to. Closing this gap properly requires a dedicated
+-- Postgres role for the API layer (separate from `authenticated`) and is tracked as a
+-- future hardening phase. service_role / MCP admin access is unaffected by either approach.
 
 revoke all on table public.profiles from anon, public;
 revoke all on table public.user_crypto from anon, public;
