@@ -59,8 +59,14 @@ export type SealedKeyEnvelope = z.infer<typeof sealedKeyEnvelopeSchema>;
 
 export const uuidSchema = z.string().uuid();
 
-/** Entity kinds that can appear in entity_links (P8a). */
-export const entityLinkKinds = ["note", "task", "contact", "project"] as const;
+/** Entity kinds that can appear in entity_links (P8a / P17). */
+export const entityLinkKinds = [
+  "note",
+  "task",
+  "contact",
+  "project",
+  "board",
+] as const;
 export const entityLinkKindSchema = z.enum(entityLinkKinds);
 export type EntityLinkKind = z.infer<typeof entityLinkKindSchema>;
 
@@ -69,6 +75,7 @@ const allowedEntityLinkTargets = {
   task: ["note", "contact"],
   contact: ["note", "project", "task"],
   project: [],
+  board: ["note", "task", "contact", "project"],
 } as const satisfies Record<EntityLinkKind, readonly EntityLinkKind[]>;
 
 export function allowedLinkTargetKinds(
@@ -354,6 +361,37 @@ export const listNotesResponseSchema = z.object({
   nextCursor: z.string().nullable(),
 });
 export type ListNotesResponse = z.infer<typeof listNotesResponseSchema>;
+
+export const putBoardRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int().optional(),
+  isPinned: z.boolean().optional(),
+  pinSortOrder: z.number().int().nullable().optional(),
+  deletedAt: z.string().nullable().optional(),
+  /** Replace outgoing entity_links (note/task/contact/project) when provided. */
+  links: z.array(entityLinkTargetSchema).optional(),
+});
+export type PutBoardRequest = z.infer<typeof putBoardRequestSchema>;
+
+export const boardResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  links: z.array(entityLinkTargetSchema),
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int(),
+  isPinned: z.boolean(),
+  pinSortOrder: z.number().int().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type BoardResponse = z.infer<typeof boardResponseSchema>;
+
+export const listBoardsResponseSchema = z.object({
+  boards: z.array(boardResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListBoardsResponse = z.infer<typeof listBoardsResponseSchema>;
 
 export const entityLinkEdgeSchema = z.object({
   id: uuidSchema,

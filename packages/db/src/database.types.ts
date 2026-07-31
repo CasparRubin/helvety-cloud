@@ -138,6 +138,50 @@ export type Database = {
           },
         ]
       }
+      boards: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          encrypted_blob: Json
+          id: string
+          is_pinned: boolean
+          pin_sort_order: number | null
+          sort_order: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob: Json
+          id: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
+          sort_order?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob?: Json
+          id?: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "boards_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       comments: {
         Row: {
           author_id: string | null

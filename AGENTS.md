@@ -10,7 +10,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) for locked d
 4. **Free-tier infra**: Prefer omit paid SaaS (Redis, Sentry, analytics, etc.). Stripe is allowed for customer billing (**P6f** / **P12**).
 5. **Public API** = `/api/v1` + Bearer JWT. Browser may use Supabase **Auth** SDK; must **not** use PostgREST `from('…')` for encrypted entity tables.
 6. **Honesty.** Never claim Helvety can read or recover encrypted data. Live legal pack + acceptance gates (P-legal2); optional counsel is a business choice.
-7. **Workspace-scoped encryption.** All encrypted entities (projects, tasks, notes, contacts, comments) live in a workspace. **Personal workspace** on first encryption setup. No user-global contacts/notes store; no `workspace_id = null`.
+7. **Workspace-scoped encryption.** All encrypted entities (projects, tasks, notes, contacts, boards, comments) live in a workspace. **Personal workspace** on first encryption setup. No user-global contacts/notes store; no `workspace_id = null`.
 8. **Keep brand design masters.** Never delete [`docs/assets/icon.af`](docs/assets/icon.af) on cleanup (see [`docs/assets/README.md`](docs/assets/README.md)).
 
 ## Stack (locked)
@@ -57,6 +57,7 @@ Read [`docs/architecture/ROADMAP.md`](docs/architecture/ROADMAP.md) for locked d
 | P14 | Encrypted names + milestone dates + progress chart | **Done** |
 | P15 | i18n (en/de/fr/it) via next-intl | **Reverted** (English only) |
 | P16 | Encrypted comments on tasks/notes/contacts | **Done** |
+| P17 | Boards (React Flow BPMN-inspired E2EE canvas) | **Done** |
 
 ## Tooling
 

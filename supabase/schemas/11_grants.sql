@@ -1,7 +1,7 @@
 -- Explicit GRANTs (Data API auto-expose is OFF). No encrypted-entity access for anon.
 --
 -- PostgREST gap (future hardening): the `authenticated` role has full DML on encrypted
--- entity tables (projects, tasks, notes, contacts, comments). An authenticated user can
+-- entity tables (projects, tasks, notes, contacts, boards, comments). An authenticated user can
 -- therefore bypass the Next.js /api/v1 layer and hit PostgREST directly with their JWT.
 -- RLS still enforces workspace membership, so they only ever receive ciphertext for
 -- workspaces they legitimately belong to. Closing this gap properly requires a dedicated

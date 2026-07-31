@@ -31,6 +31,8 @@ function kindLabel(kind: EntityLinkKind): string {
       return "Contact";
     case "project":
       return "Project";
+    case "board":
+      return "Board";
     default: {
       const _exhaustive: never = kind;
       return _exhaustive;

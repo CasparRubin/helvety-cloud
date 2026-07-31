@@ -14,7 +14,7 @@ import { Paperclip } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { ApiClientError } from "@/lib/api/v1-client";
-import { EntityRef } from "@/lib/editor/entity-ref-extension";
+import { EntityRef, type EntityRefAttrs } from "@/lib/editor/entity-ref-extension";
 import { FileAttachment } from "@/lib/editor/file-attachment-extension";
 import { uploadEncryptedAttachment } from "@/lib/client-crypto/attachments";
 import type { TaskBodyDoc } from "@/lib/client-crypto/task-plaintext";
@@ -217,12 +217,22 @@ export function TaskBodyEditor({
     setBusy(true);
     try {
       const target = await onEntityLinkAction(action);
-      if (target) {
+      if (
+        target &&
+        (target.kind === "note" ||
+          target.kind === "task" ||
+          target.kind === "contact" ||
+          target.kind === "project")
+      ) {
+        const attrs: EntityRefAttrs = {
+          kind: target.kind,
+          id: target.id,
+        };
         editor
           .chain()
           .focus()
           .deleteRange({ from, to })
-          .insertEntityRef(target)
+          .insertEntityRef(attrs)
           .run();
       }
       setShowLinkPicker(false);

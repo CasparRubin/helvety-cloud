@@ -7,14 +7,21 @@ import { ChevronLeftIcon, SlashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type AppNavEntity = {
-  kind: "project" | "note" | "contact";
+  kind: "project" | "note" | "contact" | "board";
   id: string;
 };
 
 type AppNavLocation = {
   workspaceId: string;
   workspaceBase: string;
-  section: "projects" | "tasks" | "notes" | "contacts" | "settings" | null;
+  section:
+    | "projects"
+    | "tasks"
+    | "notes"
+    | "contacts"
+    | "boards"
+    | "settings"
+    | null;
   entity: AppNavEntity | null;
   taskId: string | null;
   /** Nested project settings under /p/{id}/settings. */
@@ -64,6 +71,14 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
     };
   }
 
+  if (section === "boards") {
+    return {
+      ...base,
+      section: "boards",
+      entity: entityId ? { kind: "board", id: entityId } : null,
+    };
+  }
+
   if (section === "tasks") {
     return {
       ...base,
@@ -97,6 +112,8 @@ export function parentHrefFor(location: AppNavLocation): string | null {
         return `${workspaceBase}/notes`;
       case "contact":
         return `${workspaceBase}/contacts`;
+      case "board":
+        return `${workspaceBase}/boards`;
       default: {
         const _exhaustive: never = entity.kind;
         return _exhaustive;

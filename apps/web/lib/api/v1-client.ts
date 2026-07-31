@@ -17,6 +17,7 @@ import {
   listMilestonesResponseSchema,
   listMyInvitationsResponseSchema,
   listNotesResponseSchema,
+  listBoardsResponseSchema,
   listEntityLinksResponseSchema,
   listProjectsResponseSchema,
   milestoneResponseSchema,
@@ -24,6 +25,7 @@ import {
   listWorkspaceMembersResponseSchema,
   listWorkspacesResponseSchema,
   noteResponseSchema,
+  boardResponseSchema,
   patchWorkspaceRequestSchema,
   patchWorkspaceResponseSchema,
   projectResponseSchema,
@@ -36,6 +38,7 @@ import {
   putMePolicyAcceptancesRequestSchema,
   putMePolicyAcceptancesResponseSchema,
   putNoteRequestSchema,
+  putBoardRequestSchema,
   putProjectRequestSchema,
   sealWorkspaceInvitationRequestSchema,
   workspaceInvitationSchema,
@@ -62,12 +65,14 @@ import {
   type ListMilestonesResponse,
   type ListMyInvitationsResponse,
   type ListNotesResponse,
+  type ListBoardsResponse,
   type ListEntityLinksResponse,
   type ListProjectsResponse,
   type ListWorkspaceInvitationsResponse,
   type ListWorkspaceMembersResponse,
   type ListWorkspacesResponse,
   type NoteResponse,
+  type BoardResponse,
   type PatchWorkspaceRequest,
   type PatchWorkspaceResponse,
   type ProjectResponse,
@@ -81,6 +86,7 @@ import {
   type PutMePolicyAcceptancesRequest,
   type PutMePolicyAcceptancesResponse,
   type PutNoteRequest,
+  type PutBoardRequest,
   type PutProjectRequest,
   type SealWorkspaceInvitationRequest,
   type WorkspaceInvitation,
@@ -527,6 +533,55 @@ export async function deleteNote(
   await apiFetchNoContent(`/api/v1/workspaces/${workspaceId}/notes/${noteId}`, {
     method: "DELETE",
   });
+}
+
+export type ListBoardsParams = ListParams;
+
+export async function listBoards(
+  workspaceId: string,
+  params?: ListBoardsParams,
+): Promise<ListBoardsResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/boards${listQuery(params)}`,
+    listBoardsResponseSchema,
+  );
+}
+
+export async function getBoard(
+  workspaceId: string,
+  boardId: string,
+): Promise<BoardResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/boards/${boardId}`,
+    boardResponseSchema,
+  );
+}
+
+export async function putBoard(
+  workspaceId: string,
+  boardId: string,
+  body: PutBoardRequest,
+): Promise<BoardResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/boards/${boardId}`,
+    boardResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putBoardRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function deleteBoard(
+  workspaceId: string,
+  boardId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/boards/${boardId}`,
+    {
+      method: "DELETE",
+    },
+  );
 }
 
 export type ListEntityLinksParams = {

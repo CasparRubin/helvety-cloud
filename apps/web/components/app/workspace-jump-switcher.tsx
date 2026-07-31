@@ -7,6 +7,7 @@ import {
   ContactIcon,
   FolderKanbanIcon,
   StickyNoteIcon,
+  WorkflowIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -26,6 +27,10 @@ import {
 } from "@/components/ui/popover";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import type { AppNavEntity } from "@/components/app/workspace-nav";
+import {
+  loadDecryptedBoards,
+  type DecryptedBoard,
+} from "@/lib/client-crypto/boards";
 import {
   loadDecryptedContacts,
   type DecryptedContact,
@@ -58,6 +63,7 @@ const entryIcons: Record<JumpEntryKind, LucideIcon> = {
   project: FolderKanbanIcon,
   note: StickyNoteIcon,
   contact: ContactIcon,
+  board: WorkflowIcon,
 };
 
 export function WorkspaceJumpSwitcher({
@@ -71,18 +77,22 @@ export function WorkspaceJumpSwitcher({
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
+  const [boards, setBoards] = useState<DecryptedBoard[]>([]);
 
   const loadEntries = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
-    const [projectsPage, notesPage, contactsPage] = await Promise.all([
-      loadDecryptedProjects(workspaceId, key, { limit: 100 }),
-      loadDecryptedNotes(workspaceId, key, { limit: 100 }),
-      loadDecryptedContacts(workspaceId, key, { limit: 100 }),
-    ]);
+    const [projectsPage, notesPage, contactsPage, boardsPage] =
+      await Promise.all([
+        loadDecryptedProjects(workspaceId, key, { limit: 100 }),
+        loadDecryptedNotes(workspaceId, key, { limit: 100 }),
+        loadDecryptedContacts(workspaceId, key, { limit: 100 }),
+        loadDecryptedBoards(workspaceId, key, { limit: 100 }),
+      ]);
     return {
       projects: projectsPage.projects,
       notes: notesPage.notes,
       contacts: contactsPage.contacts,
+      boards: boardsPage.boards,
     };
   }, [getWorkspaceKey, workspaceId]);
 
@@ -91,6 +101,7 @@ export function WorkspaceJumpSwitcher({
     setProjects(next.projects);
     setNotes(next.notes);
     setContacts(next.contacts);
+    setBoards(next.boards);
   }, [loadEntries]);
 
   useEffect(() => {
@@ -103,11 +114,13 @@ export function WorkspaceJumpSwitcher({
         setProjects(next.projects);
         setNotes(next.notes);
         setContacts(next.contacts);
+        setBoards(next.boards);
       } catch {
         if (!cancelled) {
           setProjects([]);
           setNotes([]);
           setContacts([]);
+          setBoards([]);
         }
       }
     })();
@@ -151,6 +164,12 @@ export function WorkspaceJumpSwitcher({
       name: formatContactName(c) || "Unnamed contact",
       href: `${base}/contacts/${c.id}`,
     })),
+    board: boards.map((b) => ({
+      kind: "board",
+      id: b.id,
+      name: b.title || "Untitled board",
+      href: `${base}/boards/${b.id}`,
+    })),
   };
 
   const activeName =
@@ -166,11 +185,15 @@ export function WorkspaceJumpSwitcher({
     contact: q
       ? entries.contact.filter((e) => e.name.toLowerCase().includes(q))
       : entries.contact,
+    board: q
+      ? entries.board.filter((e) => e.name.toLowerCase().includes(q))
+      : entries.board,
   };
 
   const groups: { heading: string; items: JumpEntry[] }[] = [
     { heading: "Projects", items: filtered.project },
     { heading: "Notes", items: filtered.note },
+    { heading: "Boards", items: filtered.board },
     { heading: "Contacts", items: filtered.contact },
   ];
   const nothingFound = groups.every((g) => g.items.length === 0);
@@ -201,7 +224,7 @@ export function WorkspaceJumpSwitcher({
       <PopoverContent className="w-72 p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search projects, notes, contacts…"
+            placeholder="Search projects, notes, boards, contacts…"
             value={query}
             onValueChange={setQuery}
           />

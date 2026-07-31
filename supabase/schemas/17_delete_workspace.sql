@@ -1,5 +1,5 @@
 -- Member hard delete for a non-personal workspace.
--- Cascades via FKs wipe members, projects, tasks, notes, contacts,
+-- Cascades via FKs wipe members, projects, tasks, notes, contacts, boards,
 -- invitations, and subscriptions. wrapped_keys has no FK on subject_id,
 -- so workspace + project wraps are deleted explicitly here.
 -- Shared by delete_workspace and leave_workspace (solo leave = wipe).

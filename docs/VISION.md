@@ -12,13 +12,13 @@ Swiss (Helvety, Einzelfirma) E2EE workspace product on **helvety.cloud**. Greenf
 
 | Shipped | Don’t | Later |
 |---------|--------|--------|
-| Passwordless auth (email OTP) | Passwords; company master key / escrow; Supabase Auth passkeys | Milestone diagrams |
-| Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Sync push/pull batch API |
-| Workspace-scoped projects/tasks/notes/contacts/comments/milestones/files | Browser PostgREST for encrypted data | Extension, Tauri, calendar send-to |
-| `/api/v1` + TipTap + workspace sharing | Paid Redis/Sentry/analytics | Deprecate old helvety.com apps |
-| Recovery key (user-held) + Personal workspace | “Email reset restores encrypted data” | Copy-contact-across-workspaces UX |
-| Legal pack + acceptance; Stripe Free/Pro Workspace/Capacity Increase | Misleading E2EE marketing | Optional Swiss counsel; GmbH if desired |
-| Labels/stages/priorities + entity links + stage board | Radix shadcn; unused SaaS | Further Linear-like polish |
+| Passwordless auth (email OTP) | Passwords; company master key / escrow; Supabase Auth passkeys | Sync push/pull batch API |
+| Client E2EE; Helvety cannot decrypt | Copying old Helvety apps/UI/crypto | Extension, Tauri, calendar send-to |
+| Workspace-scoped projects/tasks/notes/contacts/boards/comments/milestones/files | Browser PostgREST for encrypted data | Deprecate old helvety.com apps |
+| `/api/v1` + TipTap + workspace sharing | Paid Redis/Sentry/analytics | Copy-contact-across-workspaces UX |
+| Recovery key (user-held) + Personal workspace | “Email reset restores encrypted data” | Optional Swiss counsel; GmbH if desired |
+| Legal pack + acceptance; Stripe Free/Pro Workspace/Capacity Increase | Misleading E2EE marketing | Further Linear-like polish |
+| Labels/stages/priorities + entity links + stage board + BPMN boards | Radix shadcn; unused SaaS | |
 | Encrypted workspace names, milestone dates, progress chart | Multi-locale UI (attempted, reverted; English only) | |
 | Dense shadcn + Base UI | | |
 

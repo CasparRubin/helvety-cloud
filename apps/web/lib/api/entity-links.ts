@@ -91,6 +91,18 @@ export async function validateLinkTargetsInWorkspace(
           return { ok: false, message: `task ${link.id} not in workspace` };
         break;
       }
+      case "board": {
+        const { data, error } = await supabase
+          .from("boards")
+          .select("id")
+          .eq("id", link.id)
+          .eq("workspace_id", workspaceId)
+          .maybeSingle();
+        if (error) return { ok: false, message: error.message };
+        if (!data)
+          return { ok: false, message: `board ${link.id} not in workspace` };
+        break;
+      }
       default: {
         const _exhaustive: never = link.kind;
         return { ok: false, message: `unknown kind ${_exhaustive}` };

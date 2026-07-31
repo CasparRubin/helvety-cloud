@@ -245,6 +245,17 @@ export function EntityCacheProvider({
             icon: stage?.icon,
           };
         }
+        case "board": {
+          return {
+            kind,
+            id,
+            label: "Board",
+            color: fallback,
+            href: `/app/w/${workspaceId}/boards/${id}`,
+            deleted: false,
+            done: false,
+          };
+        }
         default: {
           const _exhaustive: never = kind;
           return {
