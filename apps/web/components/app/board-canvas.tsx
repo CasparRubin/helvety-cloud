@@ -14,10 +14,13 @@ import {
   type Edge,
   type Node,
   type OnMoveEnd,
+  type OnNodesChange,
   type Viewport,
 } from "@xyflow/react";
 import "@xyflow/react/dist/style.css";
+import { useTheme } from "@wrksz/themes/client";
 import {
+  BotIcon,
   CircleIcon,
   DiamondIcon,
   FolderKanbanIcon,
@@ -26,11 +29,14 @@ import {
   ListTodoIcon,
   StickyNoteIcon,
   SquareIcon,
+  UserIcon,
+  UsersIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 
-import { boardNodeTypes } from "@/components/app/board-nodes";
+import { boardEdgeTypes, withoutEdgeEditing } from "@/components/app/board-edge";
+import { boardNodeTypes, type BoardNodeColors } from "@/components/app/board-nodes";
 import { useEntityCache } from "@/components/unlock/entity-cache";
 import { Button } from "@/components/ui/button";
 import {
@@ -47,6 +53,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { snapDraggedNodePosition } from "@/lib/client-crypto/board-edge-snap";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import type {
   BoardGraphEdge,
@@ -93,6 +100,7 @@ function toFlowEdges(edges: BoardGraphEdge[]): Edge[] {
     sourceHandle: e.sourceHandle ?? undefined,
     targetHandle: e.targetHandle ?? undefined,
     type: e.type ?? "smoothstep",
+    label: e.label,
     markerEnd: defaultEdgeOptions.markerEnd,
   }));
 }
@@ -109,14 +117,20 @@ function fromFlowNodes(nodes: Node[]): BoardGraphNode[] {
 }
 
 function fromFlowEdges(edges: Edge[]): BoardGraphEdge[] {
-  return edges.map((e) => ({
-    id: e.id,
-    source: e.source,
-    target: e.target,
-    sourceHandle: e.sourceHandle ?? null,
-    targetHandle: e.targetHandle ?? null,
-    type: e.type,
-  }));
+  return edges.map((e) => {
+    const edge: BoardGraphEdge = {
+      id: e.id,
+      source: e.source,
+      target: e.target,
+      sourceHandle: e.sourceHandle ?? null,
+      targetHandle: e.targetHandle ?? null,
+      type: e.type,
+    };
+    if (typeof e.label === "string" && e.label.length > 0) {
+      edge.label = e.label;
+    }
+    return edge;
+  });
 }
 
 function BoardCanvasInner({
@@ -127,8 +141,10 @@ function BoardCanvasInner({
   onViewportIdle,
 }: BoardCanvasProps) {
   const { screenToFlowPosition, getViewport } = useReactFlow();
+  const { resolvedTheme } = useTheme();
+  const colorMode = resolvedTheme === "dark" ? "dark" : "light";
   const cache = useEntityCache();
-  const [nodes, setNodes, onNodesChange] = useNodesState(
+  const [nodes, setNodes, onNodesChangeBase] = useNodesState(
     toFlowNodes(initialNodes),
   );
   const [edges, setEdges, onEdgesChange] = useEdgesState(
@@ -139,6 +155,16 @@ function BoardCanvasInner({
   const lastClickRef = useRef<{ x: number; y: number } | null>(null);
   const onGraphChangeRef = useRef(onGraphChange);
   const skipEmitRef = useRef(true);
+  const nodesRef = useRef(nodes);
+  const edgesRef = useRef(edges);
+
+  useEffect(() => {
+    nodesRef.current = nodes;
+  }, [nodes]);
+
+  useEffect(() => {
+    edgesRef.current = edges;
+  }, [edges]);
 
   useEffect(() => {
     onGraphChangeRef.current = onGraphChange;
@@ -154,6 +180,26 @@ function BoardCanvasInner({
       edges: fromFlowEdges(edges),
     });
   }, [nodes, edges]);
+
+  const onNodesChange: OnNodesChange = useCallback(
+    (changes) => {
+      const current = nodesRef.current;
+      const graphEdges = edgesRef.current;
+      const next = changes.map((change) => {
+        if (change.type !== "position" || !change.position) return change;
+        const node = current.find((n) => n.id === change.id);
+        if (!node) return change;
+        const snapped = snapDraggedNodePosition(
+          { ...node, position: change.position },
+          current,
+          graphEdges,
+        );
+        return { ...change, position: snapped };
+      });
+      onNodesChangeBase(next);
+    },
+    [onNodesChangeBase],
+  );
 
   const onConnect = useCallback(
     (connection: Connection) => {
@@ -204,6 +250,58 @@ function BoardCanvasInner({
     },
     [onViewportIdle],
   );
+
+  const onEdgeDoubleClick = useCallback(
+    (_event: unknown, edge: Edge) => {
+      setEdges((eds) =>
+        eds.map((ed) => {
+          if (ed.id === edge.id) {
+            return {
+              ...ed,
+              data: { ...(ed.data as object), editing: true },
+            };
+          }
+          return { ...ed, data: withoutEdgeEditing(ed.data) };
+        }),
+      );
+    },
+    [setEdges],
+  );
+
+  const selectedColorNode = nodes.find(
+    (n) => n.selected && n.type !== "entityRef",
+  );
+  const selectedColors = (
+    selectedColorNode?.data as { colors?: BoardNodeColors } | undefined
+  )?.colors;
+
+  function patchSelectedColors(patch: Partial<BoardNodeColors> | null) {
+    if (!selectedColorNode) return;
+    const targetId = selectedColorNode.id;
+    setNodes((nds) =>
+      nds.map((n) => {
+        if (n.id !== targetId) return n;
+        if (patch === null) {
+          const { colors: _c, ...rest } = (n.data ?? {}) as Record<
+            string,
+            unknown
+          >;
+          void _c;
+          return { ...n, data: rest };
+        }
+        return {
+          ...n,
+          data: {
+            ...n.data,
+            colors: {
+              ...((n.data?.colors ?? {}) as BoardNodeColors),
+              ...patch,
+            },
+          },
+        };
+      }),
+    );
+  }
 
   const q = placeQuery.trim().toLowerCase();
   const placeItems = (() => {
@@ -270,6 +368,24 @@ function BoardCanvasInner({
               data: { label: "Task" },
             },
             {
+              key: "userTask",
+              label: "User task",
+              icon: UserIcon,
+              data: { label: "User task" },
+            },
+            {
+              key: "serviceTask",
+              label: "Service",
+              icon: BotIcon,
+              data: { label: "Service" },
+            },
+            {
+              key: "participant",
+              label: "Participant",
+              icon: UsersIcon,
+              data: { label: "Role" },
+            },
+            {
               key: "exclusiveGateway",
               label: "Gateway",
               icon: DiamondIcon,
@@ -327,12 +443,56 @@ function BoardCanvasInner({
         ))}
       </div>
 
+      {selectedColorNode ? (
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-md border bg-background/95 px-2 py-1.5 text-[10px] shadow-sm">
+          <label className="flex items-center gap-1 text-muted-foreground">
+            Border
+            <input
+              type="color"
+              className="size-5 cursor-pointer rounded border-0 bg-transparent p-0"
+              value={selectedColors?.border ?? "#737373"}
+              onChange={(e) => patchSelectedColors({ border: e.target.value })}
+            />
+          </label>
+          <label className="flex items-center gap-1 text-muted-foreground">
+            Fill
+            <input
+              type="color"
+              className="size-5 cursor-pointer rounded border-0 bg-transparent p-0"
+              value={selectedColors?.background ?? "#ffffff"}
+              onChange={(e) =>
+                patchSelectedColors({ background: e.target.value })
+              }
+            />
+          </label>
+          <label className="flex items-center gap-1 text-muted-foreground">
+            Text
+            <input
+              type="color"
+              className="size-5 cursor-pointer rounded border-0 bg-transparent p-0"
+              value={selectedColors?.text ?? "#0a0a0a"}
+              onChange={(e) => patchSelectedColors({ text: e.target.value })}
+            />
+          </label>
+          <Button
+            type="button"
+            size="xs"
+            variant="ghost"
+            className="h-6 px-1.5"
+            onClick={() => patchSelectedColors(null)}
+          >
+            Reset
+          </Button>
+        </div>
+      ) : null}
+
       <ReactFlow
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onEdgeDoubleClick={onEdgeDoubleClick}
         onPaneClick={(e) => {
           lastClickRef.current = screenToFlowPosition({
             x: e.clientX,
@@ -341,9 +501,11 @@ function BoardCanvasInner({
         }}
         onMoveEnd={onMoveEnd}
         nodeTypes={boardNodeTypes}
+        edgeTypes={boardEdgeTypes}
         defaultEdgeOptions={defaultEdgeOptions}
         defaultViewport={initialViewport ?? { x: 0, y: 0, zoom: 1 }}
         fitView={!initialViewport}
+        colorMode={colorMode}
         deleteKeyCode={["Backspace", "Delete"]}
         proOptions={{ hideAttribution: true }}
         className="bg-muted/20"

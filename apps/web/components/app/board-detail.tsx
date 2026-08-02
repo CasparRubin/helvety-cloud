@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import {
   BoardCanvas,
@@ -12,6 +12,7 @@ import { EntityErrorAlert } from "@/components/app/entity-list-shell";
 import { InlineTitle } from "@/components/app/inline-title";
 import { PageDangerActions } from "@/components/app/page-actions";
 import { SaveStatus } from "@/components/app/save-status";
+import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
 import { useAutosave } from "@/lib/hooks/use-autosave";
@@ -84,7 +85,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
     };
   }, [userKeys, workspaceId, boardId, getWorkspaceKey]);
 
-  const draft: BoardDraft = { title, nodes, edges, viewport };
+  const draft = useMemo<BoardDraft>(
+    () => ({ title, nodes, edges, viewport }),
+    [title, nodes, edges, viewport],
+  );
 
   const { status, savedAt, flush } = useAutosave({
     draft,
@@ -110,12 +114,6 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
     },
     onError: (message) => setError(message),
   });
-
-  useEffect(() => {
-    return () => {
-      flush();
-    };
-  }, [flush]);
 
   const onGraphChange = useCallback((graph: BoardCanvasGraph) => {
     setNodes(graph.nodes);
@@ -182,11 +180,18 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
             className="text-lg"
           />
         </div>
-        <SaveStatus
-          status={status}
-          savedAt={savedAt}
-          onRetry={() => flush()}
-        />
+        <div className="flex shrink-0 items-center gap-2">
+          <SaveStatus status={status} savedAt={savedAt} onRetry={flush} />
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            disabled={status !== "dirty" && status !== "error"}
+            onClick={flush}
+          >
+            Save
+          </Button>
+        </div>
       </div>
       <div className="min-h-0 flex-1">
         <BoardCanvas

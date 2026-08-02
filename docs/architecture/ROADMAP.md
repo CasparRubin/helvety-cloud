@@ -129,7 +129,7 @@ helvety-cloud/
 
 **P15 note:** i18n was attempted and reverted. Product copy stays English-only.
 
-**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (BPMN-inspired shapes + placeable note/contact/task/project nodes). Canvas edges stay in ciphertext; placed entities sync to `entity_links`.
+**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (BPMN-inspired shapes including participant / user task / service task, per-node border/fill/text colors, labeled edges, plus placeable note/contact/task/project nodes). Canvas edges stay in ciphertext; placed entities sync to `entity_links`.
 
 ---
 

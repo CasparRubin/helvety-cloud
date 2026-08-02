@@ -26,6 +26,7 @@ export type BoardGraphEdge = {
   sourceHandle?: string | null;
   targetHandle?: string | null;
   type?: string;
+  label?: string;
 };
 
 export type BoardPlaintext = {
@@ -96,6 +97,7 @@ function parseEdge(raw: unknown): BoardGraphEdge | null {
   if (obj.targetHandle === null || typeof obj.targetHandle === "string") {
     edge.targetHandle = obj.targetHandle;
   }
+  if (typeof obj.label === "string") edge.label = obj.label;
   return edge;
 }
 
@@ -157,6 +159,7 @@ export function toBoardPlaintext(input: {
       sourceHandle: e.sourceHandle,
       targetHandle: e.targetHandle,
       type: e.type,
+      label: e.label,
     })),
   };
 }
