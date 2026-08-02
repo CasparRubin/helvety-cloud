@@ -12,6 +12,7 @@ import {
 } from "@/components/ui/card";
 import {
   CAPACITY_PACK,
+  DISPLAY_PRICES,
   PLAN_LIMITS,
   formatBytes,
 } from "@/lib/billing/entitlements";
@@ -313,7 +314,11 @@ export default function PricingPage() {
             tone="pro"
             eyebrow="Workspace subscription"
             title="Pro Workspace"
-            price={{ amount: "250", currency: "CHF", suffix: "/ YEARLY" }}
+            price={{
+              amount: DISPLAY_PRICES.proWorkspaceYearly,
+              currency: DISPLAY_PRICES.currency,
+              suffix: "/ YEARLY",
+            }}
             summary="One paid workspace, billed yearly."
             subtitle="Higher limits plus encrypted file and document storage."
             rows={proRows}
@@ -330,15 +335,19 @@ export default function PricingPage() {
             tone="capacity"
             eyebrow="Optional add-on"
             title="Pro Workspace Capacity Increase"
-            price={{ amount: "99", currency: "CHF", suffix: "/ YEARLY" }}
+            price={{
+              amount: DISPLAY_PRICES.capacityIncreaseYearly,
+              currency: DISPLAY_PRICES.currency,
+              suffix: "/ YEARLY",
+            }}
             summary="Per extra pack, billed yearly."
             subtitle="Additional room for a paid Pro Workspace."
             rows={capacityRows}
             footer={
               <>
                 Requires an active Pro Workspace. Sign in as a workspace member,
-                open Workspace settings → Billing → Add-ons, then choose Add or
-                change (opens the Stripe billing portal).
+                open Workspace settings → Billing → Add-ons, then set the pack
+                quantity and choose Update.
               </>
             }
           />
@@ -365,8 +374,8 @@ export default function PricingPage() {
               <InfoBlock title="Where to buy">
                 Upgrade a Free Workspace in Workspace settings → Billing, or
                 create another workspace with New Pro workspace (Checkout opens
-                after create). For Capacity Increase packs, members use Add or
-                change under Add-ons (Stripe billing portal).
+                after create). For Capacity Increase packs, members set the
+                quantity under Add-ons on the Billing page.
               </InfoBlock>
               <InfoBlock title="Pro Workspace Capacity Increase">
                 Pro Workspace Capacity Increase is an optional add-on for a paid

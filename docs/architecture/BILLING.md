@@ -80,12 +80,24 @@ subscription. Effective limit =
 catalog[plan][meter] + (capacity_quantity × pack_delta)
 ```
 
+## Display prices
+
+Marketing amounts on `/pricing` come from `DISPLAY_PRICES` in
+`entitlements.ts` (must match live Stripe Prices):
+
+| Offering | Amount | Interval |
+| -------- | ------ | -------- |
+| Free Workspace | CHF 0 | n/a |
+| Pro Workspace | CHF **250** | yearly |
+| Capacity Increase | CHF **99** | yearly |
+
 ## Stripe discounts
 
 Create coupons and promotion codes in the Stripe Dashboard. Checkout enables
 `allow_promotion_codes`, so members can enter a code during upgrade. A 100% off
 coupon still creates a normal Pro subscription at zero cost. It is not an
-app-defined unlimited mode.
+app-defined unlimited mode. Prefer finite `max_redemptions` and/or expiry on
+live promotion codes; do not leave unlimited forever codes active.
 
 ## Stripe shape
 
@@ -94,33 +106,47 @@ app-defined unlimited mode.
 - Use `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`.
 - Capacity Increase env var: `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY`.
 
+### Live catalog (helvety-cloud Stripe account)
+
+| Item | ID | Notes |
+| ---- | -- | ----- |
+| Product Pro Workspace | `prod_UxgHstlS4NRbqH` | Yearly |
+| Price Pro Workspace | `price_1TxkusKB4gmrwRzWBXSg80gl` | CHF 250 / year · lookup `pro_workspace_yearly` |
+| Product Capacity Increase | `prod_UxgQNtZZ2d74Jv` | Yearly add-on |
+| Price Capacity Increase | `price_1Txl3hKB4gmrwRzWwSNDqHGJ` | CHF 99 / year · lookup `capacity_increase_yearly` |
+| Portal configuration | `bpc_1TxndqKB4gmrwRzWocwv77pt` | Default |
+| Webhook | `we_1TxnKTKB4gmrwRzW8Cfps8uq` | `https://helvety.cloud/api/webhooks/stripe` |
+
 ## Environment (server-only unless NEXT_PUBLIC_)
 
-| Var                                                   | Use                                                |
-| ----------------------------------------------------- | -------------------------------------------------- |
-| `STRIPE_SECRET_KEY`                                   | Server Stripe client                               |
-| `STRIPE_WEBHOOK_SECRET`                               | Webhook signature verification                     |
-| `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`                   | Preferred Pro Workspace price                      |
-| `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` | Capacity Increase yearly Price                     |
+| Var                                                   | Use                                            |
+| ----------------------------------------------------- | ---------------------------------------------- |
+| `STRIPE_SECRET_KEY`                                   | Server Stripe client                           |
+| `STRIPE_WEBHOOK_SECRET`                               | Webhook signature verification                 |
+| `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`                   | Pro Workspace yearly Price                     |
+| `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` | Capacity Increase yearly Price                 |
 | `SUPABASE_SERVICE_ROLE_KEY`                           | Webhook, account deletion, attachment Storage ONLY |
-| `NEXT_PUBLIC_APP_URL`                                 | Checkout success/cancel + portal return URLs       |
+| `NEXT_PUBLIC_APP_URL`                                 | Checkout success/cancel + portal return URLs   |
 
 ## Ops checklist
 
-1. Stripe Dashboard: Product `Helvety Cloud - Pro Workspace` + **yearly** Price → set `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`.
-2. Product `Helvety Cloud - Pro Workspace - Capacity Increase` + **yearly** Price → set `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY`.
+1. Stripe Dashboard: Product `Helvety Cloud - Pro Workspace` + **yearly** Price → set `STRIPE_PRICE_PRO_WORKSPACE_YEARLY` (live: `price_1TxkusKB4gmrwRzWBXSg80gl`).
+2. Product `Helvety Cloud - Pro Workspace - Capacity Increase` + **yearly** Price → set `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY` (live: `price_1Txl3hKB4gmrwRzWwSNDqHGJ`).
 3. Webhook endpoint: `https://helvety.cloud/api/webhooks/stripe` with `checkout.session.completed`, `customer.subscription.created|updated|deleted`, `invoice.payment_failed`. Save the endpoint secret as `STRIPE_WEBHOOK_SECRET`. Use a dedicated Cloud endpoint; do not reuse another product’s Stripe webhook.
    - **Must not redirect.** Stripe does not follow 308/301 on webhook delivery. Keep Vercel primary on apex `helvety.cloud` (www → apex). Point the webhook at **apex**, never at a host that 308s. After Checkout, the app also calls `POST …/billing/sync` on `?billing=success` so a missed webhook cannot leave a paid workspace on Free.
-4. Customer Portal: cancel at period end, payment method update, and quantity updates on the Capacity Increase product.
-5. Vercel: set env vars from `.env.example` (Supabase + Stripe + `NEXT_PUBLIC_APP_URL=https://helvety.cloud`).
-6. Optional: create Stripe coupons / promotion codes for testing or offers.
+4. Customer Portal: cancel at period end, payment method update, invoice history.
+   Set business profile ToS/privacy URLs in the Dashboard. Capacity packs are set
+   in-app (`PUT …/addons`); Portal may also list Capacity for quantity edits.
+5. Vercel: set env vars from `.env.example` (Supabase + Stripe + `NEXT_PUBLIC_APP_URL=https://helvety.cloud`). Confirm Price IDs match the live catalog table above.
+6. Optional: create Stripe coupons / promotion codes for testing or offers (finite redemptions).
 
 ## Docs / UX
 
 Free limits are stated in the product before a gate blocks an action and in
-`https://helvety.com/terms#billing`. Cancel is one click in the Portal for paid subs. No dark
-patterns. Capacity Increase: Workspace settings → Billing → Add-ons → **Add or
-change** (Stripe Customer Portal). **Manage billing** covers cancel, payment
+`https://helvety.com/terms#billing`. Cancel is one click in the Portal for paid
+subs. No dark patterns. **Capacity Increase:** Workspace settings → Billing →
+Add-ons → set pack quantity → **Update** (`PUT …/billing/addons`, prorated on
+Stripe). **Manage billing** opens the Customer Portal for cancel, payment
 method, and invoices.
 
 ## Capacity Increase bundle

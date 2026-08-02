@@ -6,6 +6,7 @@ import { describe, expect, it } from "vitest";
 import {
   ADDON_PACKS,
   CAPACITY_PACK,
+  DISPLAY_PRICES,
   ENTITLED_STATUSES,
   PLAN_LIMITS,
   effectiveLimits,
@@ -105,6 +106,12 @@ describe("plan limits", () => {
       5 * 1024 * 1024 * 1024,
     );
     expect(PLAN_LIMITS.pro.maxUploadBytes).toBe(25 * 1024 * 1024);
+  });
+
+  it("keeps marketing display prices aligned with live Stripe yearly amounts", () => {
+    expect(DISPLAY_PRICES.currency).toBe("CHF");
+    expect(DISPLAY_PRICES.proWorkspaceYearly).toBe("250");
+    expect(DISPLAY_PRICES.capacityIncreaseYearly).toBe("99");
   });
 
   it("maps every workspace meter to its plan cap", () => {

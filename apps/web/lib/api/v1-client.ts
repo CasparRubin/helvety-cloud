@@ -1,6 +1,8 @@
 import {
   apiErrorSchema,
   billingRedirectResponseSchema,
+  updateBillingAddonsRequestSchema,
+  updateBillingAddonsResponseSchema,
   contactResponseSchema,
   commentResponseSchema,
   createWorkspaceInvitationRequestSchema,
@@ -48,6 +50,8 @@ import {
   downloadAttachmentResponseSchema,
   attachmentResponseSchema,
   type BillingRedirectResponse,
+  type UpdateBillingAddonsRequest,
+  type UpdateBillingAddonsResponse,
   type ContactResponse,
   type CommentResponse,
   type CommentParentKind,
@@ -792,6 +796,20 @@ export async function syncWorkspaceBilling(
     `/api/v1/workspaces/${workspaceId}/billing/sync`,
     getWorkspaceBillingResponseSchema,
     { method: "POST" },
+  );
+}
+
+export async function updateBillingAddons(
+  workspaceId: string,
+  body: UpdateBillingAddonsRequest,
+): Promise<UpdateBillingAddonsResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/billing/addons`,
+    updateBillingAddonsResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(updateBillingAddonsRequestSchema.parse(body)),
+    },
   );
 }
 

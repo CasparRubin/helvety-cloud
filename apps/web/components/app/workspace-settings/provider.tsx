@@ -45,6 +45,7 @@ import {
   listWorkspaceMembers,
   removeWorkspaceMember,
   syncWorkspaceBilling,
+  updateBillingAddons,
 } from "@/lib/api/v1-client";
 import {
   handoffInvitationSeal,
@@ -121,6 +122,7 @@ type WorkspaceSettingsContextValue = {
   onSaveName: () => Promise<void>;
   onUpgrade: () => Promise<void>;
   onManageBilling: () => Promise<void>;
+  onUpdateCapacity: (quantity: number) => Promise<boolean>;
   onInvite: (opts: { email: string }) => Promise<void>;
   onSeal: (invitation: WorkspaceInvitation) => Promise<void>;
   onCancel: (invitation: WorkspaceInvitation) => Promise<void>;
@@ -299,6 +301,29 @@ export function WorkspaceSettingsProvider({
       setError(
         err instanceof Error ? err.message : "Could not open billing portal",
       );
+      setPending(false);
+    }
+  }
+
+  async function onUpdateCapacity(quantity: number): Promise<boolean> {
+    const qty = Math.max(0, Math.floor(quantity));
+    setPending(true);
+    setError(null);
+    try {
+      await updateBillingAddons(workspaceId, {
+        quantities: { capacity: qty },
+      });
+      const next = await getWorkspaceBilling(workspaceId);
+      setBilling(next);
+      return true;
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Could not update Capacity Increase",
+      );
+      return false;
+    } finally {
       setPending(false);
     }
   }
@@ -687,6 +712,7 @@ export function WorkspaceSettingsProvider({
     onSaveName,
     onUpgrade,
     onManageBilling,
+    onUpdateCapacity,
     onInvite,
     onSeal,
     onCancel,

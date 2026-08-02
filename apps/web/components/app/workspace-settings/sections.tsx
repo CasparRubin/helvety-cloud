@@ -607,6 +607,7 @@ export function WorkspaceBillingSettings() {
     ensureBillingLoaded,
     onUpgrade,
     onManageBilling,
+    onUpdateCapacity,
   } = useWorkspaceSettings();
 
   useEffect(() => {
@@ -615,6 +616,9 @@ export function WorkspaceBillingSettings() {
 
   const capacityQty =
     billing?.addons.find((a) => a.meter === "capacity")?.quantity ?? 0;
+  const [capacityDraft, setCapacityDraft] = useState<string | null>(null);
+  const capacityInput =
+    capacityDraft !== null ? capacityDraft : String(capacityQty);
   const memberSeats = billing
     ? billing.usage.members + billing.usage.pendingInvitations
     : 0;
@@ -625,8 +629,9 @@ export function WorkspaceBillingSettings() {
       <div className="flex flex-col gap-1">
         <h2 className="text-sm font-medium">Plan and limits</h2>
         <p className="text-sm text-muted-foreground">
-          Billing is tied to the workspace. Any member can review usage and open
-          Stripe to change the plan or add-ons.
+          Billing is tied to the workspace. Any member can review usage, manage
+          Capacity Increase packs, and open Stripe for payment methods and
+          cancellation.
         </p>
       </div>
       {billingLoading && !billing ? (
@@ -777,18 +782,35 @@ export function WorkspaceBillingSettings() {
                           : "No packs yet"}
                       </p>
                     </div>
-                    {billing.hasStripeCustomer ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                      <Input
+                        type="number"
+                        min={0}
+                        max={50}
+                        step={1}
+                        className="h-8 w-16"
+                        value={capacityInput}
+                        disabled={pending}
+                        aria-label="Capacity Increase pack quantity"
+                        onChange={(e) => setCapacityDraft(e.target.value)}
+                      />
                       <Button
                         type="button"
                         size="sm"
                         variant="outline"
-                        className="shrink-0"
                         disabled={pending}
-                        onClick={() => void onManageBilling()}
+                        onClick={() => {
+                          const parsed = Number.parseInt(capacityInput, 10);
+                          if (!Number.isFinite(parsed) || parsed < 0) return;
+                          void (async () => {
+                            const ok = await onUpdateCapacity(parsed);
+                            if (ok) setCapacityDraft(null);
+                          })();
+                        }}
                       >
-                        Add or change
+                        Update
                       </Button>
-                    ) : null}
+                    </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
                     Each pack adds {CAPACITY_PACK.deltas.projects} projects,{" "}
@@ -800,6 +822,7 @@ export function WorkspaceBillingSettings() {
                     {CAPACITY_PACK.deltas.nodesPerBoard} shapes per board,{" "}
                     {CAPACITY_PACK.deltas.members} members, and{" "}
                     {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
+                    Stripe prorates changes on the current billing period.
                   </p>
                 </>
               ) : (

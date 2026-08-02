@@ -108,6 +108,16 @@ export type AddonPackDef = {
 };
 
 /**
+ * Display prices for marketing UI (`/pricing`). Charged amounts live on Stripe
+ * Prices; keep these in sync when changing Dashboard prices.
+ */
+export const DISPLAY_PRICES = {
+  currency: "CHF",
+  proWorkspaceYearly: "250",
+  capacityIncreaseYearly: "99",
+} as const;
+
+/**
  * One recurring Stripe add-on (CHF 99 / year). Quantity N adds the same
  * bundle of capacity N times.
  */

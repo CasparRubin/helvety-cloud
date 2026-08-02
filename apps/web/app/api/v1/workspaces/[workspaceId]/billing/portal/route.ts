@@ -49,7 +49,7 @@ export async function POST(request: Request, context: RouteContext) {
   try {
     const session = await getStripe().billingPortal.sessions.create({
       customer: subscription.stripe_customer_id,
-      return_url: `${getAppUrl()}/app`,
+      return_url: `${getAppUrl()}/app/w/${workspaceId}/settings/billing`,
     });
     return jsonOk(billingRedirectResponseSchema.parse({ url: session.url }));
   } catch (error) {
