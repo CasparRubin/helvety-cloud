@@ -8,6 +8,7 @@ import {
   BanIcon,
   BookOpenIcon,
   BookmarkIcon,
+  BotIcon,
   BugIcon,
   CheckCircle2Icon,
   CircleDotIcon,
@@ -34,6 +35,7 @@ import {
   TagIcon,
   TargetIcon,
   TriangleIcon,
+  UserIcon,
   WrenchIcon,
   XCircleIcon,
   ZapIcon,
@@ -75,6 +77,8 @@ export const CATEGORIZATION_ICON_TOKENS = [
   "ban",
   "eraser",
   "book-open",
+  "user",
+  "bot",
 ] as const;
 
 export type CategorizationIcon = (typeof CATEGORIZATION_ICON_TOKENS)[number];
@@ -128,6 +132,8 @@ export const CATEGORIZATION_ICON_COMPONENTS: Record<
   ban: BanIcon,
   eraser: EraserIcon,
   "book-open": BookOpenIcon,
+  user: UserIcon,
+  bot: BotIcon,
 };
 
 /** Icons written into `defaultCategorizations()` seeds. */

@@ -1,12 +1,23 @@
 "use client";
 
 import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
-import { BotIcon, UserIcon, type LucideIcon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
+import { CircleIcon } from "lucide-react";
 
+import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useOptionalEntityCache } from "@/components/unlock/entity-cache";
+import {
+  CATEGORIZATION_ICON_COMPONENTS,
+  isCategorizationIcon,
+  type CategorizationIcon,
+} from "@/lib/client-crypto/categorization-icons";
 import {
   ENTITY_COLOR_CLASSES,
   KIND_FALLBACK_COLOR,
@@ -33,14 +44,67 @@ export type BoardNodeColors = {
   text?: string;
 };
 
-type BpmnLabelData = { label?: string; colors?: BoardNodeColors };
+export type BoardTextAnchor =
+  | "top"
+  | "bottom"
+  | "left"
+  | "right"
+  | "top-left"
+  | "top-right"
+  | "bottom-left"
+  | "bottom-right";
+
+const BOARD_TEXT_ANCHORS: readonly BoardTextAnchor[] = [
+  "top-left",
+  "top",
+  "top-right",
+  "left",
+  "right",
+  "bottom-left",
+  "bottom",
+  "bottom-right",
+] as const;
+
+const TEXT_ANCHOR_CLASS: Record<BoardTextAnchor, string> = {
+  top: "left-1/2 bottom-full mb-1 -translate-x-1/2",
+  bottom: "left-1/2 top-full mt-1 -translate-x-1/2",
+  left: "right-full top-1/2 mr-1 -translate-y-1/2",
+  right: "left-full top-1/2 ml-1 -translate-y-1/2",
+  "top-left": "right-full bottom-full mr-1 mb-1",
+  "top-right": "left-full bottom-full ml-1 mb-1",
+  "bottom-left": "right-full top-full mr-1 mt-1",
+  "bottom-right": "left-full top-full ml-1 mt-1",
+};
+
+type BoardShapeData = {
+  label?: string;
+  subtitle?: string;
+  icon?: CategorizationIcon;
+  showLabel: boolean;
+  showSubtitle: boolean;
+  textAnchor: BoardTextAnchor;
+};
+
 type AnnotationData = { text?: string; colors?: BoardNodeColors };
 type EntityRefData = {
   kind: EntityLinkKind;
   entityId: string;
 };
 
-export function nodeColorStyle(data: unknown): CSSProperties {
+/** Legacy node types map to Activity with a default icon when none is stored. */
+const LEGACY_ACTIVITY_ICON: Record<string, CategorizationIcon> = {
+  userTask: "user",
+  serviceTask: "bot",
+};
+
+export function isBoardTextAnchor(value: unknown): value is BoardTextAnchor {
+  return (
+    typeof value === "string" &&
+    (BOARD_TEXT_ANCHORS as readonly string[]).includes(value)
+  );
+}
+
+function nodeColorStyle(data: unknown): CSSProperties {
   const colors = (data as { colors?: BoardNodeColors } | null)?.colors;
   if (!colors) return {};
   const style: CSSProperties = {};
@@ -50,180 +114,292 @@ export function nodeColorStyle(data: unknown): CSSProperties {
   return style;
 }
 
-function useLabelEdit(id: string) {
+function useNodeDataPatch(id: string) {
   const { setNodes } = useReactFlow();
-  return (next: string) => {
+  return (patch: Record<string, unknown>) => {
     setNodes((nodes) =>
       nodes.map((n) =>
-        n.id === id ? { ...n, data: { ...n.data, label: next } } : n,
+        n.id === id ? { ...n, data: { ...n.data, ...patch } } : n,
       ),
     );
   };
 }
 
-function StartEventNode({ data, selected }: NodeProps) {
-  const label = (data as BpmnLabelData).label ?? "Start";
-  const colors = nodeColorStyle(data);
+function readShapeData(data: unknown): BoardShapeData {
+  const raw = (data ?? {}) as Record<string, unknown>;
+  return {
+    label: typeof raw.label === "string" ? raw.label : undefined,
+    subtitle: typeof raw.subtitle === "string" ? raw.subtitle : undefined,
+    icon: isCategorizationIcon(raw.icon) ? raw.icon : undefined,
+    showLabel: raw.showLabel !== false,
+    showSubtitle: raw.showSubtitle !== false,
+    textAnchor: isBoardTextAnchor(raw.textAnchor) ? raw.textAnchor : "bottom",
+  };
+}
+
+function CaptionStack({
+  id,
+  shape,
+  labelFallback,
+  labelPlaceholder,
+  subtitlePlaceholder,
+  textColor,
+}: {
+  id: string;
+  shape: BoardShapeData;
+  labelFallback: string;
+  labelPlaceholder: string;
+  subtitlePlaceholder: string;
+  textColor?: string;
+}) {
+  const patch = useNodeDataPatch(id);
+  if (!shape.showLabel && !shape.showSubtitle) return null;
+
+  const side =
+    shape.textAnchor === "left" || shape.textAnchor === "right";
+
   return (
     <div
       className={cn(
-        "group/node flex size-12 flex-col items-center justify-center rounded-full border-2 bg-background shadow-sm",
-        selected ? "border-primary" : "border-foreground/70",
+        "absolute z-10 flex w-28 flex-col gap-0.5",
+        side ? "items-stretch text-left" : "items-center text-center",
+        TEXT_ANCHOR_CLASS[shape.textAnchor],
       )}
-      style={colors}
     >
-      <NodeHandles />
-      <span
-        className="pointer-events-none absolute top-full mt-1 max-w-24 truncate text-[10px] text-muted-foreground"
-        style={colors.color ? { color: colors.color } : undefined}
-      >
-        {label}
-      </span>
+      {shape.showSubtitle ? (
+        <input
+          className="nodrag nopan w-full bg-transparent text-[9px] text-muted-foreground outline-none placeholder:text-muted-foreground/60"
+          style={textColor ? { color: textColor } : undefined}
+          value={shape.subtitle ?? ""}
+          placeholder={subtitlePlaceholder}
+          onChange={(e) => patch({ subtitle: e.target.value })}
+        />
+      ) : null}
+      {shape.showLabel ? (
+        <input
+          className="nodrag nopan w-full bg-transparent text-[10px] font-medium outline-none placeholder:text-muted-foreground/70"
+          style={textColor ? { color: textColor } : undefined}
+          value={shape.label ?? labelFallback}
+          placeholder={labelPlaceholder}
+          onChange={(e) => patch({ label: e.target.value })}
+        />
+      ) : null}
     </div>
   );
 }
 
-function EndEventNode({ data, selected }: NodeProps) {
-  const label = (data as BpmnLabelData).label ?? "End";
-  const colors = nodeColorStyle(data);
+function NodeIconButton({
+  icon,
+  fallbackIcon,
+  color,
+  onChange,
+}: {
+  icon: CategorizationIcon | undefined;
+  fallbackIcon?: CategorizationIcon;
+  color?: string;
+  onChange: (icon: CategorizationIcon | undefined) => void;
+}) {
+  const display = icon ?? fallbackIcon;
+  const Icon = display ? CATEGORIZATION_ICON_COMPONENTS[display] : CircleIcon;
   return (
-    <div
-      className={cn(
-        "group/node flex size-12 flex-col items-center justify-center rounded-full border-[3px] bg-background shadow-sm",
-        selected ? "border-primary" : "border-foreground",
-      )}
-      style={colors}
-    >
-      <div
-        className={cn(
-          "size-7 rounded-full",
-          selected ? "bg-primary/80" : "bg-foreground",
-        )}
-        style={
-          colors.color
-            ? { backgroundColor: colors.color }
-            : undefined
+    <Popover>
+      <PopoverTrigger
+        render={
+          <button
+            type="button"
+            className="nodrag nopan inline-flex size-5 shrink-0 items-center justify-center rounded text-muted-foreground hover:bg-muted/70"
+            style={color ? { color } : undefined}
+            aria-label="Choose icon"
+            onClick={(e) => e.stopPropagation()}
+          />
         }
-      />
-      <NodeHandles />
-      <span
-        className="pointer-events-none absolute top-full mt-1 max-w-24 truncate text-[10px] text-muted-foreground"
-        style={colors.color ? { color: colors.color } : undefined}
       >
-        {label}
-      </span>
-    </div>
+        <Icon className="size-3.5" aria-hidden />
+      </PopoverTrigger>
+      <PopoverContent
+        align="start"
+        side="bottom"
+        className="w-auto max-w-[220px] p-2"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <CategorizationIconPicker value={icon} onChange={onChange} compact />
+      </PopoverContent>
+    </Popover>
   );
 }
 
-function BpmnTaskNode({ id, data, selected }: NodeProps) {
-  const label = (data as BpmnLabelData).label ?? "Task";
-  const setLabel = useLabelEdit(id);
+function textColorFrom(colors: CSSProperties): string | undefined {
+  return typeof colors.color === "string" ? colors.color : undefined;
+}
+
+function StartEventNode({ id, data, selected }: NodeProps) {
+  const shape = readShapeData(data);
   const colors = nodeColorStyle(data);
   return (
-    <div
-      className={cn(
-        "group/node min-w-[120px] max-w-[180px] rounded-lg border bg-background px-3 py-2 text-center text-xs shadow-sm",
-        selected ? "border-primary ring-1 ring-primary/30" : "border-border",
-      )}
-      style={colors}
-    >
-      <NodeHandles />
-      <input
-        className="nodrag nopan w-full bg-transparent text-center outline-none"
-        style={colors.color ? { color: colors.color } : undefined}
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
+    <div className="group/node relative">
+      <div
+        className={cn(
+          "flex size-12 flex-col items-center justify-center rounded-full border-2 bg-background shadow-sm",
+          selected ? "border-primary" : "border-foreground/70",
+        )}
+        style={colors}
+      >
+        <NodeHandles />
+      </div>
+      <CaptionStack
+        id={id}
+        shape={shape}
+        labelFallback="Start"
+        labelPlaceholder="Start"
+        subtitlePlaceholder="Type"
+        textColor={textColorFrom(colors)}
       />
     </div>
   );
 }
 
-function createMarkedTask(Marker: LucideIcon, fallbackLabel: string) {
-  return function MarkedTaskNode({ id, data, selected }: NodeProps) {
-    const label = (data as BpmnLabelData).label ?? fallbackLabel;
-    const setLabel = useLabelEdit(id);
-    const colors = nodeColorStyle(data);
-    return (
+function EndEventNode({ id, data, selected }: NodeProps) {
+  const shape = readShapeData(data);
+  const colors = nodeColorStyle(data);
+  return (
+    <div className="group/node relative">
       <div
         className={cn(
-          "group/node relative min-w-[120px] max-w-[180px] rounded-lg border bg-background px-3 pb-2 pt-5 text-center text-xs shadow-sm",
+          "flex size-12 flex-col items-center justify-center rounded-full border-[3px] bg-background shadow-sm",
+          selected ? "border-primary" : "border-foreground",
+        )}
+        style={colors}
+      >
+        <div
+          className={cn(
+            "size-7 rounded-full",
+            selected ? "bg-primary/80" : "bg-foreground",
+          )}
+          style={
+            colors.color ? { backgroundColor: colors.color } : undefined
+          }
+        />
+        <NodeHandles />
+      </div>
+      <CaptionStack
+        id={id}
+        shape={shape}
+        labelFallback="End"
+        labelPlaceholder="End"
+        subtitlePlaceholder="Type"
+        textColor={textColorFrom(colors)}
+      />
+    </div>
+  );
+}
+
+function ActivityNode({ id, data, selected, type }: NodeProps) {
+  const shape = readShapeData(data);
+  const patch = useNodeDataPatch(id);
+  const colors = nodeColorStyle(data);
+  const textColor = textColorFrom(colors);
+  const icon =
+    shape.icon ??
+    (typeof type === "string" ? LEGACY_ACTIVITY_ICON[type] : undefined);
+
+  return (
+    <div className="group/node relative">
+      <div
+        className={cn(
+          "flex size-10 items-center justify-center rounded-lg border bg-background shadow-sm",
           selected ? "border-primary ring-1 ring-primary/30" : "border-border",
         )}
         style={colors}
       >
         <NodeHandles />
-        <Marker
-          className="pointer-events-none absolute left-2 top-1.5 size-3 text-muted-foreground"
-          style={colors.color ? { color: colors.color } : undefined}
-          aria-hidden
-        />
-        <input
-          className="nodrag nopan w-full bg-transparent text-center outline-none"
-          style={colors.color ? { color: colors.color } : undefined}
-          value={label}
-          onChange={(e) => setLabel(e.target.value)}
+        <NodeIconButton
+          icon={icon}
+          color={textColor}
+          onChange={(next) => patch({ icon: next })}
         />
       </div>
-    );
-  };
-}
-
-const UserTaskNode = createMarkedTask(UserIcon, "User task");
-const ServiceTaskNode = createMarkedTask(BotIcon, "Service");
-
-function ParticipantNode({ id, data, selected }: NodeProps) {
-  const label = (data as BpmnLabelData).label ?? "Role";
-  const setLabel = useLabelEdit(id);
-  const colors = nodeColorStyle(data);
-  return (
-    <div
-      className={cn(
-        "group/node flex min-w-[140px] max-w-[200px] items-center gap-2 rounded-full border bg-background px-3 py-1.5 text-xs shadow-sm",
-        selected ? "border-primary ring-1 ring-primary/30" : "border-border",
-      )}
-      style={colors}
-    >
-      <NodeHandles />
-      <UserIcon
-        className="size-3.5 shrink-0 text-muted-foreground"
-        style={colors.color ? { color: colors.color } : undefined}
-        aria-hidden
-      />
-      <input
-        className="nodrag nopan min-w-0 flex-1 bg-transparent outline-none"
-        style={colors.color ? { color: colors.color } : undefined}
-        value={label}
-        onChange={(e) => setLabel(e.target.value)}
+      <CaptionStack
+        id={id}
+        shape={shape}
+        labelFallback="Activity"
+        labelPlaceholder="Name"
+        subtitlePlaceholder="Type"
+        textColor={textColor}
       />
     </div>
   );
 }
 
-function ExclusiveGatewayNode({ data, selected }: NodeProps) {
+function ParticipantNode({ id, data, selected }: NodeProps) {
+  const shape = readShapeData(data);
+  const patch = useNodeDataPatch(id);
   const colors = nodeColorStyle(data);
+  const textColor = textColorFrom(colors);
+
   return (
-    <div className="group/node relative flex size-14 items-center justify-center">
+    <div className="group/node relative">
       <div
         className={cn(
-          "size-10 rotate-45 border bg-background shadow-sm",
-          selected ? "border-primary" : "border-foreground/70",
+          "flex size-10 items-center justify-center rounded-full border bg-background shadow-sm",
+          selected ? "border-primary ring-1 ring-primary/30" : "border-border",
         )}
         style={colors}
-      />
-      <span
-        className="pointer-events-none absolute text-sm font-medium text-foreground"
-        style={colors.color ? { color: colors.color } : undefined}
       >
-        ×
-      </span>
-      <NodeHandles />
+        <NodeHandles />
+        <NodeIconButton
+          icon={shape.icon}
+          fallbackIcon="user"
+          color={textColor}
+          onChange={(next) => patch({ icon: next })}
+        />
+      </div>
+      <CaptionStack
+        id={id}
+        shape={shape}
+        labelFallback="Role"
+        labelPlaceholder="Name"
+        subtitlePlaceholder="Type"
+        textColor={textColor}
+      />
+    </div>
+  );
+}
+
+function ExclusiveGatewayNode({ id, data, selected }: NodeProps) {
+  const shape = readShapeData(data);
+  const colors = nodeColorStyle(data);
+  return (
+    <div className="group/node relative">
+      <div className="relative flex size-14 items-center justify-center">
+        <div
+          className={cn(
+            "size-10 rotate-45 border bg-background shadow-sm",
+            selected ? "border-primary" : "border-foreground/70",
+          )}
+          style={colors}
+        />
+        <span
+          className="pointer-events-none absolute text-sm font-medium text-foreground"
+          style={colors.color ? { color: colors.color } : undefined}
+        >
+          ×
+        </span>
+        <NodeHandles />
+      </div>
+      <CaptionStack
+        id={id}
+        shape={shape}
+        labelFallback=""
+        labelPlaceholder="Decision"
+        subtitlePlaceholder="Type"
+        textColor={textColorFrom(colors)}
+      />
     </div>
   );
 }
 
 function AnnotationNode({ id, data, selected }: NodeProps) {
-  const { setNodes } = useReactFlow();
+  const patch = useNodeDataPatch(id);
   const text = (data as AnnotationData).text ?? "";
   const colors = nodeColorStyle(data);
   return (
@@ -241,14 +417,7 @@ function AnnotationNode({ id, data, selected }: NodeProps) {
         rows={2}
         value={text}
         placeholder="Comment"
-        onChange={(e) => {
-          const next = e.target.value;
-          setNodes((nodes) =>
-            nodes.map((n) =>
-              n.id === id ? { ...n, data: { ...n.data, text: next } } : n,
-            ),
-          );
-        }}
+        onChange={(e) => patch({ text: e.target.value })}
       />
     </div>
   );
@@ -292,9 +461,9 @@ function EntityRefNode({ data, selected }: NodeProps) {
 export const boardNodeTypes = {
   startEvent: StartEventNode,
   endEvent: EndEventNode,
-  bpmnTask: BpmnTaskNode,
-  userTask: UserTaskNode,
-  serviceTask: ServiceTaskNode,
+  bpmnTask: ActivityNode,
+  userTask: ActivityNode,
+  serviceTask: ActivityNode,
   participant: ParticipantNode,
   exclusiveGateway: ExclusiveGatewayNode,
   annotation: AnnotationNode,

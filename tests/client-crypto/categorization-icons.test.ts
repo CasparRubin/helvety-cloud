@@ -38,6 +38,8 @@ describe("categorization icons", () => {
     expect(isCategorizationIcon("bug")).toBe(true);
     expect(isCategorizationIcon("eraser")).toBe(true);
     expect(isCategorizationIcon("book-open")).toBe(true);
+    expect(isCategorizationIcon("user")).toBe(true);
+    expect(isCategorizationIcon("bot")).toBe(true);
     expect(isCategorizationIcon("not-a-real-icon")).toBe(false);
   });
 

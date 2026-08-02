@@ -20,7 +20,7 @@ import {
 import "@xyflow/react/dist/style.css";
 import { useTheme } from "@wrksz/themes/client";
 import {
-  BotIcon,
+  ArrowRightIcon,
   CircleIcon,
   DiamondIcon,
   FolderKanbanIcon,
@@ -29,16 +29,21 @@ import {
   ListTodoIcon,
   StickyNoteIcon,
   SquareIcon,
-  UserIcon,
   UsersIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
 
 import { boardEdgeTypes, withoutEdgeEditing } from "@/components/app/board-edge";
-import { boardNodeTypes, type BoardNodeColors } from "@/components/app/board-nodes";
+import {
+  boardNodeTypes,
+  isBoardTextAnchor,
+  type BoardNodeColors,
+  type BoardTextAnchor,
+} from "@/components/app/board-nodes";
 import { useEntityCache } from "@/components/unlock/entity-cache";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
 import {
   Command,
   CommandEmpty,
@@ -53,6 +58,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { snapDraggedNodePosition } from "@/lib/client-crypto/board-edge-snap";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import type {
@@ -60,6 +71,7 @@ import type {
   BoardGraphNode,
   BoardViewport,
 } from "@/lib/client-crypto/board-plaintext";
+import { cn } from "@/lib/utils";
 
 export type BoardCanvasGraph = {
   nodes: BoardGraphNode[];
@@ -76,10 +88,46 @@ type BoardCanvasProps = {
 
 type PlaceKind = "note" | "contact" | "task" | "project";
 
+const TEXT_CAPABLE_NODE_TYPES = new Set([
+  "startEvent",
+  "endEvent",
+  "bpmnTask",
+  "userTask",
+  "serviceTask",
+  "participant",
+  "exclusiveGateway",
+]);
+
+const TEXT_ANCHOR_GRID: (BoardTextAnchor | null)[] = [
+  "top-left",
+  "top",
+  "top-right",
+  "left",
+  null,
+  "right",
+  "bottom-left",
+  "bottom",
+  "bottom-right",
+];
+
+const ARROW_MARKER = {
+  type: MarkerType.ArrowClosed,
+  width: 16,
+  height: 16,
+} as const;
+
 const defaultEdgeOptions = {
   type: "smoothstep" as const,
-  markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
 };
+
+function flowEdgeHasArrow(markerEnd: Edge["markerEnd"]): boolean {
+  if (markerEnd == null || markerEnd === "") return false;
+  if (typeof markerEnd === "object") {
+    return markerEnd.type === MarkerType.ArrowClosed;
+  }
+  // React Flow may resolve markers to a marker URL string.
+  return true;
+}
 
 function toFlowNodes(nodes: BoardGraphNode[]): Node[] {
   return nodes.map((n) => ({
@@ -101,7 +149,7 @@ function toFlowEdges(edges: BoardGraphEdge[]): Edge[] {
     targetHandle: e.targetHandle ?? undefined,
     type: e.type ?? "smoothstep",
     label: e.label,
-    markerEnd: defaultEdgeOptions.markerEnd,
+    markerEnd: e.markerEnd === "arrow" ? ARROW_MARKER : undefined,
   }));
 }
 
@@ -128,6 +176,9 @@ function fromFlowEdges(edges: Edge[]): BoardGraphEdge[] {
     };
     if (typeof e.label === "string" && e.label.length > 0) {
       edge.label = e.label;
+    }
+    if (flowEdgeHasArrow(e.markerEnd)) {
+      edge.markerEnd = "arrow";
     }
     return edge;
   });
@@ -274,6 +325,25 @@ function BoardCanvasInner({
   const selectedColors = (
     selectedColorNode?.data as { colors?: BoardNodeColors } | undefined
   )?.colors;
+  const selectedSupportsText =
+    selectedColorNode != null &&
+    typeof selectedColorNode.type === "string" &&
+    TEXT_CAPABLE_NODE_TYPES.has(selectedColorNode.type);
+  const selectedNodeData = (selectedColorNode?.data ?? {}) as Record<
+    string,
+    unknown
+  >;
+  const selectedShowLabel = selectedNodeData.showLabel !== false;
+  const selectedShowSubtitle = selectedNodeData.showSubtitle !== false;
+  const selectedTextAnchor: BoardTextAnchor = isBoardTextAnchor(
+    selectedNodeData.textAnchor,
+  )
+    ? selectedNodeData.textAnchor
+    : "bottom";
+  const selectedEdge = edges.find((e) => e.selected);
+  const selectedEdgeHasArrow = selectedEdge
+    ? flowEdgeHasArrow(selectedEdge.markerEnd)
+    : false;
 
   function patchSelectedColors(patch: Partial<BoardNodeColors> | null) {
     if (!selectedColorNode) return;
@@ -300,6 +370,29 @@ function BoardCanvasInner({
           },
         };
       }),
+    );
+  }
+
+  function patchSelectedNodeData(patch: Record<string, unknown>) {
+    if (!selectedColorNode) return;
+    const targetId = selectedColorNode.id;
+    setNodes((nds) =>
+      nds.map((n) =>
+        n.id === targetId ? { ...n, data: { ...n.data, ...patch } } : n,
+      ),
+    );
+  }
+
+  function toggleSelectedEdgeArrow() {
+    if (!selectedEdge) return;
+    const targetId = selectedEdge.id;
+    const nextOn = !flowEdgeHasArrow(selectedEdge.markerEnd);
+    setEdges((eds) =>
+      eds.map((e) =>
+        e.id === targetId
+          ? { ...e, markerEnd: nextOn ? ARROW_MARKER : undefined }
+          : e,
+      ),
     );
   }
 
@@ -346,105 +439,129 @@ function BoardCanvasInner({
 
   return (
     <div className="relative h-full w-full">
-      <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1">
-        {(
-          [
-            {
-              key: "startEvent",
-              label: "Start",
-              icon: CircleIcon,
-              data: { label: "Start" },
-            },
-            {
-              key: "endEvent",
-              label: "End",
-              icon: CircleIcon,
-              data: { label: "End" },
-            },
-            {
-              key: "bpmnTask",
-              label: "Activity",
-              icon: SquareIcon,
-              data: { label: "Task" },
-            },
-            {
-              key: "userTask",
-              label: "User task",
-              icon: UserIcon,
-              data: { label: "User task" },
-            },
-            {
-              key: "serviceTask",
-              label: "Service",
-              icon: BotIcon,
-              data: { label: "Service" },
-            },
-            {
-              key: "participant",
-              label: "Participant",
-              icon: UsersIcon,
-              data: { label: "Role" },
-            },
-            {
-              key: "exclusiveGateway",
-              label: "Gateway",
-              icon: DiamondIcon,
-              data: {},
-            },
-            {
-              key: "annotation",
-              label: "Comment",
-              icon: MessageSquareIcon,
-              data: { text: "Comment" },
-            },
-          ] as const
-        ).map((item) => (
-          <Button
-            key={item.key}
-            type="button"
-            size="sm"
-            variant="secondary"
-            className="pointer-events-auto h-7 gap-1 px-2 text-xs shadow-sm"
-            onClick={() => addNode(item.key, { ...item.data })}
-          >
-            <item.icon className="size-3.5" />
-            {item.label}
-          </Button>
-        ))}
-        <span className="pointer-events-none mx-0.5 self-center text-xs text-muted-foreground">
-          ·
-        </span>
-        {(
-          [
-            { kind: "note" as const, label: "Note", icon: StickyNoteIcon },
-            { kind: "contact" as const, label: "Contact", icon: ContactIcon },
-            { kind: "task" as const, label: "Task", icon: ListTodoIcon },
-            {
-              kind: "project" as const,
-              label: "Project",
-              icon: FolderKanbanIcon,
-            },
-          ] as const
-        ).map((item) => (
-          <Button
-            key={item.kind}
-            type="button"
-            size="sm"
-            variant="outline"
-            className="pointer-events-auto h-7 gap-1 bg-background/90 px-2 text-xs shadow-sm"
-            onClick={() => {
-              setPlaceKind(item.kind);
-              setPlaceQuery("");
-            }}
-          >
-            <item.icon className="size-3.5" />
-            {item.label}
-          </Button>
-        ))}
-      </div>
+      <TooltipProvider delay={300}>
+        <div className="pointer-events-none absolute left-3 top-3 z-10 flex max-w-[calc(100%-1.5rem)] flex-wrap gap-1">
+          {(
+            [
+              {
+                key: "startEvent",
+                label: "Start",
+                tip: "Begin a flow or process.",
+                icon: CircleIcon,
+                data: { label: "Start", subtitle: "" },
+              },
+              {
+                key: "endEvent",
+                label: "End",
+                tip: "Finish a flow or process.",
+                icon: CircleIcon,
+                data: { label: "End", subtitle: "" },
+              },
+              {
+                key: "bpmnTask",
+                label: "Activity",
+                tip: "Generic work step. Set an icon and subtitle (e.g. Backend Agent Task), then name the step.",
+                icon: SquareIcon,
+                data: { label: "Activity", subtitle: "" },
+              },
+              {
+                key: "participant",
+                label: "Participant",
+                tip: "Person, team, or role in the flow.",
+                icon: UsersIcon,
+                data: { label: "Role", subtitle: "" },
+              },
+              {
+                key: "exclusiveGateway",
+                label: "Gateway",
+                tip: "Branch or decide between paths.",
+                icon: DiamondIcon,
+                data: {},
+              },
+              {
+                key: "annotation",
+                label: "Comment",
+                tip: "Freeform note on the canvas.",
+                icon: MessageSquareIcon,
+                data: { text: "Comment" },
+              },
+            ] as const
+          ).map((item) => (
+            <Tooltip key={item.key}>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="secondary"
+                    className="pointer-events-auto h-7 gap-1 px-2 text-xs shadow-sm"
+                    onClick={() => addNode(item.key, { ...item.data })}
+                  />
+                }
+              >
+                <item.icon className="size-3.5" />
+                {item.label}
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{item.tip}</TooltipContent>
+            </Tooltip>
+          ))}
+          <span className="pointer-events-none mx-0.5 self-center text-xs text-muted-foreground">
+            ·
+          </span>
+          {(
+            [
+              {
+                kind: "note" as const,
+                label: "Note",
+                tip: "Place a linked note on the board.",
+                icon: StickyNoteIcon,
+              },
+              {
+                kind: "contact" as const,
+                label: "Contact",
+                tip: "Place a linked contact on the board.",
+                icon: ContactIcon,
+              },
+              {
+                kind: "task" as const,
+                label: "Task",
+                tip: "Place a linked task on the board.",
+                icon: ListTodoIcon,
+              },
+              {
+                kind: "project" as const,
+                label: "Project",
+                tip: "Place a linked project on the board.",
+                icon: FolderKanbanIcon,
+              },
+            ] as const
+          ).map((item) => (
+            <Tooltip key={item.kind}>
+              <TooltipTrigger
+                render={
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    className="pointer-events-auto h-7 gap-1 bg-background/90 px-2 text-xs shadow-sm"
+                    onClick={() => {
+                      setPlaceKind(item.kind);
+                      setPlaceQuery("");
+                    }}
+                  />
+                }
+              >
+                <item.icon className="size-3.5" />
+                {item.label}
+              </TooltipTrigger>
+              <TooltipContent side="bottom">{item.tip}</TooltipContent>
+            </Tooltip>
+          ))}
+        </div>
+      </TooltipProvider>
 
       {selectedColorNode ? (
-        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-md border bg-background/95 px-2 py-1.5 text-[10px] shadow-sm">
+        <div className="absolute right-3 top-3 z-10 flex max-w-[min(100%-1.5rem,22rem)] flex-wrap items-center gap-2 rounded-md border bg-background/95 px-2 py-1.5 text-[10px] shadow-sm">
           <label className="flex items-center gap-1 text-muted-foreground">
             Border
             <input
@@ -482,6 +599,71 @@ function BoardCanvasInner({
             onClick={() => patchSelectedColors(null)}
           >
             Reset
+          </Button>
+          {selectedSupportsText ? (
+            <>
+              <span className="text-muted-foreground/50">·</span>
+              <label className="flex items-center gap-1 text-muted-foreground">
+                <Checkbox
+                  checked={selectedShowLabel}
+                  onCheckedChange={(checked) =>
+                    patchSelectedNodeData({ showLabel: checked === true })
+                  }
+                />
+                Title
+              </label>
+              <label className="flex items-center gap-1 text-muted-foreground">
+                <Checkbox
+                  checked={selectedShowSubtitle}
+                  onCheckedChange={(checked) =>
+                    patchSelectedNodeData({ showSubtitle: checked === true })
+                  }
+                />
+                Subtitle
+              </label>
+              <div
+                className="grid grid-cols-3 gap-0.5"
+                role="group"
+                aria-label="Text placement"
+              >
+                {TEXT_ANCHOR_GRID.map((anchor, index) =>
+                  anchor == null ? (
+                    <span key={`empty-${index}`} className="size-5" aria-hidden />
+                  ) : (
+                    <button
+                      key={anchor}
+                      type="button"
+                      title={anchor}
+                      aria-label={`Place text ${anchor}`}
+                      aria-pressed={selectedTextAnchor === anchor}
+                      className={cn(
+                        "size-5 rounded-sm border",
+                        selectedTextAnchor === anchor
+                          ? "border-foreground/40 bg-secondary"
+                          : "border-transparent hover:bg-muted/70",
+                      )}
+                      onClick={() =>
+                        patchSelectedNodeData({ textAnchor: anchor })
+                      }
+                    />
+                  ),
+                )}
+              </div>
+            </>
+          ) : null}
+        </div>
+      ) : selectedEdge ? (
+        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-md border bg-background/95 px-2 py-1.5 text-[10px] shadow-sm">
+          <Button
+            type="button"
+            size="xs"
+            variant={selectedEdgeHasArrow ? "secondary" : "ghost"}
+            className="h-6 gap-1 px-1.5"
+            aria-pressed={selectedEdgeHasArrow}
+            onClick={toggleSelectedEdgeArrow}
+          >
+            <ArrowRightIcon className="size-3.5" aria-hidden />
+            Arrow
           </Button>
         </div>
       ) : null}

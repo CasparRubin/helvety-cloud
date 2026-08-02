@@ -1,6 +1,6 @@
-export type SnapPoint = { x: number; y: number };
+type SnapPoint = { x: number; y: number };
 
-export type SnapNode = {
+type SnapNode = {
   id: string;
   type?: string | null;
   position: SnapPoint;
@@ -9,7 +9,7 @@ export type SnapNode = {
   measured?: { width?: number; height?: number } | null;
 };
 
-export type SnapEdge = {
+type SnapEdge = {
   source: string;
   target: string;
   sourceHandle?: string | null;
@@ -20,14 +20,17 @@ const THRESHOLD_PX = 8;
 
 type HandleSide = "left" | "right" | "top" | "bottom";
 
+/** Fallback sizes when React Flow has not measured the node yet. */
+const ACTIVITY_SIZE = { width: 40, height: 40 };
+
 const DEFAULT_SIZES: Record<string, { width: number; height: number }> = {
   startEvent: { width: 48, height: 48 },
   endEvent: { width: 48, height: 48 },
   exclusiveGateway: { width: 56, height: 56 },
-  bpmnTask: { width: 120, height: 36 },
-  userTask: { width: 120, height: 44 },
-  serviceTask: { width: 120, height: 44 },
-  participant: { width: 140, height: 32 },
+  bpmnTask: ACTIVITY_SIZE,
+  userTask: ACTIVITY_SIZE,
+  serviceTask: ACTIVITY_SIZE,
+  participant: ACTIVITY_SIZE,
   annotation: { width: 140, height: 56 },
   entityRef: { width: 140, height: 44 },
 };

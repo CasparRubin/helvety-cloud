@@ -129,7 +129,7 @@ helvety-cloud/
 
 **P15 note:** i18n was attempted and reverted. Product copy stays English-only.
 
-**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (BPMN-inspired shapes including participant / user task / service task, per-node border/fill/text colors, labeled edges, plus placeable note/contact/task/project nodes). Canvas edges stay in ciphertext; placed entities sync to `entity_links`.
+**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (shapes by form: start/end/activity/participant/gateway/comment, optional `label`/`subtitle`/`showLabel`/`showSubtitle`/`textAnchor`/`icon`/`colors`, labeled edges with optional `markerEnd: "arrow"`, plus placeable note/contact/task/project nodes). Legacy user/service task types still render as Activity. Canvas edges stay in ciphertext; placed entities sync to `entity_links`.
 
 ---
 

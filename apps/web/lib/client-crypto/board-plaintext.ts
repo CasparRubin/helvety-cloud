@@ -27,6 +27,7 @@ export type BoardGraphEdge = {
   targetHandle?: string | null;
   type?: string;
   label?: string;
+  markerEnd?: "arrow";
 };
 
 export type BoardPlaintext = {
@@ -98,6 +99,7 @@ function parseEdge(raw: unknown): BoardGraphEdge | null {
     edge.targetHandle = obj.targetHandle;
   }
   if (typeof obj.label === "string") edge.label = obj.label;
+  if (obj.markerEnd === "arrow") edge.markerEnd = "arrow";
   return edge;
 }
 
@@ -152,15 +154,19 @@ export function toBoardPlaintext(input: {
       width: n.width,
       height: n.height,
     })),
-    edges: input.edges.map((e) => ({
-      id: e.id,
-      source: e.source,
-      target: e.target,
-      sourceHandle: e.sourceHandle,
-      targetHandle: e.targetHandle,
-      type: e.type,
-      label: e.label,
-    })),
+    edges: input.edges.map((e) => {
+      const edge: BoardGraphEdge = {
+        id: e.id,
+        source: e.source,
+        target: e.target,
+        sourceHandle: e.sourceHandle,
+        targetHandle: e.targetHandle,
+        type: e.type,
+      };
+      if (e.label) edge.label = e.label;
+      if (e.markerEnd === "arrow") edge.markerEnd = "arrow";
+      return edge;
+    }),
   };
 }
 

@@ -53,13 +53,13 @@ describe("snapDraggedNodePosition", () => {
       id: "above",
       type: "bpmnTask",
       position: { x: 100, y: 0 },
-      width: 120,
-      height: 36,
+      width: 40,
+      height: 40,
     };
     const nearBelow = {
       id: "below",
       type: "endEvent",
-      position: { x: 132, y: 120 },
+      position: { x: 96, y: 120 },
       width: 48,
       height: 48,
     };
@@ -76,7 +76,8 @@ describe("snapDraggedNodePosition", () => {
       [above, nearBelow],
       edges,
     );
-    expect(snapped.x).toBe(136);
+    // Peer top-center x = 100 + 20 = 120; below width 48 → desired x = 96
+    expect(snapped.x).toBe(96);
     expect(snapped.y).toBe(120);
   });
 
