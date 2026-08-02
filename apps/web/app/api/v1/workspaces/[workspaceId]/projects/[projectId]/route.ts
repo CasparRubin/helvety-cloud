@@ -147,6 +147,22 @@ export async function DELETE(request: Request, context: RouteContext) {
   const { supabase } = auth;
   const { workspaceId, projectId } = await context.params;
 
+  const { data: existing, error: existingError } = await supabase
+    .from("projects")
+    .select("id")
+    .eq("id", projectId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+  if (existingError) {
+    if (existingError.code === "42501") {
+      return apiError("forbidden", "Not a workspace member", 403);
+    }
+    return apiError("internal", existingError.message, 500);
+  }
+  if (!existing) {
+    return apiError("not_found", "Project not found", 404);
+  }
+
   const { data: tasks, error: tasksError } = await supabase
     .from("tasks")
     .select("id")

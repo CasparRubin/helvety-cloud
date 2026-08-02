@@ -4,6 +4,9 @@
  * - Account deletion (`auth.admin.deleteUser` from DELETE /api/v1/me)
  * - Encrypted attachment Storage signed URLs + object size/remove (P11) after
  *   /api/v1 membership + entitlement checks, never to decrypt
+ * - Free-overflow soft-lock creator-wide workspace/subscription reads after
+ *   membership proof (user JWT cannot see other owned workspaces)
+ * - Project wrap cleanup after project membership/workspace verification
  *
  * Never import this from ciphertext routes for decryption and never use
  * it to "helpfully" decrypt encrypted entity tables.

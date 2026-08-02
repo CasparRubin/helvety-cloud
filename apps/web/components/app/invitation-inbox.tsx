@@ -94,12 +94,12 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
 
   const loadInvitations = useCallback(async (activeKeys: UnlockedUserKeys) => {
     const listed = await listMyInvitations();
-    const pending = listed.invitations.filter(
-      (i) => i.status !== "cancelled" && i.status !== "accepted",
-    );
     return {
-      invitations: pending,
-      workspaceNames: await decryptWorkspaceNames(activeKeys, pending),
+      invitations: listed.invitations,
+      workspaceNames: await decryptWorkspaceNames(
+        activeKeys,
+        listed.invitations,
+      ),
     };
   }, []);
 

@@ -273,6 +273,38 @@ describe("selectFreeOverflowLockedIds", () => {
     ).toBe(0);
   });
 
+  it("a partial owned set under-locks (API must load the full creator-owned set)", () => {
+    // Membership-scoped JWT reads can see only one overflow workspace; the
+    // soft-lock helper would then think the account is within free allowance.
+    expect(
+      selectFreeOverflowLockedIds(
+        [
+          {
+            workspaceId: "overflow-visible-only",
+            freeOverflowedAt: "2026-07-01T00:00:00Z",
+          },
+        ],
+        1,
+      ).size,
+    ).toBe(0);
+
+    expect(
+      selectFreeOverflowLockedIds(
+        [
+          {
+            workspaceId: "personal-free",
+            freeOverflowedAt: null,
+          },
+          {
+            workspaceId: "overflow-visible-only",
+            freeOverflowedAt: "2026-07-01T00:00:00Z",
+          },
+        ],
+        1,
+      ),
+    ).toEqual(new Set(["overflow-visible-only"]));
+  });
+
   it("locks newest tags first, untagged last", () => {
     expect(
       selectFreeOverflowLockedIds(

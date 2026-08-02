@@ -26,6 +26,7 @@ export async function GET(request: Request) {
     )
     .eq("email", email)
     .is("cancelled_at", null)
+    .is("accepted_at", null)
     .order("created_at", { ascending: false });
 
   if (error) {

@@ -28,6 +28,8 @@ In the hosted dashboard (**Authentication → Email Templates → Magic Link**),
 <p>Enter this code: <strong>{{ .Token }}</strong></p>
 ```
 
+Do **not** include `{{ .ConfirmationURL }}` (or any clickable magic link). Email security scanners that auto-open links can otherwise create confirmed sessions without a human entering the code.
+
 ## Hosted dashboard checklist (`qnoeiurmyyyuawkcifmw`)
 
 1. **Passwords off**: Authentication → Providers → Email: disable password sign-in; keep email/OTP enabled.

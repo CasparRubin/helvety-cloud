@@ -1,6 +1,7 @@
 /**
  * Server-side entitlement gates for /api/v1 create mutations.
  * Uses the user-JWT client and plaintext counts only (never ciphertext).
+ * Soft-lock creator-wide scans use the service role after membership proof.
  */
 import type { Database } from "@helvety-cloud/db";
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -23,6 +24,7 @@ import {
   type SubscriptionLike,
   type WorkspaceMeter,
 } from "@/lib/billing/entitlements";
+import { createServiceRoleClient } from "@/lib/supabase/service-role";
 
 type Api = SupabaseClient<Database>;
 
@@ -55,6 +57,8 @@ function subscriptionLikeFromRow(
 
 /**
  * Soft-lock: lock overflow non-Pro owned workspaces (newest free_overflowed_at first).
+ * Uses service role for creator-wide owned workspace + subscription visibility
+ * after proving the caller can see this workspace (membership). Fail closed.
  */
 export async function isWorkspaceFreeOverflowLocked(
   supabase: Api,
@@ -71,24 +75,31 @@ export async function isWorkspaceFreeOverflowLocked(
     .eq("id", workspaceId)
     .maybeSingle();
   if (workspaceError || !workspaceRow?.created_by) {
-    return false;
+    return true;
   }
 
-  const { data: owned, error: ownedError } = await supabase
+  let admin: Api;
+  try {
+    admin = createServiceRoleClient();
+  } catch {
+    return true;
+  }
+
+  const { data: owned, error: ownedError } = await admin
     .from("workspaces")
     .select("id")
     .eq("created_by", workspaceRow.created_by);
   if (ownedError || !owned?.length) {
-    return false;
+    return true;
   }
 
   const ownedIds = owned.map((row) => row.id);
-  const { data: subs, error: subsError } = await supabase
+  const { data: subs, error: subsError } = await admin
     .from("subscriptions")
     .select("workspace_id, plan, status, free_overflowed_at")
     .in("workspace_id", ownedIds);
   if (subsError) {
-    return false;
+    return true;
   }
 
   const subByWorkspace = new Map(

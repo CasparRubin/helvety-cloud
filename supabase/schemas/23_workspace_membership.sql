@@ -21,6 +21,23 @@ begin
         )
       )
     );
+
+  -- Drop any leftover invitation seals for this member (claimed_by or email).
+  update public.workspace_invitations wi
+  set
+    sealed_workspace_key = null,
+    sealed_at = null,
+    sealed_by = null
+  where wi.workspace_id = ws_id
+    and wi.sealed_workspace_key is not null
+    and (
+      wi.claimed_by = target
+      or wi.email = (
+        select nullif(lower(trim(u.email)), '')
+        from auth.users u
+        where u.id = target
+      )
+    );
 end;
 $$;
 
@@ -46,6 +63,7 @@ begin
     return;
   end if;
 
+  perform set_config('helvety.allow_workspace_attr_change', '1', true);
   update public.workspaces
   set created_by = next_owner
   where id = ws_id

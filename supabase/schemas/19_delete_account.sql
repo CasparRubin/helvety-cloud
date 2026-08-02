@@ -42,6 +42,7 @@ begin
     limit 1;
 
     if next_owner is not null then
+      perform set_config('helvety.allow_workspace_attr_change', '1', true);
       update public.workspaces
       set created_by = next_owner
       where id = shared.workspace_id;

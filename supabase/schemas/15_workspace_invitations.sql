@@ -42,6 +42,8 @@ create table public.workspace_invitations (
     (claimed_by is null and claimed_public_key is null and claimed_at is null)
     or (claimed_by is not null and claimed_public_key is not null and claimed_at is not null)
   ),
+  -- Seal fields null after accept/cancel/leave; accept RPC still requires a
+  -- seal present before copying into wrapped_keys.
   constraint workspace_invitations_seal_consistency check (
     (sealed_workspace_key is null and sealed_at is null and sealed_by is null)
     or (
@@ -50,9 +52,6 @@ create table public.workspace_invitations (
       and sealed_by is not null
       and claimed_by is not null
     )
-  ),
-  constraint workspace_invitations_accept_requires_seal check (
-    accepted_at is null or sealed_workspace_key is not null
   )
 );
 
@@ -327,8 +326,13 @@ begin
     row.sealed_workspace_key
   );
 
+  -- Clear seal after copy so leave/remove wrap purge has no durable second copy.
   update public.workspace_invitations wi
-  set accepted_at = now()
+  set
+    accepted_at = now(),
+    sealed_workspace_key = null,
+    sealed_at = null,
+    sealed_by = null
   where wi.id = invitation_id
   returning * into row;
 

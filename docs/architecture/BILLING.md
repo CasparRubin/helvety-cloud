@@ -71,7 +71,7 @@ settings → Billing. Stripe promotion codes (including 100% off) can be entered
 at Checkout. Each paid workspace stands alone. Owning one Pro does not silently
 raise free slots.
 
-**Soft-lock overflow:** when Pro ends and the account attributed via `created_by` would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates return `limit_exceeded`. Locks clear automatically when the workspace returns to Pro or the attributed account is back within one free workspace.
+**Soft-lock overflow:** when Pro ends and the account attributed via `created_by` would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-lock evaluation loads the full creator-owned set via service role after membership proof (user JWT alone cannot see sibling owned workspaces). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates return `limit_exceeded`. Locks clear automatically when the workspace returns to Pro or the attributed account is back within one free workspace.
 
 **Capacity Increase (Pro + Stripe only):** add-on quantity lives on the same
 subscription. Effective limit =
