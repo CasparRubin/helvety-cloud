@@ -18,7 +18,7 @@ export type SignupPolicyId = (typeof SIGNUP_POLICY_IDS)[number];
 /** Current production versions. Must match UI offers and API acceptance. */
 export const CURRENT_POLICY_VERSIONS: Record<SignupPolicyId, string> = {
   tos: "2026-07-28-v6",
-  privacy: "2026-07-28-v8",
+  privacy: "2026-08-02-v9",
   aup: "2026-07-28-v3",
   e2ee: "2026-07-28-v4",
   eligibility: "2026-07-28-v1",
