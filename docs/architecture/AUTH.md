@@ -19,6 +19,10 @@ Session refresh runs in Next.js [`apps/web/proxy.ts`](../../apps/web/proxy.ts) (
 
 Do **not** enable `experimental: { passkey: true }`. Account auth is email OTP only.
 
+## Stale account cleanup
+
+OTP can create an Auth user before encryption setup. Accounts with **no** `user_crypto` row (never finished unlock/passkey setup), no memberships, and no workspace attribution are deleted automatically after **24 hours** by `public.purge_stale_auth_without_crypto()`, scheduled hourly via Supabase Cron (`pg_cron`). Clients cannot call this function.
+
 ## Email OTP template
 
 In the hosted dashboard (**Authentication → Email Templates → Magic Link**), include the code token so the app can verify with `verifyOtp({ type: 'email' })`:
