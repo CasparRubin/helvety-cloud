@@ -375,7 +375,7 @@ export default function PricingPage() {
                 Upgrade a Free Workspace in Workspace settings → Billing, or
                 create another workspace with New Pro workspace (Checkout opens
                 after create). For Capacity Increase packs, members set the
-                quantity under Add-ons on the Billing page.
+                quantity (up to 20) under Add-ons on the Billing page.
               </InfoBlock>
               <InfoBlock title="Pro Workspace Capacity Increase">
                 Pro Workspace Capacity Increase is an optional add-on for a paid

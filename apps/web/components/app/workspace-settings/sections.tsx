@@ -1,7 +1,10 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { WorkspaceMember } from "@helvety-cloud/api-contract";
+import {
+  MAX_CAPACITY_ADDON_QUANTITY,
+  type WorkspaceMember,
+} from "@helvety-cloud/api-contract";
 
 import { ConfirmDeleteDialog } from "@/components/app/confirm-delete-dialog";
 import { CreateEntityDialog } from "@/components/app/create-entity-dialog";
@@ -786,7 +789,7 @@ export function WorkspaceBillingSettings() {
                       <Input
                         type="number"
                         min={0}
-                        max={50}
+                        max={MAX_CAPACITY_ADDON_QUANTITY}
                         step={1}
                         className="h-8 w-16"
                         value={capacityInput}
@@ -801,7 +804,13 @@ export function WorkspaceBillingSettings() {
                         disabled={pending}
                         onClick={() => {
                           const parsed = Number.parseInt(capacityInput, 10);
-                          if (!Number.isFinite(parsed) || parsed < 0) return;
+                          if (
+                            !Number.isFinite(parsed) ||
+                            parsed < 0 ||
+                            parsed > MAX_CAPACITY_ADDON_QUANTITY
+                          ) {
+                            return;
+                          }
                           void (async () => {
                             const ok = await onUpdateCapacity(parsed);
                             if (ok) setCapacityDraft(null);

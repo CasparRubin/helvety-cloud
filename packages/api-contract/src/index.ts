@@ -29,11 +29,16 @@ const base64UrlSchema = z
   .min(1)
   .regex(/^[A-Za-z0-9_-]+$/, "expected base64url");
 
+/** Max base64url chars for one ciphertext payload (~1.5 MiB decoded). Abuse brake. */
+const MAX_CIPHERTEXT_CHARS = 2_097_152;
+
+const ciphertextPayloadSchema = base64UrlSchema.max(MAX_CIPHERTEXT_CHARS);
+
 /** Versioned AES-GCM ciphertext (content or key_check). */
 export const ciphertextEnvelopeSchema = z.object({
   v: z.literal(1),
   nonce: base64UrlSchema,
-  ciphertext: base64UrlSchema,
+  ciphertext: ciphertextPayloadSchema,
   keyVersion: z.number().int().positive(),
 });
 export type CiphertextEnvelope = z.infer<typeof ciphertextEnvelopeSchema>;
@@ -42,7 +47,7 @@ export type CiphertextEnvelope = z.infer<typeof ciphertextEnvelopeSchema>;
 export const wrappedKeyEnvelopeSchema = z.object({
   v: z.literal(1),
   nonce: base64UrlSchema,
-  ciphertext: base64UrlSchema,
+  ciphertext: ciphertextPayloadSchema,
   keyVersion: z.number().int().positive(),
 });
 export type WrappedKeyEnvelope = z.infer<typeof wrappedKeyEnvelopeSchema>;
@@ -52,7 +57,7 @@ export const sealedKeyEnvelopeSchema = z.object({
   v: z.literal(1),
   ephemeralPublicKey: base64UrlSchema,
   nonce: base64UrlSchema,
-  ciphertext: base64UrlSchema,
+  ciphertext: ciphertextPayloadSchema,
   keyVersion: z.number().int().positive(),
 });
 export type SealedKeyEnvelope = z.infer<typeof sealedKeyEnvelopeSchema>;
@@ -96,6 +101,14 @@ export const entityLinkTargetSchema = z.object({
   id: uuidSchema,
 });
 export type EntityLinkTarget = z.infer<typeof entityLinkTargetSchema>;
+
+/** Request-side caps (abuse brake). Responses stay uncapped. */
+const MAX_ENTITY_LINKS = 50;
+const MAX_ATTACHMENT_IDS = 20;
+const entityLinksInputSchema = z
+  .array(entityLinkTargetSchema)
+  .max(MAX_ENTITY_LINKS);
+const attachmentIdsInputSchema = z.array(uuidSchema).max(MAX_ATTACHMENT_IDS);
 
 export const healthResponseSchema = z.object({
   ok: z.literal(true),
@@ -237,9 +250,9 @@ export const putTaskRequestSchema = z.object({
   /** FK to milestones; null clears. */
   milestoneId: uuidSchema.nullable().optional(),
   /** Replace outgoing entity_links from this task when provided. */
-  links: z.array(entityLinkTargetSchema).optional(),
+  links: entityLinksInputSchema.optional(),
   /** Replace TipTap fileAttachment links when provided. */
-  attachmentIds: z.array(uuidSchema).optional(),
+  attachmentIds: attachmentIdsInputSchema.optional(),
 });
 export type PutTaskRequest = z.infer<typeof putTaskRequestSchema>;
 
@@ -334,11 +347,11 @@ export const putNoteRequestSchema = z.object({
   pinSortOrder: z.number().int().nullable().optional(),
   deletedAt: z.string().nullable().optional(),
   /** Replace non-project outgoing entity_links when provided. */
-  links: z.array(entityLinkTargetSchema).optional(),
+  links: entityLinksInputSchema.optional(),
   /** Replace project affiliation edges when provided (0..n). */
   projectIds: z.array(uuidSchema).optional(),
   /** Replace TipTap fileAttachment links when provided. */
-  attachmentIds: z.array(uuidSchema).optional(),
+  attachmentIds: attachmentIdsInputSchema.optional(),
 });
 export type PutNoteRequest = z.infer<typeof putNoteRequestSchema>;
 
@@ -369,7 +382,7 @@ export const putBoardRequestSchema = z.object({
   pinSortOrder: z.number().int().nullable().optional(),
   deletedAt: z.string().nullable().optional(),
   /** Replace outgoing entity_links (note/task/contact/project) when provided. */
-  links: z.array(entityLinkTargetSchema).optional(),
+  links: entityLinksInputSchema.optional(),
 });
 export type PutBoardRequest = z.infer<typeof putBoardRequestSchema>;
 
@@ -418,11 +431,11 @@ export const putContactRequestSchema = z.object({
   pinSortOrder: z.number().int().nullable().optional(),
   deletedAt: z.string().nullable().optional(),
   /** Replace non-project outgoing entity_links when provided. */
-  links: z.array(entityLinkTargetSchema).optional(),
+  links: entityLinksInputSchema.optional(),
   /** Replace project affiliation edges when provided (0..n). */
   projectIds: z.array(uuidSchema).optional(),
   /** Replace TipTap fileAttachment links when provided. */
-  attachmentIds: z.array(uuidSchema).optional(),
+  attachmentIds: attachmentIdsInputSchema.optional(),
 });
 export type PutContactRequest = z.infer<typeof putContactRequestSchema>;
 
@@ -700,8 +713,14 @@ export type BillingRedirectResponse = z.infer<
   typeof billingRedirectResponseSchema
 >;
 
+/** Hard ceiling on Capacity Increase packs per workspace (abuse brake). */
+export const MAX_CAPACITY_ADDON_QUANTITY = 20;
+
 export const updateBillingAddonsRequestSchema = z.object({
-  quantities: z.record(addonMeterSchema, z.number().int().nonnegative()),
+  quantities: z.record(
+    addonMeterSchema,
+    z.number().int().nonnegative().max(MAX_CAPACITY_ADDON_QUANTITY),
+  ),
 });
 export type UpdateBillingAddonsRequest = z.infer<
   typeof updateBillingAddonsRequestSchema

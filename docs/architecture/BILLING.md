@@ -74,7 +74,8 @@ raise free slots.
 **Soft-lock overflow:** when Pro ends and the account attributed via `created_by` would then have more than one non-Pro workspace, Helvety stamps `subscriptions.free_overflowed_at` on the lapsed workspace and soft-locks overflow workspaces (newest tags first; lock count = `nonProOwned − 1`). Soft-lock evaluation loads the full creator-owned set via service role after membership proof (user JWT alone cannot see sibling owned workspaces). Soft-locked workspaces keep read/edit/delete/export/decrypt; only net-new creates return `limit_exceeded`. Locks clear automatically when the workspace returns to Pro or the attributed account is back within one free workspace.
 
 **Capacity Increase (Pro + Stripe only):** add-on quantity lives on the same
-subscription. Effective limit =
+subscription (hard cap **20** packs via `MAX_CAPACITY_ADDON_QUANTITY` in
+`packages/api-contract`). Effective limit =
 
 ```text
 catalog[plan][meter] + (capacity_quantity × pack_delta)
@@ -102,7 +103,7 @@ live promotion codes; do not leave unlimited forever codes active.
 ## Stripe shape
 
 - One subscription per workspace.
-- Line items: Pro Workspace base (qty 1) + zero or more Capacity Increase packs (qty ≥ 1).
+- Line items: Pro Workspace base (qty 1) + zero or more Capacity Increase packs (qty 1–20).
 - Use `STRIPE_PRICE_PRO_WORKSPACE_YEARLY`.
 - Capacity Increase env var: `STRIPE_PRICE_PRO_WORKSPACE_CAPACITY_INCREASE_YEARLY`.
 
@@ -145,7 +146,7 @@ live promotion codes; do not leave unlimited forever codes active.
 Free limits are stated in the product before a gate blocks an action and in
 `https://helvety.com/terms#billing`. Cancel is one click in the Portal for paid
 subs. No dark patterns. **Capacity Increase:** Workspace settings → Billing →
-Add-ons → set pack quantity → **Update** (`PUT …/billing/addons`, prorated on
+Add-ons → set pack quantity (0–20) → **Update** (`PUT …/billing/addons`, prorated on
 Stripe). **Manage billing** opens the Customer Portal for cancel, payment
 method, and invoices.
 

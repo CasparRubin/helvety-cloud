@@ -26,7 +26,7 @@ type RouteContext = {
 };
 
 /**
- * Any member: set Capacity Increase quantity on a paid Pro Workspace
+ * Any member: set Capacity Increase quantity (0–20) on a paid Pro Workspace
  * subscription.
  */
 export async function PUT(request: Request, context: RouteContext) {
