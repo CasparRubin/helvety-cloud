@@ -15,7 +15,7 @@
 | Plane   | Examples                                                                                                                                                          |
 | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Control | `PUT /api/v1/me/crypto`, `DELETE /api/v1/me`, `POST /api/v1/workspaces`, workspace invitations, billing/Checkout/portal/addons (see [`BILLING.md`](./BILLING.md)) |
-| Data    | Task/project/note/contact/milestone/attachment upserts with ciphertext envelopes; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=`                 |
+| Data    | Task/project/note/contact/milestone/board/comment/attachment upserts with ciphertext envelopes; later `POST /api/v1/sync/push`, `GET /api/v1/sync/pull?cursor=`   |
 
 Realtime (optional later) = wake-up only, not a second write API.
 

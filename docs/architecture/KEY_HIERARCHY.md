@@ -9,7 +9,7 @@ Passkey PRF output
   → HKDF → unlock_key
        → wraps user_symmetric_key
             → wraps user_private_key (X25519)
-       user_public_key → stored on server (plaintext) for future invites
+       user_public_key → stored on server (plaintext) for workspace invites
 
 workspace_key / project_key (CSPRNG)
   → sealed to each member’s user_public_key → wrapped_keys rows

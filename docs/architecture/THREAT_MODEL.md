@@ -2,7 +2,7 @@
 
 ## Assets
 
-- User encrypted content (workspace names, project/task/note/contact/milestone titles and bodies, comment bodies, file metadata and ciphertext, categorization names/colors)
+- User encrypted content (workspace names, project/task/note/contact/milestone titles and bodies, comment bodies, board graph titles/nodes/edges, file metadata and ciphertext, categorization names/colors)
 - User encryption keys (symmetric + private asymmetric)
 - Unlock material (WebAuthn PRF output, recovery key)
 - Account identity (email, session JWT)

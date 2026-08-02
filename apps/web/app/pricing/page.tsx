@@ -264,8 +264,8 @@ export default function PricingPage() {
                 Workspace when you need encrypted files and higher limits, then
                 add Pro Workspace Capacity Increase packs only when that
                 workspace grows. Workspace content (projects, tasks, notes,
-                contacts, and names) is end-to-end encrypted on every plan,
-                including Free. Helvety cannot decrypt it.
+                contacts, boards, and names) is end-to-end encrypted on every
+                plan, including Free. Helvety cannot decrypt it.
               </p>
             </div>
           </div>

@@ -9,7 +9,8 @@ const geistMono = Geist_Mono({ subsets: ["latin"], variable: "--font-mono" });
 
 export const metadata: Metadata = {
   title: "Helvety Cloud",
-  description: "E2EE workspace on helvety.cloud",
+  description:
+    "End-to-end encrypted workspace for projects, tasks, notes, contacts, and boards on helvety.cloud.",
 };
 
 export default function RootLayout({

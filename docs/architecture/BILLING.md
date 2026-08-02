@@ -55,6 +55,9 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 | File storage (ciphertext bytes)   |    0 |    5 GiB |
 | Max upload size                   |    0 |   25 MiB |
 
+**Boards (P17):** encrypted boards are shipped and workspace-scoped, but they are
+not in `PLAN_LIMITS` today. Soft-lock and create gates do not meter board creates.
+
 **2nd+ owned workspace:** create from the app switcher (New Pro workspace). The
 workspace is created with Pro intent, then Stripe Checkout opens for that
 workspace. You can also upgrade an existing free workspace from Workspace

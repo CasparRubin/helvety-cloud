@@ -108,9 +108,9 @@ export function AccountDangerSettings() {
           </li>
           <li>
             Solo workspaces where you are the only member (including Personal)
-            and everything inside them (projects, tasks, notes, contacts, links,
-            ciphertext, and wrapped keys) are permanently deleted. Helvety
-            cannot decrypt or recover your data.
+            and everything inside them (projects, tasks, notes, contacts,
+            boards, links, ciphertext, and wrapped keys) are permanently
+            deleted. Helvety cannot decrypt or recover your data.
           </li>
           <li>
             Pro subscriptions on those deleted solo workspaces are cancelled.

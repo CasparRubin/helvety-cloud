@@ -446,7 +446,7 @@ export function WorkspaceMembersSettings() {
         <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
           <p className="text-xs leading-5 text-muted-foreground">
             {isSolo
-              ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, files, and sharing."
+              ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, boards, files, and sharing."
               : "Leaving removes your access and your wrapped keys. Nothing is deleted for other members."}
           </p>
           <Button
@@ -532,7 +532,7 @@ export function WorkspaceMembersSettings() {
         }
         description={
           isSolo
-            ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, boards, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
         }
         confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
@@ -931,7 +931,7 @@ export function WorkspaceDangerSettings() {
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
             title={`Delete workspace “${workspace.name}”?`}
-            description="This permanently deletes the workspace for everyone, including all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            description="This permanently deletes the workspace for everyone, including all projects, tasks, notes, contacts, boards, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             busy={pending}
             onConfirm={onDeleteWorkspace}
           />
@@ -945,7 +945,7 @@ export function WorkspaceDangerSettings() {
             }
             description={
               isSolo
-                ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+                ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, boards, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
                 : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
             }
             confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
