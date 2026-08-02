@@ -719,6 +719,11 @@ export function WorkspaceBillingSettings() {
                 used={billing.usage.comments}
                 limit={billing.limits.comments}
               />
+              <UsageMeterRow
+                label="Boards"
+                used={billing.usage.boards}
+                limit={billing.limits.boards}
+              />
               {billing.limits.storageBytes === 0 ? (
                 <CapRow label="File storage" value="Not included on Free" />
               ) : (
@@ -733,6 +738,10 @@ export function WorkspaceBillingSettings() {
                 <CapRow
                   label="Tasks per project"
                   value={`Up to ${formatLimit(billing.limits.tasks)}`}
+                />
+                <CapRow
+                  label="Shapes per board"
+                  value={`Up to ${formatLimit(billing.limits.nodesPerBoard)}`}
                 />
                 <CapRow
                   label="Files per task"
@@ -787,6 +796,8 @@ export function WorkspaceBillingSettings() {
                     {CAPACITY_PACK.deltas.notes} notes,{" "}
                     {CAPACITY_PACK.deltas.contacts} contacts,{" "}
                     {CAPACITY_PACK.deltas.comments} comments and replies,{" "}
+                    {CAPACITY_PACK.deltas.boards} boards,{" "}
+                    {CAPACITY_PACK.deltas.nodesPerBoard} shapes per board,{" "}
                     {CAPACITY_PACK.deltas.members} members, and{" "}
                     {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
                   </p>
@@ -794,8 +805,8 @@ export function WorkspaceBillingSettings() {
               ) : (
                 <p className="text-xs text-muted-foreground">
                   Capacity Increase is available on Pro Workspace. Each pack
-                  raises projects, tasks, notes, contacts, comments, members,
-                  and storage together.
+                  raises projects, tasks, notes, contacts, comments, boards,
+                  shapes per board, members, and storage together.
                 </p>
               )}
             </CardContent>

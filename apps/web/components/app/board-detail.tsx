@@ -27,6 +27,8 @@ import {
   saveBoard,
   type DecryptedBoard,
 } from "@/lib/client-crypto/boards";
+import { getWorkspaceBilling } from "@/lib/api/v1-client";
+import { PLAN_LIMITS, type Plan } from "@/lib/billing/entitlements";
 
 type BoardDetailProps = {
   workspaceId: string;
@@ -52,6 +54,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [plan, setPlan] = useState<Plan>("free");
+  const [nodesPerBoard, setNodesPerBoard] = useState<number | null>(
+    PLAN_LIMITS.free.nodesPerBoard,
+  );
 
   const boardRef = useRef(board);
   useEffect(() => {
@@ -64,7 +70,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
     void (async () => {
       setLoading(true);
       try {
-        const key = await getWorkspaceKey(workspaceId);
+        const [key, billing] = await Promise.all([
+          getWorkspaceKey(workspaceId),
+          getWorkspaceBilling(workspaceId).catch(() => null),
+        ]);
         const loaded = await loadDecryptedBoard(workspaceId, boardId, key);
         if (cancelled) return;
         setBoard(loaded);
@@ -72,6 +81,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
         setNodes(loaded.nodes);
         setEdges(loaded.edges);
         setViewport(loaded.viewport);
+        if (billing) {
+          setPlan(billing.plan);
+          setNodesPerBoard(billing.limits.nodesPerBoard);
+        }
         setError(null);
       } catch (e) {
         if (cancelled) return;
@@ -122,6 +135,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
 
   const onViewportIdle = useCallback((next: BoardViewport) => {
     setViewport(next);
+  }, []);
+
+  const onShapeLimitReached = useCallback((message: string) => {
+    setError(message);
   }, []);
 
   async function onDelete() {
@@ -200,6 +217,9 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
           initialViewport={board.viewport}
           onGraphChange={onGraphChange}
           onViewportIdle={onViewportIdle}
+          nodesPerBoard={nodesPerBoard}
+          plan={plan}
+          onShapeLimitReached={onShapeLimitReached}
         />
       </div>
     </div>

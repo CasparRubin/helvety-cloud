@@ -11,6 +11,7 @@ import {
   validateLinkTargetsInWorkspace,
   deleteLinksTouching,
 } from "@/lib/api/entity-links";
+import { assertWorkspaceCreateAllowed } from "@/lib/api/entitlements";
 import { apiError, jsonOk } from "@/lib/api/errors";
 import { isAuthedApi, requireUser } from "@/lib/supabase/api";
 
@@ -116,6 +117,17 @@ export async function PUT(request: Request, context: RouteContext) {
   }
   if (existing && existing.workspace_id !== workspaceId) {
     return apiError("conflict", "Board id belongs to another workspace", 409);
+  }
+
+  if (!existing) {
+    const limitResponse = await assertWorkspaceCreateAllowed(
+      supabase,
+      workspaceId,
+      "boards",
+    );
+    if (limitResponse) {
+      return limitResponse;
+    }
   }
 
   if (data.links !== undefined) {

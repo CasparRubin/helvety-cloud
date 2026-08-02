@@ -64,6 +64,8 @@ describe("plan limits", () => {
     expect(pro.notesPerWorkspace).toBeGreaterThan(free.notesPerWorkspace);
     expect(pro.contactsPerWorkspace).toBeGreaterThan(free.contactsPerWorkspace);
     expect(pro.commentsPerWorkspace).toBeGreaterThan(free.commentsPerWorkspace);
+    expect(pro.boardsPerWorkspace).toBeGreaterThan(free.boardsPerWorkspace);
+    expect(pro.nodesPerBoard).toBeGreaterThan(free.nodesPerBoard);
     expect(pro.filesPerTask).toBeGreaterThan(free.filesPerTask);
     expect(pro.storageBytesPerWorkspace).toBeGreaterThan(
       free.storageBytesPerWorkspace,
@@ -87,6 +89,8 @@ describe("plan limits", () => {
     expect(PLAN_LIMITS.free.notesPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.free.contactsPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.free.commentsPerWorkspace).toBe(50);
+    expect(PLAN_LIMITS.free.boardsPerWorkspace).toBe(1);
+    expect(PLAN_LIMITS.free.nodesPerBoard).toBe(20);
 
     expect(PLAN_LIMITS.pro.projectsPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.pro.membersPerWorkspace).toBe(25);
@@ -94,6 +98,8 @@ describe("plan limits", () => {
     expect(PLAN_LIMITS.pro.notesPerWorkspace).toBe(500);
     expect(PLAN_LIMITS.pro.contactsPerWorkspace).toBe(500);
     expect(PLAN_LIMITS.pro.commentsPerWorkspace).toBe(1000);
+    expect(PLAN_LIMITS.pro.boardsPerWorkspace).toBe(25);
+    expect(PLAN_LIMITS.pro.nodesPerBoard).toBe(400);
     expect(PLAN_LIMITS.pro.filesPerTask).toBe(5);
     expect(PLAN_LIMITS.pro.storageBytesPerWorkspace).toBe(
       5 * 1024 * 1024 * 1024,
@@ -108,6 +114,7 @@ describe("plan limits", () => {
       "notes",
       "contacts",
       "comments",
+      "boards",
     ];
     for (const meter of meters) {
       expect(workspaceMeterLimit(null, meter)).toBeGreaterThan(0);
@@ -125,6 +132,8 @@ describe("effective limits + addons", () => {
     expect(CAPACITY_PACK.deltas.notes).toBe(250);
     expect(CAPACITY_PACK.deltas.contacts).toBe(250);
     expect(CAPACITY_PACK.deltas.comments).toBe(500);
+    expect(CAPACITY_PACK.deltas.boards).toBe(10);
+    expect(CAPACITY_PACK.deltas.nodesPerBoard).toBe(200);
     expect(CAPACITY_PACK.deltas.members).toBe(10);
     expect(CAPACITY_PACK.deltas.storageBytes).toBe(2.5 * 1024 * 1024 * 1024);
     expect(CAPACITY_PACK.deltas.filesPerTask).toBe(0);
@@ -152,6 +161,12 @@ describe("effective limits + addons", () => {
     );
     expect(limits.commentsPerWorkspace).toBe(
       PLAN_LIMITS.pro.commentsPerWorkspace + 2 * CAPACITY_PACK.deltas.comments,
+    );
+    expect(limits.boardsPerWorkspace).toBe(
+      PLAN_LIMITS.pro.boardsPerWorkspace + 2 * CAPACITY_PACK.deltas.boards,
+    );
+    expect(limits.nodesPerBoard).toBe(
+      PLAN_LIMITS.pro.nodesPerBoard + 2 * CAPACITY_PACK.deltas.nodesPerBoard,
     );
     expect(limits.membersPerWorkspace).toBe(
       PLAN_LIMITS.pro.membersPerWorkspace + 2 * CAPACITY_PACK.deltas.members,
@@ -205,6 +220,11 @@ describe("limit copy", () => {
 
   it("task copy is per project", () => {
     expect(limitMessage("pro", "tasks", 1000)).toContain("per project");
+  });
+
+  it("board copy is per workspace", () => {
+    expect(limitMessage("free", "boards", 1)).toContain("per workspace");
+    expect(limitMessage("free", "boards", 1)).toContain("Upgrade");
   });
 
   it("member copy counts pending invitations honestly", () => {

@@ -71,6 +71,11 @@ import type {
   BoardGraphNode,
   BoardViewport,
 } from "@/lib/client-crypto/board-plaintext";
+import {
+  isUnlimited,
+  nodesPerBoardLimitMessage,
+  type Plan,
+} from "@/lib/billing/entitlements";
 import { cn } from "@/lib/utils";
 
 export type BoardCanvasGraph = {
@@ -84,6 +89,10 @@ type BoardCanvasProps = {
   initialViewport?: BoardViewport;
   onGraphChange: (graph: BoardCanvasGraph) => void;
   onViewportIdle: (viewport: BoardViewport) => void;
+  /** Max shapes (nodes) per board; null means unlimited. Client-enforced. */
+  nodesPerBoard: number | null;
+  plan: Plan;
+  onShapeLimitReached?: (message: string) => void;
 };
 
 type PlaceKind = "note" | "contact" | "task" | "project";
@@ -190,6 +199,9 @@ function BoardCanvasInner({
   initialViewport,
   onGraphChange,
   onViewportIdle,
+  nodesPerBoard,
+  plan,
+  onShapeLimitReached,
 }: BoardCanvasProps) {
   const { screenToFlowPosition, getViewport } = useReactFlow();
   const { resolvedTheme } = useTheme();
@@ -274,11 +286,20 @@ function BoardCanvasInner({
 
   const addNode = useCallback(
     (type: string, data: Record<string, unknown> = {}) => {
+      const limit = nodesPerBoard;
+      if (
+        limit != null &&
+        !isUnlimited(limit) &&
+        nodesRef.current.length >= limit
+      ) {
+        onShapeLimitReached?.(nodesPerBoardLimitMessage(plan, limit));
+        return;
+      }
       const position = dropPosition();
       const id = crypto.randomUUID();
       setNodes((prev) => [...prev, { id, type, position, data }]);
     },
-    [dropPosition, setNodes],
+    [dropPosition, setNodes, nodesPerBoard, plan, onShapeLimitReached],
   );
 
   const placeEntity = useCallback(

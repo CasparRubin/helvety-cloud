@@ -11,7 +11,12 @@ export type AddonMeter = "capacity";
 
 /** Workspace create gates that map 1:1 onto a catalog meter (except tasks). */
 export type WorkspaceMeter =
-  "projects" | "tasks" | "notes" | "contacts" | "comments";
+  | "projects"
+  | "tasks"
+  | "notes"
+  | "contacts"
+  | "comments"
+  | "boards";
 
 export type PlanLimits = {
   /** Free-tier workspace slots attributed via created_by (not a privilege). */
@@ -25,6 +30,13 @@ export type PlanLimits = {
   contactsPerWorkspace: number;
   /** Comments + replies (every comments row) per workspace. */
   commentsPerWorkspace: number;
+  /** Encrypted boards per workspace (server-enforced plaintext row count). */
+  boardsPerWorkspace: number;
+  /**
+   * Max React Flow nodes (shapes + entity placements) per board.
+   * Catalogued for pricing honesty; enforced client-side only (ciphertext).
+   */
+  nodesPerBoard: number;
   /** Max ready/pending attachments linked to a single task. Free = 0. */
   filesPerTask: number;
   /** Total ciphertext bytes allowed in Supabase Storage for the workspace. */
@@ -50,6 +62,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     notesPerWorkspace: 25,
     contactsPerWorkspace: 25,
     commentsPerWorkspace: 50,
+    boardsPerWorkspace: 1,
+    nodesPerBoard: 20,
     filesPerTask: 0,
     storageBytesPerWorkspace: 0,
     maxUploadBytes: 0,
@@ -64,6 +78,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     notesPerWorkspace: 500,
     contactsPerWorkspace: 500,
     commentsPerWorkspace: 1000,
+    boardsPerWorkspace: 25,
+    nodesPerBoard: 400,
     filesPerTask: 5,
     storageBytesPerWorkspace: PRO_STORAGE_BYTES,
     maxUploadBytes: PRO_MAX_UPLOAD_BYTES,
@@ -83,6 +99,8 @@ export type AddonPackDef = {
     notes: number;
     contacts: number;
     comments: number;
+    boards: number;
+    nodesPerBoard: number;
     members: number;
     storageBytes: number;
     filesPerTask: number;
@@ -104,6 +122,8 @@ export const CAPACITY_PACK: AddonPackDef = {
     notes: 250,
     contacts: 250,
     comments: 500,
+    boards: 10,
+    nodesPerBoard: 200,
     members: 10,
     storageBytes: 2.5 * 1024 * 1024 * 1024, // 2.5 GiB
     filesPerTask: 0,
@@ -178,6 +198,10 @@ export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
       base.contactsPerWorkspace + packCount * CAPACITY_PACK.deltas.contacts,
     commentsPerWorkspace:
       base.commentsPerWorkspace + packCount * CAPACITY_PACK.deltas.comments,
+    boardsPerWorkspace:
+      base.boardsPerWorkspace + packCount * CAPACITY_PACK.deltas.boards,
+    nodesPerBoard:
+      base.nodesPerBoard + packCount * CAPACITY_PACK.deltas.nodesPerBoard,
     filesPerTask:
       base.filesPerTask + packCount * CAPACITY_PACK.deltas.filesPerTask,
     storageBytesPerWorkspace:
@@ -203,6 +227,8 @@ export function workspaceMeterLimit(
       return limits.contactsPerWorkspace;
     case "comments":
       return limits.commentsPerWorkspace;
+    case "boards":
+      return limits.boardsPerWorkspace;
     default: {
       const _exhaustive: never = meter;
       return _exhaustive;
@@ -226,6 +252,7 @@ const METER_LABEL: Record<WorkspaceMeter, string> = {
   notes: "notes",
   contacts: "contacts",
   comments: "comments and replies",
+  boards: "boards",
 };
 
 /** Honest, dark-pattern-free limit copy for API errors and UI. */
@@ -327,6 +354,15 @@ export function filesPerTaskLimitMessage(plan: Plan, limit: number): string {
       ? " Upgrade this workspace to Pro Workspace to attach files to tasks."
       : "";
   return `File limit reached for this task (${isUnlimited(limit) ? "unlimited" : limit} files on the ${plan} plan).${upgradeHint}`;
+}
+
+/** Client-enforced shapes-per-board copy (nodes live in ciphertext). */
+export function nodesPerBoardLimitMessage(plan: Plan, limit: number): string {
+  const upgradeHint =
+    plan === "free"
+      ? " Upgrade this workspace to Pro Workspace for larger boards."
+      : "";
+  return `Shape limit reached for this board (${isUnlimited(limit) ? "unlimited" : limit} shapes per board on the ${plan} plan).${upgradeHint}`;
 }
 
 export function formatBytes(bytes: number): string {

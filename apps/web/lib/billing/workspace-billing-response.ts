@@ -74,6 +74,8 @@ export async function buildWorkspaceBillingResponse(
       notes: limitToApi(limits.notesPerWorkspace),
       contacts: limitToApi(limits.contactsPerWorkspace),
       comments: limitToApi(limits.commentsPerWorkspace),
+      boards: limitToApi(limits.boardsPerWorkspace),
+      nodesPerBoard: limitToApi(limits.nodesPerBoard),
       filesPerTask: limitToApi(limits.filesPerTask),
       storageBytes: limitToApi(limits.storageBytesPerWorkspace),
       maxUploadBytes: Number.isFinite(limits.maxUploadBytes)

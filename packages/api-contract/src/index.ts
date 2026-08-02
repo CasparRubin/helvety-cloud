@@ -643,6 +643,9 @@ export const workspaceLimitsSchema = z.object({
   notes: z.number().int().positive().nullable(),
   contacts: z.number().int().positive().nullable(),
   comments: z.number().int().positive().nullable(),
+  boards: z.number().int().positive().nullable(),
+  /** Shapes (nodes) per board; client-enforced (ciphertext). */
+  nodesPerBoard: z.number().int().positive().nullable(),
   filesPerTask: z.number().int().nonnegative().nullable(),
   /** Ciphertext bytes; free plan is 0 (no uploads). */
   storageBytes: z.number().int().nonnegative().nullable(),
@@ -659,6 +662,7 @@ export const workspaceUsageSchema = z.object({
   notes: z.number().int().nonnegative(),
   contacts: z.number().int().nonnegative(),
   comments: z.number().int().nonnegative(),
+  boards: z.number().int().nonnegative(),
   /** Sum of ready (+ reserved pending) attachment ciphertext bytes. */
   storageBytes: z.number().int().nonnegative(),
 });

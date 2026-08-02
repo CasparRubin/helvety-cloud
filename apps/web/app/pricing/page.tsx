@@ -78,6 +78,11 @@ const freeRows: PricingRow[] = [
     label: "Comments and replies",
     value: String(PLAN_LIMITS.free.commentsPerWorkspace),
   },
+  { label: "Boards", value: String(PLAN_LIMITS.free.boardsPerWorkspace) },
+  {
+    label: "Shapes per board",
+    value: String(PLAN_LIMITS.free.nodesPerBoard),
+  },
   { label: "Encrypted files per task", value: "Not included on Free" },
   { label: "Encrypted file storage", value: "Not included on Free" },
 ];
@@ -94,6 +99,11 @@ const proRows: PricingRow[] = [
   {
     label: "Comments and replies",
     value: String(PLAN_LIMITS.pro.commentsPerWorkspace),
+  },
+  { label: "Boards", value: String(PLAN_LIMITS.pro.boardsPerWorkspace) },
+  {
+    label: "Shapes per board",
+    value: String(PLAN_LIMITS.pro.nodesPerBoard),
   },
   {
     label: "Encrypted files per task",
@@ -120,6 +130,11 @@ const capacityRows: PricingRow[] = [
   {
     label: "Comments and replies",
     value: `+${CAPACITY_PACK.deltas.comments}`,
+  },
+  { label: "Boards", value: `+${CAPACITY_PACK.deltas.boards}` },
+  {
+    label: "Shapes per board",
+    value: `+${CAPACITY_PACK.deltas.nodesPerBoard}`,
   },
   { label: "Members", value: `+${CAPACITY_PACK.deltas.members}` },
   {

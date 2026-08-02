@@ -34,6 +34,7 @@ export type WorkspaceUsageCounts = {
   notes: number;
   contacts: number;
   comments: number;
+  boards: number;
   storageBytes: number;
 };
 
@@ -132,7 +133,9 @@ export async function getWorkspaceUsage(
   supabase: Api,
   workspaceId: string,
 ): Promise<WorkspaceUsageCounts> {
-  const countRows = (meter: "projects" | "notes" | "contacts" | "comments") =>
+  const countRows = (
+    meter: "projects" | "notes" | "contacts" | "comments" | "boards",
+  ) =>
     supabase
       .from(meter)
       .select("id", { count: "exact", head: true })
@@ -144,6 +147,7 @@ export async function getWorkspaceUsage(
     notes,
     contacts,
     comments,
+    boards,
     tasks,
     members,
     pendingInvitations,
@@ -153,6 +157,7 @@ export async function getWorkspaceUsage(
     countRows("notes"),
     countRows("contacts"),
     countRows("comments"),
+    countRows("boards"),
     supabase
       .from("tasks")
       .select("id, projects!inner(workspace_id)", {
@@ -189,6 +194,7 @@ export async function getWorkspaceUsage(
     notes: notes.count ?? 0,
     contacts: contacts.count ?? 0,
     comments: comments.count ?? 0,
+    boards: boards.count ?? 0,
     tasks: tasks.count ?? 0,
     members: members.count ?? 0,
     pendingInvitations: pendingInvitations.count ?? 0,
