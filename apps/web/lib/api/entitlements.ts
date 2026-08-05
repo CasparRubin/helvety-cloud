@@ -58,16 +58,34 @@ function subscriptionLikeFromRow(
 /**
  * Soft-lock: lock overflow non-Pro owned workspaces (newest free_overflowed_at first).
  * Uses service role for creator-wide owned workspace + subscription visibility
- * after proving the caller can see this workspace (membership). Fail closed.
+ * after proving the caller can see this workspace (membership).
+ *
+ * On infra failure (missing service role / query errors), fall back to this
+ * workspace's free_overflowed_at stamp only: stamped → locked, untagged → open.
+ * Never fail-closed on a lone untagged free workspace.
  */
 export async function isWorkspaceFreeOverflowLocked(
   supabase: Api,
   workspaceId: string,
 ): Promise<boolean> {
-  const subscription = await getWorkspaceSubscription(supabase, workspaceId);
+  const { data: subRow, error: subError } = await supabase
+    .from("subscriptions")
+    .select("plan, status, addon_quantities, free_overflowed_at")
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+  if (subError) {
+    console.error("free-overflow: subscription read failed; stamp fallback", {
+      workspaceId,
+      error: subError.message,
+    });
+    return false;
+  }
+  const subscription = subscriptionLikeFromRow(subRow);
   if (resolvePlan(subscription) === "pro") {
     return false;
   }
+
+  const stamped = subRow?.free_overflowed_at != null;
 
   const { data: workspaceRow, error: workspaceError } = await supabase
     .from("workspaces")
@@ -75,31 +93,48 @@ export async function isWorkspaceFreeOverflowLocked(
     .eq("id", workspaceId)
     .maybeSingle();
   if (workspaceError || !workspaceRow?.created_by) {
-    return true;
+    console.error("free-overflow: created_by unavailable; stamp fallback", {
+      workspaceId,
+      error: workspaceError?.message,
+    });
+    return stamped;
   }
 
   let admin: Api;
   try {
     admin = createServiceRoleClient();
-  } catch {
-    return true;
+  } catch (err) {
+    console.error("free-overflow: service role unavailable; stamp fallback", {
+      workspaceId,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return stamped;
   }
 
   const { data: owned, error: ownedError } = await admin
     .from("workspaces")
-    .select("id")
+    .select("id, kind")
     .eq("created_by", workspaceRow.created_by);
   if (ownedError || !owned?.length) {
-    return true;
+    console.error("free-overflow: owned scan failed; stamp fallback", {
+      workspaceId,
+      error: ownedError?.message,
+    });
+    return stamped;
   }
 
   const ownedIds = owned.map((row) => row.id);
+  const kindById = new Map(owned.map((row) => [row.id, row.kind]));
   const { data: subs, error: subsError } = await admin
     .from("subscriptions")
     .select("workspace_id, plan, status, free_overflowed_at")
     .in("workspace_id", ownedIds);
   if (subsError) {
-    return true;
+    console.error("free-overflow: subscriptions scan failed; stamp fallback", {
+      workspaceId,
+      error: subsError.message,
+    });
+    return stamped;
   }
 
   const subByWorkspace = new Map(
@@ -114,6 +149,7 @@ export async function isWorkspaceFreeOverflowLocked(
     .map((id) => ({
       workspaceId: id,
       freeOverflowedAt: subByWorkspace.get(id)?.free_overflowed_at ?? null,
+      kind: kindById.get(id) ?? null,
     }));
 
   return selectFreeOverflowLockedIds(

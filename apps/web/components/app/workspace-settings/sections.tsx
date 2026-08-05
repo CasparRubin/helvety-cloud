@@ -212,6 +212,7 @@ export function WorkspaceStagesSettings() {
     <div className="flex flex-col gap-4">
       <SettingsError error={categorizationsError} />
       <CategorizationOptionList
+        workspaceId={workspace.id}
         title="Stages"
         description="Stages are required on every task. The default stage is used for new tasks and when you remove a stage that is still in use."
         kind="stages"
@@ -257,6 +258,7 @@ export function WorkspaceLabelsSettings() {
     <div className="flex flex-col gap-4">
       <SettingsError error={categorizationsError} />
       <CategorizationOptionList
+        workspaceId={workspace.id}
         title="Labels"
         description="Labels are optional tags for extra context across this workspace. Removing a label clears it from affected tasks."
         kind="labels"
@@ -300,6 +302,7 @@ export function WorkspacePrioritiesSettings() {
     <div className="flex flex-col gap-4">
       <SettingsError error={categorizationsError} />
       <CategorizationOptionList
+        workspaceId={workspace.id}
         title="Priorities"
         description="Priorities are required on every task. The default priority is used for new tasks and when you remove one that is still in use."
         kind="priorities"
@@ -363,6 +366,14 @@ export function WorkspaceMembersSettings() {
     if (memberLimitHit || leaveOpen) void ensureBillingLoaded();
   }, [memberLimitHit, leaveOpen, ensureBillingLoaded]);
 
+  if (!workspace) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        This workspace is unavailable or you no longer have access to it.
+      </p>
+    );
+  }
+
   return (
     <div className="flex max-w-xl flex-col gap-4">
       <SettingsError error={error} />
@@ -377,6 +388,7 @@ export function WorkspaceMembersSettings() {
       </div>
 
       <CreateEntityDialog
+        workspaceId={workspace.id}
         triggerLabel="Invite member"
         dialogTitle="Invite member"
         fieldLabel="Email"

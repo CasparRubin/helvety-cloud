@@ -53,6 +53,7 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
   const [viewport, setViewport] = useState<BoardViewport | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [limitExceeded, setLimitExceeded] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [plan, setPlan] = useState<Plan>("free");
   const [nodesPerBoard, setNodesPerBoard] = useState<number | null>(
@@ -86,8 +87,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
           setNodesPerBoard(billing.limits.nodesPerBoard);
         }
         setError(null);
+        setLimitExceeded(false);
       } catch (e) {
         if (cancelled) return;
+        setLimitExceeded(false);
         setError(e instanceof Error ? e.message : "Failed to load board");
       } finally {
         if (!cancelled) setLoading(false);
@@ -125,7 +128,10 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
         viewport: saved.viewport,
       };
     },
-    onError: (message) => setError(message),
+    onError: (message) => {
+      setLimitExceeded(false);
+      setError(message);
+    },
   });
 
   const onGraphChange = useCallback((graph: BoardCanvasGraph) => {
@@ -138,6 +144,7 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
   }, []);
 
   const onShapeLimitReached = useCallback((message: string) => {
+    setLimitExceeded(true);
     setError(message);
   }, []);
 
@@ -149,6 +156,7 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
       await deleteBoard(workspaceId, boardId);
       router.push(`/app/w/${workspaceId}/boards`);
     } catch (e) {
+      setLimitExceeded(false);
       setError(e instanceof Error ? e.message : "Failed to delete");
       setDeleting(false);
     }
@@ -166,7 +174,13 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
   if (!board) {
     return (
       <div className="p-6">
-        {error ? <EntityErrorAlert message={error} /> : null}
+        {error ? (
+          <EntityErrorAlert
+            message={error}
+            workspaceId={workspaceId}
+            limitExceeded={limitExceeded}
+          />
+        ) : null}
       </div>
     );
   }
@@ -185,7 +199,11 @@ export function BoardDetail({ workspaceId, boardId }: BoardDetailProps) {
       </PageDangerActions>
       {error ? (
         <div className="shrink-0 px-3 pt-2">
-          <EntityErrorAlert message={error} />
+          <EntityErrorAlert
+            message={error}
+            workspaceId={workspaceId}
+            limitExceeded={limitExceeded}
+          />
         </div>
       ) : null}
       <div className="flex shrink-0 items-center gap-3 border-b px-3 py-2">

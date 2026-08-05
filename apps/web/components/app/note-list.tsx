@@ -194,6 +194,7 @@ export function NoteList({ workspaceId }: NoteListProps) {
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
       <PageActions>
         <CreateEntityDialog
+          workspaceId={workspaceId}
           triggerLabel="Create note"
           dialogTitle="Create note"
           fieldLabel="Title"

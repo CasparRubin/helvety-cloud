@@ -260,6 +260,7 @@ export function ContactList({ workspaceId }: ContactListProps) {
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
       <PageActions>
         <CreateEntityDialog
+          workspaceId={workspaceId}
           triggerLabel="Create contact"
           dialogTitle="Create contact"
           fieldLabel="First name"

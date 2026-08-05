@@ -5,6 +5,7 @@ import type { CommentParentKind } from "@helvety-cloud/api-contract";
 
 import { DateTimeText } from "@/components/app/datetime-text";
 import { EntityErrorAlert } from "@/components/app/entity-list-shell";
+import { isLimitExceededError } from "@/components/app/limit-exceeded-notice";
 import { TaskBodyEditor } from "@/components/app/task-body-editor";
 import { Button } from "@/components/ui/button";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -49,6 +50,7 @@ export function CommentsSection({
   const [comments, setComments] = useState<DecryptedComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [limitExceeded, setLimitExceeded] = useState(false);
   const [composer, setComposer] = useState<TaskBodyDoc>(EMPTY_COMMENT_BODY);
   const [composerKey, setComposerKey] = useState(0);
   const [replyToId, setReplyToId] = useState<string | null>(null);
@@ -63,6 +65,7 @@ export function CommentsSection({
       if (!userKeys) return;
       setLoading(true);
       setError(null);
+      setLimitExceeded(false);
       try {
         const key = await getWorkspaceKey(workspaceId);
         const rows = await loadDecryptedComments(
@@ -74,6 +77,7 @@ export function CommentsSection({
         if (!cancelled) setComments(rows);
       } catch (e) {
         if (!cancelled) {
+          setLimitExceeded(false);
           setError(e instanceof Error ? e.message : "Failed to load comments");
         }
       } finally {
@@ -101,6 +105,7 @@ export function CommentsSection({
     if (!userKeys || busy || isEmptyBody(body)) return;
     setBusy(true);
     setError(null);
+    setLimitExceeded(false);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const created = await createComment(workspaceId, key, {
@@ -118,6 +123,7 @@ export function CommentsSection({
         setComposerKey((k) => k + 1);
       }
     } catch (e) {
+      setLimitExceeded(isLimitExceededError(e));
       setError(
         e instanceof ApiClientError
           ? e.message
@@ -134,6 +140,7 @@ export function CommentsSection({
     if (!userKeys || busy) return;
     setBusy(true);
     setError(null);
+    setLimitExceeded(false);
     try {
       const key = await getWorkspaceKey(workspaceId);
       const saved = await saveComment(workspaceId, key, comment, editBody);
@@ -307,7 +314,13 @@ export function CommentsSection({
   return (
     <section className="mt-2 flex flex-col gap-3 border-t border-border pt-4">
       <h2 className="text-sm font-medium text-foreground">Comments</h2>
-      {error ? <EntityErrorAlert message={error} /> : null}
+      {error ? (
+        <EntityErrorAlert
+          message={error}
+          workspaceId={workspaceId}
+          limitExceeded={limitExceeded}
+        />
+      ) : null}
       {loading ? (
         <p className="text-sm text-muted-foreground">Loading comments…</p>
       ) : roots.length > 0 ? (

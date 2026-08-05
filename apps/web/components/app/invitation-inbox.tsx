@@ -8,6 +8,7 @@ import {
   EntityErrorAlert,
   EntityListEmpty,
 } from "@/components/app/entity-list-shell";
+import { isLimitExceededError } from "@/components/app/limit-exceeded-notice";
 import { Button } from "@/components/ui/button";
 import { Spinner } from "@/components/ui/spinner";
 import { useCryptoSession } from "@/components/unlock/crypto-session-provider";
@@ -91,6 +92,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   const [loading, setLoading] = useState(true);
   const [pendingId, setPendingId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [limitExceeded, setLimitExceeded] = useState(false);
 
   const loadInvitations = useCallback(async (activeKeys: UnlockedUserKeys) => {
     const listed = await listMyInvitations();
@@ -106,11 +108,13 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   const refresh = useCallback(async () => {
     if (!userKeys) return;
     setError(null);
+    setLimitExceeded(false);
     try {
       const loaded = await loadInvitations(userKeys);
       setInvitations(loaded.invitations);
       setWorkspaceNames(loaded.workspaceNames);
     } catch (err) {
+      setLimitExceeded(false);
       setError(
         err instanceof Error ? err.message : "Failed to load invitations",
       );
@@ -146,6 +150,7 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   async function onClaim(invitation: WorkspaceInvitation) {
     setPendingId(invitation.id);
     setError(null);
+    setLimitExceeded(false);
     try {
       await claimInvitation(invitation.id);
       await refresh();
@@ -159,12 +164,14 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
   async function onAccept(invitation: WorkspaceInvitation) {
     setPendingId(invitation.id);
     setError(null);
+    setLimitExceeded(false);
     try {
       const accepted = await acceptInvitation(invitation.id);
       await refreshWorkspaces();
       storeLastWorkspaceId(userId, accepted.workspaceId);
       router.push(`/app/w/${accepted.workspaceId}`);
     } catch (err) {
+      setLimitExceeded(isLimitExceededError(err));
       setError(err instanceof Error ? err.message : "Accept failed");
       setPendingId(null);
     }
@@ -189,7 +196,13 @@ export function InvitationInbox({ userId }: InvitationInboxProps) {
         </p>
       </div>
 
-      {error ? <EntityErrorAlert message={error} /> : null}
+      {error ? (
+        <EntityErrorAlert
+          message={error}
+          limitExceeded={limitExceeded}
+          href={limitExceeded ? "/pricing" : undefined}
+        />
+      ) : null}
 
       {loading ? (
         <p className="flex items-center gap-2 text-sm text-muted-foreground">

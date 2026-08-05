@@ -16,9 +16,9 @@ import {
   EntityDetailShell,
 } from "@/components/app/entity-detail-shell";
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
+import { LimitExceededAlert } from "@/components/app/limit-exceeded-notice";
 import { InlineTitle } from "@/components/app/inline-title";
 import { PageDangerActions } from "@/components/app/page-actions";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -332,10 +332,11 @@ export function TaskDetail({
               }}
             />
             {storageLimitMessage ? (
-              <Alert>
-                <AlertTitle>Storage limit</AlertTitle>
-                <AlertDescription>{storageLimitMessage}</AlertDescription>
-              </Alert>
+              <LimitExceededAlert
+                title="Storage limit"
+                message={storageLimitMessage}
+                workspaceId={workspaceId}
+              />
             ) : null}
             <CommentsSection
               workspaceId={workspaceId}

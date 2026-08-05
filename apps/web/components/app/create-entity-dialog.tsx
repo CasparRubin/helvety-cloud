@@ -3,6 +3,10 @@
 import { useId, useState, type ReactNode } from "react";
 import { PlusIcon } from "lucide-react";
 
+import {
+  isLimitExceededError,
+  LimitExceededInline,
+} from "@/components/app/limit-exceeded-notice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -16,6 +20,7 @@ import { Label } from "@/components/ui/label";
 import { Spinner } from "@/components/ui/spinner";
 
 type CreateEntityDialogProps = {
+  workspaceId: string;
   triggerLabel: string;
   dialogTitle: string;
   fieldLabel: string;
@@ -33,6 +38,7 @@ type CreateEntityDialogProps = {
 };
 
 export function CreateEntityDialog({
+  workspaceId,
   triggerLabel,
   dialogTitle,
   fieldLabel,
@@ -51,6 +57,7 @@ export function CreateEntityDialog({
   const [value, setValue] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitExceeded, setLimitExceeded] = useState(false);
   const hasExtras = children != null || companion != null;
 
   function handleOpenChange(next: boolean) {
@@ -58,6 +65,7 @@ export function CreateEntityDialog({
     if (next) {
       setValue("");
       setError(null);
+      setLimitExceeded(false);
     }
     onOpenChange?.(next);
   }
@@ -67,11 +75,13 @@ export function CreateEntityDialog({
     if (!trimmed || pending) return;
     setPending(true);
     setError(null);
+    setLimitExceeded(false);
     try {
       await onCreate(trimmed);
       setOpen(false);
       setValue("");
     } catch (err) {
+      setLimitExceeded(isLimitExceededError(err));
       setError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setPending(false);
@@ -128,9 +138,16 @@ export function CreateEntityDialog({
             )}
             {children}
             {error ? (
-              <p className="text-xs text-destructive" role="alert">
-                {error}
-              </p>
+              limitExceeded ? (
+                <LimitExceededInline
+                  message={error}
+                  workspaceId={workspaceId}
+                />
+              ) : (
+                <p className="text-xs text-destructive" role="alert">
+                  {error}
+                </p>
+              )
             ) : null}
           </div>
           <DialogFooter>

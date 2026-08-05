@@ -215,6 +215,7 @@ export function ProjectList({ workspaceId }: ProjectListProps) {
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
       <PageActions>
         <CreateEntityDialog
+          workspaceId={workspaceId}
           triggerLabel="Create project"
           dialogTitle="Create project"
           fieldLabel="Name"

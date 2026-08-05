@@ -336,6 +336,7 @@ export function TaskList({ workspaceId, projectId }: TaskListProps) {
       {!loading && projectId ? (
         <PageActions>
           <CreateEntityDialog
+            workspaceId={workspaceId}
             triggerLabel="Create task"
             dialogTitle="Create task"
             fieldLabel="Title"

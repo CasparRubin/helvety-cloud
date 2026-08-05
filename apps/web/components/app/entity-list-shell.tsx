@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 import { AlertCircleIcon } from "lucide-react";
 
+import { LimitExceededAlert } from "@/components/app/limit-exceeded-notice";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Spinner } from "@/components/ui/spinner";
 import { cn } from "@/lib/utils";
@@ -62,7 +63,26 @@ export function EntityListShell({
   );
 }
 
-export function EntityErrorAlert({ message }: { message: string }) {
+export function EntityErrorAlert({
+  message,
+  workspaceId,
+  limitExceeded = false,
+  href,
+}: {
+  message: string;
+  workspaceId?: string;
+  limitExceeded?: boolean;
+  href?: string;
+}) {
+  if (limitExceeded && (workspaceId || href)) {
+    return (
+      <LimitExceededAlert
+        message={message}
+        workspaceId={workspaceId}
+        href={href}
+      />
+    );
+  }
   return (
     <Alert variant="destructive">
       <AlertCircleIcon />

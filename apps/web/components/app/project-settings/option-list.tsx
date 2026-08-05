@@ -18,6 +18,7 @@ import {
 import type { EntityColor } from "@/lib/client-crypto/entity-colors";
 
 export function CategorizationOptionList({
+  workspaceId,
   title,
   description,
   kind,
@@ -34,6 +35,7 @@ export function CategorizationOptionList({
   onSetMaxVisibleTasks,
   onSetCompletionPercent,
 }: {
+  workspaceId: string;
   title: string;
   description: string;
   kind: CategorizationKind;
@@ -294,6 +296,7 @@ export function CategorizationOptionList({
         ))}
       </ul>
       <CreateEntityDialog
+        workspaceId={workspaceId}
         triggerLabel={`Add ${singular}`}
         dialogTitle={`Add ${singular}`}
         fieldLabel="Name"

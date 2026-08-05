@@ -14,11 +14,11 @@ import {
 import { EntityTimestampsCard } from "@/components/app/entity-timestamps-card";
 import { InlineTitle } from "@/components/app/inline-title";
 import { PageDangerActions } from "@/components/app/page-actions";
+import { LimitExceededAlert } from "@/components/app/limit-exceeded-notice";
 import {
   TaskBodyEditor,
   type EntityLinkAction,
 } from "@/components/app/task-body-editor";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -329,10 +329,11 @@ export function ContactDetail({ workspaceId, contactId }: ContactDetailProps) {
               }}
             />
             {storageLimitMessage ? (
-              <Alert>
-                <AlertTitle>Storage limit</AlertTitle>
-                <AlertDescription>{storageLimitMessage}</AlertDescription>
-              </Alert>
+              <LimitExceededAlert
+                title="Storage limit"
+                message={storageLimitMessage}
+                workspaceId={workspaceId}
+              />
             ) : null}
             <CommentsSection
               workspaceId={workspaceId}

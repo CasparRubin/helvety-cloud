@@ -329,4 +329,24 @@ describe("selectFreeOverflowLockedIds", () => {
       ),
     ).toEqual(new Set(["d", "c", "b"]));
   });
+
+  it("when tags tie, prefers locking non-personal so Personal stays free", () => {
+    expect(
+      selectFreeOverflowLockedIds(
+        [
+          {
+            workspaceId: "personal",
+            freeOverflowedAt: null,
+            kind: "personal",
+          },
+          {
+            workspaceId: "abandoned-pro",
+            freeOverflowedAt: null,
+            kind: "standard",
+          },
+        ],
+        1,
+      ),
+    ).toEqual(new Set(["abandoned-pro"]));
+  });
 });

@@ -9,6 +9,10 @@ import {
   PlusIcon,
 } from "lucide-react";
 
+import {
+  isLimitExceededError,
+  LimitExceededInline,
+} from "@/components/app/limit-exceeded-notice";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -49,6 +53,7 @@ export function WorkspaceSwitcher({
   const [name, setName] = useState("");
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [limitExceeded, setLimitExceeded] = useState(false);
 
   const active = workspaces.find((w) => w.id === activeWorkspaceId) ?? null;
 
@@ -62,6 +67,7 @@ export function WorkspaceSwitcher({
     if (!trimmed) return;
     setPending(true);
     setError(null);
+    setLimitExceeded(false);
     let createdId: string | null = null;
     try {
       // Dialog creates standard workspaces beyond the free Personal slot.
@@ -78,6 +84,7 @@ export function WorkspaceSwitcher({
             : err instanceof Error
               ? err.message
               : "Checkout failed";
+        setLimitExceeded(false);
         setError(
           `${detail} The workspace was created. Open Workspace settings → Billing to finish Pro checkout.`,
         );
@@ -86,6 +93,7 @@ export function WorkspaceSwitcher({
         selectWorkspace(createdId);
         return;
       }
+      setLimitExceeded(isLimitExceededError(err));
       setError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setPending(false);
@@ -158,6 +166,7 @@ export function WorkspaceSwitcher({
           <DropdownMenuItem
             onClick={() => {
               setError(null);
+              setLimitExceeded(false);
               setName("");
               setCreateOpen(true);
             }}
@@ -169,6 +178,7 @@ export function WorkspaceSwitcher({
             <DropdownMenuItem
               onClick={() => {
                 setError(null);
+                setLimitExceeded(false);
                 setName(active.name);
                 setRenameOpen(true);
               }}
@@ -215,7 +225,17 @@ export function WorkspaceSwitcher({
                 if (e.key === "Enter") void onCreate();
               }}
             />
-            {error ? <p className="text-xs text-destructive">{error}</p> : null}
+            {error ? (
+              limitExceeded ? (
+                <LimitExceededInline
+                  message={error}
+                  workspaceId={active?.id}
+                  href={active ? undefined : "/pricing"}
+                />
+              ) : (
+                <p className="text-xs text-destructive">{error}</p>
+              )
+            ) : null}
           </div>
           <DialogFooter>
             <Button

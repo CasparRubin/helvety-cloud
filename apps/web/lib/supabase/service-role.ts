@@ -5,7 +5,8 @@
  * - Encrypted attachment Storage signed URLs + object size/remove (P11) after
  *   /api/v1 membership + entitlement checks, never to decrypt
  * - Free-overflow soft-lock creator-wide workspace/subscription reads after
- *   membership proof (user JWT cannot see other owned workspaces)
+ *   membership proof (user JWT cannot see other owned workspaces); stamp
+ *   fallback when service role is unavailable
  * - Project wrap cleanup after project membership/workspace verification
  *
  * Never import this from ciphertext routes for decryption and never use

@@ -255,6 +255,7 @@ export function ProjectMilestonesPanel({
     <div className="flex flex-col gap-3">
       <PageActions>
         <CreateEntityDialog
+          workspaceId={workspaceId}
           triggerLabel="Create milestone"
           dialogTitle="Create milestone"
           fieldLabel="Title"

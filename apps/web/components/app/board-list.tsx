@@ -110,8 +110,6 @@ export function BoardList({ workspaceId }: BoardListProps) {
       );
       setBoards((prev) => [created, ...prev]);
       router.push(`/app/w/${workspaceId}/boards/${created.id}`);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Create failed");
     } finally {
       setBusy(false);
     }
@@ -178,6 +176,7 @@ export function BoardList({ workspaceId }: BoardListProps) {
       <ListRefreshButton disabled={busy} onRefresh={handleRefresh} />
       <PageActions>
         <CreateEntityDialog
+          workspaceId={workspaceId}
           triggerLabel="New board"
           dialogTitle="New board"
           fieldLabel="Title"

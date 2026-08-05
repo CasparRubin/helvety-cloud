@@ -314,6 +314,8 @@ export function freeOverflowLockMessage(freeSlots: number): string {
 export type FreeOverflowCandidate = {
   workspaceId: string;
   freeOverflowedAt: string | null;
+  /** When tags tie, prefer locking non-personal so Personal stays the free slot. */
+  kind?: "personal" | "standard" | string | null;
 };
 
 /** Lock exactly max(0, count - freeSlots) non-Pro workspaces; newest tag first. */
@@ -334,6 +336,11 @@ export function selectFreeOverflowLockedIds(
       : Number.NEGATIVE_INFINITY;
     if (bTs !== aTs) {
       return bTs - aTs;
+    }
+    const aPersonal = a.kind === "personal" ? 1 : 0;
+    const bPersonal = b.kind === "personal" ? 1 : 0;
+    if (aPersonal !== bPersonal) {
+      return aPersonal - bPersonal;
     }
     return a.workspaceId.localeCompare(b.workspaceId);
   });
