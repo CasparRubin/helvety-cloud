@@ -4,7 +4,17 @@ import { Handle, Position, useReactFlow, type NodeProps } from "@xyflow/react";
 import { useRouter } from "next/navigation";
 import type { CSSProperties } from "react";
 import type { EntityLinkKind } from "@helvety-cloud/api-contract";
-import { CircleIcon } from "lucide-react";
+import {
+  CircleIcon,
+  ContactIcon,
+  DatabaseIcon,
+  FolderKanbanIcon,
+  ListTodoIcon,
+  StickyNoteIcon,
+  TableIcon,
+  WorkflowIcon,
+  type LucideIcon,
+} from "lucide-react";
 
 import { CategorizationIconPicker } from "@/components/app/categorization-icon-picker";
 import {
@@ -31,6 +41,16 @@ import { cn } from "@/lib/utils";
 
 const handleClass =
   "!size-2 !border-border !bg-background !opacity-0 group-hover/node:!opacity-100 transition-opacity";
+
+const ENTITY_KIND_ICONS: Record<EntityLinkKind, LucideIcon> = {
+  note: StickyNoteIcon,
+  contact: ContactIcon,
+  task: ListTodoIcon,
+  project: FolderKanbanIcon,
+  board: WorkflowIcon,
+  database: DatabaseIcon,
+  table: TableIcon,
+};
 
 function NodeHandles() {
   return (
@@ -477,12 +497,13 @@ function EntityRefNode({ data, selected }: NodeProps) {
   const classes = ENTITY_COLOR_CLASSES[color];
   const label = resolved?.label ?? "Unavailable";
   const href = resolved?.href;
+  const KindIcon = ENTITY_KIND_ICONS[ref.kind];
 
   return (
     <button
       type="button"
       className={cn(
-        "group/node min-w-[140px] max-w-[200px] rounded-md px-2.5 py-1.5 text-left text-xs font-medium shadow-sm ring-1 ring-inset",
+        "group/node flex min-w-[140px] max-w-[200px] items-start gap-2 rounded-md px-2.5 py-1.5 text-left text-xs font-medium shadow-sm ring-1 ring-inset",
         classes.bg,
         classes.text,
         classes.ring,
@@ -495,8 +516,11 @@ function EntityRefNode({ data, selected }: NodeProps) {
       title={href ? "Double-click to open" : undefined}
     >
       <NodeHandles />
-      <span className="block truncate capitalize opacity-70">{ref.kind}</span>
-      <span className="block truncate">{label}</span>
+      <KindIcon className="mt-0.5 size-3.5 shrink-0 opacity-80" aria-hidden />
+      <span className="min-w-0 flex-1">
+        <span className="block truncate capitalize opacity-70">{ref.kind}</span>
+        <span className="block truncate">{label}</span>
+      </span>
     </button>
   );
 }

@@ -130,6 +130,17 @@ const TEXT_ANCHOR_GRID: (BoardTextAnchor | null)[] = [
   "bottom-right",
 ];
 
+const TEXT_ANCHOR_LABELS: Record<BoardTextAnchor, string> = {
+  "top-left": "Top left",
+  top: "Top",
+  "top-right": "Top right",
+  left: "Left",
+  right: "Right",
+  "bottom-left": "Bottom left",
+  bottom: "Bottom",
+  "bottom-right": "Bottom right",
+};
+
 const ARROW_MARKER = {
   type: MarkerType.ArrowClosed,
   width: 16,
@@ -635,110 +646,160 @@ function BoardCanvasInner({
       </TooltipProvider>
 
       {selectedColorNode ? (
-        <div className="absolute right-3 top-3 z-10 flex max-w-[min(100%-1.5rem,22rem)] flex-wrap items-center gap-2 rounded-md border bg-background/95 px-2 py-1.5 text-[10px] shadow-sm">
-          <label className="flex items-center gap-1 text-muted-foreground">
-            Border
-            <input
-              type="color"
-              className="size-5 cursor-pointer rounded border-0 bg-transparent p-0"
-              value={selectedColors?.border ?? "#737373"}
-              onChange={(e) => patchSelectedColors({ border: e.target.value })}
-            />
-          </label>
-          <label className="flex items-center gap-1 text-muted-foreground">
-            Fill
-            <input
-              type="color"
-              className="size-5 cursor-pointer rounded border-0 bg-transparent p-0"
-              value={selectedColors?.background ?? "#ffffff"}
-              onChange={(e) =>
-                patchSelectedColors({ background: e.target.value })
-              }
-            />
-          </label>
-          <label className="flex items-center gap-1 text-muted-foreground">
-            Text
-            <input
-              type="color"
-              className="size-5 cursor-pointer rounded border-0 bg-transparent p-0"
-              value={selectedColors?.text ?? "#0a0a0a"}
-              onChange={(e) => patchSelectedColors({ text: e.target.value })}
-            />
-          </label>
-          <Button
-            type="button"
-            size="xs"
-            variant="ghost"
-            className="h-6 px-1.5"
-            onClick={() => patchSelectedColors(null)}
-          >
-            Reset
-          </Button>
-          {selectedSupportsText ? (
-            <>
-              <span className="text-muted-foreground/50">·</span>
-              <label className="flex items-center gap-1 text-muted-foreground">
-                <Checkbox
-                  checked={selectedShowLabel}
-                  onCheckedChange={(checked) =>
-                    patchSelectedNodeData({ showLabel: checked === true })
-                  }
-                />
-                Title
-              </label>
-              <label className="flex items-center gap-1 text-muted-foreground">
-                <Checkbox
-                  checked={selectedShowSubtitle}
-                  onCheckedChange={(checked) =>
-                    patchSelectedNodeData({ showSubtitle: checked === true })
-                  }
-                />
-                Subtitle
-              </label>
-              <div
-                className="grid grid-cols-3 gap-0.5"
-                role="group"
-                aria-label="Text placement"
-              >
-                {TEXT_ANCHOR_GRID.map((anchor, index) =>
-                  anchor == null ? (
-                    <span key={`empty-${index}`} className="size-5" aria-hidden />
-                  ) : (
-                    <button
-                      key={anchor}
-                      type="button"
-                      title={anchor}
-                      aria-label={`Place text ${anchor}`}
-                      aria-pressed={selectedTextAnchor === anchor}
-                      className={cn(
-                        "size-5 rounded-sm border",
-                        selectedTextAnchor === anchor
-                          ? "border-foreground/40 bg-secondary"
-                          : "border-transparent hover:bg-muted/70",
-                      )}
-                      onClick={() =>
-                        patchSelectedNodeData({ textAnchor: anchor })
-                      }
-                    />
-                  ),
-                )}
+        <div className="absolute right-3 top-3 z-10 w-56 rounded-md border bg-background/95 p-3 shadow-sm">
+          <div className="mb-3 text-xs font-medium">Element</div>
+          <div className="flex flex-col gap-3">
+            <section>
+              <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                Colors
               </div>
-            </>
-          ) : null}
+              <div className="flex flex-wrap items-center gap-2 text-xs">
+                <label className="flex items-center gap-1.5 text-muted-foreground">
+                  Border
+                  <input
+                    type="color"
+                    className="size-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                    value={selectedColors?.border ?? "#737373"}
+                    onChange={(e) =>
+                      patchSelectedColors({ border: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 text-muted-foreground">
+                  Fill
+                  <input
+                    type="color"
+                    className="size-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                    value={selectedColors?.background ?? "#ffffff"}
+                    onChange={(e) =>
+                      patchSelectedColors({ background: e.target.value })
+                    }
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 text-muted-foreground">
+                  Text
+                  <input
+                    type="color"
+                    className="size-6 cursor-pointer rounded border-0 bg-transparent p-0"
+                    value={selectedColors?.text ?? "#0a0a0a"}
+                    onChange={(e) =>
+                      patchSelectedColors({ text: e.target.value })
+                    }
+                  />
+                </label>
+                <Button
+                  type="button"
+                  size="xs"
+                  variant="ghost"
+                  className="h-6 px-1.5"
+                  onClick={() => patchSelectedColors(null)}
+                >
+                  Reset
+                </Button>
+              </div>
+            </section>
+            {selectedSupportsText ? (
+              <>
+                <section>
+                  <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Label
+                  </div>
+                  <div className="flex flex-col gap-1.5 text-xs">
+                    <label className="flex items-center gap-2 text-muted-foreground">
+                      <Checkbox
+                        checked={selectedShowLabel}
+                        onCheckedChange={(checked) =>
+                          patchSelectedNodeData({
+                            showLabel: checked === true,
+                          })
+                        }
+                      />
+                      Title
+                    </label>
+                    <label className="flex items-center gap-2 text-muted-foreground">
+                      <Checkbox
+                        checked={selectedShowSubtitle}
+                        onCheckedChange={(checked) =>
+                          patchSelectedNodeData({
+                            showSubtitle: checked === true,
+                          })
+                        }
+                      />
+                      Subtitle
+                    </label>
+                  </div>
+                </section>
+                <section>
+                  <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+                    Placement
+                  </div>
+                  <div
+                    className="grid w-fit grid-cols-3 gap-1"
+                    role="group"
+                    aria-label="Text placement"
+                  >
+                    {TEXT_ANCHOR_GRID.map((anchor, index) =>
+                      anchor == null ? (
+                        <span
+                          key={`empty-${index}`}
+                          className="flex size-7 items-center justify-center"
+                          aria-hidden
+                        >
+                          <span className="size-3.5 rounded-sm border border-muted-foreground/40 bg-muted/50" />
+                        </span>
+                      ) : (
+                        <button
+                          key={anchor}
+                          type="button"
+                          title={TEXT_ANCHOR_LABELS[anchor]}
+                          aria-label={`Place text ${TEXT_ANCHOR_LABELS[anchor].toLowerCase()}`}
+                          aria-pressed={selectedTextAnchor === anchor}
+                          className={cn(
+                            "flex size-7 items-center justify-center rounded-md border",
+                            selectedTextAnchor === anchor
+                              ? "border-foreground/40 bg-secondary"
+                              : "border-transparent hover:bg-muted/70",
+                          )}
+                          onClick={() =>
+                            patchSelectedNodeData({ textAnchor: anchor })
+                          }
+                        >
+                          <span
+                            className={cn(
+                              "size-1.5 rounded-full",
+                              selectedTextAnchor === anchor
+                                ? "bg-foreground"
+                                : "bg-muted-foreground/55",
+                            )}
+                          />
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </section>
+              </>
+            ) : null}
+          </div>
         </div>
       ) : selectedEdge ? (
-        <div className="absolute right-3 top-3 z-10 flex items-center gap-2 rounded-md border bg-background/95 px-2 py-1.5 text-[10px] shadow-sm">
-          <Button
-            type="button"
-            size="xs"
-            variant={selectedEdgeHasArrow ? "secondary" : "ghost"}
-            className="h-6 gap-1 px-1.5"
-            aria-pressed={selectedEdgeHasArrow}
-            onClick={toggleSelectedEdgeArrow}
-          >
-            <ArrowRightIcon className="size-3.5" aria-hidden />
-            Arrow
-          </Button>
+        <div className="absolute right-3 top-3 z-10 w-56 rounded-md border bg-background/95 p-3 shadow-sm">
+          <div className="mb-3 text-xs font-medium">Edge</div>
+          <section>
+            <div className="mb-1.5 text-[10px] font-medium uppercase tracking-wide text-muted-foreground">
+              Arrow
+            </div>
+            <Button
+              type="button"
+              size="xs"
+              variant={selectedEdgeHasArrow ? "secondary" : "ghost"}
+              className="h-7 gap-1.5 px-2"
+              aria-pressed={selectedEdgeHasArrow}
+              onClick={toggleSelectedEdgeArrow}
+            >
+              <ArrowRightIcon className="size-3.5" aria-hidden />
+              {selectedEdgeHasArrow ? "On" : "Off"}
+            </Button>
+          </section>
         </div>
       ) : null}
 
