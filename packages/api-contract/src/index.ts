@@ -64,23 +64,27 @@ export type SealedKeyEnvelope = z.infer<typeof sealedKeyEnvelopeSchema>;
 
 export const uuidSchema = z.string().uuid();
 
-/** Entity kinds that can appear in entity_links (P8a / P17). */
+/** Entity kinds that can appear in entity_links (P8a / P17 / P18). */
 export const entityLinkKinds = [
   "note",
   "task",
   "contact",
   "project",
   "board",
+  "database",
+  "table",
 ] as const;
 export const entityLinkKindSchema = z.enum(entityLinkKinds);
 export type EntityLinkKind = z.infer<typeof entityLinkKindSchema>;
 
 const allowedEntityLinkTargets = {
-  note: ["task", "contact", "project"],
-  task: ["note", "contact"],
-  contact: ["note", "project", "task"],
+  note: ["task", "contact", "project", "database", "table"],
+  task: ["note", "contact", "database", "table"],
+  contact: ["note", "project", "task", "database", "table"],
   project: [],
-  board: ["note", "task", "contact", "project"],
+  board: ["note", "task", "contact", "project", "database", "table"],
+  database: [],
+  table: [],
 } as const satisfies Record<EntityLinkKind, readonly EntityLinkKind[]>;
 
 export function allowedLinkTargetKinds(
@@ -406,6 +410,63 @@ export const listBoardsResponseSchema = z.object({
 });
 export type ListBoardsResponse = z.infer<typeof listBoardsResponseSchema>;
 
+export const putDatabaseRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int().optional(),
+  isPinned: z.boolean().optional(),
+  pinSortOrder: z.number().int().nullable().optional(),
+  deletedAt: z.string().nullable().optional(),
+});
+export type PutDatabaseRequest = z.infer<typeof putDatabaseRequestSchema>;
+
+export const databaseResponseSchema = z.object({
+  id: uuidSchema,
+  workspaceId: uuidSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int(),
+  isPinned: z.boolean(),
+  pinSortOrder: z.number().int().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type DatabaseResponse = z.infer<typeof databaseResponseSchema>;
+
+export const listDatabasesResponseSchema = z.object({
+  databases: z.array(databaseResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListDatabasesResponse = z.infer<typeof listDatabasesResponseSchema>;
+
+export const putTableRequestSchema = z.object({
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int().optional(),
+  isPinned: z.boolean().optional(),
+  pinSortOrder: z.number().int().nullable().optional(),
+  deletedAt: z.string().nullable().optional(),
+});
+export type PutTableRequest = z.infer<typeof putTableRequestSchema>;
+
+export const tableResponseSchema = z.object({
+  id: uuidSchema,
+  databaseId: uuidSchema,
+  workspaceId: uuidSchema,
+  encryptedBlob: ciphertextEnvelopeSchema,
+  sortOrder: z.number().int(),
+  isPinned: z.boolean(),
+  pinSortOrder: z.number().int().nullable(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  deletedAt: z.string().nullable(),
+});
+export type TableResponse = z.infer<typeof tableResponseSchema>;
+
+export const listTablesResponseSchema = z.object({
+  tables: z.array(tableResponseSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ListTablesResponse = z.infer<typeof listTablesResponseSchema>;
+
 export const entityLinkEdgeSchema = z.object({
   id: uuidSchema,
   workspaceId: uuidSchema,
@@ -659,6 +720,9 @@ export const workspaceLimitsSchema = z.object({
   boards: z.number().int().positive().nullable(),
   /** Shapes (nodes) per board; client-enforced (ciphertext). */
   nodesPerBoard: z.number().int().positive().nullable(),
+  databases: z.number().int().positive().nullable(),
+  /** Tables allowed per database (not workspace-wide). */
+  tables: z.number().int().positive().nullable(),
   filesPerTask: z.number().int().nonnegative().nullable(),
   /** Ciphertext bytes; free plan is 0 (no uploads). */
   storageBytes: z.number().int().nonnegative().nullable(),
@@ -676,6 +740,8 @@ export const workspaceUsageSchema = z.object({
   contacts: z.number().int().nonnegative(),
   comments: z.number().int().nonnegative(),
   boards: z.number().int().nonnegative(),
+  databases: z.number().int().nonnegative(),
+  tables: z.number().int().nonnegative(),
   /** Sum of ready (+ reserved pending) attachment ciphertext bytes. */
   storageBytes: z.number().int().nonnegative(),
 });

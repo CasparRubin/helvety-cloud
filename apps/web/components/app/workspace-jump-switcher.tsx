@@ -5,8 +5,10 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ChevronsUpDownIcon,
   ContactIcon,
+  DatabaseIcon,
   FolderKanbanIcon,
   StickyNoteIcon,
+  TableIcon,
   WorkflowIcon,
   type LucideIcon,
 } from "lucide-react";
@@ -37,6 +39,10 @@ import {
 } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import {
+  loadDecryptedDatabases,
+  type DecryptedDatabase,
+} from "@/lib/client-crypto/databases";
+import {
   loadDecryptedNotes,
   type DecryptedNote,
 } from "@/lib/client-crypto/notes";
@@ -44,6 +50,10 @@ import {
   loadDecryptedProjects,
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
+import {
+  loadDecryptedTables,
+  type DecryptedTable,
+} from "@/lib/client-crypto/tables";
 
 type WorkspaceJumpSwitcherProps = {
   workspaceId: string;
@@ -64,6 +74,8 @@ const entryIcons: Record<JumpEntryKind, LucideIcon> = {
   note: StickyNoteIcon,
   contact: ContactIcon,
   board: WorkflowIcon,
+  database: DatabaseIcon,
+  table: TableIcon,
 };
 
 export function WorkspaceJumpSwitcher({
@@ -78,21 +90,31 @@ export function WorkspaceJumpSwitcher({
   const [notes, setNotes] = useState<DecryptedNote[]>([]);
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
   const [boards, setBoards] = useState<DecryptedBoard[]>([]);
+  const [databases, setDatabases] = useState<DecryptedDatabase[]>([]);
+  const [tables, setTables] = useState<DecryptedTable[]>([]);
 
   const loadEntries = useCallback(async () => {
     const key = await getWorkspaceKey(workspaceId);
-    const [projectsPage, notesPage, contactsPage, boardsPage] =
+    const [projectsPage, notesPage, contactsPage, boardsPage, databasesPage] =
       await Promise.all([
         loadDecryptedProjects(workspaceId, key, { limit: 100 }),
         loadDecryptedNotes(workspaceId, key, { limit: 100 }),
         loadDecryptedContacts(workspaceId, key, { limit: 100 }),
         loadDecryptedBoards(workspaceId, key, { limit: 100 }),
+        loadDecryptedDatabases(workspaceId, key, { limit: 100 }),
       ]);
+    const tablePages = await Promise.all(
+      databasesPage.databases.map((database) =>
+        loadDecryptedTables(workspaceId, database.id, key, { limit: 100 }),
+      ),
+    );
     return {
       projects: projectsPage.projects,
       notes: notesPage.notes,
       contacts: contactsPage.contacts,
       boards: boardsPage.boards,
+      databases: databasesPage.databases,
+      tables: tablePages.flatMap((page) => page.tables),
     };
   }, [getWorkspaceKey, workspaceId]);
 
@@ -102,6 +124,8 @@ export function WorkspaceJumpSwitcher({
     setNotes(next.notes);
     setContacts(next.contacts);
     setBoards(next.boards);
+    setDatabases(next.databases);
+    setTables(next.tables);
   }, [loadEntries]);
 
   useEffect(() => {
@@ -115,12 +139,16 @@ export function WorkspaceJumpSwitcher({
         setNotes(next.notes);
         setContacts(next.contacts);
         setBoards(next.boards);
+        setDatabases(next.databases);
+        setTables(next.tables);
       } catch {
         if (!cancelled) {
           setProjects([]);
           setNotes([]);
           setContacts([]);
           setBoards([]);
+          setDatabases([]);
+          setTables([]);
         }
       }
     })();
@@ -137,10 +165,12 @@ export function WorkspaceJumpSwitcher({
     window.addEventListener("helvety:projects-changed", onChange);
     window.addEventListener("helvety:notes-changed", onChange);
     window.addEventListener("helvety:contacts-changed", onChange);
+    window.addEventListener("helvety:databases-changed", onChange);
     return () => {
       window.removeEventListener("helvety:projects-changed", onChange);
       window.removeEventListener("helvety:notes-changed", onChange);
       window.removeEventListener("helvety:contacts-changed", onChange);
+      window.removeEventListener("helvety:databases-changed", onChange);
     };
   }, [userKeys, refresh]);
 
@@ -170,6 +200,18 @@ export function WorkspaceJumpSwitcher({
       name: b.title || "Untitled board",
       href: `${base}/boards/${b.id}`,
     })),
+    database: databases.map((d) => ({
+      kind: "database",
+      id: d.id,
+      name: d.name || "Untitled database",
+      href: `${base}/databases/${d.id}`,
+    })),
+    table: tables.map((t) => ({
+      kind: "table",
+      id: t.id,
+      name: t.displayName || "Untitled table",
+      href: `${base}/databases/${t.databaseId}/tables/${t.id}`,
+    })),
   };
 
   const activeName =
@@ -188,12 +230,20 @@ export function WorkspaceJumpSwitcher({
     board: q
       ? entries.board.filter((e) => e.name.toLowerCase().includes(q))
       : entries.board,
+    database: q
+      ? entries.database.filter((e) => e.name.toLowerCase().includes(q))
+      : entries.database,
+    table: q
+      ? entries.table.filter((e) => e.name.toLowerCase().includes(q))
+      : entries.table,
   };
 
   const groups: { heading: string; items: JumpEntry[] }[] = [
     { heading: "Projects", items: filtered.project },
     { heading: "Notes", items: filtered.note },
     { heading: "Boards", items: filtered.board },
+    { heading: "Databases", items: filtered.database },
+    { heading: "Tables", items: filtered.table },
     { heading: "Contacts", items: filtered.contact },
   ];
   const nothingFound = groups.every((g) => g.items.length === 0);
@@ -224,7 +274,7 @@ export function WorkspaceJumpSwitcher({
       <PopoverContent className="w-72 p-0" align="start">
         <Command shouldFilter={false}>
           <CommandInput
-            placeholder="Search projects, notes, boards, contacts…"
+            placeholder="Search projects, notes, boards, databases…"
             value={query}
             onValueChange={setQuery}
           />

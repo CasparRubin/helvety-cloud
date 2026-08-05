@@ -67,6 +67,10 @@ describe("plan limits", () => {
     expect(pro.commentsPerWorkspace).toBeGreaterThan(free.commentsPerWorkspace);
     expect(pro.boardsPerWorkspace).toBeGreaterThan(free.boardsPerWorkspace);
     expect(pro.nodesPerBoard).toBeGreaterThan(free.nodesPerBoard);
+    expect(pro.databasesPerWorkspace).toBeGreaterThan(
+      free.databasesPerWorkspace,
+    );
+    expect(pro.tablesPerDatabase).toBeGreaterThan(free.tablesPerDatabase);
     expect(pro.filesPerTask).toBeGreaterThan(free.filesPerTask);
     expect(pro.storageBytesPerWorkspace).toBeGreaterThan(
       free.storageBytesPerWorkspace,
@@ -92,6 +96,8 @@ describe("plan limits", () => {
     expect(PLAN_LIMITS.free.commentsPerWorkspace).toBe(50);
     expect(PLAN_LIMITS.free.boardsPerWorkspace).toBe(1);
     expect(PLAN_LIMITS.free.nodesPerBoard).toBe(20);
+    expect(PLAN_LIMITS.free.databasesPerWorkspace).toBe(1);
+    expect(PLAN_LIMITS.free.tablesPerDatabase).toBe(10);
 
     expect(PLAN_LIMITS.pro.projectsPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.pro.membersPerWorkspace).toBe(25);
@@ -101,6 +107,8 @@ describe("plan limits", () => {
     expect(PLAN_LIMITS.pro.commentsPerWorkspace).toBe(1000);
     expect(PLAN_LIMITS.pro.boardsPerWorkspace).toBe(25);
     expect(PLAN_LIMITS.pro.nodesPerBoard).toBe(400);
+    expect(PLAN_LIMITS.pro.databasesPerWorkspace).toBe(25);
+    expect(PLAN_LIMITS.pro.tablesPerDatabase).toBe(50);
     expect(PLAN_LIMITS.pro.filesPerTask).toBe(5);
     expect(PLAN_LIMITS.pro.storageBytesPerWorkspace).toBe(
       5 * 1024 * 1024 * 1024,
@@ -122,6 +130,8 @@ describe("plan limits", () => {
       "contacts",
       "comments",
       "boards",
+      "databases",
+      "tables",
     ];
     for (const meter of meters) {
       expect(workspaceMeterLimit(null, meter)).toBeGreaterThan(0);
@@ -141,6 +151,8 @@ describe("effective limits + addons", () => {
     expect(CAPACITY_PACK.deltas.comments).toBe(500);
     expect(CAPACITY_PACK.deltas.boards).toBe(10);
     expect(CAPACITY_PACK.deltas.nodesPerBoard).toBe(200);
+    expect(CAPACITY_PACK.deltas.databases).toBe(10);
+    expect(CAPACITY_PACK.deltas.tablesPerDatabase).toBe(25);
     expect(CAPACITY_PACK.deltas.members).toBe(10);
     expect(CAPACITY_PACK.deltas.storageBytes).toBe(2.5 * 1024 * 1024 * 1024);
     expect(CAPACITY_PACK.deltas.filesPerTask).toBe(0);
@@ -174,6 +186,14 @@ describe("effective limits + addons", () => {
     );
     expect(limits.nodesPerBoard).toBe(
       PLAN_LIMITS.pro.nodesPerBoard + 2 * CAPACITY_PACK.deltas.nodesPerBoard,
+    );
+    expect(limits.databasesPerWorkspace).toBe(
+      PLAN_LIMITS.pro.databasesPerWorkspace +
+        2 * CAPACITY_PACK.deltas.databases,
+    );
+    expect(limits.tablesPerDatabase).toBe(
+      PLAN_LIMITS.pro.tablesPerDatabase +
+        2 * CAPACITY_PACK.deltas.tablesPerDatabase,
     );
     expect(limits.membersPerWorkspace).toBe(
       PLAN_LIMITS.pro.membersPerWorkspace + 2 * CAPACITY_PACK.deltas.members,
@@ -232,6 +252,14 @@ describe("limit copy", () => {
   it("board copy is per workspace", () => {
     expect(limitMessage("free", "boards", 1)).toContain("per workspace");
     expect(limitMessage("free", "boards", 1)).toContain("Upgrade");
+  });
+
+  it("table copy is per database", () => {
+    expect(limitMessage("pro", "tables", 50)).toContain("per database");
+  });
+
+  it("database copy is per workspace", () => {
+    expect(limitMessage("free", "databases", 1)).toContain("per workspace");
   });
 
   it("member copy counts pending invitations honestly", () => {

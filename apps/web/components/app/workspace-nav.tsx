@@ -7,7 +7,7 @@ import { ChevronLeftIcon, SlashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export type AppNavEntity = {
-  kind: "project" | "note" | "contact" | "board";
+  kind: "project" | "note" | "contact" | "board" | "database" | "table";
   id: string;
 };
 
@@ -20,10 +20,13 @@ type AppNavLocation = {
     | "notes"
     | "contacts"
     | "boards"
+    | "databases"
     | "settings"
     | null;
   entity: AppNavEntity | null;
   taskId: string | null;
+  /** Parent database id when entity is a table. */
+  databaseId: string | null;
   /** Nested project settings under /p/{id}/settings. */
   projectSettings: boolean;
 };
@@ -46,6 +49,7 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
     section: null,
     entity: null,
     taskId: null,
+    databaseId: null,
     projectSettings: false,
   };
 
@@ -79,6 +83,22 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
     };
   }
 
+  if (section === "databases") {
+    if (childSegment === "tables" && childId && entityId) {
+      return {
+        ...base,
+        section: "databases",
+        entity: { kind: "table", id: childId },
+        databaseId: entityId,
+      };
+    }
+    return {
+      ...base,
+      section: "databases",
+      entity: entityId ? { kind: "database", id: entityId } : null,
+    };
+  }
+
   if (section === "tasks") {
     return {
       ...base,
@@ -100,7 +120,8 @@ export function parseAppNavPath(pathname: string): AppNavLocation | null {
 }
 
 export function parentHrefFor(location: AppNavLocation): string | null {
-  const { workspaceBase, section, entity, taskId, projectSettings } = location;
+  const { workspaceBase, section, entity, taskId, projectSettings, databaseId } =
+    location;
 
   if (entity) {
     switch (entity.kind) {
@@ -114,6 +135,12 @@ export function parentHrefFor(location: AppNavLocation): string | null {
         return `${workspaceBase}/contacts`;
       case "board":
         return `${workspaceBase}/boards`;
+      case "database":
+        return `${workspaceBase}/databases`;
+      case "table":
+        return databaseId
+          ? `${workspaceBase}/databases/${databaseId}`
+          : `${workspaceBase}/databases`;
       default: {
         const _exhaustive: never = entity.kind;
         return _exhaustive;

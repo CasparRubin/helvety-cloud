@@ -461,7 +461,7 @@ export function WorkspaceMembersSettings() {
         <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
           <p className="text-xs leading-5 text-muted-foreground">
             {isSolo
-              ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, boards, files, and sharing."
+              ? "You are the only member. Leaving permanently deletes this workspace and all of its projects, tasks, notes, contacts, boards, databases, files, and sharing."
               : "Leaving removes your access and your wrapped keys. Nothing is deleted for other members."}
           </p>
           <Button
@@ -547,7 +547,7 @@ export function WorkspaceMembersSettings() {
         }
         description={
           isSolo
-            ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, boards, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, boards, databases, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
         }
         confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}
@@ -744,6 +744,11 @@ export function WorkspaceBillingSettings() {
                 used={billing.usage.boards}
                 limit={billing.limits.boards}
               />
+              <UsageMeterRow
+                label="Databases"
+                used={billing.usage.databases}
+                limit={billing.limits.databases}
+              />
               {billing.limits.storageBytes === 0 ? (
                 <CapRow label="File storage" value="Not included on Free" />
               ) : (
@@ -758,6 +763,10 @@ export function WorkspaceBillingSettings() {
                 <CapRow
                   label="Tasks per project"
                   value={`Up to ${formatLimit(billing.limits.tasks)}`}
+                />
+                <CapRow
+                  label="Tables per database"
+                  value={`Up to ${formatLimit(billing.limits.tables)}`}
                 />
                 <CapRow
                   label="Shapes per board"
@@ -840,8 +849,10 @@ export function WorkspaceBillingSettings() {
                     {CAPACITY_PACK.deltas.contacts} contacts,{" "}
                     {CAPACITY_PACK.deltas.comments} comments and replies,{" "}
                     {CAPACITY_PACK.deltas.boards} boards,{" "}
-                    {CAPACITY_PACK.deltas.nodesPerBoard} shapes per board,{" "}
-                    {CAPACITY_PACK.deltas.members} members, and{" "}
+                    {CAPACITY_PACK.deltas.databases} databases,{" "}
+                    {CAPACITY_PACK.deltas.tablesPerDatabase} tables per
+                    database, {CAPACITY_PACK.deltas.nodesPerBoard} shapes per
+                    board, {CAPACITY_PACK.deltas.members} members, and{" "}
                     {formatBytes(CAPACITY_PACK.deltas.storageBytes)} storage.
                     Stripe prorates changes on the current billing period.
                   </p>
@@ -850,7 +861,8 @@ export function WorkspaceBillingSettings() {
                 <p className="text-xs text-muted-foreground">
                   Capacity Increase is available on Pro Workspace. Each pack
                   raises projects, tasks, notes, contacts, comments, boards,
-                  shapes per board, members, and storage together.
+                  databases, tables per database, shapes per board, members, and
+                  storage together.
                 </p>
               )}
             </CardContent>
@@ -918,8 +930,8 @@ export function WorkspaceDangerSettings() {
         <>
           <p className="text-xs leading-5 text-muted-foreground">
             Permanently delete this workspace for everyone, including projects,
-            tasks, notes, contacts, files, invitations, and sharing. This cannot
-            be undone. Helvety cannot recover deleted data.
+            tasks, notes, contacts, boards, databases, files, invitations, and
+            sharing. This cannot be undone. Helvety cannot recover deleted data.
           </p>
           {hasOtherMembers ? (
             <div className="flex flex-col gap-2 rounded-lg border border-border p-3">
@@ -986,7 +998,7 @@ export function WorkspaceDangerSettings() {
             open={deleteOpen}
             onOpenChange={setDeleteOpen}
             title={`Delete workspace “${workspace.name}”?`}
-            description="This permanently deletes the workspace for everyone, including all projects, tasks, notes, contacts, boards, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+            description="This permanently deletes the workspace for everyone, including all projects, tasks, notes, contacts, boards, databases, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
             busy={pending}
             onConfirm={onDeleteWorkspace}
           />
@@ -1000,7 +1012,7 @@ export function WorkspaceDangerSettings() {
             }
             description={
               isSolo
-                ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, boards, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
+                ? "You are the only member, so leaving permanently deletes the workspace and all projects, tasks, notes, contacts, boards, databases, files, invitations, and sharing. This cannot be undone. Helvety cannot recover deleted data."
                 : "You will lose access and your wrapped keys are removed. Other members keep the workspace. Helvety does not rotate keys for remaining members and cannot restore your access without a new invite."
             }
             confirmLabel={isSolo ? "Delete workspace" : "Leave workspace"}

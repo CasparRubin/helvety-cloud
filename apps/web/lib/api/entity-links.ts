@@ -103,6 +103,37 @@ export async function validateLinkTargetsInWorkspace(
           return { ok: false, message: `board ${link.id} not in workspace` };
         break;
       }
+      case "database": {
+        const { data, error } = await supabase
+          .from("databases")
+          .select("id")
+          .eq("id", link.id)
+          .eq("workspace_id", workspaceId)
+          .maybeSingle();
+        if (error) return { ok: false, message: error.message };
+        if (!data)
+          return { ok: false, message: `database ${link.id} not in workspace` };
+        break;
+      }
+      case "table": {
+        const { data: table, error } = await supabase
+          .from("tables")
+          .select("id, database_id")
+          .eq("id", link.id)
+          .maybeSingle();
+        if (error) return { ok: false, message: error.message };
+        if (!table) return { ok: false, message: `table ${link.id} not found` };
+        const { data: database, error: databaseError } = await supabase
+          .from("databases")
+          .select("id")
+          .eq("id", table.database_id)
+          .eq("workspace_id", workspaceId)
+          .maybeSingle();
+        if (databaseError) return { ok: false, message: databaseError.message };
+        if (!database)
+          return { ok: false, message: `table ${link.id} not in workspace` };
+        break;
+      }
       default: {
         const _exhaustive: never = link.kind;
         return { ok: false, message: `unknown kind ${_exhaustive}` };

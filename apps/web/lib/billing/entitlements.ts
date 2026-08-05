@@ -16,7 +16,9 @@ export type WorkspaceMeter =
   | "notes"
   | "contacts"
   | "comments"
-  | "boards";
+  | "boards"
+  | "databases"
+  | "tables";
 
 export type PlanLimits = {
   /** Free-tier workspace slots attributed via created_by (not a privilege). */
@@ -37,6 +39,10 @@ export type PlanLimits = {
    * Catalogued for pricing honesty; enforced client-side only (ciphertext).
    */
   nodesPerBoard: number;
+  /** Encrypted databases (Dataverse models) per workspace. */
+  databasesPerWorkspace: number;
+  /** Tables allowed per database (not workspace-wide). */
+  tablesPerDatabase: number;
   /** Max ready/pending attachments linked to a single task. Free = 0. */
   filesPerTask: number;
   /** Total ciphertext bytes allowed in Supabase Storage for the workspace. */
@@ -64,6 +70,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     commentsPerWorkspace: 50,
     boardsPerWorkspace: 1,
     nodesPerBoard: 20,
+    databasesPerWorkspace: 1,
+    tablesPerDatabase: 10,
     filesPerTask: 0,
     storageBytesPerWorkspace: 0,
     maxUploadBytes: 0,
@@ -80,6 +88,8 @@ export const PLAN_LIMITS: Record<Plan, PlanLimits> = {
     commentsPerWorkspace: 1000,
     boardsPerWorkspace: 25,
     nodesPerBoard: 400,
+    databasesPerWorkspace: 25,
+    tablesPerDatabase: 50,
     filesPerTask: 5,
     storageBytesPerWorkspace: PRO_STORAGE_BYTES,
     maxUploadBytes: PRO_MAX_UPLOAD_BYTES,
@@ -101,6 +111,8 @@ export type AddonPackDef = {
     comments: number;
     boards: number;
     nodesPerBoard: number;
+    databases: number;
+    tablesPerDatabase: number;
     members: number;
     storageBytes: number;
     filesPerTask: number;
@@ -134,6 +146,8 @@ export const CAPACITY_PACK: AddonPackDef = {
     comments: 500,
     boards: 10,
     nodesPerBoard: 200,
+    databases: 10,
+    tablesPerDatabase: 25,
     members: 10,
     storageBytes: 2.5 * 1024 * 1024 * 1024, // 2.5 GiB
     filesPerTask: 0,
@@ -212,6 +226,11 @@ export function effectiveLimits(subscription: SubscriptionLike): PlanLimits {
       base.boardsPerWorkspace + packCount * CAPACITY_PACK.deltas.boards,
     nodesPerBoard:
       base.nodesPerBoard + packCount * CAPACITY_PACK.deltas.nodesPerBoard,
+    databasesPerWorkspace:
+      base.databasesPerWorkspace + packCount * CAPACITY_PACK.deltas.databases,
+    tablesPerDatabase:
+      base.tablesPerDatabase +
+      packCount * CAPACITY_PACK.deltas.tablesPerDatabase,
     filesPerTask:
       base.filesPerTask + packCount * CAPACITY_PACK.deltas.filesPerTask,
     storageBytesPerWorkspace:
@@ -239,6 +258,10 @@ export function workspaceMeterLimit(
       return limits.commentsPerWorkspace;
     case "boards":
       return limits.boardsPerWorkspace;
+    case "databases":
+      return limits.databasesPerWorkspace;
+    case "tables":
+      return limits.tablesPerDatabase;
     default: {
       const _exhaustive: never = meter;
       return _exhaustive;
@@ -263,6 +286,8 @@ const METER_LABEL: Record<WorkspaceMeter, string> = {
   contacts: "contacts",
   comments: "comments and replies",
   boards: "boards",
+  databases: "databases",
+  tables: "tables",
 };
 
 /** Honest, dark-pattern-free limit copy for API errors and UI. */
@@ -275,7 +300,12 @@ export function limitMessage(
     plan === "free"
       ? " Upgrade this workspace to Pro Workspace for higher limits."
       : "";
-  const scope = meter === "tasks" ? " per project" : " per workspace";
+  const scope =
+    meter === "tasks"
+      ? " per project"
+      : meter === "tables"
+        ? " per database"
+        : " per workspace";
   return `${capitalize(METER_LABEL[meter])} limit reached for the ${plan} plan (${isUnlimited(limit) ? "unlimited" : limit}${scope}).${upgradeHint}`;
 }
 

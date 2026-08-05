@@ -25,6 +25,10 @@ import {
 } from "@/lib/client-crypto/contacts";
 import { formatContactName } from "@/lib/client-crypto/contact-plaintext";
 import {
+  loadDecryptedDatabases,
+  type DecryptedDatabase,
+} from "@/lib/client-crypto/databases";
+import {
   KIND_FALLBACK_COLOR,
   type EntityColor,
 } from "@/lib/client-crypto/entity-colors";
@@ -36,6 +40,10 @@ import {
   loadDecryptedProjects,
   type DecryptedProject,
 } from "@/lib/client-crypto/projects";
+import {
+  loadDecryptedTables,
+  type DecryptedTable,
+} from "@/lib/client-crypto/tables";
 import {
   loadDecryptedWorkspaceTasks,
   type DecryptedTask,
@@ -59,10 +67,14 @@ type EntityCacheValue = {
   tasks: DecryptedTask[];
   contacts: DecryptedContact[];
   projects: DecryptedProject[];
+  databases: DecryptedDatabase[];
+  tables: DecryptedTable[];
   resolve: (kind: EntityLinkKind, id: string) => ResolvedEntity;
   upsertNote: (note: DecryptedNote) => void;
   upsertTask: (task: DecryptedTask) => void;
   upsertContact: (contact: DecryptedContact) => void;
+  upsertDatabase: (database: DecryptedDatabase) => void;
+  upsertTable: (table: DecryptedTable) => void;
 };
 
 const EntityCacheContext = createContext<EntityCacheValue | null>(null);
@@ -103,6 +115,8 @@ export function EntityCacheProvider({
   const [tasks, setTasks] = useState<DecryptedTask[]>([]);
   const [contacts, setContacts] = useState<DecryptedContact[]>([]);
   const [projects, setProjects] = useState<DecryptedProject[]>([]);
+  const [databases, setDatabases] = useState<DecryptedDatabase[]>([]);
+  const [tables, setTables] = useState<DecryptedTable[]>([]);
   const genRef = useRef(0);
 
   useEffect(() => {
@@ -122,15 +136,25 @@ export function EntityCacheProvider({
         if (cancelled || gen !== genRef.current) return;
         setProjects(projectsPage.projects);
 
-        const [notesPage, contactsPage] = await Promise.all([
+        const [notesPage, contactsPage, databasesPage] = await Promise.all([
           loadDecryptedNotes(workspaceId, key, { limit: 100 }),
           loadDecryptedContacts(workspaceId, key, { limit: 100 }),
+          loadDecryptedDatabases(workspaceId, key, { limit: 100 }),
         ]);
+        if (cancelled || gen !== genRef.current) return;
+
+        const tablePages = await Promise.all(
+          databasesPage.databases.map((database) =>
+            loadDecryptedTables(workspaceId, database.id, key, { limit: 100 }),
+          ),
+        );
         if (cancelled || gen !== genRef.current) return;
 
         setTasks(taskPage.tasks);
         setNotes(notesPage.notes);
         setContacts(contactsPage.contacts);
+        setDatabases(databasesPage.databases);
+        setTables(tablePages.flatMap((page) => page.tables));
       } catch {
         // Leave remaining cache empty; chips fall back to kind labels.
       }
@@ -148,6 +172,20 @@ export function EntityCacheProvider({
     setProjects(projectsPage.projects);
   }, [getWorkspaceKey, workspaceId]);
 
+  const refreshDatabases = useCallback(async () => {
+    const key = await getWorkspaceKey(workspaceId);
+    const databasesPage = await loadDecryptedDatabases(workspaceId, key, {
+      limit: 100,
+    });
+    const tablePages = await Promise.all(
+      databasesPage.databases.map((database) =>
+        loadDecryptedTables(workspaceId, database.id, key, { limit: 100 }),
+      ),
+    );
+    setDatabases(databasesPage.databases);
+    setTables(tablePages.flatMap((page) => page.tables));
+  }, [getWorkspaceKey, workspaceId]);
+
   useEffect(() => {
     if (!userKeys) return;
     const onChange = () => {
@@ -158,6 +196,17 @@ export function EntityCacheProvider({
       window.removeEventListener("helvety:projects-changed", onChange);
     };
   }, [userKeys, refreshProjects]);
+
+  useEffect(() => {
+    if (!userKeys) return;
+    const onChange = () => {
+      void refreshDatabases().catch(() => undefined);
+    };
+    window.addEventListener("helvety:databases-changed", onChange);
+    return () => {
+      window.removeEventListener("helvety:databases-changed", onChange);
+    };
+  }, [userKeys, refreshDatabases]);
 
   const projectById = useMemo(() => {
     const m = new Map<string, DecryptedProject>();
@@ -256,6 +305,32 @@ export function EntityCacheProvider({
             done: false,
           };
         }
+        case "database": {
+          const database = databases.find((d) => d.id === id);
+          return {
+            kind,
+            id,
+            label: database?.name ?? "Database",
+            color: fallback,
+            href: `/app/w/${workspaceId}/databases/${id}`,
+            deleted: Boolean(database?.deletedAt),
+            done: false,
+          };
+        }
+        case "table": {
+          const table = tables.find((t) => t.id === id);
+          return {
+            kind,
+            id,
+            label: table?.displayName ?? "Table",
+            color: fallback,
+            href: table
+              ? `/app/w/${workspaceId}/databases/${table.databaseId}/tables/${id}`
+              : null,
+            deleted: Boolean(table?.deletedAt),
+            done: false,
+          };
+        }
         default: {
           const _exhaustive: never = kind;
           return {
@@ -274,6 +349,8 @@ export function EntityCacheProvider({
       notes,
       contacts,
       tasks,
+      databases,
+      tables,
       projectById,
       workspaceCategorizations,
       workspaceId,
@@ -289,6 +366,12 @@ export function EntityCacheProvider({
   const upsertContact = useCallback((contact: DecryptedContact) => {
     setContacts((prev) => upsertById(prev, contact));
   }, []);
+  const upsertDatabase = useCallback((database: DecryptedDatabase) => {
+    setDatabases((prev) => upsertById(prev, database));
+  }, []);
+  const upsertTable = useCallback((table: DecryptedTable) => {
+    setTables((prev) => upsertById(prev, table));
+  }, []);
 
   const value = useMemo<EntityCacheValue>(
     () => ({
@@ -296,20 +379,28 @@ export function EntityCacheProvider({
       tasks,
       contacts,
       projects,
+      databases,
+      tables,
       resolve,
       upsertNote,
       upsertTask,
       upsertContact,
+      upsertDatabase,
+      upsertTable,
     }),
     [
       notes,
       tasks,
       contacts,
       projects,
+      databases,
+      tables,
       resolve,
       upsertNote,
       upsertTask,
       upsertContact,
+      upsertDatabase,
+      upsertTable,
     ],
   );
 

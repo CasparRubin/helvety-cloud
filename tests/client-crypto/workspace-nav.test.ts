@@ -33,6 +33,19 @@ describe("parseAppNavPath settings", () => {
     expect(loc?.projectSettings).toBe(true);
     expect(parentHrefFor(loc!)).toBe("/app/w/ws1/p/p1");
   });
+
+  it("parses databases and nested tables", () => {
+    const db = parseAppNavPath("/app/w/ws1/databases/db1");
+    expect(db?.section).toBe("databases");
+    expect(db?.entity).toEqual({ kind: "database", id: "db1" });
+    expect(parentHrefFor(db!)).toBe("/app/w/ws1/databases");
+
+    const table = parseAppNavPath("/app/w/ws1/databases/db1/tables/t1");
+    expect(table?.section).toBe("databases");
+    expect(table?.entity).toEqual({ kind: "table", id: "t1" });
+    expect(table?.databaseId).toBe("db1");
+    expect(parentHrefFor(table!)).toBe("/app/w/ws1/databases/db1");
+  });
 });
 
 describe("resolveNavBackMode", () => {

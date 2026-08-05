@@ -22,6 +22,7 @@ import { useTheme } from "@wrksz/themes/client";
 import {
   ArrowRightIcon,
   CircleIcon,
+  DatabaseIcon,
   DiamondIcon,
   FolderKanbanIcon,
   MessageSquareIcon,
@@ -29,6 +30,7 @@ import {
   ListTodoIcon,
   StickyNoteIcon,
   SquareIcon,
+  TableIcon,
   UsersIcon,
 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -97,7 +99,13 @@ type BoardCanvasProps = {
   onShapeLimitReached?: (message: string) => void;
 };
 
-type PlaceKind = "note" | "contact" | "task" | "project";
+type PlaceKind =
+  | "note"
+  | "contact"
+  | "task"
+  | "project"
+  | "database"
+  | "table";
 
 const TEXT_CAPABLE_NODE_TYPES = new Set([
   "startEvent",
@@ -466,6 +474,23 @@ function BoardCanvasInner({
           .filter((p) => !q || p.name.toLowerCase().includes(q))
           .slice(0, 40)
           .map((p) => ({ id: p.id, label: p.name || "Untitled" }));
+      case "database":
+        return cache.databases
+          .filter((d) => !d.deletedAt)
+          .filter((d) => !q || d.name.toLowerCase().includes(q))
+          .slice(0, 40)
+          .map((d) => ({ id: d.id, label: d.name || "Untitled" }));
+      case "table":
+        return cache.tables
+          .filter((t) => !t.deletedAt)
+          .filter(
+            (t) =>
+              !q ||
+              t.displayName.toLowerCase().includes(q) ||
+              t.schemaName.toLowerCase().includes(q),
+          )
+          .slice(0, 40)
+          .map((t) => ({ id: t.id, label: t.displayName || "Untitled" }));
       default: {
         const _exhaustive: never = placeKind;
         return _exhaustive;
@@ -570,6 +595,18 @@ function BoardCanvasInner({
                 label: "Project",
                 tip: "Place a linked project on the board.",
                 icon: FolderKanbanIcon,
+              },
+              {
+                kind: "database" as const,
+                label: "Database",
+                tip: "Place a linked database on the board.",
+                icon: DatabaseIcon,
+              },
+              {
+                kind: "table" as const,
+                label: "Table",
+                tip: "Place a linked table on the board.",
+                icon: TableIcon,
               },
             ] as const
           ).map((item) => (

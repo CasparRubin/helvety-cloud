@@ -22,7 +22,13 @@ export function isEntityColor(value: unknown): value is EntityColor {
 
 /** Kind-level chip colors. Projects may override via ciphertext `color`; notes/contacts always use these. */
 export const KIND_FALLBACK_COLOR: Record<
-  "task" | "contact" | "note" | "project" | "board",
+  | "task"
+  | "contact"
+  | "note"
+  | "project"
+  | "board"
+  | "database"
+  | "table",
   EntityColor
 > = {
   task: "blue",
@@ -30,6 +36,8 @@ export const KIND_FALLBACK_COLOR: Record<
   note: "slate",
   project: "violet",
   board: "teal",
+  database: "orange",
+  table: "amber",
 };
 
 /** Tailwind class maps for entity accent colors (chips, washes, dots). */

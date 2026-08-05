@@ -76,4 +76,36 @@ describe("extractEntityRefsFromDoc", () => {
       { kind: "task", id: "11111111-1111-1111-1111-111111111111" },
     ]);
   });
+
+  it("collects database and table refs from notes", () => {
+    expect(
+      extractEntityRefsFromDoc("note", {
+        type: "doc",
+        content: [
+          {
+            type: "paragraph",
+            content: [
+              {
+                type: "entityRef",
+                attrs: {
+                  kind: "database",
+                  id: "44444444-4444-4444-4444-444444444444",
+                },
+              },
+              {
+                type: "entityRef",
+                attrs: {
+                  kind: "table",
+                  id: "55555555-5555-5555-5555-555555555555",
+                },
+              },
+            ],
+          },
+        ],
+      }),
+    ).toEqual([
+      { kind: "database", id: "44444444-4444-4444-4444-444444444444" },
+      { kind: "table", id: "55555555-5555-5555-5555-555555555555" },
+    ]);
+  });
 });

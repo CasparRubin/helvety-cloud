@@ -261,8 +261,18 @@ export function ContactDetail({ workspaceId, contactId }: ContactDetailProps) {
     for (const n of cache.notes) {
       items.push({ kind: "note", id: n.id, label: n.title });
     }
+    for (const d of cache.databases) {
+      items.push({ kind: "database", id: d.id, label: d.name || "Untitled" });
+    }
+    for (const t of cache.tables) {
+      items.push({
+        kind: "table",
+        id: t.id,
+        label: t.displayName || "Untitled",
+      });
+    }
     return items;
-  }, [cache.tasks, cache.notes]);
+  }, [cache.tasks, cache.notes, cache.databases, cache.tables]);
 
   if (!userKeys) return null;
 

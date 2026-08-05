@@ -1,6 +1,6 @@
 # Helvety Cloud: Locked decisions & status
 
-> **Canonical** locked decisions and phase history. Product through **P17** is **done** (P15 i18n was **reverted**; English only). Do not re-implement done phases unless docs need fixes. Stripe billing: **P6f** + **P12** (see [`BILLING.md`](./BILLING.md)).
+> **Canonical** locked decisions and phase history. Product through **P18** is **done** (P15 i18n was **reverted**; English only). Do not re-implement done phases unless docs need fixes. Stripe billing: **P6f** + **P12** (see [`BILLING.md`](./BILLING.md)).
 >
 > AI contributors: see [`AGENTS.md`](../../AGENTS.md) and [`.cursor/rules/`](../../.cursor/rules/).
 
@@ -8,7 +8,7 @@
 
 ## 1. Product
 
-**helvety.cloud**: greenfield E2EE workspace app (projects / tasks / notes / contacts / boards / sharing / files / billing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
+**helvety.cloud**: greenfield E2EE workspace app (projects / tasks / notes / contacts / boards / databases / sharing / files / billing). Swiss product (Helvety, Einzelfirma). Domain: **helvety.cloud**. Repo: **helvety-cloud** only.
 
 **Priorities (in order):**
 
@@ -42,7 +42,7 @@ Product north star: [`docs/VISION.md`](../VISION.md).
 | Auth               | **Supabase Auth**: email **OTP** only; **disable passwords**; **disable Auth passkeys**                                                                                                                                                                                        |
 | Encryption unlock  | WebAuthn **PRF** → HKDF unlock key (auth session ≠ encryption decrypt)                                                                                                                                                                                                         |
 | Crypto             | AES-256-GCM content; X25519 (or equivalent) key wrap; AAD bind table:record:field                                                                                                                                                                                              |
-| Access model       | **Everything workspace-scoped**: projects/tasks/milestones/notes/contacts/boards/comments/attachments under a workspace; entity links as constrained plaintext metadata; no user-global contacts/notes; no `workspace_id = null`. See [`DATA_MODEL.md`](./DATA_MODEL.md)       |
+| Access model       | **Everything workspace-scoped**: projects/tasks/milestones/notes/contacts/boards/databases/tables/comments/attachments under a workspace; entity links as constrained plaintext metadata; no user-global contacts/notes; no `workspace_id = null`. See [`DATA_MODEL.md`](./DATA_MODEL.md) |
 | Personal workspace | On first encryption setup, ensure one **Personal** workspace (home for “general” notes/contacts)                                                                                                                                                                               |
 | Sharing model      | Bitwarden/Proton-style: invite = seal **`workspace_key`** to invitee → `wrapped_keys`; members decrypt **all** encrypted entities in that workspace (P6e). Equal peers only (`role = member`); no owner/admin; leave is wipe-or-go; `created_by` is free-slot attribution only |
 | Public API         | **`/api/v1/*`** JSON + `Authorization: Bearer <access_token>`                                                                                                                                                                                                                  |
@@ -124,12 +124,15 @@ helvety-cloud/
 | P15      | i18n (en/de/fr/it) via next-intl                                       | **Reverted** (English only; do not re-add next-intl)                |
 | P16      | Encrypted comments on tasks/notes/contacts (+ Free/Pro/Capacity meter) | **Done**                                                            |
 | P17      | Boards (React Flow BPMN-inspired E2EE canvas)                          | **Done**                                                            |
+| P18      | Databases & tables (E2EE Dataverse-style models)                       | **Done**                                                            |
 
 **P14** encrypts workspace names, milestone start/end dates, stage completion weights, and the project progress chart.
 
 **P15 note:** i18n was attempted and reverted. Product copy stays English-only.
 
-**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (shapes by form: startEvent / endEvent / bpmnTask (Activity) / participant / exclusiveGateway / annotation / stencil / entityRef; optional `label`/`subtitle`/`showLabel`/`showSubtitle`/`textAnchor`/`icon`/`colors`; stencil nodes add `stencilId` from a curated Lucide library; labeled edges with optional `markerEnd: "arrow"`; plus placeable note/contact/task/project nodes). Legacy `userTask` / `serviceTask` still render as Activity. Canvas edges stay in ciphertext; placed entities sync to `entity_links`. Annotation shapes are board labels, not P16 entity comments.
+**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (shapes by form: startEvent / endEvent / bpmnTask (Activity) / participant / exclusiveGateway / annotation / stencil / entityRef; optional `label`/`subtitle`/`showLabel`/`showSubtitle`/`textAnchor`/`icon`/`colors`; stencil nodes add `stencilId` from a curated Lucide library; labeled edges with optional `markerEnd: "arrow"`; plus placeable note/contact/task/project/database/table nodes). Legacy `userTask` / `serviceTask` still render as Activity. Canvas edges stay in ciphertext; placed entities sync to `entity_links`. Annotation shapes are board labels, not P16 entity comments.
+
+**P18 note:** Workspace-scoped encrypted databases hold optional TipTap descriptions plus publisher prefix / display name. Child tables encrypt schema (columns, relationships, ownership, auditing) and up to 10 sample rows under the workspace key. Tables nest under `/databases/{id}/tables/{tableId}`. Entity links may target `database` and `table` from notes, tasks, contacts, and boards; databases and tables do not emit outgoing TipTap links.
 
 ---
 

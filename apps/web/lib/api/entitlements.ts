@@ -37,6 +37,8 @@ export type WorkspaceUsageCounts = {
   contacts: number;
   comments: number;
   boards: number;
+  databases: number;
+  tables: number;
   storageBytes: number;
 };
 
@@ -181,7 +183,7 @@ export async function getWorkspaceUsage(
   workspaceId: string,
 ): Promise<WorkspaceUsageCounts> {
   const countRows = (
-    meter: "projects" | "notes" | "contacts" | "comments" | "boards",
+    meter: "projects" | "notes" | "contacts" | "comments" | "boards" | "databases",
   ) =>
     supabase
       .from(meter)
@@ -195,7 +197,9 @@ export async function getWorkspaceUsage(
     contacts,
     comments,
     boards,
+    databases,
     tasks,
+    tables,
     members,
     pendingInvitations,
     storageRows,
@@ -205,6 +209,7 @@ export async function getWorkspaceUsage(
     countRows("contacts"),
     countRows("comments"),
     countRows("boards"),
+    countRows("databases"),
     supabase
       .from("tasks")
       .select("id, projects!inner(workspace_id)", {
@@ -212,6 +217,14 @@ export async function getWorkspaceUsage(
         head: true,
       })
       .eq("projects.workspace_id", workspaceId)
+      .is("deleted_at", null),
+    supabase
+      .from("tables")
+      .select("id, databases!inner(workspace_id)", {
+        count: "exact",
+        head: true,
+      })
+      .eq("databases.workspace_id", workspaceId)
       .is("deleted_at", null),
     supabase
       .from("workspace_members")
@@ -242,6 +255,8 @@ export async function getWorkspaceUsage(
     contacts: contacts.count ?? 0,
     comments: comments.count ?? 0,
     boards: boards.count ?? 0,
+    databases: databases.count ?? 0,
+    tables: tables.count ?? 0,
     tasks: tasks.count ?? 0,
     members: members.count ?? 0,
     pendingInvitations: pendingInvitations.count ?? 0,
@@ -280,16 +295,28 @@ async function countMeter(
   supabase: Api,
   workspaceId: string,
   meter: WorkspaceMeter,
-  projectId?: string,
+  options?: { projectId?: string; databaseId?: string },
 ): Promise<number | null> {
   if (meter === "tasks") {
-    if (!projectId) {
+    if (!options?.projectId) {
       return null;
     }
     const { count, error } = await supabase
       .from("tasks")
       .select("id", { count: "exact", head: true })
-      .eq("project_id", projectId)
+      .eq("project_id", options.projectId)
+      .is("deleted_at", null);
+    return error ? null : (count ?? 0);
+  }
+
+  if (meter === "tables") {
+    if (!options?.databaseId) {
+      return null;
+    }
+    const { count, error } = await supabase
+      .from("tables")
+      .select("id", { count: "exact", head: true })
+      .eq("database_id", options.databaseId)
       .is("deleted_at", null);
     return error ? null : (count ?? 0);
   }
@@ -304,14 +331,14 @@ async function countMeter(
 
 /**
  * Gate a net-new row in a workspace-scoped encrypted entity table.
- * For tasks, pass projectId; limits are per project.
+ * For tasks, pass projectId; for tables, pass databaseId.
  * Returns an error response to short-circuit with, or null when allowed.
  */
 export async function assertWorkspaceCreateAllowed(
   supabase: Api,
   workspaceId: string,
   meter: WorkspaceMeter,
-  options?: { projectId?: string },
+  options?: { projectId?: string; databaseId?: string },
 ): Promise<NextResponse | null> {
   const overflow = await assertNotFreeOverflowLocked(supabase, workspaceId);
   if (overflow) {
@@ -326,12 +353,7 @@ export async function assertWorkspaceCreateAllowed(
     return null;
   }
 
-  const current = await countMeter(
-    supabase,
-    workspaceId,
-    meter,
-    options?.projectId,
-  );
+  const current = await countMeter(supabase, workspaceId, meter, options);
   if (current === null) {
     // Count failed (e.g. RLS): let the write itself surface the real error.
     return null;

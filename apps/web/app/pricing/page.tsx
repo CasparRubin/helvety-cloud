@@ -81,6 +81,14 @@ const freeRows: PricingRow[] = [
   },
   { label: "Boards", value: String(PLAN_LIMITS.free.boardsPerWorkspace) },
   {
+    label: "Databases",
+    value: String(PLAN_LIMITS.free.databasesPerWorkspace),
+  },
+  {
+    label: "Tables per database",
+    value: String(PLAN_LIMITS.free.tablesPerDatabase),
+  },
+  {
     label: "Shapes per board",
     value: String(PLAN_LIMITS.free.nodesPerBoard),
   },
@@ -102,6 +110,14 @@ const proRows: PricingRow[] = [
     value: String(PLAN_LIMITS.pro.commentsPerWorkspace),
   },
   { label: "Boards", value: String(PLAN_LIMITS.pro.boardsPerWorkspace) },
+  {
+    label: "Databases",
+    value: String(PLAN_LIMITS.pro.databasesPerWorkspace),
+  },
+  {
+    label: "Tables per database",
+    value: String(PLAN_LIMITS.pro.tablesPerDatabase),
+  },
   {
     label: "Shapes per board",
     value: String(PLAN_LIMITS.pro.nodesPerBoard),
@@ -133,6 +149,11 @@ const capacityRows: PricingRow[] = [
     value: `+${CAPACITY_PACK.deltas.comments}`,
   },
   { label: "Boards", value: `+${CAPACITY_PACK.deltas.boards}` },
+  { label: "Databases", value: `+${CAPACITY_PACK.deltas.databases}` },
+  {
+    label: "Tables per database",
+    value: `+${CAPACITY_PACK.deltas.tablesPerDatabase}`,
+  },
   {
     label: "Shapes per board",
     value: `+${CAPACITY_PACK.deltas.nodesPerBoard}`,
@@ -280,7 +301,7 @@ export default function PricingPage() {
                 Workspace when you need encrypted files and higher limits, then
                 add Pro Workspace Capacity Increase packs only when that
                 workspace grows. Workspace content (projects, tasks, notes,
-                contacts, boards, and names) is end-to-end encrypted on every
+                contacts, boards, databases, and names) is end-to-end encrypted on every
                 plan, including Free. Helvety cannot decrypt it.
               </p>
             </div>

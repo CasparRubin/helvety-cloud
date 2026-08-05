@@ -288,8 +288,18 @@ export function TaskDetail({
         label: formatContactName(c) || "Untitled",
       });
     }
+    for (const d of cache.databases) {
+      items.push({ kind: "database", id: d.id, label: d.name || "Untitled" });
+    }
+    for (const t of cache.tables) {
+      items.push({
+        kind: "table",
+        id: t.id,
+        label: t.displayName || "Untitled",
+      });
+    }
     return items;
-  }, [cache.notes, cache.contacts]);
+  }, [cache.notes, cache.contacts, cache.databases, cache.tables]);
 
   if (!userKeys) return null;
 

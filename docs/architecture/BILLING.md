@@ -9,8 +9,8 @@ owned by Stripe coupons / promotion codes, not by Helvety app tables.
 
 - Billing never touches encryption keys or content.
 - Meter **plaintext counts** only: workspaces, projects, members, row counts
-  (including boards), ciphertext byte sizes, attachment link counts.
-  Shapes per board are catalogued for honesty and enforced in the client
+  (including boards, databases, tables), ciphertext byte sizes, attachment link
+  counts. Shapes per board are catalogued for honesty and enforced in the client
   (node graphs live in ciphertext).
 - Subscription belongs to the **workspace** (any member may manage billing).
 - Free-tier “owned workspace” slots are attributed via `workspaces.created_by` (not a privilege).
@@ -54,6 +54,8 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 | Contacts / workspace              |   25 |      500 |
 | Comments + replies / workspace    |   50 |     1000 |
 | Boards / workspace                |    1 |       25 |
+| Databases / workspace             |    1 |       25 |
+| Tables / **database**             |   10 |       50 |
 | Shapes (nodes) / **board**        |   20 |      400 |
 | Files / task                      |    0 |        5 |
 | File storage (ciphertext bytes)   |    0 |    5 GiB |
@@ -63,6 +65,10 @@ Defaults in `PLAN_LIMITS` (adjust anytime; lowering caps grandfather existing ro
 soft-lock). **Shapes per board** (React Flow nodes, not edges) are catalogued
 for pricing honesty and enforced **client-side only**, because node graphs live
 in `encrypted_blob` and billing meters plaintext counts only.
+
+**Databases:** database **row** creates are server-gated (`databases` meter).
+**Tables per database** are gated on table create under that parent (`tables`
+meter with `databaseId`).
 
 **2nd+ owned workspace:** create from the app switcher (New Pro workspace). The
 workspace is created with Pro intent, then Stripe Checkout opens for that
@@ -160,6 +166,8 @@ Each purchased Capacity Increase pack adds:
 - 250 contacts
 - 500 comments and replies
 - 10 boards
+- 10 databases
+- 25 tables per database
 - 200 shapes per board
 - 10 members
 - 2.5 GiB encrypted file storage

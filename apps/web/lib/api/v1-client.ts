@@ -20,14 +20,17 @@ import {
   listMyInvitationsResponseSchema,
   listNotesResponseSchema,
   listBoardsResponseSchema,
+  listDatabasesResponseSchema,
   listEntityLinksResponseSchema,
   listProjectsResponseSchema,
+  listTablesResponseSchema,
   milestoneResponseSchema,
   listWorkspaceInvitationsResponseSchema,
   listWorkspaceMembersResponseSchema,
   listWorkspacesResponseSchema,
   noteResponseSchema,
   boardResponseSchema,
+  databaseResponseSchema,
   patchWorkspaceRequestSchema,
   patchWorkspaceResponseSchema,
   projectResponseSchema,
@@ -41,7 +44,10 @@ import {
   putMePolicyAcceptancesResponseSchema,
   putNoteRequestSchema,
   putBoardRequestSchema,
+  putDatabaseRequestSchema,
   putProjectRequestSchema,
+  putTableRequestSchema,
+  tableResponseSchema,
   sealWorkspaceInvitationRequestSchema,
   workspaceInvitationSchema,
   createAttachmentRequestSchema,
@@ -70,13 +76,16 @@ import {
   type ListMyInvitationsResponse,
   type ListNotesResponse,
   type ListBoardsResponse,
+  type ListDatabasesResponse,
   type ListEntityLinksResponse,
   type ListProjectsResponse,
+  type ListTablesResponse,
   type ListWorkspaceInvitationsResponse,
   type ListWorkspaceMembersResponse,
   type ListWorkspacesResponse,
   type NoteResponse,
   type BoardResponse,
+  type DatabaseResponse,
   type PatchWorkspaceRequest,
   type PatchWorkspaceResponse,
   type ProjectResponse,
@@ -91,8 +100,11 @@ import {
   type PutMePolicyAcceptancesResponse,
   type PutNoteRequest,
   type PutBoardRequest,
+  type PutDatabaseRequest,
   type PutProjectRequest,
+  type PutTableRequest,
   type SealWorkspaceInvitationRequest,
+  type TableResponse,
   type WorkspaceInvitation,
   type CreateAttachmentRequest,
   type CreateAttachmentResponse,
@@ -585,6 +597,106 @@ export async function deleteBoard(
     {
       method: "DELETE",
     },
+  );
+}
+
+export type ListDatabasesParams = ListParams;
+
+export async function listDatabases(
+  workspaceId: string,
+  params?: ListDatabasesParams,
+): Promise<ListDatabasesResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/databases${listQuery(params)}`,
+    listDatabasesResponseSchema,
+  );
+}
+
+export async function getDatabase(
+  workspaceId: string,
+  databaseId: string,
+): Promise<DatabaseResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}`,
+    databaseResponseSchema,
+  );
+}
+
+export async function putDatabase(
+  workspaceId: string,
+  databaseId: string,
+  body: PutDatabaseRequest,
+): Promise<DatabaseResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}`,
+    databaseResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putDatabaseRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function deleteDatabase(
+  workspaceId: string,
+  databaseId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}`,
+    {
+      method: "DELETE",
+    },
+  );
+}
+
+export type ListTablesParams = ListParams;
+
+export async function listTables(
+  workspaceId: string,
+  databaseId: string,
+  params?: ListTablesParams,
+): Promise<ListTablesResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}/tables${listQuery(params)}`,
+    listTablesResponseSchema,
+  );
+}
+
+export async function getTable(
+  workspaceId: string,
+  databaseId: string,
+  tableId: string,
+): Promise<TableResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}/tables/${tableId}`,
+    tableResponseSchema,
+  );
+}
+
+export async function putTable(
+  workspaceId: string,
+  databaseId: string,
+  tableId: string,
+  body: PutTableRequest,
+): Promise<TableResponse> {
+  return apiFetch(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}/tables/${tableId}`,
+    tableResponseSchema,
+    {
+      method: "PUT",
+      body: JSON.stringify(putTableRequestSchema.parse(body)),
+    },
+  );
+}
+
+export async function deleteTable(
+  workspaceId: string,
+  databaseId: string,
+  tableId: string,
+): Promise<void> {
+  await apiFetchNoContent(
+    `/api/v1/workspaces/${workspaceId}/databases/${databaseId}/tables/${tableId}`,
+    { method: "DELETE" },
   );
 }
 

@@ -287,6 +287,50 @@ export type Database = {
           },
         ]
       }
+      databases: {
+        Row: {
+          created_at: string
+          deleted_at: string | null
+          encrypted_blob: Json
+          id: string
+          is_pinned: boolean
+          pin_sort_order: number | null
+          sort_order: number
+          updated_at: string
+          workspace_id: string
+        }
+        Insert: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob: Json
+          id: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
+          sort_order?: number
+          updated_at?: string
+          workspace_id: string
+        }
+        Update: {
+          created_at?: string
+          deleted_at?: string | null
+          encrypted_blob?: Json
+          id?: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
+          sort_order?: number
+          updated_at?: string
+          workspace_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "databases_workspace_id_fkey"
+            columns: ["workspace_id"]
+            isOneToOne: false
+            referencedRelation: "workspaces"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       entity_links: {
         Row: {
           created_at: string
@@ -602,8 +646,52 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
-      },
-user_crypto: {
+      }
+      tables: {
+        Row: {
+          created_at: string
+          database_id: string
+          deleted_at: string | null
+          encrypted_blob: Json
+          id: string
+          is_pinned: boolean
+          pin_sort_order: number | null
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          database_id: string
+          deleted_at?: string | null
+          encrypted_blob: Json
+          id: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          database_id?: string
+          deleted_at?: string | null
+          encrypted_blob?: Json
+          id?: string
+          is_pinned?: boolean
+          pin_sort_order?: number | null
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tables_database_id_fkey"
+            columns: ["database_id"]
+            isOneToOne: false
+            referencedRelation: "databases"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_crypto: {
         Row: {
           created_at: string
           key_check: Json

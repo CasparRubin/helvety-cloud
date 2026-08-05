@@ -473,9 +473,7 @@ function EntityRefNode({ data, selected }: NodeProps) {
   const cache = useOptionalEntityCache();
   const ref = data as EntityRefData;
   const resolved = cache?.resolve(ref.kind, ref.entityId);
-  const color =
-    resolved?.color ??
-    KIND_FALLBACK_COLOR[ref.kind === "board" ? "note" : ref.kind];
+  const color = resolved?.color ?? KIND_FALLBACK_COLOR[ref.kind];
   const classes = ENTITY_COLOR_CLASSES[color];
   const label = resolved?.label ?? "Unavailable";
   const href = resolved?.href;

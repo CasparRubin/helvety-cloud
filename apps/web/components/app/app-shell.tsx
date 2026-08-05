@@ -7,6 +7,7 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ContactIcon,
   CrownIcon,
+  DatabaseIcon,
   FolderKanbanIcon,
   ListTodoIcon,
   StickyNoteIcon,
@@ -66,7 +67,13 @@ type AppShellProps = {
   children: React.ReactNode;
 };
 
-type SectionId = "projects" | "tasks" | "notes" | "contacts" | "boards";
+type SectionId =
+  | "projects"
+  | "tasks"
+  | "notes"
+  | "contacts"
+  | "boards"
+  | "databases";
 type ProjectPinnedPreview = {
   id: string;
   label: string;
@@ -105,6 +112,12 @@ function workspaceSections(workspaceBase: string): {
       href: `${workspaceBase}/boards`,
       label: "Boards",
       icon: WorkflowIcon,
+    },
+    {
+      id: "databases",
+      href: `${workspaceBase}/databases`,
+      label: "Databases",
+      icon: DatabaseIcon,
     },
     {
       id: "contacts",

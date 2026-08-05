@@ -6,10 +6,10 @@ create table public.entity_links (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references public.workspaces (id) on delete cascade,
   source_kind text not null
-    check (source_kind in ('note', 'task', 'contact', 'project', 'board')),
+    check (source_kind in ('note', 'task', 'contact', 'project', 'board', 'database', 'table')),
   source_id uuid not null,
   target_kind text not null
-    check (target_kind in ('note', 'task', 'contact', 'project', 'board')),
+    check (target_kind in ('note', 'task', 'contact', 'project', 'board', 'database', 'table')),
   target_id uuid not null,
   created_at timestamptz not null default now(),
   constraint entity_links_no_self check (
@@ -18,14 +18,22 @@ create table public.entity_links (
   constraint entity_links_allowed_pair check (
     (least(source_kind, target_kind), greatest(source_kind, target_kind)) in (
       ('board', 'contact'),
+      ('board', 'database'),
       ('board', 'note'),
       ('board', 'project'),
+      ('board', 'table'),
       ('board', 'task'),
+      ('contact', 'database'),
       ('contact', 'note'),
       ('contact', 'project'),
+      ('contact', 'table'),
       ('contact', 'task'),
+      ('database', 'note'),
+      ('database', 'task'),
       ('note', 'project'),
-      ('note', 'task')
+      ('note', 'table'),
+      ('note', 'task'),
+      ('table', 'task')
     )
   ),
   constraint entity_links_unique_edge unique (
