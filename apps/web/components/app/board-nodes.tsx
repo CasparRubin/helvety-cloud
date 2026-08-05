@@ -14,6 +14,11 @@ import {
 } from "@/components/ui/popover";
 import { useOptionalEntityCache } from "@/components/unlock/entity-cache";
 import {
+  BOARD_STENCIL_ICON_COMPONENTS,
+  isBoardStencilIcon,
+  type BoardStencilIcon,
+} from "@/lib/client-crypto/board-stencils";
+import {
   CATEGORIZATION_ICON_COMPONENTS,
   isCategorizationIcon,
   type CategorizationIcon,
@@ -423,6 +428,46 @@ function AnnotationNode({ id, data, selected }: NodeProps) {
   );
 }
 
+function StencilNode({ id, data, selected }: NodeProps) {
+  const shape = readShapeData(data);
+  const colors = nodeColorStyle(data);
+  const textColor = textColorFrom(colors);
+  const raw = (data ?? {}) as Record<string, unknown>;
+  const iconToken: BoardStencilIcon | undefined = isBoardStencilIcon(raw.icon)
+    ? raw.icon
+    : undefined;
+  const Icon = iconToken
+    ? BOARD_STENCIL_ICON_COMPONENTS[iconToken]
+    : CircleIcon;
+
+  return (
+    <div className="group/node relative">
+      <div
+        className={cn(
+          "flex size-12 items-center justify-center rounded-xl border bg-background shadow-sm",
+          selected ? "border-primary ring-1 ring-primary/30" : "border-border",
+        )}
+        style={colors}
+      >
+        <NodeHandles />
+        <Icon
+          className="size-6 shrink-0 text-muted-foreground"
+          style={textColor ? { color: textColor } : undefined}
+          aria-hidden
+        />
+      </div>
+      <CaptionStack
+        id={id}
+        shape={shape}
+        labelFallback={shape.label || "Stencil"}
+        labelPlaceholder="Name"
+        subtitlePlaceholder="Type"
+        textColor={textColor}
+      />
+    </div>
+  );
+}
+
 function EntityRefNode({ data, selected }: NodeProps) {
   const router = useRouter();
   const cache = useOptionalEntityCache();
@@ -467,5 +512,6 @@ export const boardNodeTypes = {
   participant: ParticipantNode,
   exclusiveGateway: ExclusiveGatewayNode,
   annotation: AnnotationNode,
+  stencil: StencilNode,
   entityRef: EntityRefNode,
 };

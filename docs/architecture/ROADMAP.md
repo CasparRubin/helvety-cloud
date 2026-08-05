@@ -129,7 +129,7 @@ helvety-cloud/
 
 **P15 note:** i18n was attempted and reverted. Product copy stays English-only.
 
-**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (shapes by form: startEvent / endEvent / bpmnTask (Activity) / participant / exclusiveGateway / annotation / entityRef; optional `label`/`subtitle`/`showLabel`/`showSubtitle`/`textAnchor`/`icon`/`colors`; labeled edges with optional `markerEnd: "arrow"`; plus placeable note/contact/task/project nodes). Legacy `userTask` / `serviceTask` still render as Activity. Canvas edges stay in ciphertext; placed entities sync to `entity_links`. Annotation shapes are board labels, not P16 entity comments.
+**P17 note:** Workspace-scoped encrypted boards store React Flow graph JSON (shapes by form: startEvent / endEvent / bpmnTask (Activity) / participant / exclusiveGateway / annotation / stencil / entityRef; optional `label`/`subtitle`/`showLabel`/`showSubtitle`/`textAnchor`/`icon`/`colors`; stencil nodes add `stencilId` from a curated Lucide library; labeled edges with optional `markerEnd: "arrow"`; plus placeable note/contact/task/project nodes). Legacy `userTask` / `serviceTask` still render as Activity. Canvas edges stay in ciphertext; placed entities sync to `entity_links`. Annotation shapes are board labels, not P16 entity comments.
 
 ---
 

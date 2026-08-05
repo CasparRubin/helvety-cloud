@@ -41,7 +41,9 @@ import {
   type BoardNodeColors,
   type BoardTextAnchor,
 } from "@/components/app/board-nodes";
+import { BoardStencilLibrary } from "@/components/app/board-stencil-library";
 import { useEntityCache } from "@/components/unlock/entity-cache";
+import type { BoardStencil } from "@/lib/client-crypto/board-stencils";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -105,6 +107,7 @@ const TEXT_CAPABLE_NODE_TYPES = new Set([
   "serviceTask",
   "participant",
   "exclusiveGateway",
+  "stencil",
 ]);
 
 const TEXT_ANCHOR_GRID: (BoardTextAnchor | null)[] = [
@@ -308,6 +311,18 @@ function BoardCanvasInner({
       addNode("entityRef", { kind, entityId });
       setPlaceKind(null);
       setPlaceQuery("");
+    },
+    [addNode],
+  );
+
+  const placeStencil = useCallback(
+    (stencil: BoardStencil) => {
+      addNode("stencil", {
+        stencilId: stencil.id,
+        icon: stencil.icon,
+        label: stencil.label,
+        subtitle: "",
+      });
     },
     [addNode],
   );
@@ -526,6 +541,7 @@ function BoardCanvasInner({
               <TooltipContent side="bottom">{item.tip}</TooltipContent>
             </Tooltip>
           ))}
+          <BoardStencilLibrary onSelect={placeStencil} />
           <span className="pointer-events-none mx-0.5 self-center text-xs text-muted-foreground">
             ·
           </span>
