@@ -95,7 +95,8 @@ export function UnlockGate({ email, userId }: UnlockGateProps) {
       setError(signOutError.message);
       return;
     }
-    window.location.href = "/";
+    // Full reload after sign-out so crypto session state cannot linger.
+    window.location.assign(new URL("/", window.location.origin).toString());
   }
 
   async function onSetup() {

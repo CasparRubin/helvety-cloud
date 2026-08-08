@@ -66,7 +66,10 @@ export function AccountSettingsProvider({
       clearStoredPrfCredentialId(account.userId);
       lock();
       await createClient().auth.signOut();
-      window.location.href = "/?account-deleted=1";
+      // Full reload after deletion so crypto session state cannot linger.
+      window.location.assign(
+        new URL("/?account-deleted=1", window.location.origin).toString(),
+      );
     } catch (err) {
       setError(err instanceof Error ? err.message : "Account deletion failed");
       setPending(false);

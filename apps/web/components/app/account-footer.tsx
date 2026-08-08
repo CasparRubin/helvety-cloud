@@ -85,7 +85,8 @@ export function AccountFooter({
     lock();
     const supabase = createClient();
     await supabase.auth.signOut();
-    window.location.href = "/";
+    // Full reload after sign-out so crypto session state cannot linger.
+    window.location.assign(new URL("/", window.location.origin).toString());
   }
 
   if (variant === "mobile") {
